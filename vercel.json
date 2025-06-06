@@ -1,4 +1,3 @@
-# Vercel Configuration for Inv_TimeSheetMgmt Frontend
 {
   "version": 2,
   "name": "inv-timesheet-frontend",
@@ -44,4 +43,3 @@
     }
   ]
 }
-
