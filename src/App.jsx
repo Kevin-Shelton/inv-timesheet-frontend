@@ -945,6 +945,326 @@ function AnalyticsDashboard() {
       )}
 
       {/* Other tabs would be included here exactly as in the original */}
+
+      {/* Productivity Tab */}
+      {selectedMetric === 'productivity' && (
+        <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
+          {/* Productivity Trends */}
+          <Card className="lg-col-span-2">
+            <CardHeader>
+              <CardTitle>Productivity Trends</CardTitle>
+              <CardDescription>Daily productivity metrics and hours worked</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={analyticsData.productivityTrends}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Legend />
+                    <Line yAxisId="left" type="monotone" dataKey="productivity" stroke="#3B82F6" name="Productivity %" />
+                    <Line yAxisId="right" type="monotone" dataKey="hours" stroke="#10B981" name="Hours Worked" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Overtime Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Overtime Analysis</CardTitle>
+              <CardDescription>Planned vs overtime hours by week</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analyticsData.overtimeAnalysis}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="planned" fill="#3B82F6" name="Planned Hours" />
+                    <Bar dataKey="overtime" fill="#F59E0B" name="Overtime Hours" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Efficiency Metrics */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Efficiency Metrics</CardTitle>
+              <CardDescription>Key performance indicators</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="metric-item">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-600">Average Productivity</span>
+                    <span className="text-lg font-bold text-blue-600">87.6%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                    <div className="bg-blue-600 h-2 rounded-full" style={{width: '87.6%'}}></div>
+                  </div>
+                </div>
+                <div className="metric-item">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-600">Task Completion Rate</span>
+                    <span className="text-lg font-bold text-green-600">94.2%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                    <div className="bg-green-600 h-2 rounded-full" style={{width: '94.2%'}}></div>
+                  </div>
+                </div>
+                <div className="metric-item">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-600">Quality Score</span>
+                    <span className="text-lg font-bold text-purple-600">91.8%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                    <div className="bg-purple-600 h-2 rounded-full" style={{width: '91.8%'}}></div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Team Performance Tab */}
+      {selectedMetric === 'team' && (
+        <div className="space-y-6">
+          {/* Team Performance Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Team Performance Overview</CardTitle>
+              <CardDescription>Individual team member performance metrics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-4 font-medium text-gray-600">Team Member</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-600">Hours Worked</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-600">Efficiency</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-600">Overtime</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analyticsData.teamPerformance.map((member, index) => (
+                      <tr key={index} className="border-b hover-bg-gray-50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                              <span className="text-sm font-medium text-blue-600">
+                                {member.name.split(' ').map(n => n[0]).join('')}
+                              </span>
+                            </div>
+                            <span className="font-medium">{member.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">{member.hours}h</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <span className="mr-2">{member.efficiency}%</span>
+                            <div className="w-16 bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-green-600 h-2 rounded-full" 
+                                style={{width: `${member.efficiency}%`}}
+                              ></div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">{member.overtime}h</td>
+                        <td className="py-3 px-4">
+                          <Badge variant={member.efficiency >= 90 ? 'green' : member.efficiency >= 80 ? 'yellow' : 'red'}>
+                            {member.efficiency >= 90 ? 'Excellent' : member.efficiency >= 80 ? 'Good' : 'Needs Improvement'}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Team Performance Charts */}
+          <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Efficiency Distribution</CardTitle>
+                <CardDescription>Team efficiency breakdown</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="chart-container">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analyticsData.teamPerformance}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="efficiency" fill="#3B82F6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Hours vs Overtime</CardTitle>
+                <CardDescription>Regular hours vs overtime by team member</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="chart-container">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analyticsData.teamPerformance}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="hours" fill="#10B981" name="Regular Hours" />
+                      <Bar dataKey="overtime" fill="#F59E0B" name="Overtime Hours" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Time Analysis Tab */}
+      {selectedMetric === 'time' && (
+        <div className="space-y-6">
+          {/* Time Analysis Overview */}
+          <div className="grid grid-cols-1 md-grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Total Hours</CardTitle>
+                <CardDescription>This period</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-blue-600">1,247h</div>
+                <p className="text-sm text-gray-600 mt-1">+12% from last period</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Overtime Hours</CardTitle>
+                <CardDescription>This period</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-orange-600">43h</div>
+                <p className="text-sm text-gray-600 mt-1">-8% from last period</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Average Daily</CardTitle>
+                <CardDescription>Per team member</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-600">7.8h</div>
+                <p className="text-sm text-gray-600 mt-1">Within target range</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Time Trends */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Time Allocation Trends</CardTitle>
+              <CardDescription>Daily time allocation over the selected period</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={analyticsData.hoursByDay}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="day" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Area type="monotone" dataKey="regular" stackId="1" stroke="#10B981" fill="#10B981" name="Regular Hours" />
+                    <Area type="monotone" dataKey="overtime" stackId="1" stroke="#F59E0B" fill="#F59E0B" name="Overtime Hours" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Time Distribution Analysis */}
+          <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Peak Hours Analysis</CardTitle>
+                <CardDescription>Most productive time periods</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                    <span className="font-medium">9:00 AM - 11:00 AM</span>
+                    <span className="text-blue-600 font-bold">Peak Productivity</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                    <span className="font-medium">2:00 PM - 4:00 PM</span>
+                    <span className="text-green-600 font-bold">High Efficiency</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                    <span className="font-medium">4:00 PM - 6:00 PM</span>
+                    <span className="text-yellow-600 font-bold">Moderate Activity</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Time Utilization</CardTitle>
+                <CardDescription>How time is being utilized</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Productive Work</span>
+                    <span className="text-sm font-bold">78%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-green-600 h-2 rounded-full" style={{width: '78%'}}></div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Meetings</span>
+                    <span className="text-sm font-bold">15%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full" style={{width: '15%'}}></div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Administrative</span>
+                    <span className="text-sm font-bold">7%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-yellow-600 h-2 rounded-full" style={{width: '7%'}}></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
