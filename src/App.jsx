@@ -2602,19 +2602,19 @@ function MainLayout() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/timesheets" element={<TimesheetsPage />} />
-            <Route path="/team" element={<EnhancedEmployeeManagement />} />
+            <Route path="/team" element={<EnhancedEmployeeManagement user={user} api={api} />} />
             {user?.role === 'admin' && (
               <>
                 <Route path="/analytics" element={<AnalyticsDashboard />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/data-management" element={<DataManagementPage />} />
-                <Route path="/billable-hours" element={<BillableHoursEntry user={user} />} />
-                <Route path="/utilization" element={<UtilizationAnalytics />} />
-                <Route path="/billable-reports" element={<BillableHoursReporting />} />
+                <Route path="/billable-hours" element={<BillableHoursEntry user={user} api={api} />} />
+                <Route path="/utilization" element={<UtilizationAnalytics user={user} api={api} />} />
+                <Route path="/billable-reports" element={<BillableHoursReporting user={user} api={api} />} />
               </>
             )}
             {user?.role === 'campaign_lead' && (
-              <Route path="/billable-hours" element={<BillableHoursEntry user={user} />} />
+              <Route path="/billable-hours" element={<BillableHoursEntry user={user} api={api} />} />
             )}
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
