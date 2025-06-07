@@ -1,4 +1,4 @@
-// UtilizationAnalytics.jsx - Fixed version with working time periods and proper scrolling
+// UtilizationAnalytics.jsx - Fixed version with working time periods and proper scrolling 
 
 import React, { useState, useEffect } from 'react'
 import { 
