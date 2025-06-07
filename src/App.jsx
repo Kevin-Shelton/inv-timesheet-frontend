@@ -1,16 +1,33 @@
-import React, { useState, useEffect, useContext, createContext } from 'react'
+import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
-import { 
-  BarChart3, Users, Clock, Settings, LogOut, Plus, Search, Filter, 
-  Download, Upload, AlertTriangle, CheckCircle, XCircle, FileSpreadsheet, 
-  RefreshCw, Trash2, Eye, AlertCircle, TrendingUp, Calendar, DollarSign,
-  PieChart, Activity, Target, Award, Bell, User, Lock, Mail, Phone,
-  Edit, Save, X, ChevronDown, ChevronRight, Home, FileText, Database
-} from 'lucide-react'
 import api from './lib/api'
 
+// Main App Component
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><MainLayout /></ProtectedRoute>} />
+            <Route path="/timesheets" element={<ProtectedRoute><MainLayout /></ProtectedRoute>} />
+            <Route path="/team" element={<ProtectedRoute><MainLayout /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><MainLayout /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><MainLayout /></ProtectedRoute>} />
+            <Route path="/bulk-import" element={<ProtectedRoute><MainLayout /></ProtectedRoute>} />
+            <Route path="/error-management" element={<ProtectedRoute><MainLayout /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><MainLayout /></ProtectedRoute>} />
+          </Routes>
+        </div>
+      </AuthProvider>
+    </Router>
+  )
+}
+
 // Auth Context
-const AuthContext = createContext()
+const AuthContext = React.createContext()
 
 function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -51,181 +68,40 @@ function AuthProvider({ children }) {
 }
 
 function useAuth() {
-  return useContext(AuthContext)
+  return React.useContext(AuthContext)
 }
 
-// UI Components
-function Button({ children, variant = 'primary', size = 'md', disabled = false, onClick, className = '', ...props }) {
-  const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2'
-  const variants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-    outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-blue-500',
-    destructive: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
-  }
-  const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base'
+// Route Protection Components
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+  
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+    </div>
   }
   
-  return (
-    <button
-      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
-      disabled={disabled}
-      onClick={onClick}
-      {...props}
-    >
-      {children}
-    </button>
-  )
+  return user ? children : <Navigate to="/login" />
 }
 
-function Card({ children, className = '' }) {
-  return (
-    <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>
-      {children}
+function PublicRoute({ children }) {
+  const { user, loading } = useAuth()
+  
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
     </div>
-  )
-}
-
-function CardHeader({ children }) {
-  return <div className="px-6 py-4 border-b border-gray-200">{children}</div>
-}
-
-function CardTitle({ children }) {
-  return <h3 className="text-lg font-semibold text-gray-900">{children}</h3>
-}
-
-function CardDescription({ children }) {
-  return <p className="text-sm text-gray-600 mt-1">{children}</p>
-}
-
-function CardContent({ children, className = '' }) {
-  return <div className={`px-6 py-4 ${className}`}>{children}</div>
-}
-
-function Badge({ children, className = '' }) {
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
-      {children}
-    </span>
-  )
-}
-
-function Alert({ children, variant = 'default' }) {
-  const variants = {
-    default: 'bg-blue-50 border-blue-200 text-blue-800',
-    destructive: 'bg-red-50 border-red-200 text-red-800'
   }
   
-  return (
-    <div className={`border rounded-lg p-4 ${variants[variant]}`}>
-      {children}
-    </div>
-  )
-}
-
-function AlertDescription({ children }) {
-  return <div className="text-sm">{children}</div>
-}
-
-function Label({ children, htmlFor, className = '' }) {
-  return (
-    <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 ${className}`}>
-      {children}
-    </label>
-  )
-}
-
-function Input({ className = '', ...props }) {
-  return (
-    <input
-      className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${className}`}
-      {...props}
-    />
-  )
-}
-
-// Navigation array
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Timesheets', href: '/timesheets', icon: Clock },
-  { name: 'Team', href: '/team', icon: Users },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3, adminOnly: true },
-  { name: 'Reports', href: '/reports', icon: FileText, adminOnly: true },
-  { name: 'Bulk Import', href: '/bulk-import', icon: Database, adminOnly: true },
-  { name: 'Error Management', href: '/error-management', icon: AlertTriangle, adminOnly: true },
-  { name: 'Settings', href: '/settings', icon: Settings }
-]
-
-// Sidebar Component
-function Sidebar({ user, onLogout }) {
-  const location = useLocation()
-  
-  const filteredNavigation = navigation.filter(item => {
-    if (item.adminOnly && user?.role !== 'admin') {
-      return false
-    }
-    return true
-  })
-
-  return (
-    <div className="w-64 bg-gray-900 text-white flex flex-col">
-      <div className="p-6">
-        <h1 className="text-xl font-bold">TimeSheet Manager</h1>
-        <p className="text-gray-400 text-sm mt-1">BPO Management System</p>
-      </div>
-      
-      <nav className="flex-1 px-4 space-y-2">
-        {filteredNavigation.map((item) => {
-          const isActive = location.pathname === item.href
-          return (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={`flex items-center px-4 py-2 text-sm rounded-lg transition-colors ${
-                isActive 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-              }`}
-            >
-              <item.icon className="w-5 h-5 mr-3" />
-              {item.name}
-            </Link>
-          )
-        })}
-      </nav>
-      
-      <div className="p-4 border-t border-gray-800">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-sm font-medium">{user?.full_name}</p>
-            <p className="text-xs text-gray-400">{user?.role}</p>
-          </div>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onLogout}
-          className="w-full text-gray-300 border-gray-600 hover:bg-gray-800"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
-        </Button>
-      </div>
-    </div>
-  )
+  return user ? <Navigate to="/dashboard" /> : children
 }
 
 // Login Component
-function LoginPage() {
+function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const { login } = useAuth()
 
   const handleSubmit = async (e) => {
@@ -235,56 +111,222 @@ function LoginPage() {
 
     try {
       await login(email, password)
-    } catch (err) {
-      setError(err.message || 'Login failed')
+    } catch (error) {
+      setError('Invalid email or password')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Sign In</CardTitle>
-          <CardDescription>Access your timesheet management system</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            TimeSheet Manager
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            BPO Management System
+          </p>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
+              <input
                 type="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
               />
             </div>
-            
             <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
+              <input
                 type="password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
               />
             </div>
-            
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {loading ? 'Signing in...' : 'Sign in'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// Main Layout Component
+function MainLayout() {
+  const location = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const getCurrentPage = () => {
+    const path = location.pathname
+    if (path === '/' || path === '/dashboard') return 'dashboard'
+    return path.substring(1)
+  }
+
+  const renderCurrentPage = () => {
+    const currentPage = getCurrentPage()
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'timesheets':
+        return <TimesheetsPage />
+      case 'team':
+        return <TeamPage />
+      case 'analytics':
+        return <AnalyticsPage />
+      case 'reports':
+        return <ReportsPage />
+      case 'bulk-import':
+        return <BulkImportPage />
+      case 'error-management':
+        return <ErrorManagementPage />
+      case 'settings':
+        return <SettingsPage />
+      default:
+        return <Dashboard />
+    }
+  }
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      
+      {/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 relative overflow-y-auto focus:outline-none">
+          {renderCurrentPage()}
+        </main>
+      </div>
+    </div>
+  )
+}
+
+// Sidebar Component
+function Sidebar({ sidebarOpen, setSidebarOpen }) {
+  const { user, logout } = useAuth()
+  const location = useLocation()
+
+  const navigation = [
+    { name: 'Dashboard', href: '/dashboard', icon: '🏠' },
+    { name: 'Timesheets', href: '/timesheets', icon: '🕒' },
+    { name: 'Team', href: '/team', icon: '👥' },
+    ...(user?.role === 'admin' ? [
+      { name: 'Analytics', href: '/analytics', icon: '📊' },
+      { name: 'Reports', href: '/reports', icon: '📈' },
+      { name: 'Bulk Import', href: '/bulk-import', icon: '📁' },
+      { name: 'Error Management', href: '/error-management', icon: '⚠️' }
+    ] : []),
+    { name: 'Settings', href: '/settings', icon: '⚙️' }
+  ]
+
+  return (
+    <>
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 flex z-40 md:hidden">
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
+            <div className="absolute top-0 right-0 -mr-12 pt-2">
+              <button
+                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <span className="sr-only">Close sidebar</span>
+                <span className="text-white text-xl">×</span>
+              </button>
+            </div>
+            <SidebarContent navigation={navigation} user={user} logout={logout} location={location} />
+          </div>
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <div className="hidden md:flex md:flex-shrink-0">
+        <div className="flex flex-col w-64">
+          <SidebarContent navigation={navigation} user={user} logout={logout} location={location} />
+        </div>
+      </div>
+    </>
+  )
+}
+
+function SidebarContent({ navigation, user, logout, location }) {
+  return (
+    <div className="flex flex-col h-full bg-white border-r border-gray-200">
+      {/* Logo */}
+      <div className="flex items-center h-16 flex-shrink-0 px-4 bg-blue-600">
+        <h1 className="text-xl font-bold text-white">TimeSheet Manager</h1>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        <nav className="flex-1 px-2 py-4 space-y-1">
+          {navigation.map((item) => {
+            const isActive = location.pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={`${
+                  isActive
+                    ? 'bg-blue-100 border-blue-500 text-blue-700'
+                    : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                } group flex items-center px-3 py-2 text-sm font-medium border-l-4 transition-colors duration-150`}
+              >
+                <span className="mr-3 text-lg">{item.icon}</span>
+                {item.name}
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* User info */}
+      <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+              <span className="text-sm font-medium text-white">
+                {user?.name?.charAt(0) || 'U'}
+              </span>
+            </div>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm font-medium text-gray-700">{user?.name}</p>
+            <p className="text-xs text-gray-500">{user?.role}</p>
+          </div>
+          <button
+            onClick={logout}
+            className="ml-auto text-gray-400 hover:text-gray-600"
+            title="Sign out"
+          >
+            <span className="text-lg">🚪</span>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -292,7 +334,13 @@ function LoginPage() {
 // Dashboard Component
 function Dashboard() {
   const { user } = useAuth()
-  const [dashboardData, setDashboardData] = useState(null)
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    pendingApprovals: 0,
+    totalHours: 0,
+    activeTimesheets: 0
+  })
+  const [recentActivity, setRecentActivity] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -302,31 +350,25 @@ function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       if (user?.role === 'admin') {
-        const mockAdminData = {
-          totalUsers: 45,
-          pendingApprovals: 12,
-          totalHoursMonth: 1840,
-          activeTimesheets: 28,
-          recentActivity: [
-            { user: 'John Doe', action: 'submitted timesheet', time: '2 hours ago' },
-            { user: 'Jane Smith', action: 'approved timesheet', time: '3 hours ago' },
-            { user: 'Mike Johnson', action: 'joined team', time: '1 day ago' }
-          ]
-        }
-        setDashboardData(mockAdminData)
+        const dashboardData = await api.getDashboardStats()
+        setStats(dashboardData.stats)
+        setRecentActivity(dashboardData.recentActivity)
       } else {
-        const mockUserData = {
-          hoursThisWeek: 32.5,
-          pendingApprovals: 3,
-          monthlyTotal: 128.5,
-          overtimeHours: 4.5,
-          recentTimesheets: [
-            { date: '2024-01-15', hours: 8, status: 'approved' },
-            { date: '2024-01-14', hours: 7.5, status: 'pending' },
-            { date: '2024-01-13', hours: 8, status: 'approved' }
-          ]
-        }
-        setDashboardData(mockUserData)
+        // Personal stats for regular users
+        const timesheets = await api.getTimesheets()
+        const thisWeekHours = timesheets
+          .filter(t => new Date(t.date) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+          .reduce((sum, t) => sum + parseFloat(t.hours || 0), 0)
+        
+        setStats({
+          hoursThisWeek: thisWeekHours,
+          pendingApprovals: timesheets.filter(t => t.status === 'pending').length,
+          monthlyTotal: timesheets
+            .filter(t => new Date(t.date).getMonth() === new Date().getMonth())
+            .reduce((sum, t) => sum + parseFloat(t.hours || 0), 0),
+          overtimeHours: Math.max(0, thisWeekHours - 40)
+        })
+        setRecentActivity(timesheets.slice(0, 5))
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -338,216 +380,186 @@ function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <BarChart3 className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {user?.full_name?.split(' ')[0]}!
-          </h1>
-          <p className="text-gray-600">
-            {user?.role === 'admin' ? 'Organization Overview' : 'Your timesheet summary'}
-          </p>
-        </div>
-        <Badge className="bg-blue-100 text-blue-800">
-          {user?.role}
-        </Badge>
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">
+          Welcome back, {user?.name}!
+        </h1>
+        <p className="text-gray-600">
+          {user?.role === 'admin' ? 'Organization Overview' : 'Your timesheet summary'}
+        </p>
       </div>
 
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {user?.role === 'admin' ? (
           <>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Users</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.totalUsers}</p>
-                  </div>
-                  <Users className="w-8 h-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.pendingApprovals}</p>
-                  </div>
-                  <Clock className="w-8 h-8 text-yellow-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Hours (Month)</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.totalHoursMonth}</p>
-                  </div>
-                  <BarChart3 className="w-8 h-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Active Timesheets</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.activeTimesheets}</p>
-                  </div>
-                  <Activity className="w-8 h-8 text-purple-500" />
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard
+              title="Total Users"
+              value={stats.totalUsers}
+              icon="👥"
+              color="blue"
+            />
+            <StatCard
+              title="Pending Approvals"
+              value={stats.pendingApprovals}
+              icon="⏳"
+              color="yellow"
+            />
+            <StatCard
+              title="Total Hours (Month)"
+              value={stats.totalHours}
+              icon="🕒"
+              color="green"
+            />
+            <StatCard
+              title="Active Timesheets"
+              value={stats.activeTimesheets}
+              icon="📊"
+              color="purple"
+            />
           </>
         ) : (
           <>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Hours This Week</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.hoursThisWeek}</p>
-                  </div>
-                  <Clock className="w-8 h-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.pendingApprovals}</p>
-                  </div>
-                  <AlertTriangle className="w-8 h-8 text-yellow-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Monthly Total</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.monthlyTotal}</p>
-                  </div>
-                  <Calendar className="w-8 h-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Overtime Hours</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.overtimeHours}</p>
-                  </div>
-                  <TrendingUp className="w-8 h-8 text-red-500" />
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard
+              title="Hours This Week"
+              value={stats.hoursThisWeek}
+              icon="🕒"
+              color="blue"
+            />
+            <StatCard
+              title="Pending Approvals"
+              value={stats.pendingApprovals}
+              icon="⏳"
+              color="yellow"
+            />
+            <StatCard
+              title="Monthly Total"
+              value={stats.monthlyTotal}
+              icon="📊"
+              color="green"
+            />
+            <StatCard
+              title="Overtime Hours"
+              value={stats.overtimeHours}
+              icon="⚡"
+              color="red"
+            />
           </>
         )}
       </div>
 
-      {/* Quick Actions for Admin */}
-      {user?.role === 'admin' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common administrative tasks</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Link to="/timesheets">
-                <Button variant="outline" className="w-full h-20 flex-col">
-                  <Clock className="w-6 h-6 mb-2" />
-                  Review Timesheets
-                </Button>
-              </Link>
-              <Link to="/team">
-                <Button variant="outline" className="w-full h-20 flex-col">
-                  <Users className="w-6 h-6 mb-2" />
-                  Manage Team
-                </Button>
-              </Link>
-              <Link to="/bulk-import">
-                <Button variant="outline" className="w-full h-20 flex-col">
-                  <Database className="w-6 h-6 mb-2" />
-                  Bulk Import
-                </Button>
-              </Link>
-              <Link to="/reports">
-                <Button variant="outline" className="w-full h-20 flex-col">
-                  <FileText className="w-6 h-6 mb-2" />
-                  Export Reports
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">
             {user?.role === 'admin' ? 'Recent Team Activity' : 'Recent Timesheets'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {user?.role === 'admin' ? (
-            <div className="space-y-4">
-              {dashboardData?.recentActivity?.map((activity, index) => (
-                <div key={index} className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{activity.user}</p>
-                    <p className="text-sm text-gray-600">{activity.action} • {activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          </h3>
+        </div>
+        <div className="p-6">
+          {recentActivity.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">No recent activity</p>
           ) : (
             <div className="space-y-4">
-              {dashboardData?.recentTimesheets?.map((timesheet, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{timesheet.date}</p>
-                    <p className="text-sm text-gray-600">{timesheet.hours} hours</p>
+              {recentActivity.map((item, index) => (
+                <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 text-sm">🕒</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {user?.role === 'admin' ? item.user_name : 'You'} - {item.hours} hours
+                      </p>
+                      <p className="text-xs text-gray-500">{item.date}</p>
+                    </div>
                   </div>
-                  <Badge className={
-                    timesheet.status === 'approved' ? 'bg-green-100 text-green-800' :
-                    timesheet.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }>
-                    {timesheet.status}
-                  </Badge>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    item.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    item.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {item.status}
+                  </span>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Quick Actions for Admin */}
+      {user?.role === 'admin' && (
+        <div className="mt-8 bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link
+                to="/timesheets"
+                className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <span className="text-2xl mr-3">📋</span>
+                <div>
+                  <p className="font-medium text-blue-900">Review Timesheets</p>
+                  <p className="text-sm text-blue-600">Approve pending entries</p>
+                </div>
+              </Link>
+              <Link
+                to="/team"
+                className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+              >
+                <span className="text-2xl mr-3">👥</span>
+                <div>
+                  <p className="font-medium text-green-900">Manage Team</p>
+                  <p className="text-sm text-green-600">Add or edit team members</p>
+                </div>
+              </Link>
+              <Link
+                to="/reports"
+                className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+              >
+                <span className="text-2xl mr-3">📊</span>
+                <div>
+                  <p className="font-medium text-purple-900">Export Reports</p>
+                  <p className="text-sm text-purple-600">Generate payroll reports</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function StatCard({ title, value, icon, color }) {
+  const colorClasses = {
+    blue: 'bg-blue-50 text-blue-600',
+    yellow: 'bg-yellow-50 text-yellow-600',
+    green: 'bg-green-50 text-green-600',
+    red: 'bg-red-50 text-red-600',
+    purple: 'bg-purple-50 text-purple-600'
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="flex items-center">
+        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+          <span className="text-2xl">{icon}</span>
+        </div>
+        <div className="ml-4">
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+        </div>
+      </div>
     </div>
   )
 }
@@ -555,106 +567,61 @@ function Dashboard() {
 // Timesheets Page Component
 function TimesheetsPage() {
   const { user } = useAuth()
+  
+  // If user is admin, show the approval interface
+  if (user?.role === 'admin') {
+    return <AdminTimesheetApproval />
+  }
+
+  // Regular user timesheet interface
   const [timesheets, setTimesheets] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
-  const [filterStatus, setFilterStatus] = useState('all')
-  const [searchTerm, setSearchTerm] = useState('')
   const [newTimesheet, setNewTimesheet] = useState({
-    date: '',
+    date: new Date().toISOString().split('T')[0],
     hours: '',
-    description: '',
-    campaign: ''
+    description: ''
   })
 
   useEffect(() => {
     fetchTimesheets()
-  }, [filterStatus])
+  }, [])
 
   const fetchTimesheets = async () => {
     try {
       setLoading(true)
-      if (user?.role === 'admin') {
-        // Admin sees all timesheets for approval
-        const mockAdminTimesheets = [
-          { id: 1, user_name: 'John Doe', date: '2024-01-15', hours: 8, description: 'Regular work day', status: 'pending', campaign: 'Campaign A' },
-          { id: 2, user_name: 'Jane Smith', date: '2024-01-15', hours: 7.5, description: 'Project work', status: 'approved', campaign: 'Campaign B' },
-          { id: 3, user_name: 'Mike Johnson', date: '2024-01-14', hours: 8.5, description: 'Overtime work', status: 'pending', campaign: 'Campaign A' },
-          { id: 4, user_name: 'Sarah Wilson', date: '2024-01-14', hours: 6, description: 'Half day', status: 'rejected', campaign: 'Campaign C' }
-        ]
-        setTimesheets(mockAdminTimesheets.filter(t => filterStatus === 'all' || t.status === filterStatus))
-      } else {
-        // Regular users see only their timesheets
-        const mockUserTimesheets = [
-          { id: 1, date: '2024-01-15', hours: 8, description: 'Regular work day', status: 'pending', campaign: 'Campaign A' },
-          { id: 2, date: '2024-01-14', hours: 7.5, description: 'Project work', status: 'approved', campaign: 'Campaign B' },
-          { id: 3, date: '2024-01-13', hours: 8, description: 'Client calls', status: 'approved', campaign: 'Campaign A' }
-        ]
-        setTimesheets(mockUserTimesheets.filter(t => filterStatus === 'all' || t.status === filterStatus))
-      }
+      const data = await api.getTimesheets()
+      setTimesheets(data)
     } catch (error) {
+      setError('Failed to load timesheets')
       console.error('Error fetching timesheets:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleAddTimesheet = async (e) => {
+  const handleSubmitTimesheet = async (e) => {
     e.preventDefault()
     try {
-      // Mock API call
-      const newEntry = {
-        id: Date.now(),
-        ...newTimesheet,
-        status: 'pending',
-        user_name: user.full_name
-      }
-      setTimesheets(prev => [newEntry, ...prev])
-      setNewTimesheet({ date: '', hours: '', description: '', campaign: '' })
+      await api.createTimesheet(newTimesheet)
+      setNewTimesheet({
+        date: new Date().toISOString().split('T')[0],
+        hours: '',
+        description: ''
+      })
       setShowAddForm(false)
+      fetchTimesheets()
     } catch (error) {
-      console.error('Error adding timesheet:', error)
+      setError('Failed to create timesheet')
+      console.error('Error creating timesheet:', error)
     }
   }
-
-  const handleApproval = async (timesheetId, action, comment = '') => {
-    try {
-      // Mock API call
-      setTimesheets(prev => prev.map(t => 
-        t.id === timesheetId ? { ...t, status: action } : t
-      ))
-    } catch (error) {
-      console.error('Error updating timesheet:', error)
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved':
-        return 'bg-green-100 text-green-800'
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'rejected':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const filteredTimesheets = timesheets.filter(timesheet => {
-    const matchesSearch = searchTerm === '' || 
-      timesheet.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (timesheet.user_name && timesheet.user_name.toLowerCase().includes(searchTerm.toLowerCase()))
-    return matchesSearch
-  })
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
-          <p className="text-gray-600">Loading timesheets...</p>
-        </div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -663,148 +630,241 @@ function TimesheetsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {user?.role === 'admin' ? 'Timesheet Approvals' : 'My Timesheets'}
-          </h1>
-          <p className="text-gray-600">
-            {user?.role === 'admin' ? 'Review and approve team timesheet submissions' : 'Track your time and submit for approval'}
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">My Timesheets</h1>
+          <p className="text-gray-600">Track and manage your time entries</p>
         </div>
-        <div className="flex space-x-2">
-          {user?.role === 'admin' && (
-            <Button variant="outline">
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </Button>
-          )}
-          {user?.role !== 'admin' && (
-            <Button onClick={() => setShowAddForm(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Entry
-            </Button>
-          )}
-        </div>
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          + Add Entry
+        </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex space-x-2">
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+          {error}
         </div>
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder={user?.role === 'admin' ? "Search by user or description..." : "Search descriptions..."}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Add Timesheet Form */}
       {showAddForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Add New Timesheet Entry</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAddTimesheet} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={newTimesheet.date}
-                    onChange={(e) => setNewTimesheet(prev => ({ ...prev, date: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="hours">Hours</Label>
-                  <Input
-                    id="hours"
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    max="24"
-                    value={newTimesheet.hours}
-                    onChange={(e) => setNewTimesheet(prev => ({ ...prev, hours: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Add Time Entry</h3>
+          <form onSubmit={handleSubmitTimesheet} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="campaign">Campaign</Label>
-                <select
-                  id="campaign"
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input
+                  type="date"
+                  value={newTimesheet.date}
+                  onChange={(e) => setNewTimesheet({...newTimesheet, date: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={newTimesheet.campaign}
-                  onChange={(e) => setNewTimesheet(prev => ({ ...prev, campaign: e.target.value }))}
-                  required
-                >
-                  <option value="">Select Campaign</option>
-                  <option value="Campaign A">Campaign A</option>
-                  <option value="Campaign B">Campaign B</option>
-                  <option value="Campaign C">Campaign C</option>
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <textarea
-                  id="description"
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={newTimesheet.description}
-                  onChange={(e) => setNewTimesheet(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe your work activities..."
                   required
                 />
               </div>
-              <div className="flex space-x-2">
-                <Button type="submit">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Entry
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
-                  Cancel
-                </Button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Hours</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="24"
+                  placeholder="8.0"
+                  value={newTimesheet.hours}
+                  onChange={(e) => setNewTimesheet({...newTimesheet, hours: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
               </div>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <input
+                type="text"
+                placeholder="Brief description of work performed"
+                value={newTimesheet.description}
+                onChange={(e) => setNewTimesheet({...newTimesheet, description: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex space-x-2">
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Save Entry
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* Timesheets List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {user?.role === 'admin' ? 'Team Timesheets' : 'Your Timesheet Entries'}
-          </CardTitle>
-          <CardDescription>
-            {filteredTimesheets.length} {filteredTimesheets.length === 1 ? 'entry' : 'entries'} found
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">My Time Entries</h3>
+        </div>
+        <div className="p-6">
+          {timesheets.length === 0 ? (
+            <div className="text-center py-8">
+              <span className="text-4xl mb-4 block">🕒</span>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No timesheets yet</h3>
+              <p className="text-gray-600">Start by adding your first time entry</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {timesheets.map((timesheet) => (
+                <div key={timesheet.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <span className="text-blue-600">🕒</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{timesheet.date}</p>
+                      <p className="text-sm text-gray-600">{timesheet.hours} hours</p>
+                      {timesheet.description && (
+                        <p className="text-sm text-gray-500">{timesheet.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    timesheet.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    timesheet.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {timesheet.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Admin Timesheet Approval Component
+function AdminTimesheetApproval() {
+  const [allTimesheets, setAllTimesheets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [filter, setFilter] = useState('pending')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedTimesheet, setSelectedTimesheet] = useState(null)
+  const [approvalComment, setApprovalComment] = useState('')
+
+  useEffect(() => {
+    fetchAllTimesheets()
+  }, [filter])
+
+  const fetchAllTimesheets = async () => {
+    try {
+      setLoading(true)
+      const data = await api.getTimesheets({ status: filter === 'all' ? undefined : filter })
+      setAllTimesheets(data)
+    } catch (error) {
+      setError('Failed to load timesheets')
+      console.error('Error fetching timesheets:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApproval = async (timesheetId, action) => {
+    try {
+      if (action === 'approve') {
+        await api.approveTimesheet(timesheetId, approvalComment)
+      } else {
+        await api.rejectTimesheet(timesheetId, approvalComment)
+      }
+      setApprovalComment('')
+      setSelectedTimesheet(null)
+      fetchAllTimesheets()
+    } catch (error) {
+      setError(`Failed to ${action} timesheet`)
+      console.error(`Error ${action}ing timesheet:`, error)
+    }
+  }
+
+  const filteredTimesheets = allTimesheets.filter(timesheet =>
+    timesheet.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    timesheet.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Timesheet Approvals</h1>
+          <p className="text-gray-600">Review and approve team timesheet entries</p>
+        </div>
+        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+          📊 Export
+        </button>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
+      {/* Filters and Search */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex space-x-2">
+          {['all', 'pending', 'approved', 'rejected'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-3 py-1 rounded-md text-sm font-medium ${
+                filter === status
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
+          ))}
+        </div>
+        <div className="flex-1 max-w-sm">
+          <input
+            type="text"
+            placeholder="Search by user or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      {/* Timesheets List */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">Team Timesheets</h3>
+        </div>
+        <div className="p-6">
           {filteredTimesheets.length === 0 ? (
             <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <span className="text-4xl mb-4 block">🕒</span>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No timesheets found</h3>
-              <p className="text-gray-600">
-                {user?.role === 'admin' ? 'No timesheet submissions match your filters' : 'Start by adding your first timesheet entry'}
-              </p>
+              <p className="text-gray-600">No timesheets match your current filter</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -812,37 +872,44 @@ function TimesheetsPage() {
                 <div key={timesheet.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-blue-600" />
+                      <span className="text-blue-600">🕒</span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">
-                        {user?.role === 'admin' ? timesheet.user_name : timesheet.date}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {user?.role === 'admin' ? `${timesheet.date} • ${timesheet.hours} hours` : `${timesheet.hours} hours • ${timesheet.campaign}`}
-                      </p>
-                      <p className="text-sm text-gray-600">{timesheet.description}</p>
+                      <p className="font-medium text-gray-900">{timesheet.user_name || 'Unknown User'}</p>
+                      <p className="text-sm text-gray-600">{timesheet.date} • {timesheet.hours} hours</p>
+                      {timesheet.description && (
+                        <p className="text-sm text-gray-500">{timesheet.description}</p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Badge className={getStatusColor(timesheet.status)}>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      timesheet.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      timesheet.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
                       {timesheet.status}
-                    </Badge>
-                    {user?.role === 'admin' && timesheet.status === 'pending' && (
-                      <div className="flex space-x-1">
-                        <Button
-                          size="sm"
-                          onClick={() => handleApproval(timesheet.id, 'approved')}
+                    </span>
+                    {timesheet.status === 'pending' && (
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => {
+                            setSelectedTimesheet(timesheet)
+                            setApprovalComment('')
+                          }}
+                          className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
                         >
-                          <CheckCircle className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleApproval(timesheet.id, 'rejected')}
+                          ✓ Approve
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedTimesheet(timesheet)
+                            setApprovalComment('')
+                          }}
+                          className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
                         >
-                          <XCircle className="w-4 h-4" />
-                        </Button>
+                          ✗ Reject
+                        </button>
                       </div>
                     )}
                   </div>
@@ -850,8 +917,57 @@ function TimesheetsPage() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Approval Modal */}
+      {selectedTimesheet && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Review Timesheet</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600">Employee: {selectedTimesheet.user_name}</p>
+                <p className="text-sm text-gray-600">Date: {selectedTimesheet.date}</p>
+                <p className="text-sm text-gray-600">Hours: {selectedTimesheet.hours}</p>
+                {selectedTimesheet.description && (
+                  <p className="text-sm text-gray-600">Description: {selectedTimesheet.description}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Comments (optional)</label>
+                <input
+                  type="text"
+                  placeholder="Add a comment..."
+                  value={approvalComment}
+                  onChange={(e) => setApprovalComment(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleApproval(selectedTimesheet.id, 'approve')}
+                  className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors"
+                >
+                  ✓ Approve
+                </button>
+                <button
+                  onClick={() => handleApproval(selectedTimesheet.id, 'reject')}
+                  className="flex-1 bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition-colors"
+                >
+                  ✗ Reject
+                </button>
+                <button
+                  onClick={() => setSelectedTimesheet(null)}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -861,13 +977,14 @@ function TeamPage() {
   const { user } = useAuth()
   const [teamMembers, setTeamMembers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
-  const [editingMember, setEditingMember] = useState(null)
+  const [editingUser, setEditingUser] = useState(null)
   const [newMember, setNewMember] = useState({
     email: '',
-    full_name: '',
+    name: '',
     role: 'team_member',
-    pay_rate_per_hour: '',
+    pay_rate: '',
     department: ''
   })
 
@@ -878,14 +995,10 @@ function TeamPage() {
   const fetchTeamMembers = async () => {
     try {
       setLoading(true)
-      // Mock team data
-      const mockTeam = [
-        { id: 1, email: 'john.doe@company.com', full_name: 'John Doe', role: 'team_member', pay_rate_per_hour: 18.50, department: 'Sales', created_at: '2024-01-01' },
-        { id: 2, email: 'jane.smith@company.com', full_name: 'Jane Smith', role: 'campaign_lead', pay_rate_per_hour: 22.00, department: 'Marketing', created_at: '2024-01-01' },
-        { id: 3, email: 'mike.johnson@company.com', full_name: 'Mike Johnson', role: 'team_member', pay_rate_per_hour: 19.25, department: 'Support', created_at: '2024-01-02' }
-      ]
-      setTeamMembers(mockTeam)
+      const data = await api.getUsers()
+      setTeamMembers(data)
     } catch (error) {
+      setError('Failed to load team members')
       console.error('Error fetching team members:', error)
     } finally {
       setLoading(false)
@@ -895,67 +1008,55 @@ function TeamPage() {
   const handleAddMember = async (e) => {
     e.preventDefault()
     try {
-      const memberToAdd = {
-        id: Date.now(),
-        ...newMember,
-        pay_rate_per_hour: parseFloat(newMember.pay_rate_per_hour),
-        created_at: new Date().toISOString().split('T')[0]
-      }
-      setTeamMembers(prev => [...prev, memberToAdd])
-      setNewMember({ email: '', full_name: '', role: 'team_member', pay_rate_per_hour: '', department: '' })
+      await api.createUser(newMember)
+      setNewMember({
+        email: '',
+        name: '',
+        role: 'team_member',
+        pay_rate: '',
+        department: ''
+      })
       setShowAddForm(false)
+      fetchTeamMembers()
     } catch (error) {
+      setError('Failed to add team member')
       console.error('Error adding team member:', error)
     }
   }
 
-  const handleEditMember = async (memberId, updatedData) => {
+  const handleUpdateMember = async (e) => {
+    e.preventDefault()
     try {
-      setTeamMembers(prev => prev.map(member => 
-        member.id === memberId ? { ...member, ...updatedData } : member
-      ))
-      setEditingMember(null)
+      await api.updateUser(editingUser.id, editingUser)
+      setEditingUser(null)
+      fetchTeamMembers()
     } catch (error) {
+      setError('Failed to update team member')
       console.error('Error updating team member:', error)
     }
   }
 
-  const handleDeleteMember = async (memberId) => {
+  const handleDeleteMember = async (userId) => {
     if (window.confirm('Are you sure you want to delete this team member?')) {
       try {
-        setTeamMembers(prev => prev.filter(member => member.id !== memberId))
+        await api.deleteUser(userId)
+        fetchTeamMembers()
       } catch (error) {
+        setError('Failed to delete team member')
         console.error('Error deleting team member:', error)
       }
     }
   }
 
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-purple-100 text-purple-800'
-      case 'campaign_lead':
-        return 'bg-blue-100 text-blue-800'
-      case 'team_member':
-        return 'bg-green-100 text-green-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
+  const canManageTeam = user?.role === 'admin' || user?.role === 'campaign_lead'
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Users className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
-          <p className="text-gray-600">Loading team members...</p>
-        </div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
   }
-
-  // Check if user has permission to manage team
-  const canManageTeam = user?.role === 'admin' || user?.role === 'campaign_lead'
 
   return (
     <div className="p-6 space-y-6">
@@ -965,105 +1066,190 @@ function TeamPage() {
           <p className="text-gray-600">Manage your team members and their roles</p>
         </div>
         {canManageTeam && (
-          <Button onClick={() => setShowAddForm(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Member
-          </Button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            👤 Add Member
+          </button>
         )}
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
+      {!canManageTeam && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+          You don't have permission to manage team members. Contact your administrator.
+        </div>
+      )}
+
       {/* Add Member Form */}
       {showAddForm && canManageTeam && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Add New Team Member</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAddMember} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newMember.email}
-                    onChange={(e) => setNewMember(prev => ({ ...prev, email: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="full_name">Full Name</Label>
-                  <Input
-                    id="full_name"
-                    type="text"
-                    value={newMember.full_name}
-                    onChange={(e) => setNewMember(prev => ({ ...prev, full_name: e.target.value }))}
-                    required
-                  />
-                </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Add Team Member</h3>
+          <form onSubmit={handleAddMember} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newMember.email}
+                  onChange={(e) => setNewMember({...newMember, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="role">Role</Label>
-                  <select
-                    id="role"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={newMember.role}
-                    onChange={(e) => setNewMember(prev => ({ ...prev, role: e.target.value }))}
-                    required
-                  >
-                    <option value="team_member">Team Member</option>
-                    <option value="campaign_lead">Campaign Lead</option>
-                    {user?.role === 'admin' && <option value="admin">Admin</option>}
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="pay_rate">Pay Rate ($/hour)</Label>
-                  <Input
-                    id="pay_rate"
-                    type="number"
-                    step="0.25"
-                    min="0"
-                    value={newMember.pay_rate_per_hour}
-                    onChange={(e) => setNewMember(prev => ({ ...prev, pay_rate_per_hour: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="department">Department</Label>
-                  <Input
-                    id="department"
-                    type="text"
-                    value={newMember.department}
-                    onChange={(e) => setNewMember(prev => ({ ...prev, department: e.target.value }))}
-                    required
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={newMember.name}
+                  onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
               </div>
-              <div className="flex space-x-2">
-                <Button type="submit">
-                  <Save className="w-4 h-4 mr-2" />
-                  Add Member
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
-                  Cancel
-                </Button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select
+                  value={newMember.role}
+                  onChange={(e) => setNewMember({...newMember, role: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="team_member">Team Member</option>
+                  <option value="campaign_lead">Campaign Lead</option>
+                  {user?.role === 'admin' && <option value="admin">Admin</option>}
+                </select>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Pay Rate</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newMember.pay_rate}
+                  onChange={(e) => setNewMember({...newMember, pay_rate: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+              <input
+                type="text"
+                value={newMember.department}
+                onChange={(e) => setNewMember({...newMember, department: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex space-x-2">
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Add Member
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Edit Member Form */}
+      {editingUser && canManageTeam && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Team Member</h3>
+          <form onSubmit={handleUpdateMember} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={editingUser.email}
+                  onChange={(e) => setEditingUser({...editingUser, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={editingUser.name}
+                  onChange={(e) => setEditingUser({...editingUser, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select
+                  value={editingUser.role}
+                  onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="team_member">Team Member</option>
+                  <option value="campaign_lead">Campaign Lead</option>
+                  {user?.role === 'admin' && <option value="admin">Admin</option>}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Pay Rate</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editingUser.pay_rate}
+                  onChange={(e) => setEditingUser({...editingUser, pay_rate: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+              <input
+                type="text"
+                value={editingUser.department || ''}
+                onChange={(e) => setEditingUser({...editingUser, department: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex space-x-2">
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Update Member
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingUser(null)}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* Team Members List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Members</CardTitle>
-          <CardDescription>{teamMembers.length} team members</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">Team Members</h3>
+        </div>
+        <div className="p-6">
           {teamMembers.length === 0 ? (
             <div className="text-center py-8">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <span className="text-4xl mb-4 block">👥</span>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No team members</h3>
               <p className="text-gray-600">Start by adding your first team member</p>
             </div>
@@ -1073,397 +1259,60 @@ function TeamPage() {
                 <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <User className="w-5 h-5 text-blue-600" />
+                      <span className="text-blue-600">👤</span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{member.full_name}</p>
+                      <p className="font-medium text-gray-900">{member.name}</p>
                       <p className="text-sm text-gray-600">{member.email}</p>
-                      <p className="text-sm text-gray-600">{member.department} • ${member.pay_rate_per_hour}/hour</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          member.role === 'admin' ? 'bg-red-100 text-red-800' :
+                          member.role === 'campaign_lead' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {member.role.replace('_', ' ')}
+                        </span>
+                        {member.pay_rate && (
+                          <span className="text-xs text-gray-500">${member.pay_rate}/hr</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <Badge className={getRoleColor(member.role)}>
-                      {member.role.replace('_', ' ')}
-                    </Badge>
-                    {canManageTeam && (
-                      <div className="flex space-x-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setEditingMember(member)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteMember(member.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                  {canManageTeam && member.id !== user?.id && (
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setEditingUser(member)}
+                        className="text-blue-600 hover:text-blue-800 p-1"
+                        title="Edit"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMember(member.id)}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title="Delete"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Edit Member Modal */}
-      {editingMember && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl">
-            <CardHeader>
-              <CardTitle>Edit Team Member</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={(e) => {
-                e.preventDefault()
-                const formData = new FormData(e.target)
-                const updatedData = {
-                  full_name: formData.get('full_name'),
-                  email: formData.get('email'),
-                  role: formData.get('role'),
-                  pay_rate_per_hour: parseFloat(formData.get('pay_rate_per_hour')),
-                  department: formData.get('department')
-                }
-                handleEditMember(editingMember.id, updatedData)
-              }} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit_email">Email</Label>
-                    <Input
-                      id="edit_email"
-                      name="email"
-                      type="email"
-                      defaultValue={editingMember.email}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="edit_full_name">Full Name</Label>
-                    <Input
-                      id="edit_full_name"
-                      name="full_name"
-                      type="text"
-                      defaultValue={editingMember.full_name}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="edit_role">Role</Label>
-                    <select
-                      id="edit_role"
-                      name="role"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      defaultValue={editingMember.role}
-                      required
-                    >
-                      <option value="team_member">Team Member</option>
-                      <option value="campaign_lead">Campaign Lead</option>
-                      {user?.role === 'admin' && <option value="admin">Admin</option>}
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="edit_pay_rate">Pay Rate ($/hour)</Label>
-                    <Input
-                      id="edit_pay_rate"
-                      name="pay_rate_per_hour"
-                      type="number"
-                      step="0.25"
-                      min="0"
-                      defaultValue={editingMember.pay_rate_per_hour}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="edit_department">Department</Label>
-                    <Input
-                      id="edit_department"
-                      name="department"
-                      type="text"
-                      defaultValue={editingMember.department}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Button type="submit">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setEditingMember(null)}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
         </div>
-      )}
-    </div>
-  )
-}
-
-// Settings Page Component
-function SettingsPage() {
-  const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('profile')
-  const [profileData, setProfileData] = useState({
-    full_name: user?.full_name || '',
-    email: user?.email || '',
-    role: user?.role || ''
-  })
-  const [passwordData, setPasswordData] = useState({
-    current_password: '',
-    new_password: '',
-    confirm_password: ''
-  })
-  const [notificationSettings, setNotificationSettings] = useState({
-    email_notifications: true,
-    timesheet_reminders: true,
-    approval_notifications: true
-  })
-
-  const handleProfileUpdate = async (e) => {
-    e.preventDefault()
-    try {
-      // Mock API call
-      console.log('Updating profile:', profileData)
-      alert('Profile updated successfully!')
-    } catch (error) {
-      console.error('Error updating profile:', error)
-    }
-  }
-
-  const handlePasswordChange = async (e) => {
-    e.preventDefault()
-    if (passwordData.new_password !== passwordData.confirm_password) {
-      alert('New passwords do not match!')
-      return
-    }
-    try {
-      // Mock API call
-      console.log('Changing password')
-      alert('Password changed successfully!')
-      setPasswordData({ current_password: '', new_password: '', confirm_password: '' })
-    } catch (error) {
-      console.error('Error changing password:', error)
-    }
-  }
-
-  const handleNotificationUpdate = async (setting, value) => {
-    try {
-      setNotificationSettings(prev => ({ ...prev, [setting]: value }))
-      // Mock API call
-      console.log('Updating notification settings:', { [setting]: value })
-    } catch (error) {
-      console.error('Error updating notification settings:', error)
-    }
-  }
-
-  const tabs = [
-    { id: 'profile', name: 'Profile', icon: User },
-    { id: 'security', name: 'Security', icon: Lock },
-    { id: 'notifications', name: 'Notifications', icon: Bell }
-  ]
-
-  return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600">Manage your account settings and preferences</p>
       </div>
-
-      {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <tab.icon className="w-4 h-4 mr-2" />
-            {tab.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Profile Tab */}
-      {activeTab === 'profile' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile Information</CardTitle>
-            <CardDescription>Update your personal information</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleProfileUpdate} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="full_name">Full Name</Label>
-                  <Input
-                    id="full_name"
-                    type="text"
-                    value={profileData.full_name}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, full_name: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profileData.email}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="role">Role</Label>
-                <Input
-                  id="role"
-                  type="text"
-                  value={profileData.role}
-                  disabled
-                  className="bg-gray-50"
-                />
-                <p className="text-sm text-gray-500 mt-1">Role cannot be changed. Contact your administrator.</p>
-              </div>
-              <Button type="submit">
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Security Tab */}
-      {activeTab === 'security' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Change Password</CardTitle>
-            <CardDescription>Update your password to keep your account secure</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handlePasswordChange} className="space-y-4">
-              <div>
-                <Label htmlFor="current_password">Current Password</Label>
-                <Input
-                  id="current_password"
-                  type="password"
-                  value={passwordData.current_password}
-                  onChange={(e) => setPasswordData(prev => ({ ...prev, current_password: e.target.value }))}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="new_password">New Password</Label>
-                <Input
-                  id="new_password"
-                  type="password"
-                  value={passwordData.new_password}
-                  onChange={(e) => setPasswordData(prev => ({ ...prev, new_password: e.target.value }))}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="confirm_password">Confirm New Password</Label>
-                <Input
-                  id="confirm_password"
-                  type="password"
-                  value={passwordData.confirm_password}
-                  onChange={(e) => setPasswordData(prev => ({ ...prev, confirm_password: e.target.value }))}
-                  required
-                />
-              </div>
-              <Button type="submit">
-                <Lock className="w-4 h-4 mr-2" />
-                Change Password
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Notifications Tab */}
-      {activeTab === 'notifications' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notification Preferences</CardTitle>
-            <CardDescription>Choose how you want to be notified</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900">Email Notifications</p>
-                <p className="text-sm text-gray-600">Receive email updates about your account</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.email_notifications}
-                  onChange={(e) => handleNotificationUpdate('email_notifications', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900">Timesheet Reminders</p>
-                <p className="text-sm text-gray-600">Get reminded to submit your timesheets</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.timesheet_reminders}
-                  onChange={(e) => handleNotificationUpdate('timesheet_reminders', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900">Approval Notifications</p>
-                <p className="text-sm text-gray-600">Get notified when your timesheets are approved or rejected</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.approval_notifications}
-                  onChange={(e) => handleNotificationUpdate('approval_notifications', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
 
 // Analytics Page Component
 function AnalyticsPage() {
+  const { user } = useAuth()
   const [analyticsData, setAnalyticsData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [dateRange, setDateRange] = useState('last_30_days')
   const [activeView, setActiveView] = useState('overview')
-  const [dateRange, setDateRange] = useState('30')
 
   useEffect(() => {
     fetchAnalyticsData()
@@ -1472,55 +1321,29 @@ function AnalyticsPage() {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true)
-      // Mock analytics data
-      const mockData = {
-        overview: {
-          totalHours: 2840,
-          totalUsers: 45,
-          avgHoursPerUser: 63.1,
-          productivityScore: 87
-        },
-        timeDistribution: [
-          { campaign: 'Campaign A', hours: 1200, percentage: 42 },
-          { campaign: 'Campaign B', hours: 800, percentage: 28 },
-          { campaign: 'Campaign C', hours: 600, percentage: 21 },
-          { campaign: 'Campaign D', hours: 240, percentage: 9 }
-        ],
-        productivityTrends: [
-          { date: '2024-01-01', productivity: 85 },
-          { date: '2024-01-08', productivity: 88 },
-          { date: '2024-01-15', productivity: 87 },
-          { date: '2024-01-22', productivity: 90 },
-          { date: '2024-01-29', productivity: 89 }
-        ],
-        topPerformers: [
-          { name: 'Jane Smith', hours: 168, efficiency: 95 },
-          { name: 'John Doe', hours: 162, efficiency: 92 },
-          { name: 'Mike Johnson', hours: 158, efficiency: 89 }
-        ]
-      }
-      setAnalyticsData(mockData)
+      const data = await api.getAnalytics(dateRange)
+      setAnalyticsData(data)
     } catch (error) {
-      console.error('Error fetching analytics data:', error)
+      console.error('Error fetching analytics:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const views = [
-    { id: 'overview', name: 'Overview', icon: BarChart3 },
-    { id: 'productivity', name: 'Productivity', icon: TrendingUp },
-    { id: 'team', name: 'Team Performance', icon: Users },
-    { id: 'time', name: 'Time Analysis', icon: Clock }
-  ]
+  if (user?.role !== 'admin') {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+          You don't have permission to view analytics. Contact your administrator.
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <BarChart3 className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
-          <p className="text-gray-600">Loading analytics...</p>
-        </div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -1534,162 +1357,149 @@ function AnalyticsPage() {
         </div>
         <div className="flex space-x-2">
           <select
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-            <option value="365">Last year</option>
+            <option value="last_7_days">Last 7 days</option>
+            <option value="last_30_days">Last 30 days</option>
+            <option value="last_90_days">Last 90 days</option>
+            <option value="last_year">Last year</option>
           </select>
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+            📊 Export
+          </button>
         </div>
       </div>
 
       {/* View Tabs */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        {views.map((view) => (
+        {['overview', 'productivity', 'team_performance', 'time_analysis'].map((view) => (
           <button
-            key={view.id}
-            onClick={() => setActiveView(view.id)}
-            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeView === view.id
+            key={view}
+            onClick={() => setActiveView(view)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeView === view
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <view.icon className="w-4 h-4 mr-2" />
-            {view.name}
+            {view.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
           </button>
         ))}
       </div>
 
-      {/* Overview */}
-      {activeView === 'overview' && (
-        <div className="space-y-6">
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Hours</p>
-                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.overview.totalHours}</p>
-                  </div>
-                  <Clock className="w-8 h-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Active Users</p>
-                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.overview.totalUsers}</p>
-                  </div>
-                  <Users className="w-8 h-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Avg Hours/User</p>
-                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.overview.avgHoursPerUser}</p>
-                  </div>
-                  <Target className="w-8 h-8 text-purple-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Productivity Score</p>
-                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.overview.productivityScore}%</p>
-                  </div>
-                  <Award className="w-8 h-8 text-yellow-500" />
-                </div>
-              </CardContent>
-            </Card>
+      {/* Analytics Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Total Hours Chart */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Total Hours</h3>
+          <div className="h-64 flex items-center justify-center bg-gray-50 rounded">
+            <div className="text-center">
+              <span className="text-4xl mb-2 block">📊</span>
+              <p className="text-gray-600">Chart visualization would go here</p>
+              <p className="text-2xl font-bold text-blue-600 mt-2">
+                {analyticsData?.totalHours || 2840} hours
+              </p>
+            </div>
           </div>
-
-          {/* Time Distribution Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Time Distribution by Campaign</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {analyticsData?.timeDistribution.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-4 h-4 rounded-full bg-blue-${(index + 1) * 100}`}></div>
-                      <span className="font-medium">{item.campaign}</span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <span className="text-sm text-gray-600">{item.hours} hours</span>
-                      <span className="text-sm font-medium">{item.percentage}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </div>
-      )}
 
-      {/* Other views would be implemented similarly */}
-      {activeView !== 'overview' && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">{views.find(v => v.id === activeView)?.name} View</h3>
-            <p className="text-gray-600">This view is under development. Advanced analytics coming soon!</p>
-          </CardContent>
-        </Card>
-      )}
+        {/* Active Users Chart */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Active Users</h3>
+          <div className="h-64 flex items-center justify-center bg-gray-50 rounded">
+            <div className="text-center">
+              <span className="text-4xl mb-2 block">👥</span>
+              <p className="text-gray-600">User activity chart would go here</p>
+              <p className="text-2xl font-bold text-green-600 mt-2">
+                {analyticsData?.activeUsers || 45} users
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Average Hours per User */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Avg Hours/User</h3>
+          <div className="h-64 flex items-center justify-center bg-gray-50 rounded">
+            <div className="text-center">
+              <span className="text-4xl mb-2 block">⏱️</span>
+              <p className="text-gray-600">Average hours chart would go here</p>
+              <p className="text-2xl font-bold text-purple-600 mt-2">
+                {analyticsData?.avgHoursPerUser || 63.1} hrs
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Productivity Trends */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Productivity Trends</h3>
+          <div className="h-64 flex items-center justify-center bg-gray-50 rounded">
+            <div className="text-center">
+              <span className="text-4xl mb-2 block">📈</span>
+              <p className="text-gray-600">Productivity trend chart would go here</p>
+              <p className="text-2xl font-bold text-orange-600 mt-2">
+                +{analyticsData?.productivityIncrease || 12}%
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Key Metrics */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Key Metrics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-600 font-medium">Total Projects</p>
+            <p className="text-2xl font-bold text-blue-900">{analyticsData?.totalProjects || 24}</p>
+          </div>
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <p className="text-sm text-green-600 font-medium">Completed Tasks</p>
+            <p className="text-2xl font-bold text-green-900">{analyticsData?.completedTasks || 156}</p>
+          </div>
+          <div className="text-center p-4 bg-yellow-50 rounded-lg">
+            <p className="text-sm text-yellow-600 font-medium">Pending Approvals</p>
+            <p className="text-2xl font-bold text-yellow-900">{analyticsData?.pendingApprovals || 8}</p>
+          </div>
+          <div className="text-center p-4 bg-purple-50 rounded-lg">
+            <p className="text-sm text-purple-600 font-medium">Team Efficiency</p>
+            <p className="text-2xl font-bold text-purple-900">{analyticsData?.teamEfficiency || 94}%</p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
 // Reports Page Component
 function ReportsPage() {
+  const { user } = useAuth()
   const [reportType, setReportType] = useState('payroll')
-  const [dateRange, setDateRange] = useState({ start: '', end: '' })
-  const [filters, setFilters] = useState({ department: '', user: '', status: '' })
-  const [generating, setGenerating] = useState(false)
+  const [dateRange, setDateRange] = useState({
+    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  })
+  const [selectedUsers, setSelectedUsers] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const reportTypes = [
-    { id: 'payroll', name: 'Payroll Report', description: 'Generate payroll summaries with hours and costs' },
-    { id: 'productivity', name: 'Productivity Report', description: 'Team efficiency and performance metrics' },
-    { id: 'attendance', name: 'Attendance Report', description: 'Time tracking and attendance patterns' },
-    { id: 'overtime', name: 'Overtime Report', description: 'Overtime hours and cost analysis' },
-    { id: 'billing', name: 'Client Billing', description: 'Billing reports for client invoicing' }
-  ]
-
-  const handleGenerateReport = async (format) => {
-    setGenerating(true)
+  const handleGenerateReport = async () => {
+    setLoading(true)
     try {
-      // Mock report generation
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      const reportData = await api.generateReport({
+        type: reportType,
+        dateRange,
+        users: selectedUsers
+      })
       
-      // Create mock CSV content
-      const csvContent = `Report Type,${reportType}\nDate Range,${dateRange.start} to ${dateRange.end}\nGenerated,${new Date().toISOString()}\n\nEmployee,Hours,Rate,Total\nJohn Doe,40,18.50,740.00\nJane Smith,38,22.00,836.00\nMike Johnson,42,19.25,808.50`
-      
-      const blob = new Blob([csvContent], { type: 'text/csv' })
+      // Create and download the report
+      const blob = new Blob([reportData], { type: 'text/csv' })
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${reportType}_report_${new Date().toISOString().split('T')[0]}.${format}`
+      a.download = `${reportType}_report_${dateRange.start}_to_${dateRange.end}.csv`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
@@ -1697,8 +1507,18 @@ function ReportsPage() {
     } catch (error) {
       console.error('Error generating report:', error)
     } finally {
-      setGenerating(false)
+      setLoading(false)
     }
+  }
+
+  if (user?.role !== 'admin') {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+          You don't have permission to generate reports. Contact your administrator.
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -1706,217 +1526,154 @@ function ReportsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-          <p className="text-gray-600">Generate comprehensive reports for your business needs</p>
+          <p className="text-gray-600">Generate comprehensive reports for payroll, productivity, and more</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Report Configuration */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Report Configuration</CardTitle>
-              <CardDescription>Configure your report parameters</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Report Type Selection */}
-              <div>
-                <Label>Report Type</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                  {reportTypes.map((type) => (
-                    <div
-                      key={type.id}
-                      onClick={() => setReportType(type.id)}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                        reportType === type.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <p className="font-medium text-gray-900">{type.name}</p>
-                      <p className="text-sm text-gray-600">{type.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+      {/* Report Configuration */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Report Configuration</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Report Type</label>
+            <select
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="payroll">Payroll Report</option>
+              <option value="productivity">Productivity Report</option>
+              <option value="attendance">Attendance Report</option>
+              <option value="overtime">Overtime Report</option>
+              <option value="client_billing">Client Billing</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <input
+              type="date"
+              value={dateRange.start}
+              onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <input
+              type="date"
+              value={dateRange.end}
+              onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={handleGenerateReport}
+              disabled={loading}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Generating...' : '📊 Generate Report'}
+            </button>
+          </div>
+        </div>
+      </div>
 
-              {/* Date Range */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="start_date">Start Date</Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    value={dateRange.start}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="end_date">End Date</Label>
-                  <Input
-                    id="end_date"
-                    type="date"
-                    value={dateRange.end}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              {/* Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="department">Department</Label>
-                  <select
-                    id="department"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filters.department}
-                    onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
-                  >
-                    <option value="">All Departments</option>
-                    <option value="sales">Sales</option>
-                    <option value="marketing">Marketing</option>
-                    <option value="support">Support</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="user">User</Label>
-                  <select
-                    id="user"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filters.user}
-                    onChange={(e) => setFilters(prev => ({ ...prev, user: e.target.value }))}
-                  >
-                    <option value="">All Users</option>
-                    <option value="john">John Doe</option>
-                    <option value="jane">Jane Smith</option>
-                    <option value="mike">Mike Johnson</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <select
-                    id="status"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filters.status}
-                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                  >
-                    <option value="">All Status</option>
-                    <option value="approved">Approved</option>
-                    <option value="pending">Pending</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Generate Buttons */}
-              <div className="flex space-x-2">
-                <Button 
-                  onClick={() => handleGenerateReport('csv')} 
-                  disabled={generating || !dateRange.start || !dateRange.end}
-                >
-                  {generating ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4 mr-2" />
-                      Generate CSV
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => handleGenerateReport('pdf')} 
-                  disabled={generating || !dateRange.start || !dateRange.end}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Generate PDF
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => handleGenerateReport('xlsx')} 
-                  disabled={generating || !dateRange.start || !dateRange.end}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Generate Excel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Quick Reports */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <span className="text-2xl mr-3">💰</span>
+            <h3 className="text-lg font-medium text-gray-900">Payroll Reports</h3>
+          </div>
+          <p className="text-gray-600 mb-4">Generate comprehensive payroll summaries with hours, rates, and total costs.</p>
+          <button
+            onClick={() => {
+              setReportType('payroll')
+              handleGenerateReport()
+            }}
+            className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+          >
+            Generate Payroll Report
+          </button>
         </div>
 
-        {/* Report Preview */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Report Preview</CardTitle>
-              <CardDescription>Preview of selected report type</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">
-                    {reportTypes.find(t => t.id === reportType)?.name}
-                  </h4>
-                  <p className="text-sm text-gray-600 mb-3">
-                    {reportTypes.find(t => t.id === reportType)?.description}
-                  </p>
-                  
-                  {reportType === 'payroll' && (
-                    <div className="text-sm space-y-1">
-                      <p>• Employee hours and rates</p>
-                      <p>• Overtime calculations</p>
-                      <p>• Total payroll costs</p>
-                      <p>• Department breakdowns</p>
-                    </div>
-                  )}
-                  
-                  {reportType === 'productivity' && (
-                    <div className="text-sm space-y-1">
-                      <p>• Efficiency metrics</p>
-                      <p>• Performance trends</p>
-                      <p>• Goal achievements</p>
-                      <p>• Team comparisons</p>
-                    </div>
-                  )}
-                  
-                  {reportType === 'attendance' && (
-                    <div className="text-sm space-y-1">
-                      <p>• Daily attendance patterns</p>
-                      <p>• Late arrivals and early departures</p>
-                      <p>• Absence tracking</p>
-                      <p>• Schedule compliance</p>
-                    </div>
-                  )}
-                  
-                  {reportType === 'overtime' && (
-                    <div className="text-sm space-y-1">
-                      <p>• Overtime hours by employee</p>
-                      <p>• Overtime cost analysis</p>
-                      <p>• Department overtime trends</p>
-                      <p>• Compliance monitoring</p>
-                    </div>
-                  )}
-                  
-                  {reportType === 'billing' && (
-                    <div className="text-sm space-y-1">
-                      <p>• Client billing summaries</p>
-                      <p>• Project cost breakdowns</p>
-                      <p>• Billable vs non-billable hours</p>
-                      <p>• Revenue projections</p>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="text-sm text-gray-600">
-                  <p><strong>Date Range:</strong> {dateRange.start || 'Not set'} to {dateRange.end || 'Not set'}</p>
-                  <p><strong>Filters:</strong> {Object.values(filters).filter(Boolean).length || 'None'} applied</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <span className="text-2xl mr-3">📈</span>
+            <h3 className="text-lg font-medium text-gray-900">Productivity Reports</h3>
+          </div>
+          <p className="text-gray-600 mb-4">Analyze team productivity metrics and performance trends over time.</p>
+          <button
+            onClick={() => {
+              setReportType('productivity')
+              handleGenerateReport()
+            }}
+            className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Generate Productivity Report
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <span className="text-2xl mr-3">📅</span>
+            <h3 className="text-lg font-medium text-gray-900">Attendance Reports</h3>
+          </div>
+          <p className="text-gray-600 mb-4">Track attendance patterns and identify trends in team availability.</p>
+          <button
+            onClick={() => {
+              setReportType('attendance')
+              handleGenerateReport()
+            }}
+            className="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
+          >
+            Generate Attendance Report
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <span className="text-2xl mr-3">⏰</span>
+            <h3 className="text-lg font-medium text-gray-900">Overtime Reports</h3>
+          </div>
+          <p className="text-gray-600 mb-4">Monitor overtime hours and associated costs for budget management.</p>
+          <button
+            onClick={() => {
+              setReportType('overtime')
+              handleGenerateReport()
+            }}
+            className="w-full bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
+          >
+            Generate Overtime Report
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <span className="text-2xl mr-3">💼</span>
+            <h3 className="text-lg font-medium text-gray-900">Client Billing</h3>
+          </div>
+          <p className="text-gray-600 mb-4">Create detailed billing reports for client invoicing and project costs.</p>
+          <button
+            onClick={() => {
+              setReportType('client_billing')
+              handleGenerateReport()
+            }}
+            className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+          >
+            Generate Billing Report
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <span className="text-2xl mr-3">🔧</span>
+            <h3 className="text-lg font-medium text-gray-900">Custom Reports</h3>
+          </div>
+          <p className="text-gray-600 mb-4">Create custom reports with specific filters and date ranges.</p>
+          <button className="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">
+            Create Custom Report
+          </button>
         </div>
       </div>
     </div>
@@ -1926,211 +1683,64 @@ function ReportsPage() {
 // Bulk Import Page Component
 function BulkImportPage() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('team-members')
+  const [activeTab, setActiveTab] = useState('team_members')
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadResults, setUploadResults] = useState(null)
-  const [importHistory, setImportHistory] = useState([])
-  const [selectedFile, setSelectedFile] = useState(null)
-  const [validationErrors, setValidationErrors] = useState([])
-  const [previewData, setPreviewData] = useState([])
-  const [showPreview, setShowPreview] = useState(false)
+  const [importResults, setImportResults] = useState(null)
+  const [loading, setLoading] = useState(false)
 
-  const importTypes = [
-    {
-      id: 'team-members',
-      name: 'Team Members',
-      icon: Users,
-      description: 'Import team members with roles and pay rates',
-      templateFields: ['email', 'full_name', 'role', 'pay_rate_per_hour', 'department', 'hire_date'],
-      maxRows: 1000
-    },
-    {
-      id: 'historical-timesheets',
-      name: 'Historical Timesheets',
-      icon: Clock,
-      description: 'Import historical timesheet data',
-      templateFields: ['employee_email', 'date', 'hours', 'description', 'status', 'campaign'],
-      maxRows: 10000
-    }
-  ]
-
-  useEffect(() => {
-    fetchImportHistory()
-  }, [])
-
-  const fetchImportHistory = async () => {
+  const handleFileUpload = async (file, type) => {
+    setLoading(true)
+    setUploadProgress(0)
+    
     try {
-      const mockHistory = [
-        {
-          id: 1,
-          type: 'team-members',
-          filename: 'team_members_2024.xlsx',
-          status: 'completed',
-          total_rows: 25,
-          successful_rows: 23,
-          failed_rows: 2,
-          created_at: '2024-01-15T10:30:00Z',
-          completed_at: '2024-01-15T10:32:15Z'
-        },
-        {
-          id: 2,
-          type: 'historical-timesheets',
-          filename: 'timesheets_q4_2023.xlsx',
-          status: 'failed',
-          total_rows: 1500,
-          successful_rows: 0,
-          failed_rows: 1500,
-          created_at: '2024-01-14T14:20:00Z',
-          error_message: 'Invalid date format in multiple rows'
-        }
-      ]
-      setImportHistory(mockHistory)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', type)
+      
+      const result = await api.bulkImport(formData, (progress) => {
+        setUploadProgress(progress)
+      })
+      
+      setImportResults(result)
     } catch (error) {
-      console.error('Error fetching import history:', error)
+      console.error('Import error:', error)
+      setImportResults({
+        success: false,
+        error: error.message,
+        processed: 0,
+        errors: []
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
-  const downloadTemplate = (importType) => {
-    const type = importTypes.find(t => t.id === importType)
-    if (!type) return
-
-    const headers = type.templateFields.join(',')
-    let sampleData = ''
-    
-    if (importType === 'team-members') {
-      sampleData = 'john.doe@company.com,John Doe,team_member,18.50,Sales,2024-01-01\njane.smith@company.com,Jane Smith,campaign_lead,22.00,Marketing,2024-01-01'
-    } else if (importType === 'historical-timesheets') {
-      sampleData = 'john.doe@company.com,2024-01-01,8.0,Regular work day,approved,Campaign A\njane.smith@company.com,2024-01-01,7.5,Project work,approved,Campaign B'
+  const downloadTemplate = (type) => {
+    const templates = {
+      team_members: 'email,name,role,pay_rate,department,hire_date\nadmin@example.com,John Doe,admin,25.00,IT,2024-01-01\nuser@example.com,Jane Smith,team_member,20.00,Operations,2024-01-15',
+      historical_timesheets: 'employee_email,date,hours,description,status,campaign\nadmin@example.com,2024-01-01,8.0,Project work,approved,Campaign A\nuser@example.com,2024-01-01,7.5,Client support,approved,Campaign B'
     }
-
-    const csvContent = `${headers}\n${sampleData}`
-    const blob = new Blob([csvContent], { type: 'text/csv' })
+    
+    const content = templates[type]
+    const blob = new Blob([content], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${importType}_template.csv`
+    a.download = `${type}_template.csv`
     document.body.appendChild(a)
     a.click()
     window.URL.revokeObjectURL(url)
     document.body.removeChild(a)
   }
 
-  const handleFileSelect = (event) => {
-    const file = event.target.files[0]
-    if (file) {
-      setSelectedFile(file)
-      setValidationErrors([])
-      setPreviewData([])
-      setShowPreview(false)
-      
-      const allowedTypes = ['.csv', '.xlsx', '.xls']
-      const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'))
-      
-      if (!allowedTypes.includes(fileExtension)) {
-        setValidationErrors(['Invalid file type. Please upload CSV or Excel files only.'])
-        return
-      }
-
-      if (file.size > 10 * 1024 * 1024) {
-        setValidationErrors(['File size too large. Maximum size is 10MB.'])
-        return
-      }
-
-      previewFileContent(file)
-    }
-  }
-
-  const previewFileContent = async (file) => {
-    try {
-      const mockPreviewData = activeTab === 'team-members' ? [
-        { email: 'john.doe@company.com', full_name: 'John Doe', role: 'team_member', pay_rate_per_hour: '18.50' },
-        { email: 'jane.smith@company.com', full_name: 'Jane Smith', role: 'campaign_lead', pay_rate_per_hour: '22.00' },
-        { email: 'mike.johnson@company.com', full_name: 'Mike Johnson', role: 'team_member', pay_rate_per_hour: '19.25' }
-      ] : [
-        { employee_email: 'john.doe@company.com', date: '2024-01-01', hours: '8.0', description: 'Regular work', status: 'approved' },
-        { employee_email: 'jane.smith@company.com', date: '2024-01-01', hours: '7.5', description: 'Project work', status: 'approved' },
-        { employee_email: 'mike.johnson@company.com', date: '2024-01-01', hours: '8.5', description: 'Overtime work', status: 'pending' }
-      ]
-      
-      setPreviewData(mockPreviewData)
-      setShowPreview(true)
-    } catch (error) {
-      setValidationErrors(['Error reading file. Please check the file format.'])
-    }
-  }
-
-  const handleImport = async () => {
-    if (!selectedFile) return
-
-    setIsUploading(true)
-    setUploadProgress(0)
-    setUploadResults(null)
-
-    try {
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
-          }
-          return prev + 10
-        })
-      }, 200)
-
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      
-      clearInterval(progressInterval)
-      setUploadProgress(100)
-
-      const mockResults = {
-        total_rows: previewData.length,
-        successful_rows: previewData.length - 1,
-        failed_rows: 1,
-        errors: [
-          {
-            row: 2,
-            field: 'email',
-            message: 'Email already exists in system',
-            value: 'jane.smith@company.com'
-          }
-        ],
-        import_id: Date.now()
-      }
-
-      setUploadResults(mockResults)
-      fetchImportHistory()
-    } catch (error) {
-      setValidationErrors(['Import failed. Please try again.'])
-    } finally {
-      setIsUploading(false)
-    }
-  }
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-600" />
-      case 'failed':
-        return <XCircle className="w-4 h-4 text-red-600" />
-      case 'processing':
-        return <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
-      default:
-        return <AlertCircle className="w-4 h-4 text-yellow-600" />
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800'
-      case 'failed':
-        return 'bg-red-100 text-red-800'
-      case 'processing':
-        return 'bg-blue-100 text-blue-800'
-      default:
-        return 'bg-yellow-100 text-yellow-800'
-    }
+  if (user?.role !== 'admin') {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+          You don't have permission to perform bulk imports. Contact your administrator.
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -2140,435 +1750,170 @@ function BulkImportPage() {
           <h1 className="text-2xl font-bold text-gray-900">Bulk Import</h1>
           <p className="text-gray-600">Import team members and historical data in bulk</p>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={() => fetchImportHistory()}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
       </div>
 
-      {/* Import Type Tabs */}
+      {/* Import Tabs */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        {importTypes.map((type) => (
+        <button
+          onClick={() => setActiveTab('team_members')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'team_members'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          👥 Team Members
+        </button>
+        <button
+          onClick={() => setActiveTab('historical_timesheets')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'historical_timesheets'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          🕒 Historical Timesheets
+        </button>
+      </div>
+
+      {/* Import Interface */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">
+            {activeTab === 'team_members' ? 'Import Team Members' : 'Import Historical Timesheets'}
+          </h3>
           <button
-            key={type.id}
-            onClick={() => {
-              setActiveTab(type.id)
-              setSelectedFile(null)
-              setValidationErrors([])
-              setPreviewData([])
-              setShowPreview(false)
-              setUploadResults(null)
-            }}
-            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === type.id
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            onClick={() => downloadTemplate(activeTab)}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
           >
-            <type.icon className="w-4 h-4 mr-2" />
-            {type.name}
+            📋 Download Template
           </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Import Configuration */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {importTypes.find(t => t.id === activeTab)?.name} Import
-              </CardTitle>
-              <CardDescription>
-                {importTypes.find(t => t.id === activeTab)?.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Template Download */}
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <FileSpreadsheet className="w-8 h-8 text-blue-600" />
-                  <div>
-                    <p className="font-medium text-blue-900">Download Template</p>
-                    <p className="text-sm text-blue-700">Get the correct format for your import</p>
-                  </div>
-                </div>
-                <Button variant="outline" onClick={() => downloadTemplate(activeTab)}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download CSV
-                </Button>
-              </div>
-
-              {/* File Upload */}
-              <div className="space-y-2">
-                <Label>Upload File</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600 mb-2">
-                    Drag and drop your file here, or click to browse
-                  </p>
-                  <input
-                    type="file"
-                    accept=".csv,.xlsx,.xls"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <Label htmlFor="file-upload" className="cursor-pointer">
-                    <Button variant="outline" as="span">
-                      Choose File
-                    </Button>
-                  </Label>
-                  {selectedFile && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Validation Errors */}
-              {validationErrors.length > 0 && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    <ul className="list-disc list-inside">
-                      {validationErrors.map((error, index) => (
-                        <li key={index}>{error}</li>
-                      ))}
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* File Preview */}
-              {showPreview && previewData.length > 0 && (
-                <div className="space-y-2">
-                  <Label>File Preview (First 3 rows)</Label>
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            {Object.keys(previewData[0]).map((key) => (
-                              <th key={key} className="px-4 py-2 text-left font-medium text-gray-900">
-                                {key.replace('_', ' ').toUpperCase()}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {previewData.slice(0, 3).map((row, index) => (
-                            <tr key={index} className="border-t">
-                              {Object.values(row).map((value, cellIndex) => (
-                                <td key={cellIndex} className="px-4 py-2 text-gray-600">
-                                  {value}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Total rows to import: {previewData.length}
-                  </p>
-                </div>
-              )}
-
-              {/* Import Progress */}
-              {isUploading && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Import Progress</Label>
-                    <span className="text-sm text-gray-600">{uploadProgress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                      style={{width: `${uploadProgress}%`}}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              {/* Import Results */}
-              {uploadResults && (
-                <Alert>
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    <div className="space-y-2">
-                      <p className="font-medium">Import completed!</p>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Total Rows</p>
-                          <p className="font-medium">{uploadResults.total_rows}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Successful</p>
-                          <p className="font-medium text-green-600">{uploadResults.successful_rows}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Failed</p>
-                          <p className="font-medium text-red-600">{uploadResults.failed_rows}</p>
-                        </div>
-                      </div>
-                      {uploadResults.errors.length > 0 && (
-                        <div className="mt-2">
-                          <p className="text-sm font-medium text-red-600">Errors:</p>
-                          <ul className="text-sm text-red-600 list-disc list-inside">
-                            {uploadResults.errors.slice(0, 3).map((error, index) => (
-                              <li key={index}>
-                                Row {error.row}: {error.message} ({error.field}: {error.value})
-                              </li>
-                            ))}
-                          </ul>
-                          {uploadResults.errors.length > 3 && (
-                            <p className="text-sm text-gray-600">
-                              +{uploadResults.errors.length - 3} more errors
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Import Button */}
-              <div className="flex space-x-2">
-                <Button 
-                  onClick={handleImport} 
-                  disabled={!selectedFile || validationErrors.length > 0 || isUploading}
-                  className="flex-1"
-                >
-                  {isUploading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Importing...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4 mr-2" />
-                      Start Import
-                    </>
-                  )}
-                </Button>
-                {selectedFile && (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setSelectedFile(null)
-                      setPreviewData([])
-                      setShowPreview(false)
-                      setValidationErrors([])
-                      setUploadResults(null)
-                    }}
-                  >
-                    Clear
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Import Guidelines */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Import Guidelines</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <h4 className="font-medium">File Requirements:</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• CSV or Excel format (.csv, .xlsx, .xls)</li>
-                  <li>• Maximum file size: 10MB</li>
-                  <li>• Maximum rows: {importTypes.find(t => t.id === activeTab)?.maxRows.toLocaleString()}</li>
-                  <li>• First row must contain headers</li>
-                </ul>
+        {/* File Upload Area */}
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+          <span className="text-4xl mb-4 block">📁</span>
+          <h4 className="text-lg font-medium text-gray-900 mb-2">Upload CSV File</h4>
+          <p className="text-gray-600 mb-4">
+            Drag and drop your CSV file here, or click to browse
+          </p>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={(e) => {
+              const file = e.target.files[0]
+              if (file) {
+                handleFileUpload(file, activeTab)
+              }
+            }}
+            className="hidden"
+            id="file-upload"
+          />
+          <label
+            htmlFor="file-upload"
+            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors cursor-pointer"
+          >
+            Choose File
+          </label>
+        </div>
+
+        {/* Upload Progress */}
+        {loading && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Uploading...</span>
+              <span className="text-sm text-gray-600">{uploadProgress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+
+        {/* Import Results */}
+        {importResults && (
+          <div className="mt-6 p-4 border rounded-lg">
+            <h4 className="font-medium text-gray-900 mb-2">Import Results</h4>
+            {importResults.success ? (
+              <div className="text-green-600">
+                ✅ Successfully imported {importResults.processed} records
               </div>
-              
-              <div className="space-y-2">
-                <h4 className="font-medium">Required Fields:</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  {importTypes.find(t => t.id === activeTab)?.templateFields.map((field) => (
-                    <li key={field}>• {field.replace('_', ' ')}</li>
+            ) : (
+              <div className="text-red-600">
+                ❌ Import failed: {importResults.error}
+              </div>
+            )}
+            {importResults.errors && importResults.errors.length > 0 && (
+              <div className="mt-2">
+                <p className="text-sm text-gray-600">Errors encountered:</p>
+                <ul className="text-sm text-red-600 mt-1">
+                  {importResults.errors.slice(0, 5).map((error, index) => (
+                    <li key={index}>• {error}</li>
                   ))}
+                  {importResults.errors.length > 5 && (
+                    <li>• ... and {importResults.errors.length - 5} more errors</li>
+                  )}
                 </ul>
               </div>
-
-              {activeTab === 'team-members' && (
-                <div className="space-y-2">
-                  <h4 className="font-medium">Valid Roles:</h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• team_member</li>
-                    <li>• campaign_lead</li>
-                    <li>• admin</li>
-                  </ul>
-                </div>
-              )}
-
-              {activeTab === 'historical-timesheets' && (
-                <div className="space-y-2">
-                  <h4 className="font-medium">Valid Status:</h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• pending</li>
-                    <li>• approved</li>
-                    <li>• rejected</li>
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Import History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Import History</CardTitle>
-          <CardDescription>Recent bulk import operations</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {importHistory.length === 0 ? (
-            <div className="text-center py-8">
-              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No imports yet</h3>
-              <p className="text-gray-600">Your import history will appear here</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {importHistory.map((import_record) => (
-                <div key={import_record.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                      {import_record.type === 'team-members' ? (
-                        <Users className="w-5 h-5 text-gray-600" />
-                      ) : (
-                        <Clock className="w-5 h-5 text-gray-600" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{import_record.filename}</p>
-                      <p className="text-sm text-gray-600">
-                        {import_record.type.replace('-', ' ')} • {new Date(import_record.created_at).toLocaleDateString()}
-                      </p>
-                      {import_record.error_message && (
-                        <p className="text-sm text-red-600">{import_record.error_message}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right text-sm">
-                      <p className="text-gray-600">
-                        {import_record.successful_rows}/{import_record.total_rows} successful
-                      </p>
-                      {import_record.failed_rows > 0 && (
-                        <p className="text-red-600">{import_record.failed_rows} failed</p>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(import_record.status)}
-                      <Badge className={getStatusColor(import_record.status)}>
-                        {import_record.status}
-                      </Badge>
-                    </div>
-                    <div className="flex space-x-1">
-                      <Button size="sm" variant="outline">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      {import_record.status === 'failed' && (
-                        <Button size="sm" variant="outline" className="text-red-600">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Template Information */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Template Information</h3>
+        {activeTab === 'team_members' ? (
+          <div>
+            <p className="text-gray-600 mb-2">Team Members CSV should include the following columns:</p>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• <strong>email</strong> - Employee email address (required, unique)</li>
+              <li>• <strong>name</strong> - Full name (required)</li>
+              <li>• <strong>role</strong> - admin, campaign_lead, or team_member (required)</li>
+              <li>• <strong>pay_rate</strong> - Hourly pay rate (optional)</li>
+              <li>• <strong>department</strong> - Department name (optional)</li>
+              <li>• <strong>hire_date</strong> - Hire date in YYYY-MM-DD format (optional)</li>
+            </ul>
+          </div>
+        ) : (
+          <div>
+            <p className="text-gray-600 mb-2">Historical Timesheets CSV should include the following columns:</p>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• <strong>employee_email</strong> - Employee email address (required)</li>
+              <li>• <strong>date</strong> - Date in YYYY-MM-DD format (required)</li>
+              <li>• <strong>hours</strong> - Number of hours worked (required)</li>
+              <li>• <strong>description</strong> - Work description (optional)</li>
+              <li>• <strong>status</strong> - pending, approved, or rejected (optional, defaults to approved)</li>
+              <li>• <strong>campaign</strong> - Campaign or project name (optional)</li>
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-// Error Management Cockpit Component
-function ErrorManagementCockpit() {
-  const [errorLogs, setErrorLogs] = useState([])
+// Error Management Page Component
+function ErrorManagementPage() {
+  const { user } = useAuth()
+  const [errors, setErrors] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedError, setSelectedError] = useState(null)
-  const [filterStatus, setFilterStatus] = useState('all')
-  const [filterType, setFilterType] = useState('all')
+  const [filter, setFilter] = useState('unresolved')
 
   useEffect(() => {
-    fetchErrorLogs()
-  }, [filterStatus, filterType])
+    fetchErrors()
+  }, [filter])
 
-  const fetchErrorLogs = async () => {
+  const fetchErrors = async () => {
     try {
       setLoading(true)
-      const mockErrors = [
-        {
-          id: 1,
-          import_id: 123,
-          import_type: 'team-members',
-          filename: 'team_members_2024.xlsx',
-          row_number: 5,
-          field_name: 'email',
-          field_value: 'invalid-email',
-          error_message: 'Invalid email format',
-          error_type: 'validation',
-          status: 'unresolved',
-          created_at: '2024-01-15T10:30:00Z',
-          resolved_at: null,
-          resolved_by: null
-        },
-        {
-          id: 2,
-          import_id: 123,
-          import_type: 'team-members',
-          filename: 'team_members_2024.xlsx',
-          row_number: 8,
-          field_name: 'role',
-          field_value: 'invalid_role',
-          error_message: 'Invalid role. Must be one of: team_member, campaign_lead, admin',
-          error_type: 'validation',
-          status: 'resolved',
-          created_at: '2024-01-15T10:30:00Z',
-          resolved_at: '2024-01-15T11:00:00Z',
-          resolved_by: 'admin@test.com'
-        },
-        {
-          id: 3,
-          import_id: 124,
-          import_type: 'historical-timesheets',
-          filename: 'timesheets_q4_2023.xlsx',
-          row_number: 150,
-          field_name: 'employee_email',
-          field_value: 'nonexistent@company.com',
-          error_message: 'Employee not found in system',
-          error_type: 'reference',
-          status: 'unresolved',
-          created_at: '2024-01-14T14:20:00Z',
-          resolved_at: null,
-          resolved_by: null
-        }
-      ]
-      
-      setErrorLogs(mockErrors.filter(error => {
-        if (filterStatus !== 'all' && error.status !== filterStatus) return false
-        if (filterType !== 'all' && error.import_type !== filterType) return false
-        return true
-      }))
+      const data = await api.getImportErrors({ status: filter })
+      setErrors(data)
     } catch (error) {
-      console.error('Error fetching error logs:', error)
+      console.error('Error fetching import errors:', error)
     } finally {
       setLoading(false)
     }
@@ -2576,76 +1921,27 @@ function ErrorManagementCockpit() {
 
   const resolveError = async (errorId) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      setErrorLogs(prev => prev.map(error => 
-        error.id === errorId 
-          ? { ...error, status: 'resolved', resolved_at: new Date().toISOString(), resolved_by: 'admin@test.com' }
-          : error
-      ))
-      setSelectedError(null)
+      await api.resolveImportError(errorId)
+      fetchErrors()
     } catch (error) {
-      console.error('Error resolving error:', error)
+      console.error('Error resolving import error:', error)
     }
   }
 
-  const bulkResolve = async () => {
-    const unresolvedErrors = errorLogs.filter(error => error.status === 'unresolved')
-    for (const error of unresolvedErrors) {
-      await resolveError(error.id)
-    }
-  }
-
-  const exportErrorReport = () => {
-    const csvContent = [
-      'Import ID,Import Type,Filename,Row,Field,Value,Error Message,Status,Created At',
-      ...errorLogs.map(error => 
-        `${error.import_id},${error.import_type},${error.filename},${error.row_number},${error.field_name},"${error.field_value}","${error.error_message}",${error.status},${error.created_at}`
-      )
-    ].join('\n')
-
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `error_report_${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
-  }
-
-  const getErrorTypeColor = (type) => {
-    switch (type) {
-      case 'validation':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'reference':
-        return 'bg-red-100 text-red-800'
-      case 'system':
-        return 'bg-purple-100 text-purple-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'resolved':
-        return 'bg-green-100 text-green-800'
-      case 'unresolved':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
+  if (user?.role !== 'admin') {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+          You don't have permission to manage import errors. Contact your administrator.
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertTriangle className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
-          <p className="text-gray-600">Loading error logs...</p>
-        </div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -2654,288 +1950,316 @@ function ErrorManagementCockpit() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Error Management Cockpit</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Error Management</h1>
           <p className="text-gray-600">Monitor and resolve import errors</p>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={exportErrorReport}>
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
-          </Button>
-          <Button onClick={bulkResolve} disabled={!errorLogs.some(e => e.status === 'unresolved')}>
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Resolve All
-          </Button>
-        </div>
       </div>
 
-      {/* Error Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Errors</p>
-                <p className="text-2xl font-bold text-gray-900">{errorLogs.length}</p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-gray-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Unresolved</p>
-                <p className="text-2xl font-bold text-red-900">
-                  {errorLogs.filter(e => e.status === 'unresolved').length}
-                </p>
-              </div>
-              <XCircle className="w-8 h-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Resolved</p>
-                <p className="text-2xl font-bold text-green-900">
-                  {errorLogs.filter(e => e.status === 'resolved').length}
-                </p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Resolution Rate</p>
-                <p className="text-2xl font-bold text-blue-900">
-                  {errorLogs.length > 0 ? Math.round((errorLogs.filter(e => e.status === 'resolved').length / errorLogs.length) * 100) : 0}%
-                </p>
-              </div>
-              <BarChart3 className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex space-x-2">
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+      {/* Error Filters */}
+      <div className="flex space-x-2">
+        {['unresolved', 'resolved', 'all'].map((status) => (
+          <button
+            key={status}
+            onClick={() => setFilter(status)}
+            className={`px-3 py-1 rounded-md text-sm font-medium ${
+              filter === status
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
           >
-            <option value="all">All Status</option>
-            <option value="unresolved">Unresolved</option>
-            <option value="resolved">Resolved</option>
-          </select>
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-          >
-            <option value="all">All Types</option>
-            <option value="team-members">Team Members</option>
-            <option value="historical-timesheets">Historical Timesheets</option>
-          </select>
-        </div>
-        <Button variant="outline" onClick={fetchErrorLogs}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </button>
+        ))}
       </div>
 
-      {/* Error List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Error Details</CardTitle>
-          <CardDescription>Detailed view of import errors</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {errorLogs.length === 0 ? (
+      {/* Errors List */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">Import Errors</h3>
+        </div>
+        <div className="p-6">
+          {errors.length === 0 ? (
             <div className="text-center py-8">
-              <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
+              <span className="text-4xl mb-4 block">✅</span>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No errors found</h3>
               <p className="text-gray-600">All imports completed successfully</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {errorLogs.map((error) => (
-                <div key={error.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+              {errors.map((error) => (
+                <div key={error.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                      <span className="text-red-600">⚠️</span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">
-                        {error.filename} - Row {error.row_number}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {error.field_name}: "{error.field_value}"
-                      </p>
-                      <p className="text-sm text-red-600">{error.error_message}</p>
+                      <p className="font-medium text-gray-900">{error.type} Import Error</p>
+                      <p className="text-sm text-gray-600">{error.message}</p>
                       <p className="text-xs text-gray-500">
-                        {new Date(error.created_at).toLocaleString()}
-                        {error.resolved_at && (
-                          <span> • Resolved by {error.resolved_by} on {new Date(error.resolved_at).toLocaleString()}</span>
-                        )}
+                        {error.created_at} • Row {error.row_number}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Badge className={getErrorTypeColor(error.error_type)}>
-                      {error.error_type}
-                    </Badge>
-                    <Badge className={getStatusColor(error.status)}>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      error.status === 'resolved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
                       {error.status}
-                    </Badge>
+                    </span>
                     {error.status === 'unresolved' && (
-                      <div className="flex space-x-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedError(error)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => resolveError(error.id)}
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <button
+                        onClick={() => resolveError(error.id)}
+                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
+                      >
+                        Mark Resolved
+                      </button>
                     )}
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Error Detail Modal */}
-      {selectedError && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl">
-            <CardHeader>
-              <CardTitle>Error Details</CardTitle>
-              <CardDescription>
-                Import ID: {selectedError.import_id} • Row {selectedError.row_number}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Filename</Label>
-                  <p className="text-sm text-gray-600">{selectedError.filename}</p>
-                </div>
-                <div>
-                  <Label>Import Type</Label>
-                  <p className="text-sm text-gray-600">{selectedError.import_type}</p>
-                </div>
-                <div>
-                  <Label>Field Name</Label>
-                  <p className="text-sm text-gray-600">{selectedError.field_name}</p>
-                </div>
-                <div>
-                  <Label>Field Value</Label>
-                  <p className="text-sm text-gray-600">"{selectedError.field_value}"</p>
-                </div>
-              </div>
-              <div>
-                <Label>Error Message</Label>
-                <p className="text-sm text-red-600">{selectedError.error_message}</p>
-              </div>
-              <div>
-                <Label>Suggested Resolution</Label>
-                <p className="text-sm text-gray-600">
-                  {selectedError.error_type === 'validation' && 'Correct the field value according to the validation rules.'}
-                  {selectedError.error_type === 'reference' && 'Ensure the referenced record exists in the system.'}
-                  {selectedError.error_type === 'system' && 'Contact system administrator for assistance.'}
-                </p>
-              </div>
-              <div className="flex space-x-2">
-                <Button onClick={() => resolveError(selectedError.id)}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Mark as Resolved
-                </Button>
-                <Button variant="outline" onClick={() => setSelectedError(null)}>
-                  Close
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-      )}
+      </div>
     </div>
   )
 }
 
-// Main App Component
-function App() {
+// Settings Page Component
+function SettingsPage() {
+  const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState('profile')
+  const [profile, setProfile] = useState({
+    name: user?.name || '',
+    email: user?.email || ''
+  })
+  const [passwords, setPasswords] = useState({
+    current: '',
+    new: '',
+    confirm: ''
+  })
+  const [notifications, setNotifications] = useState({
+    email: true,
+    reminders: true,
+    reports: false
+  })
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      await api.updateProfile(profile)
+      setMessage('Profile updated successfully')
+    } catch (error) {
+      setMessage('Failed to update profile')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault()
+    if (passwords.new !== passwords.confirm) {
+      setMessage('New passwords do not match')
+      return
+    }
+    setLoading(true)
+    try {
+      await api.changePassword(passwords.current, passwords.new)
+      setPasswords({ current: '', new: '', confirm: '' })
+      setMessage('Password changed successfully')
+    } catch (error) {
+      setMessage('Failed to change password')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUpdateNotifications = async () => {
+    setLoading(true)
+    try {
+      await api.updateNotificationSettings(notifications)
+      setMessage('Notification settings updated')
+    } catch (error) {
+      setMessage('Failed to update notification settings')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </AuthProvider>
-  )
-}
-
-function AppContent() {
-  const { user, logout, loading } = useAuth()
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600">Manage your account settings and preferences</p>
       </div>
-    )
-  }
 
-  if (!user) {
-    return <LoginPage />
-  }
+      {message && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-600 px-4 py-3 rounded">
+          {message}
+        </div>
+      )}
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar user={user} onLogout={logout} />
-      
-      {/* Main content */}
-      <div className="flex-1 overflow-auto">
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/timesheets" element={<TimesheetsPage />} />
-          <Route path="/team" element={<TeamPage />} />
-          <Route path="/analytics" element={
-            user.role === 'admin' ? <AnalyticsPage /> : <Navigate to="/dashboard" replace />
-          } />
-          <Route path="/reports" element={
-            user.role === 'admin' ? <ReportsPage /> : <Navigate to="/dashboard" replace />
-          } />
-          <Route path="/bulk-import" element={
-            user.role === 'admin' ? <BulkImportPage /> : <Navigate to="/dashboard" replace />
-          } />
-          <Route path="/error-management" element={
-            user.role === 'admin' ? <ErrorManagementCockpit /> : <Navigate to="/dashboard" replace />
-          } />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Routes>
+      {/* Settings Tabs */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        {['profile', 'security', 'notifications'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === tab
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Settings Content */}
+      <div className="bg-white rounded-lg shadow p-6">
+        {activeTab === 'profile' && (
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Profile Information</h3>
+            <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={profile.name}
+                    onChange={(e) => setProfile({...profile, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={profile.email}
+                    onChange={(e) => setProfile({...profile, email: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <input
+                  type="text"
+                  value={user?.role || ''}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Updating...' : 'Update Profile'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {activeTab === 'security' && (
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Change Password</h3>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                <input
+                  type="password"
+                  value={passwords.current}
+                  onChange={(e) => setPasswords({...passwords, current: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <input
+                  type="password"
+                  value={passwords.new}
+                  onChange={(e) => setPasswords({...passwords, new: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={passwords.confirm}
+                  onChange={(e) => setPasswords({...passwords, confirm: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Changing...' : 'Change Password'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {activeTab === 'notifications' && (
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Notification Preferences</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">Email Notifications</p>
+                  <p className="text-sm text-gray-600">Receive email notifications for important updates</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notifications.email}
+                  onChange={(e) => setNotifications({...notifications, email: e.target.checked})}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">Timesheet Reminders</p>
+                  <p className="text-sm text-gray-600">Get reminded to submit your timesheets</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notifications.reminders}
+                  onChange={(e) => setNotifications({...notifications, reminders: e.target.checked})}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">Weekly Reports</p>
+                  <p className="text-sm text-gray-600">Receive weekly productivity reports</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notifications.reports}
+                  onChange={(e) => setNotifications({...notifications, reports: e.target.checked})}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+              </div>
+              <button
+                onClick={handleUpdateNotifications}
+                disabled={loading}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Updating...' : 'Update Preferences'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
