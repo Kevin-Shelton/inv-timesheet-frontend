@@ -1,4 +1,4 @@
-// DataUploadCockpit.jsx - Dynamic upload interface with error handling and correction capabilities
+// DataUploadCockpit.jsx - Dynamic upload interface with error handling and correction capabilities 
 
 import React, { useState, useRef } from "react"
 import { 
