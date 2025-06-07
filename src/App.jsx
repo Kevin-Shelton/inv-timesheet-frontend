@@ -517,7 +517,7 @@ function Dashboard() {
                 <p className="stat-title">Billable Hours</p>
                 <p className="stat-value">{stats.billableHours}</p>
                 <p className="stat-change text-green-600">
-                  ${stats.revenue.toLocaleString()} revenue
+                  +12% vs last week
                 </p>
               </div>
             </div>
@@ -619,185 +619,457 @@ function Dashboard() {
 // COMPLETE TIMESHEETS PAGE IMPLEMENTATION
 function TimesheetsPage() {
   const { user } = useAuth()
-  const [timesheets, setTimesheets] = useState([])
+  const [currentWeek, setCurrentWeek] = useState(new Date())
+  const [weeklyTimesheet, setWeeklyTimesheet] = useState({})
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [editingTimesheet, setEditingTimesheet] = useState(null)
-  const [filter, setFilter] = useState('all')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [showApprovalModal, setShowApprovalModal] = useState(false)
-  const [selectedTimesheet, setSelectedTimesheet] = useState(null)
-  const [approvalComment, setApprovalComment] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [selectedEmployee, setSelectedEmployee] = useState(user?.role === 'admin' ? '' : user?.id)
+  const [employees, setEmployees] = useState([])
 
-  // Form state
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    hours: '',
-    description: ''
-  })
+  // Get week start (Monday) and end (Sunday)
+  const getWeekDates = (date) => {
+    const d = new Date(date)
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1) // Adjust when day is Sunday
+    const monday = new Date(d.setDate(diff))
+    
+    const weekDates = []
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday)
+      date.setDate(monday.getDate() + i)
+      weekDates.push(date)
+    }
+    return weekDates
+  }
+
+  const weekDates = getWeekDates(currentWeek)
+  const weekStart = weekDates[0]
+  const weekEnd = weekDates[6]
+
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+  // Initialize empty timesheet structure
+  const initializeWeeklyTimesheet = () => {
+    const timesheet = {}
+    weekDates.forEach((date, index) => {
+      const dateKey = date.toISOString().split('T')[0]
+      timesheet[dateKey] = {
+        timeIn: '',
+        breakOut: '',
+        breakIn: '',
+        timeOut: '',
+        vacationHours: '',
+        sickHours: '',
+        holidayHours: '',
+        overtimeHours: '',
+        notes: '',
+        status: 'draft'
+      }
+    })
+    return timesheet
+  }
 
   useEffect(() => {
-    fetchTimesheets()
-  }, [])
+    fetchEmployees()
+    fetchWeeklyTimesheet()
+  }, [currentWeek, selectedEmployee])
 
-  const fetchTimesheets = async () => {
+  const fetchEmployees = async () => {
+    if (user?.role === 'admin') {
+      try {
+        // Mock API call - replace with actual API
+        const mockEmployees = [
+          { id: 1, name: 'John Doe', email: 'john@test.com' },
+          { id: 2, name: 'Jane Smith', email: 'jane@test.com' },
+          { id: 3, name: 'Test User', email: 'user@test.com' }
+        ]
+        setEmployees(mockEmployees)
+      } catch (error) {
+        console.error('Error fetching employees:', error)
+      }
+    }
+  }
+
+  const fetchWeeklyTimesheet = async () => {
     try {
       setLoading(true)
-      const data = await api.getTimesheets()
-      setTimesheets(data)
+      // Mock API call - replace with actual API
+      const mockTimesheet = initializeWeeklyTimesheet()
+      
+      // Add some sample data
+      const mondayKey = weekDates[0].toISOString().split('T')[0]
+      mockTimesheet[mondayKey] = {
+        timeIn: '09:00',
+        breakOut: '12:00',
+        breakIn: '13:00',
+        timeOut: '17:00',
+        vacationHours: '',
+        sickHours: '',
+        holidayHours: '',
+        overtimeHours: '',
+        notes: 'Regular workday',
+        status: 'submitted'
+      }
+      
+      setWeeklyTimesheet(mockTimesheet)
     } catch (error) {
-      console.error('Error fetching timesheets:', error)
+      console.error('Error fetching weekly timesheet:', error)
+      setWeeklyTimesheet(initializeWeeklyTimesheet())
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    try {
-      if (editingTimesheet) {
-        // Update existing timesheet
-        await api.updateTimesheet(editingTimesheet.id, formData)
-      } else {
-        // Create new timesheet
-        await api.createTimesheet(formData)
+  const handleTimeChange = (dateKey, field, value) => {
+    setWeeklyTimesheet(prev => ({
+      ...prev,
+      [dateKey]: {
+        ...prev[dateKey],
+        [field]: value
       }
+    }))
+  }
+
+  const calculateDailyHours = (dayData) => {
+    if (!dayData.timeIn || !dayData.timeOut) return 0
+    
+    const timeIn = new Date(`2000-01-01 ${dayData.timeIn}`)
+    const timeOut = new Date(`2000-01-01 ${dayData.timeOut}`)
+    const breakOut = dayData.breakOut ? new Date(`2000-01-01 ${dayData.breakOut}`) : null
+    const breakIn = dayData.breakIn ? new Date(`2000-01-01 ${dayData.breakIn}`) : null
+    
+    let totalMinutes = (timeOut - timeIn) / (1000 * 60)
+    
+    if (breakOut && breakIn) {
+      const breakMinutes = (breakIn - breakOut) / (1000 * 60)
+      totalMinutes -= breakMinutes
+    }
+    
+    return Math.max(0, totalMinutes / 60)
+  }
+
+  const calculateWeeklyTotal = () => {
+    return Object.values(weeklyTimesheet).reduce((total, dayData) => {
+      return total + calculateDailyHours(dayData)
+    }, 0)
+  }
+
+  const saveWeeklyTimesheet = async () => {
+    try {
+      setSaving(true)
+      // Mock API call - replace with actual API
+      console.log('Saving weekly timesheet:', weeklyTimesheet)
       
-      setShowForm(false)
-      setEditingTimesheet(null)
-      setFormData({ date: new Date().toISOString().split('T')[0], hours: '', description: '' })
-      fetchTimesheets()
+      // Update status to submitted for all days with data
+      const updatedTimesheet = { ...weeklyTimesheet }
+      Object.keys(updatedTimesheet).forEach(dateKey => {
+        const dayData = updatedTimesheet[dateKey]
+        if (dayData.timeIn || dayData.timeOut || dayData.vacationHours || dayData.sickHours) {
+          dayData.status = 'submitted'
+        }
+      })
+      
+      setWeeklyTimesheet(updatedTimesheet)
+      alert('Timesheet saved successfully!')
     } catch (error) {
       console.error('Error saving timesheet:', error)
+      alert('Error saving timesheet. Please try again.')
+    } finally {
+      setSaving(false)
     }
   }
 
-  const handleEdit = (timesheet) => {
-    setEditingTimesheet(timesheet)
-    setFormData({
-      date: timesheet.date,
-      hours: timesheet.hours.toString(),
-      description: timesheet.description
-    })
-    setShowForm(true)
+  const navigateWeek = (direction) => {
+    const newDate = new Date(currentWeek)
+    newDate.setDate(newDate.getDate() + (direction * 7))
+    setCurrentWeek(newDate)
   }
 
-  const handleApproval = async (action) => {
-    try {
-      if (action === 'approve') {
-        await api.approveTimesheet(selectedTimesheet.id, approvalComment)
-      } else {
-        await api.rejectTimesheet(selectedTimesheet.id, approvalComment)
-      }
-      
-      setShowApprovalModal(false)
-      setSelectedTimesheet(null)
-      setApprovalComment('')
-      fetchTimesheets()
-    } catch (error) {
-      console.error('Error processing approval:', error)
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'submitted':
+        return <AlertCircle className="w-4 h-4 text-yellow-500" />
+      case 'approved':
+        return <CheckCircle className="w-4 h-4 text-green-500" />
+      case 'rejected':
+        return <XCircle className="w-4 h-4 text-red-500" />
+      default:
+        return <Clock className="w-4 h-4 text-gray-400" />
     }
   }
-
-  const filteredTimesheets = timesheets.filter(timesheet => {
-    const matchesFilter = filter === 'all' || timesheet.status === filter
-    const matchesSearch = timesheet.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         timesheet.user_name?.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesFilter && matchesSearch
-  })
 
   return (
     <div className="page-content space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Timesheets</h1>
-          <p className="text-gray-600 mt-1">Manage your time entries and approvals</p>
+          <h1 className="text-2xl font-bold text-gray-900">Weekly Timesheet</h1>
+          <p className="text-gray-600 mt-1">Track your daily work hours and time off</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Timesheet
-        </Button>
+        <div className="flex items-center gap-4">
+          {user?.role === 'admin' && (
+            <Select 
+              value={selectedEmployee} 
+              onChange={(e) => setSelectedEmployee(e.target.value)}
+              className="min-w-48"
+            >
+              <option value="">Select Employee</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.name}</option>
+              ))}
+            </Select>
+          )}
+          <Button onClick={saveWeeklyTimesheet} disabled={saving}>
+            <Save className="w-4 h-4 mr-2" />
+            {saving ? 'Saving...' : 'Save Timesheet'}
+          </Button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm-flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search timesheets..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+      {/* Week Navigation */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <Button variant="outline" onClick={() => navigateWeek(-1)}>
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              Previous Week
+            </Button>
+            
+            <div className="text-center">
+              <h3 className="text-lg font-semibold">
+                {weekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {weekEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </h3>
+              <p className="text-sm text-gray-600">
+                Total Hours: {calculateWeeklyTotal().toFixed(2)}
+              </p>
+            </div>
+            
+            <Button variant="outline" onClick={() => navigateWeek(1)}>
+              Next Week
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
           </div>
-        </div>
-        <Select value={filter} onChange={(e) => setFilter(e.target.value)}>
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </Select>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Timesheets List */}
+      {/* Weekly Timesheet Grid */}
       <Card>
         <CardHeader>
-          <CardTitle>Time Entries</CardTitle>
+          <CardTitle>Daily Time Entries</CardTitle>
           <CardDescription>
-            {user?.role === 'admin' ? 'All team timesheets' : 'Your submitted timesheets'}
+            Enter your daily work schedule and time off hours
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="loading-spinner"></div>
-              <span className="ml-2">Loading timesheets...</span>
-            </div>
-          ) : filteredTimesheets.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No timesheets found</h3>
-              <p className="text-gray-600 mb-4">Get started by adding your first timesheet entry.</p>
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Timesheet
-              </Button>
+              <span className="ml-2">Loading timesheet...</span>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[1200px]">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Date</th>
-                    {user?.role === 'admin' && <th className="text-left py-3 px-4 font-medium text-gray-900">Employee</th>}
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Hours</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Description</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-24">Day</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Time In</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Break Out</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Break In</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Time Out</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Vacation</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Sick</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Holiday</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Overtime</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-32">Notes</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Total</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-16">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTimesheets.map((timesheet) => (
-                    <tr key={timesheet.id} className="border-b border-gray-100 hover-bg-gray-50">
-                      <td className="py-3 px-4">{new Date(timesheet.date).toLocaleDateString()}</td>
-                      {user?.role === 'admin' && <td className="py-3 px-4">{timesheet.user_name}</td>}
-                      <td className="py-3 px-4">{timesheet.hours}h</td>
-                      <td className="py-3 px-4">{timesheet.description}</td>
-                      <td className="py-3 px-4">
-                        <Badge variant={
-                          timesheet.status === 'approved' ? 'green' :
-                          timesheet.status === 'rejected' ? 'red' : 'yellow'
-                        }>
-                          {timesheet.status}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          {user?.role === 'admin' && timesheet.status === 'pending' && (
-                            <>
-                              <Button
-                                size="sm"
+                  {weekDates.map((date, index) => {
+                    const dateKey = date.toISOString().split('T')[0]
+                    const dayData = weeklyTimesheet[dateKey] || {}
+                    const dailyHours = calculateDailyHours(dayData)
+                    
+                    return (
+                      <tr key={dateKey} className="border-b border-gray-100 hover-bg-gray-50">
+                        <td className="py-2 px-2">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">{dayNames[index]}</span>
+                            <span className="text-xs text-gray-500">
+                              {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+                        </td>
+                        
+                        <td className="py-2 px-2">
+                          <Input
+                            type="time"
+                            value={dayData.timeIn || ''}
+                            onChange={(e) => handleTimeChange(dateKey, 'timeIn', e.target.value)}
+                            className="w-full text-sm"
+                          />
+                        </td>
+                        
+                        <td className="py-2 px-2">
+                          <Input
+                            type="time"
+                            value={dayData.breakOut || ''}
+                            onChange={(e) => handleTimeChange(dateKey, 'breakOut', e.target.value)}
+                            className="w-full text-sm"
+                          />
+                        </td>
+                        
+                        <td className="py-2 px-2">
+                          <Input
+                            type="time"
+                            value={dayData.breakIn || ''}
+                            onChange={(e) => handleTimeChange(dateKey, 'breakIn', e.target.value)}
+                            className="w-full text-sm"
+                          />
+                        </td>
+                        
+                        <td className="py-2 px-2">
+                          <Input
+                            type="time"
+                            value={dayData.timeOut || ''}
+                            onChange={(e) => handleTimeChange(dateKey, 'timeOut', e.target.value)}
+                            className="w-full text-sm"
+                          />
+                        </td>
+                        
+                        <td className="py-2 px-2">
+                          <Input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            max="8"
+                            value={dayData.vacationHours || ''}
+                            onChange={(e) => handleTimeChange(dateKey, 'vacationHours', e.target.value)}
+                            className="w-full text-sm"
+                            placeholder="0"
+                          />
+                        </td>
+                        
+                        <td className="py-2 px-2">
+                          <Input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            max="8"
+                            value={dayData.sickHours || ''}
+                            onChange={(e) => handleTimeChange(dateKey, 'sickHours', e.target.value)}
+                            className="w-full text-sm"
+                            placeholder="0"
+                          />
+                        </td>
+                        
+                        <td className="py-2 px-2">
+                          <Input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            max="8"
+                            value={dayData.holidayHours || ''}
+                            onChange={(e) => handleTimeChange(dateKey, 'holidayHours', e.target.value)}
+                            className="w-full text-sm"
+                            placeholder="0"
+                          />
+                        </td>
+                        
+                        <td className="py-2 px-2">
+                          <Input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            value={dayData.overtimeHours || ''}
+                            onChange={(e) => handleTimeChange(dateKey, 'overtimeHours', e.target.value)}
+                            className="w-full text-sm"
+                            placeholder="0"
+                          />
+                        </td>
+                        
+                        <td className="py-2 px-2">
+                          <Input
+                            type="text"
+                            value={dayData.notes || ''}
+                            onChange={(e) => handleTimeChange(dateKey, 'notes', e.target.value)}
+                            className="w-full text-sm"
+                            placeholder="Notes..."
+                          />
+                        </td>
+                        
+                        <td className="py-2 px-2 text-center">
+                          <span className="font-medium text-sm">
+                            {dailyHours.toFixed(1)}h
+                          </span>
+                        </td>
+                        
+                        <td className="py-2 px-2 text-center">
+                          {getStatusIcon(dayData.status)}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-gray-300 bg-gray-50">
+                    <td className="py-3 px-2 font-semibold">Weekly Total</td>
+                    <td colSpan="9" className="py-3 px-2"></td>
+                    <td className="py-3 px-2 text-center font-bold text-lg">
+                      {calculateWeeklyTotal().toFixed(1)}h
+                    </td>
+                    <td className="py-3 px-2"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Clock className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+            <h3 className="font-semibold mb-1">Regular Hours</h3>
+            <p className="text-2xl font-bold text-blue-600">
+              {calculateWeeklyTotal().toFixed(1)}h
+            </p>
+            <p className="text-sm text-gray-600">This week</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Calendar className="w-8 h-8 text-green-500 mx-auto mb-2" />
+            <h3 className="font-semibold mb-1">Time Off</h3>
+            <p className="text-2xl font-bold text-green-600">
+              {Object.values(weeklyTimesheet).reduce((total, day) => {
+                return total + parseFloat(day.vacationHours || 0) + parseFloat(day.sickHours || 0) + parseFloat(day.holidayHours || 0)
+              }, 0).toFixed(1)}h
+            </p>
+            <p className="text-sm text-gray-600">This week</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Plus className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+            <h3 className="font-semibold mb-1">Overtime</h3>
+            <p className="text-2xl font-bold text-purple-600">
+              {Object.values(weeklyTimesheet).reduce((total, day) => {
+                return total + parseFloat(day.overtimeHours || 0)
+              }, 0).toFixed(1)}h
+            </p>
+            <p className="text-sm text-gray-600">This week</p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
                                 variant="outline"
                                 onClick={() => {
                                   setSelectedTimesheet(timesheet)
@@ -1139,11 +1411,11 @@ function AnalyticsDashboard() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Revenue</p>
-                    <p className="text-2xl font-bold text-gray-900">$72,480</p>
-                    <p className="text-xs text-green-600">+18% from target</p>
+                    <p className="text-sm font-medium text-gray-600">Payroll Hours</p>
+                    <p className="text-2xl font-bold text-gray-900">168</p>
+                    <p className="text-xs text-blue-600">Current pay period</p>
                   </div>
-                  <TrendingUp className="w-8 h-8 text-orange-600" />
+                  <Clock className="w-8 h-8 text-blue-600" />
                 </div>
               </CardContent>
             </Card>
