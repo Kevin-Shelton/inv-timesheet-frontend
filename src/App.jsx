@@ -1,1472 +1,298 @@
-// ENHANCED APP.JSX WITH ANALYTICS AND REPORTING
-// This is your complete App.jsx file with all admin features + analytics + reporting
-
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext, createContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
-import { Clock, Users, BarChart3, Settings, LogOut, Menu, X, AlertCircle, CheckCircle, Plus, Check, XCircle, Download, Filter, Search, Edit, Trash2, UserPlus, Shield, TrendingUp, DollarSign, Calendar, FileText } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts'
-import { Button } from '@/components/ui/button.jsx'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Input } from '@/components/ui/input.jsx'
-import { Label } from '@/components/ui/label.jsx'
-import { Badge } from '@/components/ui/badge.jsx'
-import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
-import { AuthProvider, useAuth } from './contexts/AuthContext.jsx'
-import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute.jsx'
+import { 
+  BarChart3, Users, Clock, Settings, LogOut, Plus, Search, Filter, 
+  Download, Upload, AlertTriangle, CheckCircle, XCircle, FileSpreadsheet, 
+  RefreshCw, Trash2, Eye, AlertCircle, TrendingUp, Calendar, DollarSign,
+  PieChart, Activity, Target, Award, Bell, User, Lock, Mail, Phone,
+  Edit, Save, X, ChevronDown, ChevronRight, Home, FileText, Database
+} from 'lucide-react'
 import api from './lib/api'
-import './App.css'
 
-// ANALYTICS DASHBOARD COMPONENT
-function AnalyticsDashboard() {
-  const { user } = useAuth()
-  const [analyticsData, setAnalyticsData] = useState({
-    timeDistribution: [],
-    productivityTrends: [],
-    teamPerformance: [],
-    hoursByDay: [],
-    approvalStats: [],
-    overtimeAnalysis: []
-  })
+// Auth Context
+const AuthContext = createContext()
+
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
-  })
-  const [selectedMetric, setSelectedMetric] = useState('overview')
 
   useEffect(() => {
-    fetchAnalyticsData()
-  }, [dateRange])
-
-  const fetchAnalyticsData = async () => {
-    try {
-      setLoading(true)
-      
-      // Mock data for demonstration - replace with actual API calls
-      const mockData = {
-        timeDistribution: [
-          { name: 'Campaign A', hours: 120, percentage: 35 },
-          { name: 'Campaign B', hours: 85, percentage: 25 },
-          { name: 'Campaign C', hours: 95, percentage: 28 },
-          { name: 'Admin Tasks', hours: 40, percentage: 12 }
-        ],
-        productivityTrends: [
-          { date: '2024-01-01', productivity: 85, hours: 8.2 },
-          { date: '2024-01-02', productivity: 92, hours: 8.5 },
-          { date: '2024-01-03', productivity: 78, hours: 7.8 },
-          { date: '2024-01-04', productivity: 88, hours: 8.3 },
-          { date: '2024-01-05', productivity: 95, hours: 8.7 },
-          { date: '2024-01-06', productivity: 82, hours: 8.0 },
-          { date: '2024-01-07', productivity: 90, hours: 8.4 }
-        ],
-        teamPerformance: [
-          { name: 'John Doe', hours: 168, efficiency: 92, overtime: 8 },
-          { name: 'Jane Smith', hours: 160, efficiency: 88, overtime: 0 },
-          { name: 'Mike Johnson', hours: 172, efficiency: 95, overtime: 12 },
-          { name: 'Sarah Wilson', hours: 156, efficiency: 85, overtime: 4 }
-        ],
-        hoursByDay: [
-          { day: 'Mon', regular: 32, overtime: 4 },
-          { day: 'Tue', regular: 35, overtime: 2 },
-          { day: 'Wed', regular: 38, overtime: 6 },
-          { day: 'Thu', regular: 36, overtime: 3 },
-          { day: 'Fri', regular: 34, overtime: 5 },
-          { day: 'Sat', regular: 12, overtime: 8 },
-          { day: 'Sun', regular: 8, overtime: 2 }
-        ],
-        approvalStats: [
-          { status: 'Approved', count: 145, percentage: 78 },
-          { status: 'Pending', count: 28, percentage: 15 },
-          { status: 'Rejected', count: 13, percentage: 7 }
-        ],
-        overtimeAnalysis: [
-          { week: 'Week 1', planned: 160, actual: 168, overtime: 8 },
-          { week: 'Week 2', planned: 160, actual: 165, overtime: 5 },
-          { week: 'Week 3', planned: 160, actual: 172, overtime: 12 },
-          { week: 'Week 4', planned: 160, actual: 158, overtime: 0 }
-        ]
-      }
-      
-      setAnalyticsData(mockData)
-    } catch (error) {
-      console.error('Error fetching analytics data:', error)
-    } finally {
-      setLoading(false)
+    const token = localStorage.getItem('token')
+    const userData = localStorage.getItem('user')
+    if (token && userData) {
+      setUser(JSON.parse(userData))
     }
-  }
-
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4']
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <BarChart3 className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
-          <p className="text-gray-600">Loading analytics...</p>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-          <p className="text-gray-600">Comprehensive insights into team performance and productivity</p>
-        </div>
-        <div className="flex space-x-4">
-          <div className="flex space-x-2">
-            <Input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-              className="w-40"
-            />
-            <Input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-              className="w-40"
-            />
-          </div>
-          <Button onClick={fetchAnalyticsData}>
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
-          </Button>
-        </div>
-      </div>
-
-      {/* Metric Selection Tabs */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        {[
-          { id: 'overview', name: 'Overview', icon: BarChart3 },
-          { id: 'productivity', name: 'Productivity', icon: TrendingUp },
-          { id: 'team', name: 'Team Performance', icon: Users },
-          { id: 'time', name: 'Time Analysis', icon: Clock }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setSelectedMetric(tab.id)}
-            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              selectedMetric === tab.id
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <tab.icon className="w-4 h-4 mr-2" />
-            {tab.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Overview Tab */}
-      {selectedMetric === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Time Distribution Pie Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Time Distribution by Campaign</CardTitle>
-              <CardDescription>How time is allocated across different campaigns</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={analyticsData.timeDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({name, percentage}) => `${name}: ${percentage}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="hours"
-                  >
-                    {analyticsData.timeDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Approval Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Timesheet Approval Status</CardTitle>
-              <CardDescription>Current status of timesheet submissions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analyticsData.approvalStats}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="status" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#3B82F6" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Hours by Day */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Daily Hours Breakdown</CardTitle>
-              <CardDescription>Regular vs overtime hours by day of the week</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analyticsData.hoursByDay}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="regular" stackId="a" fill="#10B981" name="Regular Hours" />
-                  <Bar dataKey="overtime" stackId="a" fill="#F59E0B" name="Overtime Hours" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Productivity Tab */}
-      {selectedMetric === 'productivity' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Productivity Trends</CardTitle>
-              <CardDescription>Daily productivity scores and hours worked</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={analyticsData.productivityTrends}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip />
-                  <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="productivity" stroke="#3B82F6" name="Productivity %" />
-                  <Line yAxisId="right" type="monotone" dataKey="hours" stroke="#10B981" name="Hours Worked" />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Overtime Analysis</CardTitle>
-              <CardDescription>Planned vs actual hours with overtime tracking</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={analyticsData.overtimeAnalysis}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Area type="monotone" dataKey="planned" stackId="1" stroke="#8884d8" fill="#8884d8" name="Planned Hours" />
-                  <Area type="monotone" dataKey="overtime" stackId="1" stroke="#82ca9d" fill="#82ca9d" name="Overtime Hours" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Team Performance Tab */}
-      {selectedMetric === 'team' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Team Performance Metrics</CardTitle>
-              <CardDescription>Individual team member performance analysis</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {analyticsData.teamPerformance.map((member, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">
-                          {member.name.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{member.name}</p>
-                        <p className="text-sm text-gray-600">{member.hours} hours this month</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-6">
-                      <div className="text-center">
-                        <p className="text-sm text-gray-600">Efficiency</p>
-                        <p className="text-lg font-semibold text-green-600">{member.efficiency}%</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm text-gray-600">Overtime</p>
-                        <p className="text-lg font-semibold text-orange-600">{member.overtime}h</p>
-                      </div>
-                      <div className="w-24 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full" 
-                          style={{width: `${member.efficiency}%`}}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Time Analysis Tab */}
-      {selectedMetric === 'time' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Time Utilization</CardTitle>
-              <CardDescription>How time is being utilized across the organization</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Productive Work', value: 75, color: '#10B981' },
-                      { name: 'Meetings', value: 15, color: '#3B82F6' },
-                      { name: 'Admin Tasks', value: 7, color: '#F59E0B' },
-                      { name: 'Breaks', value: 3, color: '#EF4444' }
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({name, value}) => `${name}: ${value}%`}
-                  >
-                    {[
-                      { name: 'Productive Work', value: 75, color: '#10B981' },
-                      { name: 'Meetings', value: 15, color: '#3B82F6' },
-                      { name: 'Admin Tasks', value: 7, color: '#F59E0B' },
-                      { name: 'Breaks', value: 3, color: '#EF4444' }
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Peak Hours Analysis</CardTitle>
-              <CardDescription>When your team is most productive</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={[
-                  { hour: '9 AM', productivity: 65 },
-                  { hour: '10 AM', productivity: 85 },
-                  { hour: '11 AM', productivity: 92 },
-                  { hour: '12 PM', productivity: 78 },
-                  { hour: '1 PM', productivity: 45 },
-                  { hour: '2 PM', productivity: 88 },
-                  { hour: '3 PM', productivity: 95 },
-                  { hour: '4 PM', productivity: 82 },
-                  { hour: '5 PM', productivity: 70 }
-                ]}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="hour" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="productivity" fill="#3B82F6" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// REPORTS PAGE COMPONENT
-function ReportsPage() {
-  const { user } = useAuth()
-  const [activeReport, setActiveReport] = useState('payroll')
-  const [reportData, setReportData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [filters, setFilters] = useState({
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
-    department: 'all',
-    employee: 'all',
-    status: 'all'
-  })
-
-  const reportTypes = [
-    { id: 'payroll', name: 'Payroll Report', icon: DollarSign, description: 'Generate payroll summaries for accounting' },
-    { id: 'productivity', name: 'Productivity Report', icon: TrendingUp, description: 'Analyze team productivity metrics' },
-    { id: 'attendance', name: 'Attendance Report', icon: Calendar, description: 'Track attendance and time patterns' },
-    { id: 'overtime', name: 'Overtime Report', icon: Clock, description: 'Monitor overtime hours and costs' },
-    { id: 'billing', name: 'Client Billing', icon: FileText, description: 'Generate client billing reports' },
-    { id: 'custom', name: 'Custom Report', icon: Settings, description: 'Create custom reports with filters' }
-  ]
-
-  const generateReport = async (reportType) => {
-    setLoading(true)
-    try {
-      // Mock report generation - replace with actual API calls
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      const mockReportData = {
-        payroll: {
-          totalHours: 1240,
-          totalCost: 22320,
-          employees: [
-            { name: 'John Doe', hours: 168, rate: 18.50, gross: 3108 },
-            { name: 'Jane Smith', hours: 160, rate: 20.00, gross: 3200 },
-            { name: 'Mike Johnson', hours: 172, rate: 19.25, gross: 3311 }
-          ]
-        },
-        productivity: {
-          averageEfficiency: 87,
-          topPerformer: 'Mike Johnson',
-          improvementAreas: ['Time tracking accuracy', 'Break time optimization']
-        }
-      }
-      
-      setReportData(mockReportData[reportType] || {})
-    } catch (error) {
-      console.error('Error generating report:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const exportReport = async (format) => {
-    try {
-      // Mock export - replace with actual API call
-      const blob = new Blob(['Mock report data'], { type: 'text/plain' })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${activeReport}_report.${format}`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-    } catch (error) {
-      console.error('Error exporting report:', error)
-    }
-  }
-
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-          <p className="text-gray-600">Generate comprehensive reports for payroll, billing, and analysis</p>
-        </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={() => exportReport('csv')}>
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
-          <Button variant="outline" onClick={() => exportReport('pdf')}>
-            <Download className="w-4 h-4 mr-2" />
-            Export PDF
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Report Type Selection */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Report Types</CardTitle>
-              <CardDescription>Select the type of report to generate</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {reportTypes.map((report) => (
-                <button
-                  key={report.id}
-                  onClick={() => setActiveReport(report.id)}
-                  className={`w-full flex items-center p-3 rounded-lg text-left transition-colors ${
-                    activeReport === report.id
-                      ? 'bg-blue-100 text-blue-900 border border-blue-200'
-                      : 'hover:bg-gray-50 border border-transparent'
-                  }`}
-                >
-                  <report.icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">{report.name}</p>
-                    <p className="text-xs text-gray-600">{report.description}</p>
-                  </div>
-                </button>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Report Configuration and Results */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Filters */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Report Filters</CardTitle>
-              <CardDescription>Configure your report parameters</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={filters.startDate}
-                    onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={filters.endDate}
-                    onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <select
-                    id="department"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filters.department}
-                    onChange={(e) => setFilters({...filters, department: e.target.value})}
-                  >
-                    <option value="all">All Departments</option>
-                    <option value="campaign_a">Campaign A</option>
-                    <option value="campaign_b">Campaign B</option>
-                    <option value="admin">Administration</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="employee">Employee</Label>
-                  <select
-                    id="employee"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filters.employee}
-                    onChange={(e) => setFilters({...filters, employee: e.target.value})}
-                  >
-                    <option value="all">All Employees</option>
-                    <option value="john_doe">John Doe</option>
-                    <option value="jane_smith">Jane Smith</option>
-                    <option value="mike_johnson">Mike Johnson</option>
-                  </select>
-                </div>
-              </div>
-              <div className="mt-4">
-                <Button onClick={() => generateReport(activeReport)} disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Clock className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <BarChart3 className="w-4 h-4 mr-2" />
-                      Generate Report
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Report Results */}
-          {reportData && (
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {reportTypes.find(r => r.id === activeReport)?.name} Results
-                </CardTitle>
-                <CardDescription>
-                  Report generated for {filters.startDate} to {filters.endDate}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {activeReport === 'payroll' && reportData.employees && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <p className="text-sm text-blue-600">Total Hours</p>
-                        <p className="text-2xl font-bold text-blue-900">{reportData.totalHours}</p>
-                      </div>
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <p className="text-sm text-green-600">Total Cost</p>
-                        <p className="text-2xl font-bold text-green-900">${reportData.totalCost.toLocaleString()}</p>
-                      </div>
-                      <div className="bg-purple-50 p-4 rounded-lg">
-                        <p className="text-sm text-purple-600">Employees</p>
-                        <p className="text-2xl font-bold text-purple-900">{reportData.employees.length}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse border border-gray-300">
-                        <thead>
-                          <tr className="bg-gray-50">
-                            <th className="border border-gray-300 px-4 py-2 text-left">Employee</th>
-                            <th className="border border-gray-300 px-4 py-2 text-left">Hours</th>
-                            <th className="border border-gray-300 px-4 py-2 text-left">Rate</th>
-                            <th className="border border-gray-300 px-4 py-2 text-left">Gross Pay</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {reportData.employees.map((employee, index) => (
-                            <tr key={index}>
-                              <td className="border border-gray-300 px-4 py-2">{employee.name}</td>
-                              <td className="border border-gray-300 px-4 py-2">{employee.hours}</td>
-                              <td className="border border-gray-300 px-4 py-2">${employee.rate}</td>
-                              <td className="border border-gray-300 px-4 py-2">${employee.gross.toLocaleString()}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-                
-                {activeReport === 'productivity' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <p className="text-sm text-green-600">Average Efficiency</p>
-                        <p className="text-2xl font-bold text-green-900">{reportData.averageEfficiency}%</p>
-                      </div>
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <p className="text-sm text-blue-600">Top Performer</p>
-                        <p className="text-2xl font-bold text-blue-900">{reportData.topPerformer}</p>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium mb-2">Areas for Improvement:</h4>
-                      <ul className="list-disc list-inside space-y-1">
-                        {reportData.improvementAreas.map((area, index) => (
-                          <li key={index} className="text-gray-600">{area}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ADMIN TIMESHEET APPROVAL COMPONENT (from previous implementation)
-function AdminTimesheetApproval() {
-  const { user } = useAuth()
-  const [allTimesheets, setAllTimesheets] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [filter, setFilter] = useState('pending')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedTimesheet, setSelectedTimesheet] = useState(null)
-  const [approvalComment, setApprovalComment] = useState('')
-
-  useEffect(() => {
-    fetchAllTimesheets()
-  }, [filter])
-
-  const fetchAllTimesheets = async () => {
-    try {
-      setLoading(true)
-      const data = await api.getTimesheets({ status: filter === 'all' ? undefined : filter })
-      setAllTimesheets(data)
-    } catch (error) {
-      setError('Failed to load timesheets')
-      console.error('Error fetching timesheets:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleApproval = async (timesheetId, action) => {
-    try {
-      if (action === 'approve') {
-        await api.approveTimesheet(timesheetId, approvalComment)
-      } else {
-        await api.rejectTimesheet(timesheetId, approvalComment)
-      }
-      setApprovalComment('')
-      setSelectedTimesheet(null)
-      fetchAllTimesheets()
-    } catch (error) {
-      setError(`Failed to ${action} timesheet`)
-      console.error(`Error ${action}ing timesheet:`, error)
-    }
-  }
-
-  const filteredTimesheets = allTimesheets.filter(timesheet =>
-    timesheet.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    timesheet.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'approved':
-        return <CheckCircle className="w-4 h-4 text-green-600" />
-      case 'rejected':
-        return <XCircle className="w-4 h-4 text-red-600" />
-      default:
-        return <AlertCircle className="w-4 h-4 text-yellow-600" />
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved':
-        return 'bg-green-100 text-green-800'
-      case 'rejected':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-yellow-100 text-yellow-800'
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-spin" />
-          <p className="text-gray-600">Loading timesheets...</p>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Timesheet Approvals</h1>
-          <p className="text-gray-600">Review and approve team timesheet entries</p>
-        </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={() => fetchAllTimesheets()}>
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-        </div>
-      </div>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex space-x-2">
-          {['all', 'pending', 'approved', 'rejected'].map((status) => (
-            <Button
-              key={status}
-              variant={filter === status ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter(status)}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </Button>
-          ))}
-        </div>
-        <div className="flex-1 max-w-sm">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search by user or description..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Timesheets List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Timesheets</CardTitle>
-          <CardDescription>All timesheet entries requiring review</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {filteredTimesheets.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No timesheets found</h3>
-              <p className="text-gray-600">No timesheets match your current filter</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredTimesheets.map((timesheet) => (
-                <div key={timesheet.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{timesheet.user_name || 'Unknown User'}</p>
-                      <p className="text-sm text-gray-600">{timesheet.date} • {timesheet.hours} hours</p>
-                      {timesheet.description && (
-                        <p className="text-sm text-gray-500">{timesheet.description}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(timesheet.status)}
-                      <Badge className={getStatusColor(timesheet.status)}>
-                        {timesheet.status}
-                      </Badge>
-                    </div>
-                    {timesheet.status === 'pending' && (
-                      <div className="flex space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-green-600 border-green-600 hover:bg-green-50"
-                          onClick={() => {
-                            setSelectedTimesheet(timesheet)
-                            setApprovalComment('')
-                          }}
-                        >
-                          <Check className="w-4 h-4 mr-1" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 border-red-600 hover:bg-red-50"
-                          onClick={() => {
-                            setSelectedTimesheet(timesheet)
-                            setApprovalComment('')
-                          }}
-                        >
-                          <X className="w-4 h-4 mr-1" />
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Approval Modal */}
-      {selectedTimesheet && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>
-                {selectedTimesheet.status === 'pending' ? 'Review Timesheet' : 'Timesheet Details'}
-              </CardTitle>
-              <CardDescription>
-                {selectedTimesheet.user_name} • {selectedTimesheet.date} • {selectedTimesheet.hours} hours
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedTimesheet.description && (
-                <div>
-                  <Label>Description</Label>
-                  <p className="text-sm text-gray-600 mt-1">{selectedTimesheet.description}</p>
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="comment">Comments (optional)</Label>
-                <Input
-                  id="comment"
-                  placeholder="Add a comment..."
-                  value={approvalComment}
-                  onChange={(e) => setApprovalComment(e.target.value)}
-                />
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  className="flex-1"
-                  onClick={() => handleApproval(selectedTimesheet.id, 'approve')}
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Approve
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  onClick={() => handleApproval(selectedTimesheet.id, 'reject')}
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Reject
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedTimesheet(null)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ENHANCED TIMESHEETS PAGE WITH ADMIN VIEW
-function TimesheetsPage() {
-  const { user } = useAuth()
-  
-  // If user is admin, show the approval interface
-  if (user?.role === 'admin') {
-    return <AdminTimesheetApproval />
-  }
-
-  // Regular user timesheet interface (existing code)
-  const [timesheets, setTimesheets] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [newTimesheet, setNewTimesheet] = useState({
-    date: new Date().toISOString().split('T')[0],
-    hours: '',
-    description: ''
-  })
-
-  useEffect(() => {
-    fetchTimesheets()
+    setLoading(false)
   }, [])
 
-  const fetchTimesheets = async () => {
+  const login = async (email, password) => {
     try {
-      setLoading(true)
-      const data = await api.getTimesheets()
-      setTimesheets(data)
+      const response = await api.login(email, password)
+      localStorage.setItem('token', response.token)
+      localStorage.setItem('user', JSON.stringify(response.user))
+      setUser(response.user)
+      return response
     } catch (error) {
-      setError('Failed to load timesheets')
-      console.error('Error fetching timesheets:', error)
-    } finally {
-      setLoading(false)
+      throw error
     }
   }
 
-  const handleSubmitTimesheet = async (e) => {
-    e.preventDefault()
-    try {
-      await api.createTimesheet(newTimesheet)
-      setNewTimesheet({
-        date: new Date().toISOString().split('T')[0],
-        hours: '',
-        description: ''
-      })
-      setShowAddForm(false)
-      fetchTimesheets()
-    } catch (error) {
-      setError('Failed to create timesheet')
-      console.error('Error creating timesheet:', error)
-    }
-  }
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'approved':
-        return <CheckCircle className="w-4 h-4 text-green-600" />
-      case 'rejected':
-        return <XCircle className="w-4 h-4 text-red-600" />
-      default:
-        return <AlertCircle className="w-4 h-4 text-yellow-600" />
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved':
-        return 'bg-green-100 text-green-800'
-      case 'rejected':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-yellow-100 text-yellow-800'
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-spin" />
-          <p className="text-gray-600">Loading timesheets...</p>
-        </div>
-      </div>
-    )
+  const logout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setUser(null)
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Timesheets</h1>
-          <p className="text-gray-600">Track and manage your time entries</p>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+function useAuth() {
+  return useContext(AuthContext)
+}
+
+// UI Components
+function Button({ children, variant = 'primary', size = 'md', disabled = false, onClick, className = '', ...props }) {
+  const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2'
+  const variants = {
+    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+    outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-blue-500',
+    destructive: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
+  }
+  const sizes = {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-6 py-3 text-base'
+  }
+  
+  return (
+    <button
+      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+      disabled={disabled}
+      onClick={onClick}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
+function Card({ children, className = '' }) {
+  return (
+    <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>
+      {children}
+    </div>
+  )
+}
+
+function CardHeader({ children }) {
+  return <div className="px-6 py-4 border-b border-gray-200">{children}</div>
+}
+
+function CardTitle({ children }) {
+  return <h3 className="text-lg font-semibold text-gray-900">{children}</h3>
+}
+
+function CardDescription({ children }) {
+  return <p className="text-sm text-gray-600 mt-1">{children}</p>
+}
+
+function CardContent({ children, className = '' }) {
+  return <div className={`px-6 py-4 ${className}`}>{children}</div>
+}
+
+function Badge({ children, className = '' }) {
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
+      {children}
+    </span>
+  )
+}
+
+function Alert({ children, variant = 'default' }) {
+  const variants = {
+    default: 'bg-blue-50 border-blue-200 text-blue-800',
+    destructive: 'bg-red-50 border-red-200 text-red-800'
+  }
+  
+  return (
+    <div className={`border rounded-lg p-4 ${variants[variant]}`}>
+      {children}
+    </div>
+  )
+}
+
+function AlertDescription({ children }) {
+  return <div className="text-sm">{children}</div>
+}
+
+function Label({ children, htmlFor, className = '' }) {
+  return (
+    <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 ${className}`}>
+      {children}
+    </label>
+  )
+}
+
+function Input({ className = '', ...props }) {
+  return (
+    <input
+      className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${className}`}
+      {...props}
+    />
+  )
+}
+
+// Navigation array
+const navigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Timesheets', href: '/timesheets', icon: Clock },
+  { name: 'Team', href: '/team', icon: Users },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3, adminOnly: true },
+  { name: 'Reports', href: '/reports', icon: FileText, adminOnly: true },
+  { name: 'Bulk Import', href: '/bulk-import', icon: Database, adminOnly: true },
+  { name: 'Error Management', href: '/error-management', icon: AlertTriangle, adminOnly: true },
+  { name: 'Settings', href: '/settings', icon: Settings }
+]
+
+// Sidebar Component
+function Sidebar({ user, onLogout }) {
+  const location = useLocation()
+  
+  const filteredNavigation = navigation.filter(item => {
+    if (item.adminOnly && user?.role !== 'admin') {
+      return false
+    }
+    return true
+  })
+
+  return (
+    <div className="w-64 bg-gray-900 text-white flex flex-col">
+      <div className="p-6">
+        <h1 className="text-xl font-bold">TimeSheet Manager</h1>
+        <p className="text-gray-400 text-sm mt-1">BPO Management System</p>
+      </div>
+      
+      <nav className="flex-1 px-4 space-y-2">
+        {filteredNavigation.map((item) => {
+          const isActive = location.pathname === item.href
+          return (
+            <Link
+              key={item.name}
+              to={item.href}
+              className={`flex items-center px-4 py-2 text-sm rounded-lg transition-colors ${
+                isActive 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+              }`}
+            >
+              <item.icon className="w-5 h-5 mr-3" />
+              {item.name}
+            </Link>
+          )
+        })}
+      </nav>
+      
+      <div className="p-4 border-t border-gray-800">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <User className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">{user?.full_name}</p>
+            <p className="text-xs text-gray-400">{user?.role}</p>
+          </div>
         </div>
-        <Button onClick={() => setShowAddForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Entry
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onLogout}
+          className="w-full text-gray-300 border-gray-600 hover:bg-gray-800"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign Out
         </Button>
       </div>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Add Timesheet Form */}
-      {showAddForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Add Time Entry</CardTitle>
-            <CardDescription>Record your work hours for a specific date</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmitTimesheet} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={newTimesheet.date}
-                    onChange={(e) => setNewTimesheet({...newTimesheet, date: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hours">Hours</Label>
-                  <Input
-                    id="hours"
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    max="24"
-                    placeholder="8.0"
-                    value={newTimesheet.hours}
-                    onChange={(e) => setNewTimesheet({...newTimesheet, hours: e.target.value})}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                  id="description"
-                  placeholder="Brief description of work performed"
-                  value={newTimesheet.description}
-                  onChange={(e) => setNewTimesheet({...newTimesheet, description: e.target.value})}
-                />
-              </div>
-              <div className="flex space-x-2">
-                <Button type="submit">Save Entry</Button>
-                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Timesheets List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>My Time Entries</CardTitle>
-          <CardDescription>Your submitted timesheet entries</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {timesheets.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No timesheets yet</h3>
-              <p className="text-gray-600 mb-4">Start tracking your time by adding your first entry</p>
-              <Button onClick={() => setShowAddForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add First Entry
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {timesheets.map((timesheet) => (
-                <div key={timesheet.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{timesheet.date}</p>
-                      <p className="text-sm text-gray-600">{timesheet.hours} hours</p>
-                      {timesheet.description && (
-                        <p className="text-sm text-gray-500">{timesheet.description}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(timesheet.status)}
-                      <Badge className={getStatusColor(timesheet.status)}>
-                        {timesheet.status}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   )
 }
 
-// ENHANCED TEAM PAGE WITH ADMIN FEATURES (from previous implementation)
-function TeamPage() {
-  const { user } = useAuth()
-  const [teamMembers, setTeamMembers] = useState([])
-  const [loading, setLoading] = useState(true)
+// Login Component
+function LoginPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [editingUser, setEditingUser] = useState(null)
-  const [newMember, setNewMember] = useState({
-    email: '',
-    full_name: '',
-    role: 'team_member',
-    pay_rate_per_hour: ''
-  })
+  const { login } = useAuth()
 
-  useEffect(() => {
-    fetchTeamMembers()
-  }, [])
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
 
-  const fetchTeamMembers = async () => {
     try {
-      setLoading(true)
-      const data = await api.getUsers()
-      setTeamMembers(data)
-    } catch (error) {
-      setError('Failed to load team members')
-      console.error('Error fetching team members:', error)
+      await login(email, password)
+    } catch (err) {
+      setError(err.message || 'Login failed')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSubmitMember = async (e) => {
-    e.preventDefault()
-    try {
-      if (editingUser) {
-        await api.updateUser(editingUser.id, newMember)
-      } else {
-        await api.createUser({
-          ...newMember,
-          password: 'TempPass123!',
-          send_welcome_email: true
-        })
-      }
-      setNewMember({
-        email: '',
-        full_name: '',
-        role: 'team_member',
-        pay_rate_per_hour: ''
-      })
-      setShowAddForm(false)
-      setEditingUser(null)
-      fetchTeamMembers()
-    } catch (error) {
-      setError(`Failed to ${editingUser ? 'update' : 'create'} team member`)
-      console.error(`Error ${editingUser ? 'updating' : 'creating'} team member:`, error)
-    }
-  }
-
-  const handleEditUser = (member) => {
-    setEditingUser(member)
-    setNewMember({
-      email: member.email,
-      full_name: member.full_name,
-      role: member.role,
-      pay_rate_per_hour: member.pay_rate_per_hour || ''
-    })
-    setShowAddForm(true)
-  }
-
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        await api.deleteUser(userId)
-        fetchTeamMembers()
-      } catch (error) {
-        setError('Failed to delete user')
-        console.error('Error deleting user:', error)
-      }
-    }
-  }
-
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800'
-      case 'campaign_lead':
-        return 'bg-blue-100 text-blue-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Users className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
-          <p className="text-gray-600">Loading team members...</p>
-        </div>
-      </div>
-    )
-  }
-
-  const canManageTeam = user?.role === 'admin' || user?.role === 'campaign_lead'
-  const isAdmin = user?.role === 'admin'
-
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Team Management</h1>
-          <p className="text-gray-600">Manage your team members and their roles</p>
-        </div>
-        {canManageTeam && (
-          <Button onClick={() => {
-            setEditingUser(null)
-            setNewMember({
-              email: '',
-              full_name: '',
-              role: 'team_member',
-              pay_rate_per_hour: ''
-            })
-            setShowAddForm(true)
-          }}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Add Member
-          </Button>
-        )}
-      </div>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {!canManageTeam && (
-        <Alert>
-          <AlertDescription>
-            You don't have permission to manage team members. Contact your administrator for access.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Add/Edit Member Form */}
-      {showAddForm && canManageTeam && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{editingUser ? 'Edit Team Member' : 'Add Team Member'}</CardTitle>
-            <CardDescription>
-              {editingUser ? 'Update team member information' : 'Invite a new member to join your team'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmitMember} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="member@company.com"
-                    value={newMember.email}
-                    onChange={(e) => setNewMember({...newMember, email: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name</Label>
-                  <Input
-                    id="full_name"
-                    placeholder="John Doe"
-                    value={newMember.full_name}
-                    onChange={(e) => setNewMember({...newMember, full_name: e.target.value})}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <select
-                    id="role"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={newMember.role}
-                    onChange={(e) => setNewMember({...newMember, role: e.target.value})}
-                  >
-                    <option value="team_member">Team Member</option>
-                    <option value="campaign_lead">Campaign Lead</option>
-                    {isAdmin && <option value="admin">Admin</option>}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pay_rate">Pay Rate (per hour)</Label>
-                  <Input
-                    id="pay_rate"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="18.50"
-                    value={newMember.pay_rate_per_hour}
-                    onChange={(e) => setNewMember({...newMember, pay_rate_per_hour: e.target.value})}
-                  />
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                <Button type="submit">
-                  {editingUser ? 'Update Member' : 'Add Member'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => {
-                  setShowAddForm(false)
-                  setEditingUser(null)
-                }}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Team Members List */}
-      <Card>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Team Members</CardTitle>
-          <CardDescription>Current team members and their roles</CardDescription>
+          <CardTitle>Sign In</CardTitle>
+          <CardDescription>Access your timesheet management system</CardDescription>
         </CardHeader>
         <CardContent>
-          {teamMembers.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No team members yet</h3>
-              <p className="text-gray-600 mb-4">Start building your team by adding members</p>
-              {canManageTeam && (
-                <Button onClick={() => setShowAddForm(true)}>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Add First Member
-                </Button>
-              )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
-          ) : (
-            <div className="space-y-4">
-              {teamMembers.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-gray-700">
-                        {member.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{member.full_name}</p>
-                      <p className="text-sm text-gray-600">{member.email}</p>
-                      {member.pay_rate_per_hour && (
-                        <p className="text-sm text-gray-500">${member.pay_rate_per_hour}/hour</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Badge className={getRoleColor(member.role)}>
-                      {member.role?.replace('_', ' ')}
-                    </Badge>
-                    {isAdmin && member.id !== user.id && (
-                      <div className="flex space-x-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditUser(member)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 border-red-600 hover:bg-red-50"
-                          onClick={() => handleDeleteUser(member.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+            
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </div>
-          )}
+            
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
   )
 }
 
-// ENHANCED DASHBOARD WITH ADMIN METRICS (from previous implementation)
+// Dashboard Component
 function Dashboard() {
   const { user } = useAuth()
-  const [dashboardData, setDashboardData] = useState({
-    personalStats: {
-      hoursThisWeek: 32.5,
-      pendingApprovals: 3,
-      monthlyTotal: 128.5,
-      overtimeHours: 4.5
-    },
-    adminStats: {
-      totalUsers: 0,
-      activeTimesheets: 0,
-      pendingApprovals: 0,
-      totalHoursThisMonth: 0
-    },
-    recentTimesheets: []
-  })
+  const [dashboardData, setDashboardData] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -1475,33 +301,32 @@ function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true)
-      
-      // Fetch personal timesheets
-      const personalTimesheets = await api.getTimesheets()
-      
-      // If admin, fetch additional data
       if (user?.role === 'admin') {
-        const [allUsers, allTimesheets] = await Promise.all([
-          api.getUsers(),
-          api.getTimesheets({ status: 'all' })
-        ])
-        
-        setDashboardData(prev => ({
-          ...prev,
-          adminStats: {
-            totalUsers: allUsers.length,
-            activeTimesheets: allTimesheets.filter(t => t.status === 'pending').length,
-            pendingApprovals: allTimesheets.filter(t => t.status === 'pending').length,
-            totalHoursThisMonth: allTimesheets.reduce((sum, t) => sum + parseFloat(t.hours || 0), 0)
-          },
-          recentTimesheets: allTimesheets.slice(0, 5)
-        }))
+        const mockAdminData = {
+          totalUsers: 45,
+          pendingApprovals: 12,
+          totalHoursMonth: 1840,
+          activeTimesheets: 28,
+          recentActivity: [
+            { user: 'John Doe', action: 'submitted timesheet', time: '2 hours ago' },
+            { user: 'Jane Smith', action: 'approved timesheet', time: '3 hours ago' },
+            { user: 'Mike Johnson', action: 'joined team', time: '1 day ago' }
+          ]
+        }
+        setDashboardData(mockAdminData)
       } else {
-        setDashboardData(prev => ({
-          ...prev,
-          recentTimesheets: personalTimesheets.slice(0, 5)
-        }))
+        const mockUserData = {
+          hoursThisWeek: 32.5,
+          pendingApprovals: 3,
+          monthlyTotal: 128.5,
+          overtimeHours: 4.5,
+          recentTimesheets: [
+            { date: '2024-01-15', hours: 8, status: 'approved' },
+            { date: '2024-01-14', hours: 7.5, status: 'pending' },
+            { date: '2024-01-13', hours: 8, status: 'approved' }
+          ]
+        }
+        setDashboardData(mockUserData)
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -1521,30 +346,32 @@ function Dashboard() {
     )
   }
 
-  const isAdmin = user?.role === 'admin'
-  
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back, {user?.full_name?.split(' ')[0] || 'User'}!
-        </h1>
-        <p className="text-gray-600">
-          {isAdmin ? "Here's your organization overview" : "Here's your timesheet overview"}
-        </p>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Welcome back, {user?.full_name?.split(' ')[0]}!
+          </h1>
+          <p className="text-gray-600">
+            {user?.role === 'admin' ? 'Organization Overview' : 'Your timesheet summary'}
+          </p>
+        </div>
+        <Badge className="bg-blue-100 text-blue-800">
+          {user?.role}
+        </Badge>
       </div>
-      
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {isAdmin ? (
+
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {user?.role === 'admin' ? (
           <>
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Users</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData.adminStats.totalUsers}</p>
-                    <p className="text-xs text-blue-600">Active team members</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.totalUsers}</p>
                   </div>
                   <Users className="w-8 h-8 text-blue-500" />
                 </div>
@@ -1556,10 +383,9 @@ function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData.adminStats.pendingApprovals}</p>
-                    <p className="text-xs text-orange-600">Require your review</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.pendingApprovals}</p>
                   </div>
-                  <AlertCircle className="w-8 h-8 text-orange-500" />
+                  <Clock className="w-8 h-8 text-yellow-500" />
                 </div>
               </CardContent>
             </Card>
@@ -1569,10 +395,9 @@ function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Hours (Month)</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData.adminStats.totalHoursThisMonth}</p>
-                    <p className="text-xs text-green-600">Organization wide</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.totalHoursMonth}</p>
                   </div>
-                  <Clock className="w-8 h-8 text-green-500" />
+                  <BarChart3 className="w-8 h-8 text-green-500" />
                 </div>
               </CardContent>
             </Card>
@@ -1582,10 +407,9 @@ function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Active Timesheets</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData.adminStats.activeTimesheets}</p>
-                    <p className="text-xs text-gray-600">In review</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.activeTimesheets}</p>
                   </div>
-                  <BarChart3 className="w-8 h-8 text-purple-500" />
+                  <Activity className="w-8 h-8 text-purple-500" />
                 </div>
               </CardContent>
             </Card>
@@ -1597,9 +421,9 @@ function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Hours This Week</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData.personalStats.hoursThisWeek}</p>
-                    <p className="text-xs text-green-600">+2.1 from last week</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.hoursThisWeek}</p>
                   </div>
+                  <Clock className="w-8 h-8 text-blue-500" />
                 </div>
               </CardContent>
             </Card>
@@ -1609,9 +433,9 @@ function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData.personalStats.pendingApprovals}</p>
-                    <p className="text-xs text-gray-600">2 submitted today</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.pendingApprovals}</p>
                   </div>
+                  <AlertTriangle className="w-8 h-8 text-yellow-500" />
                 </div>
               </CardContent>
             </Card>
@@ -1620,10 +444,10 @@ function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">This Month</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData.personalStats.monthlyTotal}</p>
-                    <p className="text-xs text-green-600">+12% from last month</p>
+                    <p className="text-sm font-medium text-gray-600">Monthly Total</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.monthlyTotal}</p>
                   </div>
+                  <Calendar className="w-8 h-8 text-green-500" />
                 </div>
               </CardContent>
             </Card>
@@ -1633,87 +457,2421 @@ function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Overtime Hours</p>
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData.personalStats.overtimeHours}</p>
-                    <p className="text-xs text-gray-600">Within limits</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.overtimeHours}</p>
                   </div>
+                  <TrendingUp className="w-8 h-8 text-red-500" />
                 </div>
               </CardContent>
             </Card>
           </>
         )}
       </div>
-      
+
+      {/* Quick Actions for Admin */}
+      {user?.role === 'admin' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common administrative tasks</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Link to="/timesheets">
+                <Button variant="outline" className="w-full h-20 flex-col">
+                  <Clock className="w-6 h-6 mb-2" />
+                  Review Timesheets
+                </Button>
+              </Link>
+              <Link to="/team">
+                <Button variant="outline" className="w-full h-20 flex-col">
+                  <Users className="w-6 h-6 mb-2" />
+                  Manage Team
+                </Button>
+              </Link>
+              <Link to="/bulk-import">
+                <Button variant="outline" className="w-full h-20 flex-col">
+                  <Database className="w-6 h-6 mb-2" />
+                  Bulk Import
+                </Button>
+              </Link>
+              <Link to="/reports">
+                <Button variant="outline" className="w-full h-20 flex-col">
+                  <FileText className="w-6 h-6 mb-2" />
+                  Export Reports
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recent Activity */}
       <Card>
         <CardHeader>
           <CardTitle>
-            {isAdmin ? 'Recent Team Activity' : 'Recent Timesheets'}
+            {user?.role === 'admin' ? 'Recent Team Activity' : 'Recent Timesheets'}
           </CardTitle>
-          <CardDescription>
-            {isAdmin ? 'Latest timesheet submissions from your team' : 'Your latest timesheet entries'}
-          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {dashboardData.recentTimesheets.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No recent activity</p>
-            ) : (
-              dashboardData.recentTimesheets.map((timesheet, index) => (
-                <div key={timesheet.id || index} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <Clock className="w-5 h-5 text-blue-500" />
-                    <div>
-                      <p className="font-medium">
-                        {isAdmin && timesheet.user_name ? `${timesheet.user_name} - ` : ''}
-                        {timesheet.date}
-                      </p>
-                      <p className="text-sm text-gray-600">{timesheet.hours} hours</p>
-                    </div>
+          {user?.role === 'admin' ? (
+            <div className="space-y-4">
+              {dashboardData?.recentActivity?.map((activity, index) => (
+                <div key={index} className="flex items-center space-x-4">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-blue-600" />
                   </div>
-                  <Badge variant={timesheet.status === 'approved' ? 'secondary' : 'outline'}>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{activity.user}</p>
+                    <p className="text-sm text-gray-600">{activity.action} • {activity.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {dashboardData?.recentTimesheets?.map((timesheet, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{timesheet.date}</p>
+                    <p className="text-sm text-gray-600">{timesheet.hours} hours</p>
+                  </div>
+                  <Badge className={
+                    timesheet.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    timesheet.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }>
                     {timesheet.status}
                   </Badge>
                 </div>
-              ))
-            )}
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Timesheets Page Component
+function TimesheetsPage() {
+  const { user } = useAuth()
+  const [timesheets, setTimesheets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [newTimesheet, setNewTimesheet] = useState({
+    date: '',
+    hours: '',
+    description: '',
+    campaign: ''
+  })
+
+  useEffect(() => {
+    fetchTimesheets()
+  }, [filterStatus])
+
+  const fetchTimesheets = async () => {
+    try {
+      setLoading(true)
+      if (user?.role === 'admin') {
+        // Admin sees all timesheets for approval
+        const mockAdminTimesheets = [
+          { id: 1, user_name: 'John Doe', date: '2024-01-15', hours: 8, description: 'Regular work day', status: 'pending', campaign: 'Campaign A' },
+          { id: 2, user_name: 'Jane Smith', date: '2024-01-15', hours: 7.5, description: 'Project work', status: 'approved', campaign: 'Campaign B' },
+          { id: 3, user_name: 'Mike Johnson', date: '2024-01-14', hours: 8.5, description: 'Overtime work', status: 'pending', campaign: 'Campaign A' },
+          { id: 4, user_name: 'Sarah Wilson', date: '2024-01-14', hours: 6, description: 'Half day', status: 'rejected', campaign: 'Campaign C' }
+        ]
+        setTimesheets(mockAdminTimesheets.filter(t => filterStatus === 'all' || t.status === filterStatus))
+      } else {
+        // Regular users see only their timesheets
+        const mockUserTimesheets = [
+          { id: 1, date: '2024-01-15', hours: 8, description: 'Regular work day', status: 'pending', campaign: 'Campaign A' },
+          { id: 2, date: '2024-01-14', hours: 7.5, description: 'Project work', status: 'approved', campaign: 'Campaign B' },
+          { id: 3, date: '2024-01-13', hours: 8, description: 'Client calls', status: 'approved', campaign: 'Campaign A' }
+        ]
+        setTimesheets(mockUserTimesheets.filter(t => filterStatus === 'all' || t.status === filterStatus))
+      }
+    } catch (error) {
+      console.error('Error fetching timesheets:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddTimesheet = async (e) => {
+    e.preventDefault()
+    try {
+      // Mock API call
+      const newEntry = {
+        id: Date.now(),
+        ...newTimesheet,
+        status: 'pending',
+        user_name: user.full_name
+      }
+      setTimesheets(prev => [newEntry, ...prev])
+      setNewTimesheet({ date: '', hours: '', description: '', campaign: '' })
+      setShowAddForm(false)
+    } catch (error) {
+      console.error('Error adding timesheet:', error)
+    }
+  }
+
+  const handleApproval = async (timesheetId, action, comment = '') => {
+    try {
+      // Mock API call
+      setTimesheets(prev => prev.map(t => 
+        t.id === timesheetId ? { ...t, status: action } : t
+      ))
+    } catch (error) {
+      console.error('Error updating timesheet:', error)
+    }
+  }
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800'
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'rejected':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const filteredTimesheets = timesheets.filter(timesheet => {
+    const matchesSearch = searchTerm === '' || 
+      timesheet.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (timesheet.user_name && timesheet.user_name.toLowerCase().includes(searchTerm.toLowerCase()))
+    return matchesSearch
+  })
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
+          <p className="text-gray-600">Loading timesheets...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {user?.role === 'admin' ? 'Timesheet Approvals' : 'My Timesheets'}
+          </h1>
+          <p className="text-gray-600">
+            {user?.role === 'admin' ? 'Review and approve team timesheet submissions' : 'Track your time and submit for approval'}
+          </p>
+        </div>
+        <div className="flex space-x-2">
+          {user?.role === 'admin' && (
+            <Button variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+          )}
+          {user?.role !== 'admin' && (
+            <Button onClick={() => setShowAddForm(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Entry
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex space-x-2">
+          <select
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder={user?.role === 'admin' ? "Search by user or description..." : "Search descriptions..."}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
+        </div>
+      </div>
+
+      {/* Add Timesheet Form */}
+      {showAddForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add New Timesheet Entry</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddTimesheet} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="date">Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={newTimesheet.date}
+                    onChange={(e) => setNewTimesheet(prev => ({ ...prev, date: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="hours">Hours</Label>
+                  <Input
+                    id="hours"
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="24"
+                    value={newTimesheet.hours}
+                    onChange={(e) => setNewTimesheet(prev => ({ ...prev, hours: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="campaign">Campaign</Label>
+                <select
+                  id="campaign"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newTimesheet.campaign}
+                  onChange={(e) => setNewTimesheet(prev => ({ ...prev, campaign: e.target.value }))}
+                  required
+                >
+                  <option value="">Select Campaign</option>
+                  <option value="Campaign A">Campaign A</option>
+                  <option value="Campaign B">Campaign B</option>
+                  <option value="Campaign C">Campaign C</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <textarea
+                  id="description"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newTimesheet.description}
+                  onChange={(e) => setNewTimesheet(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe your work activities..."
+                  required
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button type="submit">
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Entry
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Timesheets List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {user?.role === 'admin' ? 'Team Timesheets' : 'Your Timesheet Entries'}
+          </CardTitle>
+          <CardDescription>
+            {filteredTimesheets.length} {filteredTimesheets.length === 1 ? 'entry' : 'entries'} found
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {filteredTimesheets.length === 0 ? (
+            <div className="text-center py-8">
+              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No timesheets found</h3>
+              <p className="text-gray-600">
+                {user?.role === 'admin' ? 'No timesheet submissions match your filters' : 'Start by adding your first timesheet entry'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredTimesheets.map((timesheet) => (
+                <div key={timesheet.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {user?.role === 'admin' ? timesheet.user_name : timesheet.date}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {user?.role === 'admin' ? `${timesheet.date} • ${timesheet.hours} hours` : `${timesheet.hours} hours • ${timesheet.campaign}`}
+                      </p>
+                      <p className="text-sm text-gray-600">{timesheet.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Badge className={getStatusColor(timesheet.status)}>
+                      {timesheet.status}
+                    </Badge>
+                    {user?.role === 'admin' && timesheet.status === 'pending' && (
+                      <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          onClick={() => handleApproval(timesheet.id, 'approved')}
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleApproval(timesheet.id, 'rejected')}
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Team Page Component
+function TeamPage() {
+  const { user } = useAuth()
+  const [teamMembers, setTeamMembers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [editingMember, setEditingMember] = useState(null)
+  const [newMember, setNewMember] = useState({
+    email: '',
+    full_name: '',
+    role: 'team_member',
+    pay_rate_per_hour: '',
+    department: ''
+  })
+
+  useEffect(() => {
+    fetchTeamMembers()
+  }, [])
+
+  const fetchTeamMembers = async () => {
+    try {
+      setLoading(true)
+      // Mock team data
+      const mockTeam = [
+        { id: 1, email: 'john.doe@company.com', full_name: 'John Doe', role: 'team_member', pay_rate_per_hour: 18.50, department: 'Sales', created_at: '2024-01-01' },
+        { id: 2, email: 'jane.smith@company.com', full_name: 'Jane Smith', role: 'campaign_lead', pay_rate_per_hour: 22.00, department: 'Marketing', created_at: '2024-01-01' },
+        { id: 3, email: 'mike.johnson@company.com', full_name: 'Mike Johnson', role: 'team_member', pay_rate_per_hour: 19.25, department: 'Support', created_at: '2024-01-02' }
+      ]
+      setTeamMembers(mockTeam)
+    } catch (error) {
+      console.error('Error fetching team members:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddMember = async (e) => {
+    e.preventDefault()
+    try {
+      const memberToAdd = {
+        id: Date.now(),
+        ...newMember,
+        pay_rate_per_hour: parseFloat(newMember.pay_rate_per_hour),
+        created_at: new Date().toISOString().split('T')[0]
+      }
+      setTeamMembers(prev => [...prev, memberToAdd])
+      setNewMember({ email: '', full_name: '', role: 'team_member', pay_rate_per_hour: '', department: '' })
+      setShowAddForm(false)
+    } catch (error) {
+      console.error('Error adding team member:', error)
+    }
+  }
+
+  const handleEditMember = async (memberId, updatedData) => {
+    try {
+      setTeamMembers(prev => prev.map(member => 
+        member.id === memberId ? { ...member, ...updatedData } : member
+      ))
+      setEditingMember(null)
+    } catch (error) {
+      console.error('Error updating team member:', error)
+    }
+  }
+
+  const handleDeleteMember = async (memberId) => {
+    if (window.confirm('Are you sure you want to delete this team member?')) {
+      try {
+        setTeamMembers(prev => prev.filter(member => member.id !== memberId))
+      } catch (error) {
+        console.error('Error deleting team member:', error)
+      }
+    }
+  }
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-purple-100 text-purple-800'
+      case 'campaign_lead':
+        return 'bg-blue-100 text-blue-800'
+      case 'team_member':
+        return 'bg-green-100 text-green-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Users className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
+          <p className="text-gray-600">Loading team members...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Check if user has permission to manage team
+  const canManageTeam = user?.role === 'admin' || user?.role === 'campaign_lead'
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Team Management</h1>
+          <p className="text-gray-600">Manage your team members and their roles</p>
+        </div>
+        {canManageTeam && (
+          <Button onClick={() => setShowAddForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Member
+          </Button>
+        )}
+      </div>
+
+      {/* Add Member Form */}
+      {showAddForm && canManageTeam && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add New Team Member</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddMember} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newMember.email}
+                    onChange={(e) => setNewMember(prev => ({ ...prev, email: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input
+                    id="full_name"
+                    type="text"
+                    value={newMember.full_name}
+                    onChange={(e) => setNewMember(prev => ({ ...prev, full_name: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="role">Role</Label>
+                  <select
+                    id="role"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newMember.role}
+                    onChange={(e) => setNewMember(prev => ({ ...prev, role: e.target.value }))}
+                    required
+                  >
+                    <option value="team_member">Team Member</option>
+                    <option value="campaign_lead">Campaign Lead</option>
+                    {user?.role === 'admin' && <option value="admin">Admin</option>}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="pay_rate">Pay Rate ($/hour)</Label>
+                  <Input
+                    id="pay_rate"
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    value={newMember.pay_rate_per_hour}
+                    onChange={(e) => setNewMember(prev => ({ ...prev, pay_rate_per_hour: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="department">Department</Label>
+                  <Input
+                    id="department"
+                    type="text"
+                    value={newMember.department}
+                    onChange={(e) => setNewMember(prev => ({ ...prev, department: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <Button type="submit">
+                  <Save className="w-4 h-4 mr-2" />
+                  Add Member
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Team Members List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Members</CardTitle>
+          <CardDescription>{teamMembers.length} team members</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {teamMembers.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No team members</h3>
+              <p className="text-gray-600">Start by adding your first team member</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {teamMembers.map((member) => (
+                <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{member.full_name}</p>
+                      <p className="text-sm text-gray-600">{member.email}</p>
+                      <p className="text-sm text-gray-600">{member.department} • ${member.pay_rate_per_hour}/hour</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Badge className={getRoleColor(member.role)}>
+                      {member.role.replace('_', ' ')}
+                    </Badge>
+                    {canManageTeam && (
+                      <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingMember(member)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteMember(member.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Quick Actions for Admin */}
-      {isAdmin && (
-        <div className="mt-8">
-          <Card>
+      {/* Edit Member Modal */}
+      {editingMember && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-2xl">
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common administrative tasks</CardDescription>
+              <CardTitle>Edit Team Member</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Link to="/timesheets">
-                  <Button className="w-full" variant="outline">
-                    <Shield className="w-4 h-4 mr-2" />
-                    Review Timesheets
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.target)
+                const updatedData = {
+                  full_name: formData.get('full_name'),
+                  email: formData.get('email'),
+                  role: formData.get('role'),
+                  pay_rate_per_hour: parseFloat(formData.get('pay_rate_per_hour')),
+                  department: formData.get('department')
+                }
+                handleEditMember(editingMember.id, updatedData)
+              }} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit_email">Email</Label>
+                    <Input
+                      id="edit_email"
+                      name="email"
+                      type="email"
+                      defaultValue={editingMember.email}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit_full_name">Full Name</Label>
+                    <Input
+                      id="edit_full_name"
+                      name="full_name"
+                      type="text"
+                      defaultValue={editingMember.full_name}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="edit_role">Role</Label>
+                    <select
+                      id="edit_role"
+                      name="role"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      defaultValue={editingMember.role}
+                      required
+                    >
+                      <option value="team_member">Team Member</option>
+                      <option value="campaign_lead">Campaign Lead</option>
+                      {user?.role === 'admin' && <option value="admin">Admin</option>}
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit_pay_rate">Pay Rate ($/hour)</Label>
+                    <Input
+                      id="edit_pay_rate"
+                      name="pay_rate_per_hour"
+                      type="number"
+                      step="0.25"
+                      min="0"
+                      defaultValue={editingMember.pay_rate_per_hour}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit_department">Department</Label>
+                    <Input
+                      id="edit_department"
+                      name="department"
+                      type="text"
+                      defaultValue={editingMember.department}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button type="submit">
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
                   </Button>
-                </Link>
-                <Link to="/team">
-                  <Button className="w-full" variant="outline">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Manage Team
+                  <Button type="button" variant="outline" onClick={() => setEditingMember(null)}>
+                    Cancel
                   </Button>
-                </Link>
-                <Link to="/analytics">
-                  <Button className="w-full" variant="outline">
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    View Analytics
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Settings Page Component
+function SettingsPage() {
+  const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState('profile')
+  const [profileData, setProfileData] = useState({
+    full_name: user?.full_name || '',
+    email: user?.email || '',
+    role: user?.role || ''
+  })
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  })
+  const [notificationSettings, setNotificationSettings] = useState({
+    email_notifications: true,
+    timesheet_reminders: true,
+    approval_notifications: true
+  })
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault()
+    try {
+      // Mock API call
+      console.log('Updating profile:', profileData)
+      alert('Profile updated successfully!')
+    } catch (error) {
+      console.error('Error updating profile:', error)
+    }
+  }
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault()
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      alert('New passwords do not match!')
+      return
+    }
+    try {
+      // Mock API call
+      console.log('Changing password')
+      alert('Password changed successfully!')
+      setPasswordData({ current_password: '', new_password: '', confirm_password: '' })
+    } catch (error) {
+      console.error('Error changing password:', error)
+    }
+  }
+
+  const handleNotificationUpdate = async (setting, value) => {
+    try {
+      setNotificationSettings(prev => ({ ...prev, [setting]: value }))
+      // Mock API call
+      console.log('Updating notification settings:', { [setting]: value })
+    } catch (error) {
+      console.error('Error updating notification settings:', error)
+    }
+  }
+
+  const tabs = [
+    { id: 'profile', name: 'Profile', icon: User },
+    { id: 'security', name: 'Security', icon: Lock },
+    { id: 'notifications', name: 'Notifications', icon: Bell }
+  ]
+
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600">Manage your account settings and preferences</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <tab.icon className="w-4 h-4 mr-2" />
+            {tab.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Profile Tab */}
+      {activeTab === 'profile' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+            <CardDescription>Update your personal information</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleProfileUpdate} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input
+                    id="full_name"
+                    type="text"
+                    value={profileData.full_name}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, full_name: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="role">Role</Label>
+                <Input
+                  id="role"
+                  type="text"
+                  value={profileData.role}
+                  disabled
+                  className="bg-gray-50"
+                />
+                <p className="text-sm text-gray-500 mt-1">Role cannot be changed. Contact your administrator.</p>
+              </div>
+              <Button type="submit">
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Security Tab */}
+      {activeTab === 'security' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Change Password</CardTitle>
+            <CardDescription>Update your password to keep your account secure</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div>
+                <Label htmlFor="current_password">Current Password</Label>
+                <Input
+                  id="current_password"
+                  type="password"
+                  value={passwordData.current_password}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, current_password: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="new_password">New Password</Label>
+                <Input
+                  id="new_password"
+                  type="password"
+                  value={passwordData.new_password}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, new_password: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="confirm_password">Confirm New Password</Label>
+                <Input
+                  id="confirm_password"
+                  type="password"
+                  value={passwordData.confirm_password}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, confirm_password: e.target.value }))}
+                  required
+                />
+              </div>
+              <Button type="submit">
+                <Lock className="w-4 h-4 mr-2" />
+                Change Password
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Notifications Tab */}
+      {activeTab === 'notifications' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notification Preferences</CardTitle>
+            <CardDescription>Choose how you want to be notified</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">Email Notifications</p>
+                <p className="text-sm text-gray-600">Receive email updates about your account</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notificationSettings.email_notifications}
+                  onChange={(e) => handleNotificationUpdate('email_notifications', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">Timesheet Reminders</p>
+                <p className="text-sm text-gray-600">Get reminded to submit your timesheets</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notificationSettings.timesheet_reminders}
+                  onChange={(e) => handleNotificationUpdate('timesheet_reminders', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">Approval Notifications</p>
+                <p className="text-sm text-gray-600">Get notified when your timesheets are approved or rejected</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notificationSettings.approval_notifications}
+                  onChange={(e) => handleNotificationUpdate('approval_notifications', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// Analytics Page Component
+function AnalyticsPage() {
+  const [analyticsData, setAnalyticsData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [activeView, setActiveView] = useState('overview')
+  const [dateRange, setDateRange] = useState('30')
+
+  useEffect(() => {
+    fetchAnalyticsData()
+  }, [dateRange])
+
+  const fetchAnalyticsData = async () => {
+    try {
+      setLoading(true)
+      // Mock analytics data
+      const mockData = {
+        overview: {
+          totalHours: 2840,
+          totalUsers: 45,
+          avgHoursPerUser: 63.1,
+          productivityScore: 87
+        },
+        timeDistribution: [
+          { campaign: 'Campaign A', hours: 1200, percentage: 42 },
+          { campaign: 'Campaign B', hours: 800, percentage: 28 },
+          { campaign: 'Campaign C', hours: 600, percentage: 21 },
+          { campaign: 'Campaign D', hours: 240, percentage: 9 }
+        ],
+        productivityTrends: [
+          { date: '2024-01-01', productivity: 85 },
+          { date: '2024-01-08', productivity: 88 },
+          { date: '2024-01-15', productivity: 87 },
+          { date: '2024-01-22', productivity: 90 },
+          { date: '2024-01-29', productivity: 89 }
+        ],
+        topPerformers: [
+          { name: 'Jane Smith', hours: 168, efficiency: 95 },
+          { name: 'John Doe', hours: 162, efficiency: 92 },
+          { name: 'Mike Johnson', hours: 158, efficiency: 89 }
+        ]
+      }
+      setAnalyticsData(mockData)
+    } catch (error) {
+      console.error('Error fetching analytics data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const views = [
+    { id: 'overview', name: 'Overview', icon: BarChart3 },
+    { id: 'productivity', name: 'Productivity', icon: TrendingUp },
+    { id: 'team', name: 'Team Performance', icon: Users },
+    { id: 'time', name: 'Time Analysis', icon: Clock }
+  ]
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <BarChart3 className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
+          <p className="text-gray-600">Loading analytics...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+          <p className="text-gray-600">Insights into your team's performance and productivity</p>
+        </div>
+        <div className="flex space-x-2">
+          <select
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+          >
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last year</option>
+          </select>
+          <Button variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+        </div>
+      </div>
+
+      {/* View Tabs */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        {views.map((view) => (
+          <button
+            key={view.id}
+            onClick={() => setActiveView(view.id)}
+            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeView === view.id
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <view.icon className="w-4 h-4 mr-2" />
+            {view.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Overview */}
+      {activeView === 'overview' && (
+        <div className="space-y-6">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Hours</p>
+                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.overview.totalHours}</p>
+                  </div>
+                  <Clock className="w-8 h-8 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Active Users</p>
+                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.overview.totalUsers}</p>
+                  </div>
+                  <Users className="w-8 h-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Avg Hours/User</p>
+                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.overview.avgHoursPerUser}</p>
+                  </div>
+                  <Target className="w-8 h-8 text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Productivity Score</p>
+                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.overview.productivityScore}%</p>
+                  </div>
+                  <Award className="w-8 h-8 text-yellow-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Time Distribution Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Time Distribution by Campaign</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {analyticsData?.timeDistribution.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-4 h-4 rounded-full bg-blue-${(index + 1) * 100}`}></div>
+                      <span className="font-medium">{item.campaign}</span>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <span className="text-sm text-gray-600">{item.hours} hours</span>
+                      <span className="text-sm font-medium">{item.percentage}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Other views would be implemented similarly */}
+      {activeView !== 'overview' && (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{views.find(v => v.id === activeView)?.name} View</h3>
+            <p className="text-gray-600">This view is under development. Advanced analytics coming soon!</p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// Reports Page Component
+function ReportsPage() {
+  const [reportType, setReportType] = useState('payroll')
+  const [dateRange, setDateRange] = useState({ start: '', end: '' })
+  const [filters, setFilters] = useState({ department: '', user: '', status: '' })
+  const [generating, setGenerating] = useState(false)
+
+  const reportTypes = [
+    { id: 'payroll', name: 'Payroll Report', description: 'Generate payroll summaries with hours and costs' },
+    { id: 'productivity', name: 'Productivity Report', description: 'Team efficiency and performance metrics' },
+    { id: 'attendance', name: 'Attendance Report', description: 'Time tracking and attendance patterns' },
+    { id: 'overtime', name: 'Overtime Report', description: 'Overtime hours and cost analysis' },
+    { id: 'billing', name: 'Client Billing', description: 'Billing reports for client invoicing' }
+  ]
+
+  const handleGenerateReport = async (format) => {
+    setGenerating(true)
+    try {
+      // Mock report generation
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Create mock CSV content
+      const csvContent = `Report Type,${reportType}\nDate Range,${dateRange.start} to ${dateRange.end}\nGenerated,${new Date().toISOString()}\n\nEmployee,Hours,Rate,Total\nJohn Doe,40,18.50,740.00\nJane Smith,38,22.00,836.00\nMike Johnson,42,19.25,808.50`
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${reportType}_report_${new Date().toISOString().split('T')[0]}.${format}`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('Error generating report:', error)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
+          <p className="text-gray-600">Generate comprehensive reports for your business needs</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Report Configuration */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Report Configuration</CardTitle>
+              <CardDescription>Configure your report parameters</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Report Type Selection */}
+              <div>
+                <Label>Report Type</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                  {reportTypes.map((type) => (
+                    <div
+                      key={type.id}
+                      onClick={() => setReportType(type.id)}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        reportType === type.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="font-medium text-gray-900">{type.name}</p>
+                      <p className="text-sm text-gray-600">{type.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date Range */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="start_date">Start Date</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="end_date">End Date</Label>
+                  <Input
+                    id="end_date"
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="department">Department</Label>
+                  <select
+                    id="department"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filters.department}
+                    onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+                  >
+                    <option value="">All Departments</option>
+                    <option value="sales">Sales</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="support">Support</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="user">User</Label>
+                  <select
+                    id="user"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filters.user}
+                    onChange={(e) => setFilters(prev => ({ ...prev, user: e.target.value }))}
+                  >
+                    <option value="">All Users</option>
+                    <option value="john">John Doe</option>
+                    <option value="jane">Jane Smith</option>
+                    <option value="mike">Mike Johnson</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="status">Status</Label>
+                  <select
+                    id="status"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filters.status}
+                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="">All Status</option>
+                    <option value="approved">Approved</option>
+                    <option value="pending">Pending</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Generate Buttons */}
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={() => handleGenerateReport('csv')} 
+                  disabled={generating || !dateRange.start || !dateRange.end}
+                >
+                  {generating ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-2" />
+                      Generate CSV
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => handleGenerateReport('pdf')} 
+                  disabled={generating || !dateRange.start || !dateRange.end}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Generate PDF
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => handleGenerateReport('xlsx')} 
+                  disabled={generating || !dateRange.start || !dateRange.end}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Generate Excel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Report Preview */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Report Preview</CardTitle>
+              <CardDescription>Preview of selected report type</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    {reportTypes.find(t => t.id === reportType)?.name}
+                  </h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    {reportTypes.find(t => t.id === reportType)?.description}
+                  </p>
+                  
+                  {reportType === 'payroll' && (
+                    <div className="text-sm space-y-1">
+                      <p>• Employee hours and rates</p>
+                      <p>• Overtime calculations</p>
+                      <p>• Total payroll costs</p>
+                      <p>• Department breakdowns</p>
+                    </div>
+                  )}
+                  
+                  {reportType === 'productivity' && (
+                    <div className="text-sm space-y-1">
+                      <p>• Efficiency metrics</p>
+                      <p>• Performance trends</p>
+                      <p>• Goal achievements</p>
+                      <p>• Team comparisons</p>
+                    </div>
+                  )}
+                  
+                  {reportType === 'attendance' && (
+                    <div className="text-sm space-y-1">
+                      <p>• Daily attendance patterns</p>
+                      <p>• Late arrivals and early departures</p>
+                      <p>• Absence tracking</p>
+                      <p>• Schedule compliance</p>
+                    </div>
+                  )}
+                  
+                  {reportType === 'overtime' && (
+                    <div className="text-sm space-y-1">
+                      <p>• Overtime hours by employee</p>
+                      <p>• Overtime cost analysis</p>
+                      <p>• Department overtime trends</p>
+                      <p>• Compliance monitoring</p>
+                    </div>
+                  )}
+                  
+                  {reportType === 'billing' && (
+                    <div className="text-sm space-y-1">
+                      <p>• Client billing summaries</p>
+                      <p>• Project cost breakdowns</p>
+                      <p>• Billable vs non-billable hours</p>
+                      <p>• Revenue projections</p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="text-sm text-gray-600">
+                  <p><strong>Date Range:</strong> {dateRange.start || 'Not set'} to {dateRange.end || 'Not set'}</p>
+                  <p><strong>Filters:</strong> {Object.values(filters).filter(Boolean).length || 'None'} applied</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Bulk Import Page Component
+function BulkImportPage() {
+  const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState('team-members')
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadResults, setUploadResults] = useState(null)
+  const [importHistory, setImportHistory] = useState([])
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [validationErrors, setValidationErrors] = useState([])
+  const [previewData, setPreviewData] = useState([])
+  const [showPreview, setShowPreview] = useState(false)
+
+  const importTypes = [
+    {
+      id: 'team-members',
+      name: 'Team Members',
+      icon: Users,
+      description: 'Import team members with roles and pay rates',
+      templateFields: ['email', 'full_name', 'role', 'pay_rate_per_hour', 'department', 'hire_date'],
+      maxRows: 1000
+    },
+    {
+      id: 'historical-timesheets',
+      name: 'Historical Timesheets',
+      icon: Clock,
+      description: 'Import historical timesheet data',
+      templateFields: ['employee_email', 'date', 'hours', 'description', 'status', 'campaign'],
+      maxRows: 10000
+    }
+  ]
+
+  useEffect(() => {
+    fetchImportHistory()
+  }, [])
+
+  const fetchImportHistory = async () => {
+    try {
+      const mockHistory = [
+        {
+          id: 1,
+          type: 'team-members',
+          filename: 'team_members_2024.xlsx',
+          status: 'completed',
+          total_rows: 25,
+          successful_rows: 23,
+          failed_rows: 2,
+          created_at: '2024-01-15T10:30:00Z',
+          completed_at: '2024-01-15T10:32:15Z'
+        },
+        {
+          id: 2,
+          type: 'historical-timesheets',
+          filename: 'timesheets_q4_2023.xlsx',
+          status: 'failed',
+          total_rows: 1500,
+          successful_rows: 0,
+          failed_rows: 1500,
+          created_at: '2024-01-14T14:20:00Z',
+          error_message: 'Invalid date format in multiple rows'
+        }
+      ]
+      setImportHistory(mockHistory)
+    } catch (error) {
+      console.error('Error fetching import history:', error)
+    }
+  }
+
+  const downloadTemplate = (importType) => {
+    const type = importTypes.find(t => t.id === importType)
+    if (!type) return
+
+    const headers = type.templateFields.join(',')
+    let sampleData = ''
+    
+    if (importType === 'team-members') {
+      sampleData = 'john.doe@company.com,John Doe,team_member,18.50,Sales,2024-01-01\njane.smith@company.com,Jane Smith,campaign_lead,22.00,Marketing,2024-01-01'
+    } else if (importType === 'historical-timesheets') {
+      sampleData = 'john.doe@company.com,2024-01-01,8.0,Regular work day,approved,Campaign A\njane.smith@company.com,2024-01-01,7.5,Project work,approved,Campaign B'
+    }
+
+    const csvContent = `${headers}\n${sampleData}`
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${importType}_template.csv`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  }
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+      setSelectedFile(file)
+      setValidationErrors([])
+      setPreviewData([])
+      setShowPreview(false)
+      
+      const allowedTypes = ['.csv', '.xlsx', '.xls']
+      const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'))
+      
+      if (!allowedTypes.includes(fileExtension)) {
+        setValidationErrors(['Invalid file type. Please upload CSV or Excel files only.'])
+        return
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        setValidationErrors(['File size too large. Maximum size is 10MB.'])
+        return
+      }
+
+      previewFileContent(file)
+    }
+  }
+
+  const previewFileContent = async (file) => {
+    try {
+      const mockPreviewData = activeTab === 'team-members' ? [
+        { email: 'john.doe@company.com', full_name: 'John Doe', role: 'team_member', pay_rate_per_hour: '18.50' },
+        { email: 'jane.smith@company.com', full_name: 'Jane Smith', role: 'campaign_lead', pay_rate_per_hour: '22.00' },
+        { email: 'mike.johnson@company.com', full_name: 'Mike Johnson', role: 'team_member', pay_rate_per_hour: '19.25' }
+      ] : [
+        { employee_email: 'john.doe@company.com', date: '2024-01-01', hours: '8.0', description: 'Regular work', status: 'approved' },
+        { employee_email: 'jane.smith@company.com', date: '2024-01-01', hours: '7.5', description: 'Project work', status: 'approved' },
+        { employee_email: 'mike.johnson@company.com', date: '2024-01-01', hours: '8.5', description: 'Overtime work', status: 'pending' }
+      ]
+      
+      setPreviewData(mockPreviewData)
+      setShowPreview(true)
+    } catch (error) {
+      setValidationErrors(['Error reading file. Please check the file format.'])
+    }
+  }
+
+  const handleImport = async () => {
+    if (!selectedFile) return
+
+    setIsUploading(true)
+    setUploadProgress(0)
+    setUploadResults(null)
+
+    try {
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
+          }
+          return prev + 10
+        })
+      }, 200)
+
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      clearInterval(progressInterval)
+      setUploadProgress(100)
+
+      const mockResults = {
+        total_rows: previewData.length,
+        successful_rows: previewData.length - 1,
+        failed_rows: 1,
+        errors: [
+          {
+            row: 2,
+            field: 'email',
+            message: 'Email already exists in system',
+            value: 'jane.smith@company.com'
+          }
+        ],
+        import_id: Date.now()
+      }
+
+      setUploadResults(mockResults)
+      fetchImportHistory()
+    } catch (error) {
+      setValidationErrors(['Import failed. Please try again.'])
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-green-600" />
+      case 'failed':
+        return <XCircle className="w-4 h-4 text-red-600" />
+      case 'processing':
+        return <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
+      default:
+        return <AlertCircle className="w-4 h-4 text-yellow-600" />
+    }
+  }
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800'
+      case 'failed':
+        return 'bg-red-100 text-red-800'
+      case 'processing':
+        return 'bg-blue-100 text-blue-800'
+      default:
+        return 'bg-yellow-100 text-yellow-800'
+    }
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Bulk Import</h1>
+          <p className="text-gray-600">Import team members and historical data in bulk</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => fetchImportHistory()}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Import Type Tabs */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        {importTypes.map((type) => (
+          <button
+            key={type.id}
+            onClick={() => {
+              setActiveTab(type.id)
+              setSelectedFile(null)
+              setValidationErrors([])
+              setPreviewData([])
+              setShowPreview(false)
+              setUploadResults(null)
+            }}
+            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === type.id
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <type.icon className="w-4 h-4 mr-2" />
+            {type.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Import Configuration */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {importTypes.find(t => t.id === activeTab)?.name} Import
+              </CardTitle>
+              <CardDescription>
+                {importTypes.find(t => t.id === activeTab)?.description}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Template Download */}
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <FileSpreadsheet className="w-8 h-8 text-blue-600" />
+                  <div>
+                    <p className="font-medium text-blue-900">Download Template</p>
+                    <p className="text-sm text-blue-700">Get the correct format for your import</p>
+                  </div>
+                </div>
+                <Button variant="outline" onClick={() => downloadTemplate(activeTab)}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download CSV
+                </Button>
+              </div>
+
+              {/* File Upload */}
+              <div className="space-y-2">
+                <Label>Upload File</Label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 mb-2">
+                    Drag and drop your file here, or click to browse
+                  </p>
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <Label htmlFor="file-upload" className="cursor-pointer">
+                    <Button variant="outline" as="span">
+                      Choose File
+                    </Button>
+                  </Label>
+                  {selectedFile && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Validation Errors */}
+              {validationErrors.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <ul className="list-disc list-inside">
+                      {validationErrors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* File Preview */}
+              {showPreview && previewData.length > 0 && (
+                <div className="space-y-2">
+                  <Label>File Preview (First 3 rows)</Label>
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            {Object.keys(previewData[0]).map((key) => (
+                              <th key={key} className="px-4 py-2 text-left font-medium text-gray-900">
+                                {key.replace('_', ' ').toUpperCase()}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {previewData.slice(0, 3).map((row, index) => (
+                            <tr key={index} className="border-t">
+                              {Object.values(row).map((value, cellIndex) => (
+                                <td key={cellIndex} className="px-4 py-2 text-gray-600">
+                                  {value}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Total rows to import: {previewData.length}
+                  </p>
+                </div>
+              )}
+
+              {/* Import Progress */}
+              {isUploading && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Import Progress</Label>
+                    <span className="text-sm text-gray-600">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                      style={{width: `${uploadProgress}%`}}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Import Results */}
+              {uploadResults && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <p className="font-medium">Import completed!</p>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-600">Total Rows</p>
+                          <p className="font-medium">{uploadResults.total_rows}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">Successful</p>
+                          <p className="font-medium text-green-600">{uploadResults.successful_rows}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">Failed</p>
+                          <p className="font-medium text-red-600">{uploadResults.failed_rows}</p>
+                        </div>
+                      </div>
+                      {uploadResults.errors.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium text-red-600">Errors:</p>
+                          <ul className="text-sm text-red-600 list-disc list-inside">
+                            {uploadResults.errors.slice(0, 3).map((error, index) => (
+                              <li key={index}>
+                                Row {error.row}: {error.message} ({error.field}: {error.value})
+                              </li>
+                            ))}
+                          </ul>
+                          {uploadResults.errors.length > 3 && (
+                            <p className="text-sm text-gray-600">
+                              +{uploadResults.errors.length - 3} more errors
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Import Button */}
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleImport} 
+                  disabled={!selectedFile || validationErrors.length > 0 || isUploading}
+                  className="flex-1"
+                >
+                  {isUploading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Start Import
+                    </>
+                  )}
+                </Button>
+                {selectedFile && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSelectedFile(null)
+                      setPreviewData([])
+                      setShowPreview(false)
+                      setValidationErrors([])
+                      setUploadResults(null)
+                    }}
+                  >
+                    Clear
                   </Button>
-                </Link>
-                <Link to="/reports">
-                  <Button className="w-full" variant="outline">
-                    <Download className="w-4 h-4 mr-2" />
-                    Generate Reports
-                  </Button>
-                </Link>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Import Guidelines */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Import Guidelines</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="font-medium">File Requirements:</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• CSV or Excel format (.csv, .xlsx, .xls)</li>
+                  <li>• Maximum file size: 10MB</li>
+                  <li>• Maximum rows: {importTypes.find(t => t.id === activeTab)?.maxRows.toLocaleString()}</li>
+                  <li>• First row must contain headers</li>
+                </ul>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-medium">Required Fields:</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  {importTypes.find(t => t.id === activeTab)?.templateFields.map((field) => (
+                    <li key={field}>• {field.replace('_', ' ')}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {activeTab === 'team-members' && (
+                <div className="space-y-2">
+                  <h4 className="font-medium">Valid Roles:</h4>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• team_member</li>
+                    <li>• campaign_lead</li>
+                    <li>• admin</li>
+                  </ul>
+                </div>
+              )}
+
+              {activeTab === 'historical-timesheets' && (
+                <div className="space-y-2">
+                  <h4 className="font-medium">Valid Status:</h4>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• pending</li>
+                    <li>• approved</li>
+                    <li>• rejected</li>
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Import History */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Import History</CardTitle>
+          <CardDescription>Recent bulk import operations</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {importHistory.length === 0 ? (
+            <div className="text-center py-8">
+              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No imports yet</h3>
+              <p className="text-gray-600">Your import history will appear here</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {importHistory.map((import_record) => (
+                <div key={import_record.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      {import_record.type === 'team-members' ? (
+                        <Users className="w-5 h-5 text-gray-600" />
+                      ) : (
+                        <Clock className="w-5 h-5 text-gray-600" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{import_record.filename}</p>
+                      <p className="text-sm text-gray-600">
+                        {import_record.type.replace('-', ' ')} • {new Date(import_record.created_at).toLocaleDateString()}
+                      </p>
+                      {import_record.error_message && (
+                        <p className="text-sm text-red-600">{import_record.error_message}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right text-sm">
+                      <p className="text-gray-600">
+                        {import_record.successful_rows}/{import_record.total_rows} successful
+                      </p>
+                      {import_record.failed_rows > 0 && (
+                        <p className="text-red-600">{import_record.failed_rows} failed</p>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      {getStatusIcon(import_record.status)}
+                      <Badge className={getStatusColor(import_record.status)}>
+                        {import_record.status}
+                      </Badge>
+                    </div>
+                    <div className="flex space-x-1">
+                      <Button size="sm" variant="outline">
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      {import_record.status === 'failed' && (
+                        <Button size="sm" variant="outline" className="text-red-600">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Error Management Cockpit Component
+function ErrorManagementCockpit() {
+  const [errorLogs, setErrorLogs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedError, setSelectedError] = useState(null)
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterType, setFilterType] = useState('all')
+
+  useEffect(() => {
+    fetchErrorLogs()
+  }, [filterStatus, filterType])
+
+  const fetchErrorLogs = async () => {
+    try {
+      setLoading(true)
+      const mockErrors = [
+        {
+          id: 1,
+          import_id: 123,
+          import_type: 'team-members',
+          filename: 'team_members_2024.xlsx',
+          row_number: 5,
+          field_name: 'email',
+          field_value: 'invalid-email',
+          error_message: 'Invalid email format',
+          error_type: 'validation',
+          status: 'unresolved',
+          created_at: '2024-01-15T10:30:00Z',
+          resolved_at: null,
+          resolved_by: null
+        },
+        {
+          id: 2,
+          import_id: 123,
+          import_type: 'team-members',
+          filename: 'team_members_2024.xlsx',
+          row_number: 8,
+          field_name: 'role',
+          field_value: 'invalid_role',
+          error_message: 'Invalid role. Must be one of: team_member, campaign_lead, admin',
+          error_type: 'validation',
+          status: 'resolved',
+          created_at: '2024-01-15T10:30:00Z',
+          resolved_at: '2024-01-15T11:00:00Z',
+          resolved_by: 'admin@test.com'
+        },
+        {
+          id: 3,
+          import_id: 124,
+          import_type: 'historical-timesheets',
+          filename: 'timesheets_q4_2023.xlsx',
+          row_number: 150,
+          field_name: 'employee_email',
+          field_value: 'nonexistent@company.com',
+          error_message: 'Employee not found in system',
+          error_type: 'reference',
+          status: 'unresolved',
+          created_at: '2024-01-14T14:20:00Z',
+          resolved_at: null,
+          resolved_by: null
+        }
+      ]
+      
+      setErrorLogs(mockErrors.filter(error => {
+        if (filterStatus !== 'all' && error.status !== filterStatus) return false
+        if (filterType !== 'all' && error.import_type !== filterType) return false
+        return true
+      }))
+    } catch (error) {
+      console.error('Error fetching error logs:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resolveError = async (errorId) => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      setErrorLogs(prev => prev.map(error => 
+        error.id === errorId 
+          ? { ...error, status: 'resolved', resolved_at: new Date().toISOString(), resolved_by: 'admin@test.com' }
+          : error
+      ))
+      setSelectedError(null)
+    } catch (error) {
+      console.error('Error resolving error:', error)
+    }
+  }
+
+  const bulkResolve = async () => {
+    const unresolvedErrors = errorLogs.filter(error => error.status === 'unresolved')
+    for (const error of unresolvedErrors) {
+      await resolveError(error.id)
+    }
+  }
+
+  const exportErrorReport = () => {
+    const csvContent = [
+      'Import ID,Import Type,Filename,Row,Field,Value,Error Message,Status,Created At',
+      ...errorLogs.map(error => 
+        `${error.import_id},${error.import_type},${error.filename},${error.row_number},${error.field_name},"${error.field_value}","${error.error_message}",${error.status},${error.created_at}`
+      )
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `error_report_${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  }
+
+  const getErrorTypeColor = (type) => {
+    switch (type) {
+      case 'validation':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'reference':
+        return 'bg-red-100 text-red-800'
+      case 'system':
+        return 'bg-purple-100 text-purple-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'resolved':
+        return 'bg-green-100 text-green-800'
+      case 'unresolved':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertTriangle className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
+          <p className="text-gray-600">Loading error logs...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Error Management Cockpit</h1>
+          <p className="text-gray-600">Monitor and resolve import errors</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={exportErrorReport}>
+            <Download className="w-4 h-4 mr-2" />
+            Export Report
+          </Button>
+          <Button onClick={bulkResolve} disabled={!errorLogs.some(e => e.status === 'unresolved')}>
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Resolve All
+          </Button>
+        </div>
+      </div>
+
+      {/* Error Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Errors</p>
+                <p className="text-2xl font-bold text-gray-900">{errorLogs.length}</p>
+              </div>
+              <AlertTriangle className="w-8 h-8 text-gray-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Unresolved</p>
+                <p className="text-2xl font-bold text-red-900">
+                  {errorLogs.filter(e => e.status === 'unresolved').length}
+                </p>
+              </div>
+              <XCircle className="w-8 h-8 text-red-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Resolved</p>
+                <p className="text-2xl font-bold text-green-900">
+                  {errorLogs.filter(e => e.status === 'resolved').length}
+                </p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Resolution Rate</p>
+                <p className="text-2xl font-bold text-blue-900">
+                  {errorLogs.length > 0 ? Math.round((errorLogs.filter(e => e.status === 'resolved').length / errorLogs.length) * 100) : 0}%
+                </p>
+              </div>
+              <BarChart3 className="w-8 h-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex space-x-2">
+          <select
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="all">All Status</option>
+            <option value="unresolved">Unresolved</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <select
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+          >
+            <option value="all">All Types</option>
+            <option value="team-members">Team Members</option>
+            <option value="historical-timesheets">Historical Timesheets</option>
+          </select>
+        </div>
+        <Button variant="outline" onClick={fetchErrorLogs}>
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Error List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Error Details</CardTitle>
+          <CardDescription>Detailed view of import errors</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {errorLogs.length === 0 ? (
+            <div className="text-center py-8">
+              <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No errors found</h3>
+              <p className="text-gray-600">All imports completed successfully</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {errorLogs.map((error) => (
+                <div key={error.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {error.filename} - Row {error.row_number}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {error.field_name}: "{error.field_value}"
+                      </p>
+                      <p className="text-sm text-red-600">{error.error_message}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(error.created_at).toLocaleString()}
+                        {error.resolved_at && (
+                          <span> • Resolved by {error.resolved_by} on {new Date(error.resolved_at).toLocaleString()}</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Badge className={getErrorTypeColor(error.error_type)}>
+                      {error.error_type}
+                    </Badge>
+                    <Badge className={getStatusColor(error.status)}>
+                      {error.status}
+                    </Badge>
+                    {error.status === 'unresolved' && (
+                      <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedError(error)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => resolveError(error.id)}
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Error Detail Modal */}
+      {selectedError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-2xl">
+            <CardHeader>
+              <CardTitle>Error Details</CardTitle>
+              <CardDescription>
+                Import ID: {selectedError.import_id} • Row {selectedError.row_number}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Filename</Label>
+                  <p className="text-sm text-gray-600">{selectedError.filename}</p>
+                </div>
+                <div>
+                  <Label>Import Type</Label>
+                  <p className="text-sm text-gray-600">{selectedError.import_type}</p>
+                </div>
+                <div>
+                  <Label>Field Name</Label>
+                  <p className="text-sm text-gray-600">{selectedError.field_name}</p>
+                </div>
+                <div>
+                  <Label>Field Value</Label>
+                  <p className="text-sm text-gray-600">"{selectedError.field_value}"</p>
+                </div>
+              </div>
+              <div>
+                <Label>Error Message</Label>
+                <p className="text-sm text-red-600">{selectedError.error_message}</p>
+              </div>
+              <div>
+                <Label>Suggested Resolution</Label>
+                <p className="text-sm text-gray-600">
+                  {selectedError.error_type === 'validation' && 'Correct the field value according to the validation rules.'}
+                  {selectedError.error_type === 'reference' && 'Ensure the referenced record exists in the system.'}
+                  {selectedError.error_type === 'system' && 'Contact system administrator for assistance.'}
+                </p>
+              </div>
+              <div className="flex space-x-2">
+                <Button onClick={() => resolveError(selectedError.id)}>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Mark as Resolved
+                </Button>
+                <Button variant="outline" onClick={() => setSelectedError(null)}>
+                  Close
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -1723,502 +2881,63 @@ function Dashboard() {
   )
 }
 
-// SETTINGS PAGE (unchanged from previous version)
-function SettingsPage() {
-  const { user, updateUser } = useAuth()
-  const [activeTab, setActiveTab] = useState('profile')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
-  
-  const [profileData, setProfileData] = useState({
-    full_name: user?.full_name || '',
-    email: user?.email || ''
-  })
-  
-  const [passwordData, setPasswordData] = useState({
-    current_password: '',
-    new_password: '',
-    confirm_password: ''
-  })
-
-  const tabs = [
-    { id: 'profile', name: 'Profile', icon: Settings },
-    { id: 'security', name: 'Security', icon: Settings },
-    { id: 'notifications', name: 'Notifications', icon: Settings },
-  ]
-
-  const handleProfileUpdate = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setMessage('')
-    
-    try {
-      await api.updateProfile(profileData)
-      await updateUser({ ...user, ...profileData })
-      setMessage('Profile updated successfully')
-    } catch (error) {
-      setError('Failed to update profile')
-      console.error('Error updating profile:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handlePasswordChange = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setMessage('')
-    
-    if (passwordData.new_password !== passwordData.confirm_password) {
-      setError('New passwords do not match')
-      setLoading(false)
-      return
-    }
-    
-    if (passwordData.new_password.length < 8) {
-      setError('Password must be at least 8 characters long')
-      setLoading(false)
-      return
-    }
-    
-    try {
-      await api.changePassword({
-        current_password: passwordData.current_password,
-        new_password: passwordData.new_password
-      })
-      setPasswordData({
-        current_password: '',
-        new_password: '',
-        confirm_password: ''
-      })
-      setMessage('Password changed successfully')
-    } catch (error) {
-      setError('Failed to change password')
-      console.error('Error changing password:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600">Manage your account settings and preferences</p>
-      </div>
-
-      {message && (
-        <Alert>
-          <AlertDescription className="text-green-600">{message}</AlertDescription>
-        </Alert>
-      )}
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar */}
-        <div className="lg:w-64">
-          <nav className="space-y-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
-                  ${activeTab === tab.id
-                    ? 'bg-blue-100 text-blue-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }
-                `}
-              >
-                <tab.icon className="mr-3 h-4 w-4" />
-                {tab.name}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1">
-          {activeTab === 'profile' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-                <CardDescription>Update your personal information and contact details</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleProfileUpdate} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="full_name">Full Name</Label>
-                    <Input
-                      id="full_name"
-                      value={profileData.full_name}
-                      onChange={(e) => setProfileData({...profileData, full_name: e.target.value})}
-                      placeholder="Enter your full name"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profileData.email}
-                      onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                      placeholder="Enter your email"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Role</Label>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="secondary">
-                        {user?.role?.replace('_', ' ') || 'User'}
-                      </Badge>
-                      <span className="text-sm text-gray-600">Contact your administrator to change your role</span>
-                    </div>
-                  </div>
-                  <Button type="submit" disabled={loading}>
-                    {loading ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === 'security' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Security Settings</CardTitle>
-                <CardDescription>Manage your password and security preferences</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handlePasswordChange} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="current_password">Current Password</Label>
-                    <Input
-                      id="current_password"
-                      type="password"
-                      value={passwordData.current_password}
-                      onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
-                      placeholder="Enter current password"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="new_password">New Password</Label>
-                    <Input
-                      id="new_password"
-                      type="password"
-                      value={passwordData.new_password}
-                      onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
-                      placeholder="Enter new password"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm_password">Confirm New Password</Label>
-                    <Input
-                      id="confirm_password"
-                      type="password"
-                      value={passwordData.confirm_password}
-                      onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
-                      placeholder="Confirm new password"
-                      required
-                    />
-                  </div>
-                  <Button type="submit" disabled={loading}>
-                    {loading ? 'Changing...' : 'Change Password'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === 'notifications' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>Choose how you want to be notified about timesheet activities</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">Email Notifications</h4>
-                      <p className="text-sm text-gray-600">Receive email updates about timesheet approvals</p>
-                    </div>
-                    <input type="checkbox" className="rounded" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">Approval Reminders</h4>
-                      <p className="text-sm text-gray-600">Get reminded about pending timesheet approvals</p>
-                    </div>
-                    <input type="checkbox" className="rounded" defaultChecked />
-                  </div>
-                  <Button>Save Preferences</Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// LOGIN COMPONENT (unchanged)
-function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const { login, loading, error, clearError } = useAuth()
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    clearError()
-    
-    try {
-      await login(email, password)
-    } catch (error) {
-      console.error('Login failed:', error)
-    }
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Clock className="w-6 h-6 text-white" />
-          </div>
-          <CardTitle className="text-2xl font-bold">Inv_TimeSheetMgmt</CardTitle>
-          <CardDescription>Sign in to your timesheet account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// SIDEBAR COMPONENT (updated with new navigation items)
-function Sidebar({ isMobileOpen, setIsMobileOpen }) {
-  const { user, logout } = useAuth()
-  const location = useLocation()
-  
-  const navigation = [
-    { name: 'Dashboard', icon: BarChart3, href: '/', current: location.pathname === '/' },
-    { name: 'Timesheets', icon: Clock, href: '/timesheets', current: location.pathname === '/timesheets' },
-    { name: 'Team', icon: Users, href: '/team', current: location.pathname === '/team', roles: ['admin', 'campaign_lead'] },
-    { name: 'Analytics', icon: TrendingUp, href: '/analytics', current: location.pathname === '/analytics', roles: ['admin'] },
-    { name: 'Reports', icon: FileText, href: '/reports', current: location.pathname === '/reports', roles: ['admin'] },
-    { name: 'Settings', icon: Settings, href: '/settings', current: location.pathname === '/settings' },
-  ]
-
-  const filteredNavigation = navigation.filter(item => 
-    !item.roles || item.roles.includes(user?.role)
-  )
-
-  const handleLogout = async () => {
-    try {
-      await logout()
-    } catch (error) {
-      console.error('Logout failed:', error)
-    }
-  }
-
-  return (
-    <>
-      {isMobileOpen && (
-        <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
-      
-      <div className={`
-        fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
-        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between h-16 px-4 border-b">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Clock className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-semibold text-gray-900">TimeSheet</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="lg:hidden"
-              onClick={() => setIsMobileOpen(false)}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <div className="p-4 border-b">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-gray-700">
-                  {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {user?.full_name || 'User'}
-                </p>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {user?.role?.replace('_', ' ') || 'user'}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <nav className="flex-1 px-4 py-4 space-y-1">
-            {filteredNavigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`
-                  group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors
-                  ${item.current
-                    ? 'bg-blue-100 text-blue-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }
-                `}
-                onClick={() => setIsMobileOpen(false)}
-              >
-                <item.icon
-                  className={`
-                    mr-3 h-5 w-5 flex-shrink-0
-                    ${item.current ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'}
-                  `}
-                />
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="p-4 border-t">
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-gray-600 hover:text-gray-900"
-              onClick={handleLogout}
-            >
-              <LogOut className="mr-3 h-4 w-4" />
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </div>
-    </>
-  )
-}
-
-// MAIN LAYOUT COMPONENT (updated with new routes)
-function MainLayout() {
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
-
-  return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white shadow-sm border-b lg:hidden">
-          <div className="flex items-center justify-between h-16 px-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsMobileOpen(true)}
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
-            <h1 className="text-lg font-semibold">TimeSheet</h1>
-            <div className="w-8" />
-          </div>
-        </header>
-        
-        <main className="flex-1 overflow-auto">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/timesheets" element={<TimesheetsPage />} />
-            <Route path="/team" element={<TeamPage />} />
-            <Route path="/analytics" element={<AnalyticsDashboard />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Routes>
-        </main>
-      </div>
-    </div>
-  )
-}
-
-// MAIN APP COMPONENT (unchanged)
+// Main App Component
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <Routes>
-          <Route path="/login" element={
-            <PublicRoute>
-              <LoginPage />
-            </PublicRoute>
-          } />
-          <Route path="/*" element={
-            <ProtectedRoute>
-              <MainLayout />
-            </ProtectedRoute>
-          } />
-        </Routes>
+        <AppContent />
       </Router>
     </AuthProvider>
+  )
+}
+
+function AppContent() {
+  const { user, logout, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <LoginPage />
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar user={user} onLogout={logout} />
+      
+      {/* Main content */}
+      <div className="flex-1 overflow-auto">
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/timesheets" element={<TimesheetsPage />} />
+          <Route path="/team" element={<TeamPage />} />
+          <Route path="/analytics" element={
+            user.role === 'admin' ? <AnalyticsPage /> : <Navigate to="/dashboard" replace />
+          } />
+          <Route path="/reports" element={
+            user.role === 'admin' ? <ReportsPage /> : <Navigate to="/dashboard" replace />
+          } />
+          <Route path="/bulk-import" element={
+            user.role === 'admin' ? <BulkImportPage /> : <Navigate to="/dashboard" replace />
+          } />
+          <Route path="/error-management" element={
+            user.role === 'admin' ? <ErrorManagementCockpit /> : <Navigate to="/dashboard" replace />
+          } />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Routes>
+      </div>
+    </div>
   )
 }
 
