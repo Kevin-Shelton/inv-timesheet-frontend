@@ -1,5 +1,5 @@
 // COMPLETE ENHANCED TIMESHEET MANAGEMENT APP
-// Fixed version with all dependencies resolved and design issues corrected
+// Fixed version with proper CSS styling (no Tailwind dependencies)
 
 import React, { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
@@ -14,6 +14,7 @@ import {
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, 
   AreaChart, Area 
 } from 'recharts'
+import './App.css'
 
 // Mock API for demonstration
 const api = {
@@ -118,29 +119,16 @@ function useAuth() {
   return useContext(AuthContext)
 }
 
-// UI Components (inline to avoid import issues)
-const Button = ({ children, className = '', variant = 'default', size = 'default', onClick, disabled, type = 'button', ...props }) => {
-  const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none'
-  
-  const variants = {
-    default: 'bg-blue-600 text-white hover:bg-blue-700',
-    destructive: 'bg-red-600 text-white hover:bg-red-700',
-    outline: 'border border-gray-300 bg-white hover:bg-gray-50',
-    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
-    ghost: 'hover:bg-gray-100'
-  }
-  
-  const sizes = {
-    default: 'h-10 py-2 px-4',
-    sm: 'h-9 px-3 text-sm',
-    lg: 'h-11 px-8',
-    icon: 'h-10 w-10'
-  }
+// UI Components with proper CSS classes
+const Button = ({ children, className = '', variant = 'primary', size = 'default', onClick, disabled, type = 'button', ...props }) => {
+  const baseClass = 'btn'
+  const variantClass = `btn-${variant}`
+  const sizeClass = size !== 'default' ? `btn-${size}` : ''
   
   return (
     <button
       type={type}
-      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`${baseClass} ${variantClass} ${sizeClass} ${className}`}
       onClick={onClick}
       disabled={disabled}
       {...props}
@@ -151,31 +139,31 @@ const Button = ({ children, className = '', variant = 'default', size = 'default
 }
 
 const Card = ({ children, className = '', ...props }) => (
-  <div className={`rounded-lg border bg-white shadow-sm ${className}`} {...props}>
+  <div className={`card ${className}`} {...props}>
     {children}
   </div>
 )
 
 const CardHeader = ({ children, className = '', ...props }) => (
-  <div className={`flex flex-col space-y-1.5 p-6 ${className}`} {...props}>
+  <div className={`card-header ${className}`} {...props}>
     {children}
   </div>
 )
 
 const CardTitle = ({ children, className = '', ...props }) => (
-  <h3 className={`text-lg font-semibold leading-none tracking-tight ${className}`} {...props}>
+  <h3 className={`card-title ${className}`} {...props}>
     {children}
   </h3>
 )
 
 const CardDescription = ({ children, className = '', ...props }) => (
-  <p className={`text-sm text-gray-600 ${className}`} {...props}>
+  <p className={`card-description ${className}`} {...props}>
     {children}
   </p>
 )
 
 const CardContent = ({ children, className = '', ...props }) => (
-  <div className={`p-6 pt-0 ${className}`} {...props}>
+  <div className={`card-content ${className}`} {...props}>
     {children}
   </div>
 )
@@ -183,46 +171,28 @@ const CardContent = ({ children, className = '', ...props }) => (
 const Input = ({ className = '', type = 'text', ...props }) => (
   <input
     type={type}
-    className={`flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    className={`form-input ${className}`}
     {...props}
   />
 )
 
 const Label = ({ children, className = '', ...props }) => (
-  <label className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`} {...props}>
+  <label className={`form-label ${className}`} {...props}>
     {children}
   </label>
 )
 
-const Badge = ({ children, className = '', variant = 'default', ...props }) => {
-  const variants = {
-    default: 'bg-blue-100 text-blue-800',
-    secondary: 'bg-gray-100 text-gray-800',
-    destructive: 'bg-red-100 text-red-800',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800'
-  }
-  
-  return (
-    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${variants[variant]} ${className}`} {...props}>
-      {children}
-    </div>
-  )
-}
+const Badge = ({ children, className = '', variant = 'blue', ...props }) => (
+  <div className={`badge badge-${variant} ${className}`} {...props}>
+    {children}
+  </div>
+)
 
-const Alert = ({ children, className = '', variant = 'default', ...props }) => {
-  const variants = {
-    default: 'bg-blue-50 border-blue-200 text-blue-800',
-    destructive: 'bg-red-50 border-red-200 text-red-800',
-    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800'
-  }
-  
-  return (
-    <div className={`relative w-full rounded-lg border p-4 ${variants[variant]} ${className}`} {...props}>
-      {children}
-    </div>
-  )
-}
+const Alert = ({ children, className = '', variant = 'default', ...props }) => (
+  <div className={`alert alert-${variant} ${className}`} {...props}>
+    {children}
+  </div>
+)
 
 const AlertDescription = ({ children, className = '', ...props }) => (
   <div className={`text-sm ${className}`} {...props}>
@@ -236,9 +206,9 @@ function ProtectedRoute({ children }) {
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="login-container">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="loading-spinner mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
@@ -253,9 +223,9 @@ function PublicRoute({ children }) {
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="login-container">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="loading-spinner mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
@@ -289,90 +259,86 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-header">
+          <div className="login-icon">
             <Clock className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-3xl font-extrabold text-gray-900">
+          <h2 className="login-title">
             TimeSheet Manager
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="login-subtitle">
             BPO Management System
           </p>
         </div>
         
-        <Card className="p-8">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email address</Label>
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div className="form-group">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                id="email"
+                type="email"
+                required
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <Label htmlFor="password">Password</Label>
+              <div className="password-input-container">
                 <Input
-                  id="email"
-                  type="email"
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <div className="relative mt-1">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             </div>
+          </div>
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="demo-credentials">
+            <p><strong>Demo Credentials:</strong></p>
+            <p>Admin: admin@test.com / password123</p>
+            <p>User: user@test.com / password123</p>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? (
+              <div className="flex items-center">
+                <div className="loading-spinner"></div>
+                Signing in...
+              </div>
+            ) : (
+              'Sign in'
             )}
-
-            <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-md">
-              <p><strong>Demo Credentials:</strong></p>
-              <p>Admin: admin@test.com / password123</p>
-              <p>User: user@test.com / password123</p>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Signing in...
-                </div>
-              ) : (
-                'Sign in'
-              )}
-            </Button>
-          </form>
-        </Card>
+          </Button>
+        </form>
       </div>
     </div>
   )
@@ -471,13 +437,13 @@ function AnalyticsDashboard() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="page-content space-y-6">
+      <div className="flex flex-col lg-flex-row lg-items-center lg-justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
           <p className="text-gray-600 mt-1">Comprehensive insights into team performance and productivity</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm-flex-row gap-4">
           <div className="flex gap-2">
             <Input
               type="date"
@@ -500,7 +466,7 @@ function AnalyticsDashboard() {
       </div>
 
       {/* Metric Selection Tabs */}
-      <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg">
+      <div className="tab-nav">
         {[
           { id: 'overview', name: 'Overview', icon: BarChart3 },
           { id: 'productivity', name: 'Productivity', icon: TrendingUp },
@@ -510,22 +476,18 @@ function AnalyticsDashboard() {
           <button
             key={tab.id}
             onClick={() => setSelectedMetric(tab.id)}
-            className={`flex items-center px-3 md:px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              selectedMetric === tab.id
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            className={`tab-button ${selectedMetric === tab.id ? 'active' : ''}`}
           >
-            <tab.icon className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">{tab.name}</span>
-            <span className="sm:hidden">{tab.name.split(' ')[0]}</span>
+            <tab.icon className="tab-icon" />
+            <span className="tab-text">{tab.name}</span>
+            <span className="tab-text-short">{tab.name.split(' ')[0]}</span>
           </button>
         ))}
       </div>
 
       {/* Overview Tab */}
       {selectedMetric === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
           {/* Time Distribution Pie Chart */}
           <Card>
             <CardHeader>
@@ -533,25 +495,27 @@ function AnalyticsDashboard() {
               <CardDescription>How time is allocated across different campaigns</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={analyticsData.timeDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({name, percentage}) => `${name}: ${percentage}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="hours"
-                  >
-                    {analyticsData.timeDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={analyticsData.timeDistribution}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({name, percentage}) => `${name}: ${percentage}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="hours"
+                    >
+                      {analyticsData.timeDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 
@@ -562,36 +526,40 @@ function AnalyticsDashboard() {
               <CardDescription>Current status of timesheet submissions</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analyticsData.approvalStats}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="status" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#3B82F6" />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analyticsData.approvalStats}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="status" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#3B82F6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 
           {/* Hours by Day */}
-          <Card className="lg:col-span-2">
+          <Card className="lg-col-span-2">
             <CardHeader>
               <CardTitle>Daily Hours Breakdown</CardTitle>
               <CardDescription>Regular vs overtime hours by day of the week</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analyticsData.hoursByDay}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="regular" stackId="a" fill="#10B981" name="Regular Hours" />
-                  <Bar dataKey="overtime" stackId="a" fill="#F59E0B" name="Overtime Hours" />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analyticsData.hoursByDay}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="day" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="regular" stackId="a" fill="#10B981" name="Regular Hours" />
+                    <Bar dataKey="overtime" stackId="a" fill="#F59E0B" name="Overtime Hours" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -606,18 +574,20 @@ function AnalyticsDashboard() {
               <CardDescription>Daily productivity scores and hours worked</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={analyticsData.productivityTrends}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip />
-                  <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="productivity" stroke="#3B82F6" name="Productivity %" />
-                  <Line yAxisId="right" type="monotone" dataKey="hours" stroke="#10B981" name="Hours Worked" />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="chart-container-large">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={analyticsData.productivityTrends}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Legend />
+                    <Line yAxisId="left" type="monotone" dataKey="productivity" stroke="#3B82F6" name="Productivity %" />
+                    <Line yAxisId="right" type="monotone" dataKey="hours" stroke="#10B981" name="Hours Worked" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 
@@ -627,17 +597,19 @@ function AnalyticsDashboard() {
               <CardDescription>Planned vs actual hours with overtime tracking</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={analyticsData.overtimeAnalysis}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Area type="monotone" dataKey="planned" stackId="1" stroke="#8884d8" fill="#8884d8" name="Planned Hours" />
-                  <Area type="monotone" dataKey="overtime" stackId="1" stroke="#82ca9d" fill="#82ca9d" name="Overtime Hours" />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={analyticsData.overtimeAnalysis}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Area type="monotone" dataKey="planned" stackId="1" stroke="#8884d8" fill="#8884d8" name="Planned Hours" />
+                    <Area type="monotone" dataKey="overtime" stackId="1" stroke="#82ca9d" fill="#82ca9d" name="Overtime Hours" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -654,8 +626,8 @@ function AnalyticsDashboard() {
             <CardContent>
               <div className="space-y-4">
                 {analyticsData.teamPerformance.map((member, index) => (
-                  <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4 mb-3 sm:mb-0">
+                  <div key={index} className="flex flex-col sm-flex-row sm-items-center sm-justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4 mb-3 sm-mb-0">
                       <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-sm font-medium text-blue-600">
                           {member.name.split(' ').map(n => n[0]).join('')}
@@ -666,7 +638,7 @@ function AnalyticsDashboard() {
                         <p className="text-sm text-gray-600">{member.hours} hours this month</p>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-end space-x-6">
+                    <div className="flex items-center justify-between sm-justify-end space-x-6">
                       <div className="text-center">
                         <p className="text-sm text-gray-600">Efficiency</p>
                         <p className="text-lg font-semibold text-green-600">{member.efficiency}%</p>
@@ -675,9 +647,9 @@ function AnalyticsDashboard() {
                         <p className="text-sm text-gray-600">Overtime</p>
                         <p className="text-lg font-semibold text-orange-600">{member.overtime}h</p>
                       </div>
-                      <div className="w-24 bg-gray-200 rounded-full h-2">
+                      <div className="performance-bar">
                         <div 
-                          className="bg-blue-600 h-2 rounded-full" 
+                          className="performance-fill" 
                           style={{width: `${member.efficiency}%`}}
                         ></div>
                       </div>
@@ -692,41 +664,43 @@ function AnalyticsDashboard() {
 
       {/* Time Analysis Tab */}
       {selectedMetric === 'time' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Time Utilization</CardTitle>
               <CardDescription>How time is being utilized across the organization</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Productive Work', value: 75, color: '#10B981' },
-                      { name: 'Meetings', value: 15, color: '#3B82F6' },
-                      { name: 'Admin Tasks', value: 7, color: '#F59E0B' },
-                      { name: 'Breaks', value: 3, color: '#EF4444' }
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({name, value}) => `${name}: ${value}%`}
-                  >
-                    {[
-                      { name: 'Productive Work', value: 75, color: '#10B981' },
-                      { name: 'Meetings', value: 15, color: '#3B82F6' },
-                      { name: 'Admin Tasks', value: 7, color: '#F59E0B' },
-                      { name: 'Breaks', value: 3, color: '#EF4444' }
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Productive Work', value: 75, color: '#10B981' },
+                        { name: 'Meetings', value: 15, color: '#3B82F6' },
+                        { name: 'Admin Tasks', value: 7, color: '#F59E0B' },
+                        { name: 'Breaks', value: 3, color: '#EF4444' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({name, value}) => `${name}: ${value}%`}
+                    >
+                      {[
+                        { name: 'Productive Work', value: 75, color: '#10B981' },
+                        { name: 'Meetings', value: 15, color: '#3B82F6' },
+                        { name: 'Admin Tasks', value: 7, color: '#F59E0B' },
+                        { name: 'Breaks', value: 3, color: '#EF4444' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 
@@ -736,25 +710,27 @@ function AnalyticsDashboard() {
               <CardDescription>When your team is most productive</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={[
-                  { hour: '9 AM', productivity: 65 },
-                  { hour: '10 AM', productivity: 85 },
-                  { hour: '11 AM', productivity: 95 },
-                  { hour: '12 PM', productivity: 70 },
-                  { hour: '1 PM', productivity: 60 },
-                  { hour: '2 PM', productivity: 80 },
-                  { hour: '3 PM', productivity: 90 },
-                  { hour: '4 PM', productivity: 75 },
-                  { hour: '5 PM', productivity: 55 }
-                ]}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="hour" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="productivity" fill="#3B82F6" />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={[
+                    { hour: '9 AM', productivity: 65 },
+                    { hour: '10 AM', productivity: 85 },
+                    { hour: '11 AM', productivity: 95 },
+                    { hour: '12 PM', productivity: 70 },
+                    { hour: '1 PM', productivity: 60 },
+                    { hour: '2 PM', productivity: 80 },
+                    { hour: '3 PM', productivity: 90 },
+                    { hour: '4 PM', productivity: 75 },
+                    { hour: '5 PM', productivity: 55 }
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="hour" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="productivity" fill="#3B82F6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -782,27 +758,27 @@ function ReportsPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="page-content space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Reports</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
         <p className="text-gray-600 mt-1">Generate comprehensive reports for payroll and analytics</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg-grid-cols-3 gap-6">
         {/* Report Configuration */}
-        <div className="lg:col-span-1">
+        <div className="lg-col-span-1">
           <Card>
             <CardHeader>
               <CardTitle>Report Configuration</CardTitle>
               <CardDescription>Configure your report parameters</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
+              <div className="form-group">
                 <Label>Report Type</Label>
                 <select
                   value={reportType}
                   onChange={(e) => setReportType(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="form-select"
                 >
                   <option value="payroll">Payroll Report</option>
                   <option value="timesheet">Timesheet Summary</option>
@@ -811,23 +787,21 @@ function ReportsPage() {
                 </select>
               </div>
               
-              <div>
+              <div className="form-group">
                 <Label>Start Date</Label>
                 <Input
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-                  className="mt-1"
                 />
               </div>
               
-              <div>
+              <div className="form-group">
                 <Label>End Date</Label>
                 <Input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-                  className="mt-1"
                 />
               </div>
               
@@ -838,7 +812,7 @@ function ReportsPage() {
               >
                 {loading ? (
                   <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="loading-spinner"></div>
                     Generating...
                   </div>
                 ) : (
@@ -853,17 +827,17 @@ function ReportsPage() {
         </div>
 
         {/* Report Preview */}
-        <div className="lg:col-span-2">
+        <div className="lg-col-span-2">
           <Card>
             <CardHeader>
               <CardTitle>Report Preview</CardTitle>
               <CardDescription>Preview of your {reportType} report</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-16">
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Report Preview</h3>
-                <p className="text-gray-600 mb-4">
+              <div className="empty-state">
+                <FileText className="empty-state-icon" />
+                <h3 className="empty-state-title">Report Preview</h3>
+                <p className="empty-state-description">
                   Configure your report settings and click "Generate Report" to see the preview
                 </p>
                 <div className="bg-gray-50 rounded-lg p-4 text-left">
@@ -966,14 +940,14 @@ function AdminTimesheetApproval() {
     }
   }
 
-  const getStatusColor = (status) => {
+  const getStatusBadge = (status) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-100 text-green-800'
+        return 'green'
       case 'rejected':
-        return 'bg-red-100 text-red-800'
+        return 'red'
       default:
-        return 'bg-yellow-100 text-yellow-800'
+        return 'yellow'
     }
   }
 
@@ -994,10 +968,10 @@ function AdminTimesheetApproval() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="page-content space-y-6">
+      <div className="flex flex-col sm-flex-row sm-items-center sm-justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Timesheet Approvals</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Timesheet Approvals</h1>
           <p className="text-gray-600 mt-1">Review and approve team timesheet entries</p>
         </div>
         <Button>
@@ -1013,12 +987,12 @@ function AdminTimesheetApproval() {
       )}
 
       {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm-flex-row gap-4">
         <div className="flex flex-wrap gap-2">
           {['all', 'pending', 'approved', 'rejected'].map((status) => (
             <Button
               key={status}
-              variant={filter === status ? 'default' : 'outline'}
+              variant={filter === status ? 'primary' : 'outline'}
               size="sm"
               onClick={() => setFilter(status)}
             >
@@ -1027,13 +1001,13 @@ function AdminTimesheetApproval() {
           ))}
         </div>
         <div className="flex-1 max-w-sm">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <div className="search-input-container">
+            <Search className="search-icon" />
             <Input
               placeholder="Search by user or description..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="search-input"
             />
           </div>
         </div>
@@ -1047,31 +1021,29 @@ function AdminTimesheetApproval() {
         </CardHeader>
         <CardContent>
           {filteredTimesheets.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No timesheets found</h3>
-              <p className="text-gray-600">No timesheets match your current filter</p>
+            <div className="empty-state">
+              <Clock className="empty-state-icon" />
+              <h3 className="empty-state-title">No timesheets found</h3>
+              <p className="empty-state-description">No timesheets match your current filter</p>
             </div>
           ) : (
             <div className="space-y-4">
               {filteredTimesheets.map((timesheet) => (
-                <div key={timesheet.id} className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center space-x-4 mb-3 lg:mb-0">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{timesheet.user_name || 'Unknown User'}</p>
-                      <p className="text-sm text-gray-600">{timesheet.date} • {timesheet.hours} hours</p>
-                      {timesheet.description && (
-                        <p className="text-sm text-gray-500">{timesheet.description}</p>
-                      )}
-                    </div>
+                <div key={timesheet.id} className="timesheet-card">
+                  <div className="timesheet-icon-container">
+                    <Clock className="w-5 h-5 text-blue-600" />
                   </div>
-                  <div className="flex items-center justify-between lg:justify-end space-x-3">
+                  <div className="timesheet-info">
+                    <p className="timesheet-user">{timesheet.user_name || 'Unknown User'}</p>
+                    <p className="timesheet-details">{timesheet.date} • {timesheet.hours} hours</p>
+                    {timesheet.description && (
+                      <p className="timesheet-description">{timesheet.description}</p>
+                    )}
+                  </div>
+                  <div className="timesheet-actions">
                     <div className="flex items-center space-x-1">
                       {getStatusIcon(timesheet.status)}
-                      <Badge className={getStatusColor(timesheet.status)}>
+                      <Badge variant={getStatusBadge(timesheet.status)}>
                         {timesheet.status}
                       </Badge>
                     </div>
@@ -1080,7 +1052,7 @@ function AdminTimesheetApproval() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-green-600 border-green-600 hover:bg-green-50"
+                          className="text-green-600 border-green-600 hover-bg-green-50"
                           onClick={() => {
                             setSelectedTimesheet(timesheet)
                             setApprovalComment('')
@@ -1092,7 +1064,7 @@ function AdminTimesheetApproval() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-red-600 border-red-600 hover:bg-red-50"
+                          className="text-red-600 border-red-600 hover-bg-red-50"
                           onClick={() => {
                             setSelectedTimesheet(timesheet)
                             setApprovalComment('')
@@ -1113,8 +1085,8 @@ function AdminTimesheetApproval() {
 
       {/* Approval Modal */}
       {selectedTimesheet && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md">
+        <div className="modal-overlay">
+          <div className="modal-content">
             <CardHeader>
               <CardTitle>Review Timesheet</CardTitle>
               <CardDescription>
@@ -1128,7 +1100,7 @@ function AdminTimesheetApproval() {
                   <p className="text-sm text-gray-600 mt-1">{selectedTimesheet.description}</p>
                 </div>
               )}
-              <div className="space-y-2">
+              <div className="form-group">
                 <Label htmlFor="comment">Comments (optional)</Label>
                 <Input
                   id="comment"
@@ -1137,7 +1109,7 @@ function AdminTimesheetApproval() {
                   onChange={(e) => setApprovalComment(e.target.value)}
                 />
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm-flex-row gap-2">
                 <Button
                   className="flex-1"
                   onClick={() => handleApproval(selectedTimesheet.id, 'approve')}
@@ -1161,7 +1133,7 @@ function AdminTimesheetApproval() {
                 </Button>
               </div>
             </CardContent>
-          </Card>
+          </div>
         </div>
       )}
     </div>
@@ -1233,14 +1205,14 @@ function TimesheetsPage() {
     }
   }
 
-  const getStatusColor = (status) => {
+  const getStatusBadge = (status) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-100 text-green-800'
+        return 'green'
       case 'rejected':
-        return 'bg-red-100 text-red-800'
+        return 'red'
       default:
-        return 'bg-yellow-100 text-yellow-800'
+        return 'yellow'
     }
   }
 
@@ -1256,10 +1228,10 @@ function TimesheetsPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="page-content space-y-6">
+      <div className="flex flex-col sm-flex-row sm-items-center sm-justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Timesheets</h1>
+          <h1 className="text-2xl font-bold text-gray-900">My Timesheets</h1>
           <p className="text-gray-600 mt-1">Track and manage your time entries</p>
         </div>
         <Button onClick={() => setShowAddForm(true)}>
@@ -1283,8 +1255,8 @@ function TimesheetsPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmitTimesheet} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 md-grid-cols-2 gap-4">
+                <div className="form-group">
                   <Label htmlFor="date">Date</Label>
                   <Input
                     id="date"
@@ -1294,7 +1266,7 @@ function TimesheetsPage() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="form-group">
                   <Label htmlFor="hours">Hours</Label>
                   <Input
                     id="hours"
@@ -1309,7 +1281,7 @@ function TimesheetsPage() {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="form-group">
                 <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
@@ -1318,7 +1290,7 @@ function TimesheetsPage() {
                   onChange={(e) => setNewTimesheet({...newTimesheet, description: e.target.value})}
                 />
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm-flex-row gap-2">
                 <Button type="submit">
                   Save Entry
                 </Button>
@@ -1339,10 +1311,10 @@ function TimesheetsPage() {
         </CardHeader>
         <CardContent>
           {timesheets.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No timesheets yet</h3>
-              <p className="text-gray-600 mb-4">Start by adding your first time entry</p>
+            <div className="empty-state">
+              <Clock className="empty-state-icon" />
+              <h3 className="empty-state-title">No timesheets yet</h3>
+              <p className="empty-state-description">Start by adding your first time entry</p>
               <Button onClick={() => setShowAddForm(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add First Entry
@@ -1351,22 +1323,20 @@ function TimesheetsPage() {
           ) : (
             <div className="space-y-4">
               {timesheets.map((timesheet) => (
-                <div key={timesheet.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center space-x-4 mb-3 sm:mb-0">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{timesheet.date}</p>
-                      <p className="text-sm text-gray-600">{timesheet.hours} hours</p>
-                      {timesheet.description && (
-                        <p className="text-sm text-gray-500">{timesheet.description}</p>
-                      )}
-                    </div>
+                <div key={timesheet.id} className="timesheet-card">
+                  <div className="timesheet-icon-container">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="timesheet-info">
+                    <p className="timesheet-user">{timesheet.date}</p>
+                    <p className="timesheet-details">{timesheet.hours} hours</p>
+                    {timesheet.description && (
+                      <p className="timesheet-description">{timesheet.description}</p>
+                    )}
                   </div>
                   <div className="flex items-center space-x-1">
                     {getStatusIcon(timesheet.status)}
-                    <Badge className={getStatusColor(timesheet.status)}>
+                    <Badge variant={getStatusBadge(timesheet.status)}>
                       {timesheet.status}
                     </Badge>
                   </div>
@@ -1461,14 +1431,14 @@ function TeamPage() {
     }
   }
 
-  const getRoleColor = (role) => {
+  const getRoleBadge = (role) => {
     switch (role) {
       case 'admin':
-        return 'bg-red-100 text-red-800'
+        return 'red'
       case 'campaign_lead':
-        return 'bg-blue-100 text-blue-800'
+        return 'blue'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'gray'
     }
   }
 
@@ -1487,10 +1457,10 @@ function TeamPage() {
   const isAdmin = user?.role === 'admin'
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="page-content space-y-6">
+      <div className="flex flex-col sm-flex-row sm-items-center sm-justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Team Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Team Management</h1>
           <p className="text-gray-600 mt-1">Manage your team members and their roles</p>
         </div>
         {canManageTeam && (
@@ -1535,8 +1505,8 @@ function TeamPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmitMember} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 md-grid-cols-2 gap-4">
+                <div className="form-group">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
@@ -1547,7 +1517,7 @@ function TeamPage() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="form-group">
                   <Label htmlFor="full_name">Full Name</Label>
                   <Input
                     id="full_name"
@@ -1558,12 +1528,12 @@ function TeamPage() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 md-grid-cols-2 gap-4">
+                <div className="form-group">
                   <Label htmlFor="role">Role</Label>
                   <select
                     id="role"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="form-select"
                     value={newMember.role}
                     onChange={(e) => setNewMember({...newMember, role: e.target.value})}
                   >
@@ -1572,7 +1542,7 @@ function TeamPage() {
                     {isAdmin && <option value="admin">Admin</option>}
                   </select>
                 </div>
-                <div className="space-y-2">
+                <div className="form-group">
                   <Label htmlFor="pay_rate">Pay Rate (per hour)</Label>
                   <Input
                     id="pay_rate"
@@ -1585,7 +1555,7 @@ function TeamPage() {
                   />
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm-flex-row gap-2">
                 <Button type="submit">
                   {editingUser ? 'Update Member' : 'Add Member'}
                 </Button>
@@ -1609,10 +1579,10 @@ function TeamPage() {
         </CardHeader>
         <CardContent>
           {teamMembers.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No team members yet</h3>
-              <p className="text-gray-600 mb-4">Start building your team by adding members</p>
+            <div className="empty-state">
+              <Users className="empty-state-icon" />
+              <h3 className="empty-state-title">No team members yet</h3>
+              <p className="empty-state-description">Start building your team by adding members</p>
               {canManageTeam && (
                 <Button onClick={() => setShowAddForm(true)}>
                   <UserPlus className="w-4 h-4 mr-2" />
@@ -1623,23 +1593,21 @@ function TeamPage() {
           ) : (
             <div className="space-y-4">
               {teamMembers.map((member) => (
-                <div key={member.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center space-x-4 mb-3 sm:mb-0">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-gray-700">
-                        {member.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{member.full_name}</p>
-                      <p className="text-sm text-gray-600">{member.email}</p>
-                      {member.pay_rate_per_hour && (
-                        <p className="text-sm text-gray-500">${member.pay_rate_per_hour}/hour</p>
-                      )}
-                    </div>
+                <div key={member.id} className="team-member-card">
+                  <div className="team-member-avatar">
+                    <span className="team-member-avatar-text">
+                      {member.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between sm:justify-end space-x-3">
-                    <Badge className={getRoleColor(member.role)}>
+                  <div className="team-member-info">
+                    <p className="team-member-name">{member.full_name}</p>
+                    <p className="team-member-email">{member.email}</p>
+                    {member.pay_rate_per_hour && (
+                      <p className="team-member-rate">${member.pay_rate_per_hour}/hour</p>
+                    )}
+                  </div>
+                  <div className="team-member-actions">
+                    <Badge variant={getRoleBadge(member.role)}>
                       {member.role?.replace('_', ' ')}
                     </Badge>
                     {isAdmin && member.id !== user.id && (
@@ -1654,7 +1622,7 @@ function TeamPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-red-600 border-red-600 hover:bg-red-50"
+                          className="text-red-600 border-red-600 hover-bg-red-50"
                           onClick={() => handleDeleteUser(member.id)}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1758,9 +1726,9 @@ function Dashboard() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="page-content space-y-6">
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900">
           Welcome back, {user?.full_name || user?.name || 'User'}!
         </h1>
         <p className="text-gray-600 mt-1">
@@ -1769,7 +1737,7 @@ function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+      <div className="grid grid-cols-1 sm-grid-cols-2 lg-grid-cols-4 gap-4 mb-8">
         {user?.role === 'admin' ? (
           <>
             <StatCard
@@ -1839,8 +1807,8 @@ function Dashboard() {
         </CardHeader>
         <CardContent>
           {dashboardData.recentTimesheets.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <div className="empty-state">
+              <Clock className="empty-state-icon" />
               <p className="text-gray-500">No recent activity</p>
             </div>
           ) : (
@@ -1858,10 +1826,10 @@ function Dashboard() {
                       <p className="text-xs text-gray-500">{item.date}</p>
                     </div>
                   </div>
-                  <Badge className={
-                    item.status === 'approved' ? 'bg-green-100 text-green-800' :
-                    item.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
+                  <Badge variant={
+                    item.status === 'approved' ? 'green' :
+                    item.status === 'rejected' ? 'red' :
+                    'yellow'
                   }>
                     {item.status}
                   </Badge>
@@ -1880,35 +1848,35 @@ function Dashboard() {
             <CardDescription>Common administrative tasks</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md-grid-cols-3 gap-4">
               <Link
                 to="/timesheets"
-                className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors group"
+                className="quick-action-card bg-blue-50 hover-bg-blue-100"
               >
-                <Clock className="w-8 h-8 text-blue-600 mr-3 group-hover:scale-110 transition-transform" />
+                <Clock className="quick-action-icon text-blue-600" />
                 <div>
-                  <p className="font-medium text-blue-900">Review Timesheets</p>
-                  <p className="text-sm text-blue-600">Approve pending entries</p>
+                  <p className="quick-action-title text-blue-900">Review Timesheets</p>
+                  <p className="quick-action-description text-blue-600">Approve pending entries</p>
                 </div>
               </Link>
               <Link
                 to="/team"
-                className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors group"
+                className="quick-action-card bg-green-50 hover-bg-green-100"
               >
-                <Users className="w-8 h-8 text-green-600 mr-3 group-hover:scale-110 transition-transform" />
+                <Users className="quick-action-icon text-green-600" />
                 <div>
-                  <p className="font-medium text-green-900">Manage Team</p>
-                  <p className="text-sm text-green-600">Add or edit team members</p>
+                  <p className="quick-action-title text-green-900">Manage Team</p>
+                  <p className="quick-action-description text-green-600">Add or edit team members</p>
                 </div>
               </Link>
               <Link
                 to="/reports"
-                className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors group"
+                className="quick-action-card bg-purple-50 hover-bg-purple-100"
               >
-                <FileText className="w-8 h-8 text-purple-600 mr-3 group-hover:scale-110 transition-transform" />
+                <FileText className="quick-action-icon text-purple-600" />
                 <div>
-                  <p className="font-medium text-purple-900">Export Reports</p>
-                  <p className="text-sm text-purple-600">Generate payroll reports</p>
+                  <p className="quick-action-title text-purple-900">Export Reports</p>
+                  <p className="quick-action-description text-purple-600">Generate payroll reports</p>
                 </div>
               </Link>
             </div>
@@ -1920,24 +1888,16 @@ function Dashboard() {
 }
 
 function StatCard({ title, value, icon, color }) {
-  const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-200',
-    yellow: 'bg-yellow-50 text-yellow-600 border-yellow-200',
-    green: 'bg-green-50 text-green-600 border-green-200',
-    red: 'bg-red-50 text-red-600 border-red-200',
-    purple: 'bg-purple-50 text-purple-600 border-purple-200'
-  }
-
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4 md:p-6">
+    <Card className="stat-card">
+      <CardContent className="p-4">
         <div className="flex items-center">
-          <div className={`p-3 rounded-lg border ${colorClasses[color]}`}>
+          <div className={`stat-icon-container stat-icon-${color}`}>
             {icon}
           </div>
-          <div className="ml-4 flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-600 truncate">{title}</p>
-            <p className="text-xl md:text-2xl font-bold text-gray-900">{value}</p>
+          <div className="stat-details">
+            <p className="stat-title">{title}</p>
+            <p className="stat-value">{value}</p>
           </div>
         </div>
       </CardContent>
@@ -1956,28 +1916,28 @@ function SettingsPage() {
   })
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="page-content space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
         <p className="text-gray-600 mt-1">Manage your application preferences</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Profile Settings</CardTitle>
             <CardDescription>Update your personal information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
+            <div className="form-group">
               <Label>Full Name</Label>
               <Input value={user?.full_name || ''} readOnly />
             </div>
-            <div className="space-y-2">
+            <div className="form-group">
               <Label>Email</Label>
               <Input value={user?.email || ''} readOnly />
             </div>
-            <div className="space-y-2">
+            <div className="form-group">
               <Label>Role</Label>
               <Input value={user?.role?.replace('_', ' ') || ''} readOnly />
             </div>
@@ -1999,7 +1959,7 @@ function SettingsPage() {
                 type="checkbox"
                 checked={settings.notifications}
                 onChange={(e) => setSettings({...settings, notifications: e.target.checked})}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 focus-ring-2 border-gray-300 rounded"
               />
             </div>
             <div className="flex items-center justify-between">
@@ -2011,15 +1971,15 @@ function SettingsPage() {
                 type="checkbox"
                 checked={settings.emailReports}
                 onChange={(e) => setSettings({...settings, emailReports: e.target.checked})}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 focus-ring-2 border-gray-300 rounded"
               />
             </div>
-            <div className="space-y-2">
+            <div className="form-group">
               <Label>Timezone</Label>
               <select
                 value={settings.timezone}
                 onChange={(e) => setSettings({...settings, timezone: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-select"
               >
                 <option value="UTC">UTC</option>
                 <option value="EST">Eastern Time</option>
@@ -2052,59 +2012,109 @@ function MainLayout() {
   ]
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="app-container">
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:flex-shrink-0">
-        <div className="flex flex-col w-64">
-          <div className="flex flex-col h-full bg-white border-r border-gray-200 shadow-sm">
-            {/* Logo */}
-            <div className="flex items-center h-16 flex-shrink-0 px-4 bg-gradient-to-r from-blue-600 to-blue-700">
-              <div className="flex items-center">
-                <div className="h-8 w-8 bg-white rounded-lg flex items-center justify-center mr-3">
+      <div className="sidebar">
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <div className="sidebar-logo-icon">
+              <Clock className="h-5 w-5 text-blue-600" />
+            </div>
+            <h1 className="sidebar-title">TimeSheet Manager</h1>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div className="sidebar-nav">
+          {navigation.map((item) => {
+            const isActive = location.pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={`nav-item ${isActive ? 'active' : ''}`}
+              >
+                <item.icon className="nav-icon" />
+                {item.name}
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* User info */}
+        <div className="sidebar-footer">
+          <div className="user-info">
+            <div className="user-avatar">
+              <span>
+                {user?.full_name?.charAt(0) || user?.name?.charAt(0) || 'U'}
+              </span>
+            </div>
+            <div className="user-details">
+              <p className="user-name">
+                {user?.full_name || user?.name || 'User'}
+              </p>
+              <p className="user-role">{user?.role || 'Member'}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={logout}
+              className="ml-2 p-2"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar */}
+      {isMobileOpen && (
+        <div className="mobile-sidebar-overlay" onClick={() => setIsMobileOpen(false)}>
+          <div className="mobile-sidebar" onClick={(e) => e.stopPropagation()}>
+            <button className="mobile-close-btn" onClick={() => setIsMobileOpen(false)}>
+              <X className="h-6 w-6" />
+            </button>
+            
+            {/* Mobile Navigation Content */}
+            <div className="sidebar-header">
+              <div className="sidebar-logo">
+                <div className="sidebar-logo-icon">
                   <Clock className="h-5 w-5 text-blue-600" />
                 </div>
-                <h1 className="text-xl font-bold text-white">TimeSheet Manager</h1>
+                <h1 className="sidebar-title">TimeSheet</h1>
               </div>
             </div>
 
-            {/* Navigation */}
-            <div className="flex-1 flex flex-col overflow-y-auto">
-              <nav className="flex-1 px-2 py-4 space-y-1">
-                {navigation.map((item) => {
-                  const isActive = location.pathname === item.href
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={`${
-                        isActive
-                          ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm'
-                          : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      } group flex items-center px-3 py-2 text-sm font-medium border-l-4 transition-all duration-150 rounded-r-md`}
-                    >
-                      <item.icon className="mr-3 h-5 w-5" />
-                      {item.name}
-                    </Link>
-                  )
-                })}
-              </nav>
+            <div className="sidebar-nav">
+              {navigation.map((item) => {
+                const isActive = location.pathname === item.href
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setIsMobileOpen(false)}
+                    className={`nav-item ${isActive ? 'active' : ''}`}
+                  >
+                    <item.icon className="nav-icon" />
+                    {item.name}
+                  </Link>
+                )
+              })}
             </div>
 
-            {/* User info */}
-            <div className="flex-shrink-0 flex border-t border-gray-200 p-4 bg-gray-50">
-              <div className="flex items-center w-full">
-                <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                    <span className="text-sm font-medium text-white">
-                      {user?.full_name?.charAt(0) || user?.name?.charAt(0) || 'U'}
-                    </span>
-                  </div>
+            <div className="sidebar-footer">
+              <div className="user-info">
+                <div className="user-avatar">
+                  <span>
+                    {user?.full_name?.charAt(0) || user?.name?.charAt(0) || 'U'}
+                  </span>
                 </div>
-                <div className="ml-3 flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-700 truncate">
+                <div className="user-details">
+                  <p className="user-name">
                     {user?.full_name || user?.name || 'User'}
                   </p>
-                  <p className="text-xs text-gray-500 capitalize">{user?.role || 'Member'}</p>
+                  <p className="user-role">{user?.role || 'Member'}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -2119,111 +2129,17 @@ function MainLayout() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Mobile Sidebar */}
-      {isMobileOpen && (
-        <div className="fixed inset-0 flex z-40 md:hidden">
-          <div 
-            className="fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity" 
-            onClick={() => setIsMobileOpen(false)} 
-          />
-          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white transform transition-transform">
-            <div className="absolute top-0 right-0 -mr-12 pt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsMobileOpen(false)}
-                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              >
-                <span className="sr-only">Close sidebar</span>
-                <X className="h-6 w-6 text-white" />
-              </Button>
-            </div>
-            
-            {/* Mobile Navigation Content */}
-            <div className="flex flex-col h-full">
-              {/* Logo */}
-              <div className="flex items-center h-16 flex-shrink-0 px-4 bg-gradient-to-r from-blue-600 to-blue-700">
-                <div className="flex items-center">
-                  <div className="h-8 w-8 bg-white rounded-lg flex items-center justify-center mr-3">
-                    <Clock className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <h1 className="text-xl font-bold text-white">TimeSheet</h1>
-                </div>
-              </div>
-
-              {/* Navigation */}
-              <div className="flex-1 flex flex-col overflow-y-auto">
-                <nav className="flex-1 px-2 py-4 space-y-1">
-                  {navigation.map((item) => {
-                    const isActive = location.pathname === item.href
-                    return (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        onClick={() => setIsMobileOpen(false)}
-                        className={`${
-                          isActive
-                            ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm'
-                            : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        } group flex items-center px-3 py-2 text-sm font-medium border-l-4 transition-all duration-150 rounded-r-md`}
-                      >
-                        <item.icon className="mr-3 h-5 w-5" />
-                        {item.name}
-                      </Link>
-                    )
-                  })}
-                </nav>
-              </div>
-
-              {/* User info */}
-              <div className="flex-shrink-0 flex border-t border-gray-200 p-4 bg-gray-50">
-                <div className="flex items-center w-full">
-                  <div className="flex-shrink-0">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                      <span className="text-sm font-medium text-white">
-                        {user?.full_name?.charAt(0) || user?.name?.charAt(0) || 'U'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="ml-3 flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-700 truncate">
-                      {user?.full_name || user?.name || 'User'}
-                    </p>
-                    <p className="text-xs text-gray-500 capitalize">{user?.role || 'Member'}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={logout}
-                    className="ml-2 p-2"
-                    title="Sign out"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="main-content">
         {/* Mobile header */}
-        <header className="md:hidden bg-white shadow-sm border-b border-gray-200">
-          <div className="flex items-center justify-between px-4 py-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsMobileOpen(true)}
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
-            <h1 className="text-lg font-semibold">TimeSheet</h1>
-            <div className="w-8" />
-          </div>
+        <header className="mobile-header">
+          <button className="mobile-menu-btn" onClick={() => setIsMobileOpen(true)}>
+            <Menu className="w-5 h-5" />
+          </button>
+          <h1 className="mobile-title">TimeSheet</h1>
+          <div className="w-8" />
         </header>
         
         <main className="flex-1 overflow-auto">
