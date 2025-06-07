@@ -1116,15 +1116,900 @@ function MainLayout() {
 
 // Placeholder components for the remaining pages (would include full implementations from original)
 function TimesheetsPage() {
-  return <div className="page-content">Timesheets Page (original implementation would be here)</div>
+  const { user } = useAuth()
+  
+  // If user is admin, show the approval interface
+  if (user?.role === 'admin') {
+    return <AdminTimesheetApproval />
+  }
+
+  // Regular user timesheet interface
+  const [timesheets, setTimesheets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newTimesheet, setNewTimesheet] = useState({
+    date: new Date().toISOString().split('T')[0],
+    hours: '',
+    description: ''
+  })
+
+  useEffect(() => {
+    fetchTimesheets()
+  }, [])
+
+  const fetchTimesheets = async () => {
+    try {
+      setLoading(true)
+      const data = await api.getTimesheets()
+      setTimesheets(data)
+    } catch (error) {
+      setError('Failed to load timesheets')
+      console.error('Error fetching timesheets:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmitTimesheet = async (e) => {
+    e.preventDefault()
+    try {
+      await api.createTimesheet(newTimesheet)
+      setNewTimesheet({
+        date: new Date().toISOString().split('T')[0],
+        hours: '',
+        description: ''
+      })
+      setShowAddForm(false)
+      fetchTimesheets()
+    } catch (error) {
+      setError('Failed to create timesheet')
+      console.error('Error creating timesheet:', error)
+    }
+  }
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'approved':
+        return <CheckCircle className="w-4 h-4 text-green-600" />
+      case 'rejected':
+        return <XCircle className="w-4 h-4 text-red-600" />
+      default:
+        return <Clock className="w-4 h-4 text-yellow-600" />
+    }
+  }
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'approved':
+        return 'green'
+      case 'rejected':
+        return 'red'
+      default:
+        return 'yellow'
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
+          <p className="text-gray-600">Loading timesheets...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="page-content space-y-6">
+      <div className="flex flex-col sm-flex-row sm-items-center sm-justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">My Timesheets</h1>
+          <p className="text-gray-600 mt-1">Track and manage your time entries</p>
+        </div>
+        <Button onClick={() => setShowAddForm(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Entry
+        </Button>
+      </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Add Timesheet Form */}
+      {showAddForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add Time Entry</CardTitle>
+            <CardDescription>Record your work hours for the day</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmitTimesheet} className="space-y-4">
+              <div className="grid grid-cols-1 md-grid-cols-2 gap-4">
+                <div className="form-group">
+                  <Label htmlFor="date">Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={newTimesheet.date}
+                    onChange={(e) => setNewTimesheet({...newTimesheet, date: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <Label htmlFor="hours">Hours</Label>
+                  <Input
+                    id="hours"
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="24"
+                    placeholder="8.0"
+                    value={newTimesheet.hours}
+                    onChange={(e) => setNewTimesheet({...newTimesheet, hours: e.target.value})}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  placeholder="Brief description of work performed"
+                  value={newTimesheet.description}
+                  onChange={(e) => setNewTimesheet({...newTimesheet, description: e.target.value})}
+                />
+              </div>
+              <div className="flex flex-col sm-flex-row gap-2">
+                <Button type="submit">
+                  Save Entry
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Timesheets List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>My Time Entries</CardTitle>
+          <CardDescription>Your submitted timesheet entries</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {timesheets.length === 0 ? (
+            <div className="empty-state">
+              <Clock className="empty-state-icon" />
+              <h3 className="empty-state-title">No timesheets yet</h3>
+              <p className="empty-state-description">Start by adding your first time entry</p>
+              <Button onClick={() => setShowAddForm(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add First Entry
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {timesheets.map((timesheet) => (
+                <div key={timesheet.id} className="timesheet-card">
+                  <div className="timesheet-icon-container">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="timesheet-info">
+                    <p className="timesheet-user">{timesheet.date}</p>
+                    <p className="timesheet-details">{timesheet.hours} hours</p>
+                    {timesheet.description && (
+                      <p className="timesheet-description">{timesheet.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    {getStatusIcon(timesheet.status)}
+                    <Badge variant={getStatusBadge(timesheet.status)}>
+                      {timesheet.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Admin Timesheet Approval Component
+function AdminTimesheetApproval() {
+  const [timesheets, setTimesheets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedTimesheet, setSelectedTimesheet] = useState(null)
+  const [approvalComment, setApprovalComment] = useState('')
+
+  useEffect(() => {
+    fetchTimesheets()
+  }, [])
+
+  const fetchTimesheets = async () => {
+    try {
+      setLoading(true)
+      const data = await api.getTimesheets()
+      setTimesheets(data)
+    } catch (error) {
+      setError('Failed to load timesheets')
+      console.error('Error fetching timesheets:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApproval = async (timesheetId, action) => {
+    try {
+      if (action === 'approve') {
+        await api.approveTimesheet(timesheetId, approvalComment)
+      } else {
+        await api.rejectTimesheet(timesheetId, approvalComment)
+      }
+      setSelectedTimesheet(null)
+      setApprovalComment('')
+      fetchTimesheets()
+    } catch (error) {
+      setError(`Failed to ${action} timesheet`)
+      console.error(`Error ${action}ing timesheet:`, error)
+    }
+  }
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'approved':
+        return <CheckCircle className="w-4 h-4 text-green-600" />
+      case 'rejected':
+        return <XCircle className="w-4 h-4 text-red-600" />
+      default:
+        return <Clock className="w-4 h-4 text-yellow-600" />
+    }
+  }
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'approved':
+        return 'green'
+      case 'rejected':
+        return 'red'
+      default:
+        return 'yellow'
+    }
+  }
+
+  const filteredTimesheets = timesheets.filter(timesheet => {
+    const matchesStatus = statusFilter === 'all' || timesheet.status === statusFilter
+    const matchesSearch = timesheet.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         timesheet.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesStatus && matchesSearch
+  })
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
+          <p className="text-gray-600">Loading timesheets...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="page-content space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Timesheet Approval</h1>
+        <p className="text-gray-600 mt-1">Review and approve team timesheet entries</p>
+      </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-col lg-flex-row gap-4">
+        <div className="flex flex-wrap gap-2">
+          {['all', 'pending', 'approved', 'rejected'].map((status) => (
+            <Button
+              key={status}
+              variant={statusFilter === status ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter(status)}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </Button>
+          ))}
+        </div>
+        <div className="flex-1 max-w-sm">
+          <div className="search-input-container">
+            <Search className="search-icon" />
+            <Input
+              placeholder="Search by user or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Timesheets List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Timesheets</CardTitle>
+          <CardDescription>All timesheet entries requiring review</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {filteredTimesheets.length === 0 ? (
+            <div className="empty-state">
+              <Clock className="empty-state-icon" />
+              <h3 className="empty-state-title">No timesheets found</h3>
+              <p className="empty-state-description">No timesheets match your current filter</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredTimesheets.map((timesheet) => (
+                <div key={timesheet.id} className="timesheet-card">
+                  <div className="timesheet-icon-container">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="timesheet-info">
+                    <p className="timesheet-user">{timesheet.user_name || 'Unknown User'}</p>
+                    <p className="timesheet-details">{timesheet.date} • {timesheet.hours} hours</p>
+                    {timesheet.description && (
+                      <p className="timesheet-description">{timesheet.description}</p>
+                    )}
+                  </div>
+                  <div className="timesheet-actions">
+                    <div className="flex items-center space-x-1">
+                      {getStatusIcon(timesheet.status)}
+                      <Badge variant={getStatusBadge(timesheet.status)}>
+                        {timesheet.status}
+                      </Badge>
+                    </div>
+                    {timesheet.status === 'pending' && (
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-green-600 border-green-600 hover-bg-green-50"
+                          onClick={() => {
+                            setSelectedTimesheet(timesheet)
+                            setApprovalComment('')
+                          }}
+                        >
+                          <Check className="w-4 h-4 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 border-red-600 hover-bg-red-50"
+                          onClick={() => {
+                            setSelectedTimesheet(timesheet)
+                            setApprovalComment('')
+                          }}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Approval Modal */}
+      {selectedTimesheet && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <CardHeader>
+              <CardTitle>Review Timesheet</CardTitle>
+              <CardDescription>
+                {selectedTimesheet.user_name} • {selectedTimesheet.date} • {selectedTimesheet.hours} hours
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {selectedTimesheet.description && (
+                <div>
+                  <Label>Description</Label>
+                  <p className="text-sm text-gray-600 mt-1">{selectedTimesheet.description}</p>
+                </div>
+              )}
+              <div className="form-group">
+                <Label htmlFor="comment">Comments (optional)</Label>
+                <Input
+                  id="comment"
+                  placeholder="Add a comment..."
+                  value={approvalComment}
+                  onChange={(e) => setApprovalComment(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col sm-flex-row gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={() => handleApproval(selectedTimesheet.id, 'approve')}
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  Approve
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => handleApproval(selectedTimesheet.id, 'reject')}
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Reject
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedTimesheet(null)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function ReportsPage() {
-  return <div className="page-content">Reports Page (original implementation would be here)</div>
+  const [reportType, setReportType] = useState('payroll')
+  const [dateRange, setDateRange] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  })
+  const [loading, setLoading] = useState(false)
+
+  const generateReport = async () => {
+    setLoading(true)
+    // Mock report generation
+    setTimeout(() => {
+      setLoading(false)
+      alert(`${reportType} report generated for ${dateRange.start} to ${dateRange.end}`)
+    }, 2000)
+  }
+
+  return (
+    <div className="page-content space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+        <p className="text-gray-600 mt-1">Generate comprehensive reports for payroll and analytics</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg-grid-cols-3 gap-6">
+        {/* Report Configuration */}
+        <div className="lg-col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Report Configuration</CardTitle>
+              <CardDescription>Configure your report parameters</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="form-group">
+                <Label>Report Type</Label>
+                <select
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="payroll">Payroll Report</option>
+                  <option value="timesheet">Timesheet Summary</option>
+                  <option value="productivity">Productivity Analysis</option>
+                  <option value="attendance">Attendance Report</option>
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <Label>Start Date</Label>
+                <Input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <Label>End Date</Label>
+                <Input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+                />
+              </div>
+              
+              <Button 
+                onClick={generateReport} 
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? (
+                  <div className="flex items-center">
+                    <div className="loading-spinner"></div>
+                    Generating...
+                  </div>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4 mr-2" />
+                    Generate Report
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Report Preview */}
+        <div className="lg-col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Report Preview</CardTitle>
+              <CardDescription>Preview of your {reportType} report</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="empty-state">
+                <FileText className="empty-state-icon" />
+                <h3 className="empty-state-title">Report Preview</h3>
+                <p className="empty-state-description">
+                  Configure your report settings and click "Generate Report" to see the preview
+                </p>
+                <div className="bg-gray-50 rounded-lg p-4 text-left">
+                  <h4 className="font-medium text-gray-900 mb-2">Report will include:</h4>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    {reportType === 'payroll' && (
+                      <>
+                        <li>• Employee hours and overtime</li>
+                        <li>• Pay calculations by rate</li>
+                        <li>• Total payroll costs</li>
+                        <li>• Tax and deduction summaries</li>
+                      </>
+                    )}
+                    {reportType === 'timesheet' && (
+                      <>
+                        <li>• Individual timesheet entries</li>
+                        <li>• Approval status tracking</li>
+                        <li>• Hours by project/campaign</li>
+                        <li>• Time entry patterns</li>
+                      </>
+                    )}
+                    {reportType === 'productivity' && (
+                      <>
+                        <li>• Productivity metrics by employee</li>
+                        <li>• Efficiency trends over time</li>
+                        <li>• Goal achievement rates</li>
+                        <li>• Performance comparisons</li>
+                      </>
+                    )}
+                    {reportType === 'attendance' && (
+                      <>
+                        <li>• Daily attendance records</li>
+                        <li>• Late arrivals and early departures</li>
+                        <li>• Absence patterns</li>
+                        <li>• Attendance rate calculations</li>
+                      </>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Recent Reports */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Reports</CardTitle>
+          <CardDescription>Previously generated reports</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="empty-state">
+            <FileText className="empty-state-icon" />
+            <h3 className="empty-state-title">No reports generated yet</h3>
+            <p className="empty-state-description">
+              Generate your first report to see it listed here
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
 
 function SettingsPage() {
-  return <div className="page-content">Settings Page (original implementation would be here)</div>
+  const { user } = useAuth()
+  const [settings, setSettings] = useState({
+    notifications: {
+      email: true,
+      push: false,
+      timesheet_reminders: true,
+      approval_notifications: true
+    },
+    preferences: {
+      theme: 'light',
+      timezone: 'UTC',
+      date_format: 'MM/DD/YYYY',
+      time_format: '12h'
+    },
+    privacy: {
+      profile_visibility: 'team',
+      activity_tracking: true
+    }
+  })
+  const [loading, setLoading] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const handleSave = async () => {
+    setLoading(true)
+    // Mock save operation
+    setTimeout(() => {
+      setLoading(false)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    }, 1000)
+  }
+
+  const updateSetting = (category, key, value) => {
+    setSettings(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [key]: value
+      }
+    }))
+  }
+
+  return (
+    <div className="page-content space-y-6">
+      <div className="flex flex-col sm-flex-row sm-items-center sm-justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+          <p className="text-gray-600 mt-1">Manage your account preferences and notifications</p>
+        </div>
+        <Button onClick={handleSave} disabled={loading}>
+          {loading ? (
+            <div className="flex items-center">
+              <div className="loading-spinner"></div>
+              Saving...
+            </div>
+          ) : saved ? (
+            <>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Saved
+            </>
+          ) : (
+            'Save Changes'
+          )}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
+        {/* Notification Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Notifications</CardTitle>
+            <CardDescription>Configure how you receive notifications</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Email Notifications</Label>
+                <p className="text-sm text-gray-600">Receive notifications via email</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.notifications.email}
+                onChange={(e) => updateSetting('notifications', 'email', e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus-ring-2 border-gray-300 rounded"
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Push Notifications</Label>
+                <p className="text-sm text-gray-600">Receive push notifications in browser</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.notifications.push}
+                onChange={(e) => updateSetting('notifications', 'push', e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus-ring-2 border-gray-300 rounded"
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Timesheet Reminders</Label>
+                <p className="text-sm text-gray-600">Daily reminders to submit timesheets</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.notifications.timesheet_reminders}
+                onChange={(e) => updateSetting('notifications', 'timesheet_reminders', e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus-ring-2 border-gray-300 rounded"
+              />
+            </div>
+            
+            {user?.role === 'admin' && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Approval Notifications</Label>
+                  <p className="text-sm text-gray-600">Notifications for pending approvals</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.notifications.approval_notifications}
+                  onChange={(e) => updateSetting('notifications', 'approval_notifications', e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus-ring-2 border-gray-300 rounded"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Preferences */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Preferences</CardTitle>
+            <CardDescription>Customize your app experience</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="form-group">
+              <Label>Theme</Label>
+              <select
+                value={settings.preferences.theme}
+                onChange={(e) => updateSetting('preferences', 'theme', e.target.value)}
+                className="form-select"
+              >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="auto">Auto</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <Label>Date Format</Label>
+              <select
+                value={settings.preferences.date_format}
+                onChange={(e) => updateSetting('preferences', 'date_format', e.target.value)}
+                className="form-select"
+              >
+                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <Label>Time Format</Label>
+              <select
+                value={settings.preferences.time_format}
+                onChange={(e) => updateSetting('preferences', 'time_format', e.target.value)}
+                className="form-select"
+              >
+                <option value="12h">12 Hour</option>
+                <option value="24h">24 Hour</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <Label>Timezone</Label>
+              <select
+                value={settings.preferences.timezone}
+                onChange={(e) => updateSetting('preferences', 'timezone', e.target.value)}
+                className="form-select"
+              >
+                <option value="UTC">UTC</option>
+                <option value="EST">Eastern Time</option>
+                <option value="PST">Pacific Time</option>
+                <option value="CST">Central Time</option>
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Privacy Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Privacy</CardTitle>
+            <CardDescription>Control your privacy and data settings</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="form-group">
+              <Label>Profile Visibility</Label>
+              <select
+                value={settings.privacy.profile_visibility}
+                onChange={(e) => updateSetting('privacy', 'profile_visibility', e.target.value)}
+                className="form-select"
+              >
+                <option value="public">Public</option>
+                <option value="team">Team Only</option>
+                <option value="private">Private</option>
+              </select>
+              <p className="text-sm text-gray-600 mt-1">Who can see your profile information</p>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Activity Tracking</Label>
+                <p className="text-sm text-gray-600">Allow tracking for analytics and reporting</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.privacy.activity_tracking}
+                onChange={(e) => updateSetting('privacy', 'activity_tracking', e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus-ring-2 border-gray-300 rounded"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Account Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Information</CardTitle>
+            <CardDescription>Your account details</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="form-group">
+              <Label>Full Name</Label>
+              <Input
+                value={user?.full_name || ''}
+                disabled
+                className="bg-gray-50"
+              />
+            </div>
+            
+            <div className="form-group">
+              <Label>Email</Label>
+              <Input
+                value={user?.email || ''}
+                disabled
+                className="bg-gray-50"
+              />
+            </div>
+            
+            <div className="form-group">
+              <Label>Role</Label>
+              <Input
+                value={user?.role || ''}
+                disabled
+                className="bg-gray-50"
+              />
+            </div>
+            
+            <div className="pt-4 border-t">
+              <Button variant="outline" className="w-full">
+                <Shield className="w-4 h-4 mr-2" />
+                Change Password
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
 }
 
 // Main App Component
