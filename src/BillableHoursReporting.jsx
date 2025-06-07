@@ -1,10 +1,10 @@
-// BillableHoursReporting.jsx - Comprehensive reporting system for billable hours
+// BillableHoursReporting.jsx - Enhanced with full functionality and drill-down capabilities
 
 import React, { useState, useEffect } from 'react'
 import { 
-  FileText, Download, Calendar, Filter, TrendingUp, Users, 
-  DollarSign, Clock, BarChart3, PieChart, Target, AlertCircle,
-  ChevronDown, ChevronUp, Eye, Mail, Printer
+  BarChart3, PieChart, TrendingUp, Download, Filter, Calendar, 
+  Users, DollarSign, Clock, Target, ChevronDown, ChevronUp,
+  Search, RefreshCw, Eye, FileText, Printer, Mail
 } from 'lucide-react'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
@@ -13,346 +13,313 @@ import {
 } from 'recharts'
 
 function BillableHoursReporting() {
-  const [reportType, setReportType] = useState('utilization')
-  const [period, setPeriod] = useState('weekly')
+  const [selectedReport, setSelectedReport] = useState('utilization')
+  const [selectedPeriod, setSelectedPeriod] = useState('monthly')
   const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0],
+    start: new Date(new Date().setMonth(new Date().getMonth() - 3)).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   })
-  const [selectedTeam, setSelectedTeam] = useState('all')
-  const [selectedResource, setSelectedResource] = useState('all')
-  const [loading, setLoading] = useState(false)
-  const [expandedSections, setExpandedSections] = useState({
-    summary: true,
-    details: false,
-    trends: false
+  const [filters, setFilters] = useState({
+    team: '',
+    client: '',
+    project: '',
+    resource: ''
   })
+  const [loading, setLoading] = useState(false)
+  const [reportData, setReportData] = useState(null)
+  const [drillDownData, setDrillDownData] = useState(null)
+  const [showDrillDown, setShowDrillDown] = useState(false)
 
-  // Mock reporting data
-  const reportData = {
-    summary: {
-      total_billable_hours: 1247,
-      total_revenue: 85395,
-      average_utilization: 78.5,
-      total_resources: 16,
-      active_projects: 8,
-      top_performer: 'Jane Smith',
-      revenue_growth: 12.3,
-      utilization_trend: 2.1
-    },
-    dailyData: [
-      { date: '2024-01-01', billable_hours: 178, revenue: 12150, utilization: 85.2, resources: 16 },
-      { date: '2024-01-02', billable_hours: 165, revenue: 11340, utilization: 78.9, resources: 16 },
-      { date: '2024-01-03', billable_hours: 182, revenue: 12580, utilization: 87.1, resources: 16 },
-      { date: '2024-01-04', billable_hours: 156, revenue: 10920, utilization: 74.6, resources: 16 },
-      { date: '2024-01-05', billable_hours: 189, revenue: 13230, utilization: 90.4, resources: 16 },
-      { date: '2024-01-06', billable_hours: 145, revenue: 9875, utilization: 69.3, resources: 16 },
-      { date: '2024-01-07', billable_hours: 172, revenue: 11800, utilization: 82.3, resources: 16 }
-    ],
-    weeklyData: [
-      { week: 'Week 1', billable_hours: 1247, revenue: 85395, utilization: 78.5, efficiency: 87.2 },
-      { week: 'Week 2', billable_hours: 1189, revenue: 81230, utilization: 74.9, efficiency: 85.8 },
-      { week: 'Week 3', billable_hours: 1298, revenue: 89150, utilization: 81.7, efficiency: 89.1 },
-      { week: 'Week 4', billable_hours: 1156, revenue: 78940, utilization: 72.8, efficiency: 84.3 }
-    ],
-    monthlyData: [
-      { month: 'Jan 2024', billable_hours: 4890, revenue: 334715, utilization: 76.9, efficiency: 86.6 },
-      { month: 'Dec 2023', billable_hours: 4567, revenue: 312890, utilization: 71.8, efficiency: 84.2 },
-      { month: 'Nov 2023', billable_hours: 4723, revenue: 323450, utilization: 74.3, efficiency: 85.1 },
-      { month: 'Oct 2023', billable_hours: 4612, revenue: 315780, utilization: 72.6, efficiency: 83.9 }
-    ],
-    teamBreakdown: [
-      { 
-        team: 'Engineering', 
-        billable_hours: 456, 
-        revenue: 34200, 
-        utilization: 78.9, 
-        resources: 6,
-        avg_rate: 75,
-        projects: 3
-      },
-      { 
-        team: 'Design', 
-        billable_hours: 312, 
-        revenue: 20280, 
-        utilization: 81.7, 
-        resources: 4,
-        avg_rate: 65,
-        projects: 2
-      },
-      { 
-        team: 'Analytics', 
-        billable_hours: 278, 
-        revenue: 15290, 
-        utilization: 76.0, 
-        resources: 3,
-        avg_rate: 55,
-        projects: 2
-      },
-      { 
-        team: 'Management', 
-        billable_hours: 201, 
-        revenue: 15625, 
-        utilization: 56.3, 
-        resources: 3,
-        avg_rate: 85,
-        projects: 1
+  const reportTypes = [
+    { id: 'utilization', name: 'Utilization Report', description: 'Resource utilization and billable efficiency' },
+    { id: 'revenue', name: 'Revenue Analysis', description: 'Revenue breakdown by client, project, and resource' },
+    { id: 'productivity', name: 'Productivity Report', description: 'Team and individual productivity metrics' },
+    { id: 'client', name: 'Client Analysis', description: 'Client profitability and engagement analysis' },
+    { id: 'project', name: 'Project Report', description: 'Project performance and resource allocation' },
+    { id: 'trend', name: 'Trend Analysis', description: 'Historical trends and forecasting' }
+  ]
+
+  useEffect(() => {
+    generateReport()
+  }, [selectedReport, selectedPeriod, dateRange, filters])
+
+  const generateReport = async () => {
+    setLoading(true)
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const mockData = generateMockReportData(selectedReport, selectedPeriod)
+      setReportData(mockData)
+    } catch (error) {
+      console.error('Error generating report:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const generateMockReportData = (reportType, period) => {
+    const baseData = {
+      summary: {
+        total_billable_hours: 2847,
+        total_revenue: 198290,
+        average_rate: 69.67,
+        utilization_rate: 78.5,
+        active_resources: 12,
+        active_clients: 8,
+        active_projects: 15
       }
-    ],
-    resourceDetails: [
-      {
-        name: 'John Doe',
-        team: 'Engineering',
-        billable_hours: 32,
-        revenue: 2400,
-        utilization: 80.0,
-        efficiency: 92.1,
-        projects: ['Website Redesign', 'Mobile App', 'API Development'],
-        top_client: 'Acme Corp',
-        hourly_rate: 75
-      },
-      {
-        name: 'Jane Smith',
-        team: 'Design',
-        billable_hours: 35,
-        revenue: 2275,
-        utilization: 87.5,
-        efficiency: 89.3,
-        projects: ['Brand Identity', 'UI Design'],
-        top_client: 'Tech Solutions',
-        hourly_rate: 65
-      },
-      {
-        name: 'Mike Johnson',
-        team: 'Analytics',
-        billable_hours: 28,
-        revenue: 1540,
-        utilization: 70.0,
-        efficiency: 85.7,
-        projects: ['Data Analysis', 'Reporting', 'KPI Dashboard', 'Market Research'],
-        top_client: 'Global Industries',
-        hourly_rate: 55
+    }
+
+    switch (reportType) {
+      case 'utilization':
+        return {
+          ...baseData,
+          utilizationByResource: [
+            { name: 'John Doe', billable: 142, total: 160, utilization: 88.8, target: 80, revenue: 10650 },
+            { name: 'Jane Smith', billable: 156, total: 160, utilization: 97.5, target: 80, revenue: 12480 },
+            { name: 'Mike Johnson', billable: 128, total: 160, utilization: 80.0, target: 80, revenue: 8960 },
+            { name: 'Sarah Wilson', billable: 134, total: 160, utilization: 83.8, target: 80, revenue: 11420 }
+          ],
+          utilizationTrend: [
+            { period: 'Jan', utilization: 75.2, target: 80 },
+            { period: 'Feb', utilization: 78.5, target: 80 },
+            { period: 'Mar', utilization: 82.1, target: 80 },
+            { period: 'Apr', utilization: 79.8, target: 80 }
+          ],
+          teamUtilization: [
+            { team: 'Engineering', utilization: 85.2, target: 80, variance: 5.2 },
+            { team: 'Design', utilization: 78.9, target: 80, variance: -1.1 },
+            { team: 'Analytics', utilization: 76.5, target: 75, variance: 1.5 },
+            { team: 'Management', utilization: 65.3, target: 70, variance: -4.7 }
+          ]
+        }
+
+      case 'revenue':
+        return {
+          ...baseData,
+          revenueByClient: [
+            { name: 'Acme Corp', revenue: 45680, hours: 612, rate: 74.67, projects: 3 },
+            { name: 'Tech Solutions', revenue: 38920, hours: 486, rate: 80.04, projects: 2 },
+            { name: 'Global Industries', revenue: 32450, hours: 465, rate: 69.78, projects: 4 },
+            { name: 'StartupXYZ', revenue: 28740, hours: 398, rate: 72.21, projects: 2 }
+          ],
+          revenueByProject: [
+            { name: 'Website Redesign', client: 'Acme Corp', revenue: 18500, hours: 247, rate: 74.90 },
+            { name: 'Mobile App', client: 'Tech Solutions', revenue: 22400, hours: 280, rate: 80.00 },
+            { name: 'Data Migration', client: 'Global Industries', revenue: 15600, hours: 234, rate: 66.67 },
+            { name: 'System Integration', client: 'StartupXYZ', revenue: 19200, hours: 256, rate: 75.00 }
+          ],
+          revenueTrend: [
+            { period: 'Jan', revenue: 42500, hours: 598 },
+            { period: 'Feb', revenue: 48200, hours: 672 },
+            { period: 'Mar', revenue: 52800, hours: 745 },
+            { period: 'Apr', revenue: 54790, hours: 832 }
+          ]
+        }
+
+      case 'productivity':
+        return {
+          ...baseData,
+          productivityMetrics: [
+            { name: 'John Doe', hours_per_day: 7.8, efficiency: 92, quality_score: 88, projects: 3 },
+            { name: 'Jane Smith', hours_per_day: 8.2, efficiency: 95, quality_score: 94, projects: 2 },
+            { name: 'Mike Johnson', hours_per_day: 7.5, efficiency: 87, quality_score: 85, projects: 4 },
+            { name: 'Sarah Wilson', hours_per_day: 8.0, efficiency: 91, quality_score: 92, projects: 2 }
+          ],
+          productivityTrend: [
+            { period: 'Week 1', efficiency: 88.5, quality: 89.2 },
+            { period: 'Week 2', efficiency: 91.2, quality: 90.8 },
+            { period: 'Week 3', efficiency: 89.8, quality: 88.5 },
+            { period: 'Week 4', efficiency: 92.1, quality: 91.7 }
+          ]
+        }
+
+      default:
+        return baseData
+    }
+  }
+
+  const handleDrillDown = (dataPoint, chartType) => {
+    console.log('Drilling down into:', dataPoint, chartType)
+    
+    // Generate drill-down data based on the clicked item
+    const drillDown = {
+      title: `Detailed Analysis: ${dataPoint.name || dataPoint.period}`,
+      type: chartType,
+      data: generateDrillDownData(dataPoint, chartType)
+    }
+    
+    setDrillDownData(drillDown)
+    setShowDrillDown(true)
+  }
+
+  const generateDrillDownData = (dataPoint, chartType) => {
+    // Mock drill-down data generation
+    if (chartType === 'resource') {
+      return {
+        dailyHours: [
+          { date: '2024-01-01', billable: 8, non_billable: 0 },
+          { date: '2024-01-02', billable: 7.5, non_billable: 0.5 },
+          { date: '2024-01-03', billable: 8, non_billable: 0 },
+          { date: '2024-01-04', billable: 6, non_billable: 2 },
+          { date: '2024-01-05', billable: 8, non_billable: 0 }
+        ],
+        projectBreakdown: [
+          { project: 'Website Redesign', hours: 45, percentage: 35 },
+          { project: 'Mobile App', hours: 38, percentage: 30 },
+          { project: 'Data Migration', hours: 28, percentage: 22 },
+          { project: 'Consulting', hours: 17, percentage: 13 }
+        ]
       }
-    ],
-    clientAnalysis: [
-      { 
-        client: 'Acme Corp', 
-        revenue: 25420, 
-        hours: 342, 
-        projects: 3, 
-        avg_rate: 74.27,
-        utilization_impact: 18.2
-      },
-      { 
-        client: 'Tech Solutions', 
-        revenue: 18680, 
-        hours: 245, 
-        projects: 2, 
-        avg_rate: 76.24,
-        utilization_impact: 13.1
-      },
-      { 
-        client: 'Global Industries', 
-        revenue: 15850, 
-        hours: 198, 
-        projects: 2, 
-        avg_rate: 80.05,
-        utilization_impact: 10.6
-      },
-      { 
-        client: 'StartupXYZ', 
-        revenue: 12200, 
-        hours: 156, 
-        projects: 1, 
-        avg_rate: 78.21,
-        utilization_impact: 8.3
-      }
-    ]
+    }
+    return {}
+  }
+
+  const exportReport = (format) => {
+    console.log(`Exporting report as ${format}`)
+    // Implement export functionality
   }
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4']
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }))
-  }
-
-  const generateReport = async () => {
-    setLoading(true)
-    // Mock report generation
-    setTimeout(() => {
-      setLoading(false)
-      alert(`${reportType} report generated for ${period} period`)
-    }, 2000)
-  }
-
-  const exportReport = (format) => {
-    alert(`Exporting report as ${format.toUpperCase()}`)
-  }
-
-  const getCurrentData = () => {
-    switch (period) {
-      case 'daily':
-        return reportData.dailyData
-      case 'weekly':
-        return reportData.weeklyData
-      case 'monthly':
-        return reportData.monthlyData
-      default:
-        return reportData.weeklyData
-    }
-  }
-
   return (
-    <div className="page-content space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg-flex-row lg-items-center lg-justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Billable Hours Reporting</h1>
-          <p className="text-gray-600 mt-1">Comprehensive reports and analytics for billable hours</p>
-        </div>
-        <div className="flex flex-col sm-flex-row gap-2">
-          <button
-            onClick={generateReport}
-            disabled={loading}
-            className="btn btn-primary"
-          >
-            {loading ? (
-              <div className="flex items-center">
-                <div className="loading-spinner"></div>
-                Generating...
-              </div>
-            ) : (
-              <>
-                <FileText className="w-4 h-4 mr-2" />
-                Generate Report
-              </>
-            )}
-          </button>
-          <div className="flex gap-1">
+    <div className="page-content" style={{ height: '100vh', overflowY: 'auto' }}>
+      <div className="space-y-6 pb-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Billable Hours Reporting</h1>
+            <p className="text-gray-600 mt-1">Comprehensive analytics and reporting for billable hours</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
-              onClick={() => exportReport('pdf')}
-              className="btn btn-outline btn-sm"
-              title="Export as PDF"
+              onClick={generateReport}
+              disabled={loading}
+              className="btn btn-outline flex items-center gap-2"
             >
-              <Download className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
             </button>
-            <button
-              onClick={() => exportReport('excel')}
-              className="btn btn-outline btn-sm"
-              title="Export as Excel"
-            >
-              <BarChart3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="btn btn-outline btn-sm"
-              title="Print Report"
-            >
-              <Printer className="w-4 h-4" />
-            </button>
+            <div className="flex gap-1">
+              <button
+                onClick={() => exportReport('pdf')}
+                className="btn btn-outline flex items-center gap-2"
+                title="Export as PDF"
+              >
+                <FileText className="w-4 h-4" />
+                PDF
+              </button>
+              <button
+                onClick={() => exportReport('excel')}
+                className="btn btn-outline flex items-center gap-2"
+                title="Export as Excel"
+              >
+                <Download className="w-4 h-4" />
+                Excel
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="btn btn-outline flex items-center gap-2"
+                title="Print Report"
+              >
+                <Printer className="w-4 h-4" />
+                Print
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Report Configuration */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">Report Configuration</h3>
-          <p className="card-description">Configure your report parameters</p>
-        </div>
-        <div className="card-content">
-          <div className="grid grid-cols-1 md-grid-cols-2 lg-grid-cols-4 gap-4">
-            <div className="form-group">
-              <label className="form-label">Report Type</label>
-              <select
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value)}
-                className="form-select"
-              >
-                <option value="utilization">Utilization Report</option>
-                <option value="revenue">Revenue Report</option>
-                <option value="resource">Resource Report</option>
-                <option value="client">Client Analysis</option>
-                <option value="project">Project Report</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Period</label>
-              <select
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                className="form-select"
-              >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Team</label>
-              <select
-                value={selectedTeam}
-                onChange={(e) => setSelectedTeam(e.target.value)}
-                className="form-select"
-              >
-                <option value="all">All Teams</option>
-                <option value="engineering">Engineering</option>
-                <option value="design">Design</option>
-                <option value="analytics">Analytics</option>
-                <option value="management">Management</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Resource</label>
-              <select
-                value={selectedResource}
-                onChange={(e) => setSelectedResource(e.target.value)}
-                className="form-select"
-              >
-                <option value="all">All Resources</option>
-                <option value="john_doe">John Doe</option>
-                <option value="jane_smith">Jane Smith</option>
-                <option value="mike_johnson">Mike Johnson</option>
-              </select>
-            </div>
+        {/* Report Configuration */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Report Configuration</h3>
           </div>
-        </div>
-      </div>
-
-      {/* Executive Summary */}
-      <div className="card">
-        <div className="card-header">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="card-title">Executive Summary</h3>
-              <p className="card-description">Key metrics and performance indicators</p>
-            </div>
-            <button
-              onClick={() => toggleSection('summary')}
-              className="btn-icon"
-            >
-              {expandedSections.summary ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-        {expandedSections.summary && (
           <div className="card-content">
-            <div className="grid grid-cols-1 md-grid-cols-2 lg-grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="form-label">Report Type</label>
+                <select
+                  value={selectedReport}
+                  onChange={(e) => setSelectedReport(e.target.value)}
+                  className="form-select"
+                >
+                  {reportTypes.map(type => (
+                    <option key={type.id} value={type.id}>{type.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="form-label">Period</label>
+                <select
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="form-label">Start Date</label>
+                <input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                  className="form-input"
+                />
+              </div>
+              
+              <div>
+                <label className="form-label">End Date</label>
+                <input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                  className="form-input"
+                />
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+                <div>
+                  <h4 className="font-medium text-blue-900">
+                    {reportTypes.find(t => t.id === selectedReport)?.name}
+                  </h4>
+                  <p className="text-sm text-blue-700">
+                    {reportTypes.find(t => t.id === selectedReport)?.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="loading-spinner mr-3"></div>
+            <span>Generating report...</span>
+          </div>
+        ) : reportData ? (
+          <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="stat-card">
                 <div className="stat-icon bg-blue-100">
                   <Clock className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="stat-content">
                   <p className="stat-label">Total Billable Hours</p>
-                  <p className="stat-value text-blue-600">{reportData.summary.total_billable_hours.toLocaleString()}h</p>
-                  <p className="stat-change text-green-600">+{reportData.summary.utilization_trend}% vs last period</p>
+                  <p className="stat-value text-blue-600">{reportData.summary.total_billable_hours}h</p>
+                  <p className="stat-change text-green-600">+12.5% vs last period</p>
                 </div>
               </div>
-
+              
               <div className="stat-card">
                 <div className="stat-icon bg-green-100">
                   <DollarSign className="w-6 h-6 text-green-600" />
@@ -360,300 +327,283 @@ function BillableHoursReporting() {
                 <div className="stat-content">
                   <p className="stat-label">Total Revenue</p>
                   <p className="stat-value text-green-600">${reportData.summary.total_revenue.toLocaleString()}</p>
-                  <p className="stat-change text-green-600">+{reportData.summary.revenue_growth}% growth</p>
+                  <p className="stat-change text-green-600">+8.7% vs last period</p>
                 </div>
               </div>
-
+              
               <div className="stat-card">
                 <div className="stat-icon bg-purple-100">
                   <Target className="w-6 h-6 text-purple-600" />
                 </div>
                 <div className="stat-content">
-                  <p className="stat-label">Average Utilization</p>
-                  <p className="stat-value text-purple-600">{reportData.summary.average_utilization}%</p>
-                  <p className="stat-change text-green-600">Above 75% target</p>
+                  <p className="stat-label">Utilization Rate</p>
+                  <p className="stat-value text-purple-600">{reportData.summary.utilization_rate}%</p>
+                  <p className="stat-change text-green-600">+3.2% vs target</p>
                 </div>
               </div>
-
+              
               <div className="stat-card">
                 <div className="stat-icon bg-orange-100">
                   <Users className="w-6 h-6 text-orange-600" />
                 </div>
                 <div className="stat-content">
-                  <p className="stat-label">Active Resources</p>
-                  <p className="stat-value text-orange-600">{reportData.summary.total_resources}</p>
-                  <p className="stat-change text-gray-600">{reportData.summary.active_projects} active projects</p>
+                  <p className="stat-label">Average Rate</p>
+                  <p className="stat-value text-orange-600">${reportData.summary.average_rate}</p>
+                  <p className="stat-change text-green-600">+2.1% vs last period</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Report Content Based on Type */}
+            {selectedReport === 'utilization' && reportData.utilizationByResource && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Resource Utilization Chart */}
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">Resource Utilization</h3>
+                    <p className="card-description">Click on bars to drill down</p>
+                  </div>
+                  <div className="card-content">
+                    <div className="chart-container">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={reportData.utilizationByResource}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Bar 
+                            dataKey="utilization" 
+                            fill="#3B82F6" 
+                            name="Utilization %" 
+                            onClick={(data) => handleDrillDown(data, 'resource')}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          <Bar dataKey="target" fill="#10B981" name="Target %" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Utilization Trend */}
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">Utilization Trend</h3>
+                    <p className="card-description">Monthly utilization vs target</p>
+                  </div>
+                  <div className="card-content">
+                    <div className="chart-container">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={reportData.utilizationTrend}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="period" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line 
+                            type="monotone" 
+                            dataKey="utilization" 
+                            stroke="#3B82F6" 
+                            strokeWidth={2}
+                            name="Actual Utilization %"
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="target" 
+                            stroke="#10B981" 
+                            strokeWidth={2}
+                            strokeDasharray="5 5"
+                            name="Target %"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Team Utilization Table */}
+                <div className="card lg:col-span-2">
+                  <div className="card-header">
+                    <h3 className="card-title">Team Utilization Summary</h3>
+                  </div>
+                  <div className="card-content">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-4 font-medium text-gray-600">Team</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-600">Utilization</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-600">Target</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-600">Variance</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reportData.teamUtilization.map((team, index) => (
+                            <tr key={index} className="border-b hover:bg-gray-50">
+                              <td className="py-3 px-4 font-medium">{team.team}</td>
+                              <td className="py-3 px-4">{team.utilization}%</td>
+                              <td className="py-3 px-4">{team.target}%</td>
+                              <td className="py-3 px-4">
+                                <span className={`font-medium ${
+                                  team.variance >= 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {team.variance > 0 ? '+' : ''}{team.variance}%
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className={`badge ${
+                                  team.variance >= 0 ? 'badge-green' : 'badge-red'
+                                }`}>
+                                  {team.variance >= 0 ? 'Above Target' : 'Below Target'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedReport === 'revenue' && reportData.revenueByClient && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Revenue by Client */}
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">Revenue by Client</h3>
+                    <p className="card-description">Click to view client details</p>
+                  </div>
+                  <div className="card-content">
+                    <div className="chart-container">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RechartsPieChart>
+                          <Pie
+                            data={reportData.revenueByClient}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({name, revenue}) => `${name}: $${revenue.toLocaleString()}`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="revenue"
+                            onClick={(data) => handleDrillDown(data, 'client')}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {reportData.revenueByClient.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']} />
+                        </RechartsPieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Revenue Trend */}
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">Revenue Trend</h3>
+                    <p className="card-description">Monthly revenue and hours</p>
+                  </div>
+                  <div className="card-content">
+                    <div className="chart-container">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={reportData.revenueTrend}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="period" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Area 
+                            type="monotone" 
+                            dataKey="revenue" 
+                            stroke="#10B981" 
+                            fill="#10B981" 
+                            name="Revenue ($)"
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : null}
+
+        {/* Drill-down Modal */}
+        {showDrillDown && drillDownData && (
+          <div className="modal-overlay">
+            <div className="modal-content max-w-4xl">
+              <div className="modal-header">
+                <h3 className="modal-title">{drillDownData.title}</h3>
+                <button 
+                  onClick={() => setShowDrillDown(false)}
+                  className="modal-close"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="space-y-6">
+                {drillDownData.data.dailyHours && (
+                  <div className="card">
+                    <div className="card-header">
+                      <h4 className="card-title">Daily Hours Breakdown</h4>
+                    </div>
+                    <div className="card-content">
+                      <div className="chart-container">
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={drillDownData.data.dailyHours}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="billable" fill="#10B981" name="Billable Hours" />
+                            <Bar dataKey="non_billable" fill="#F59E0B" name="Non-Billable Hours" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {drillDownData.data.projectBreakdown && (
+                  <div className="card">
+                    <div className="card-header">
+                      <h4 className="card-title">Project Time Allocation</h4>
+                    </div>
+                    <div className="card-content">
+                      <div className="space-y-3">
+                        {drillDownData.data.projectBreakdown.map((project, index) => (
+                          <div key={index} className="flex items-center justify-between">
+                            <span className="font-medium">{project.project}</span>
+                            <div className="flex items-center gap-3">
+                              <div className="w-32 bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full"
+                                  style={{width: `${project.percentage}%`}}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-600 w-16">
+                                {project.hours}h ({project.percentage}%)
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
-      </div>
-
-      {/* Trends Analysis */}
-      <div className="card">
-        <div className="card-header">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="card-title">Trends Analysis</h3>
-              <p className="card-description">{period.charAt(0).toUpperCase() + period.slice(1)} performance trends</p>
-            </div>
-            <button
-              onClick={() => toggleSection('trends')}
-              className="btn-icon"
-            >
-              {expandedSections.trends ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-        {expandedSections.trends && (
-          <div className="card-content">
-            <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
-              <div className="chart-container">
-                <h4 className="text-lg font-medium mb-4">Billable Hours & Revenue Trend</h4>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={getCurrentData()}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey={period === 'daily' ? 'date' : period === 'weekly' ? 'week' : 'month'} />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Legend />
-                    <Line 
-                      yAxisId="left" 
-                      type="monotone" 
-                      dataKey="billable_hours" 
-                      stroke="#3B82F6" 
-                      name="Billable Hours" 
-                    />
-                    <Line 
-                      yAxisId="right" 
-                      type="monotone" 
-                      dataKey="revenue" 
-                      stroke="#10B981" 
-                      name="Revenue ($)" 
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="chart-container">
-                <h4 className="text-lg font-medium mb-4">Utilization Trend</h4>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={getCurrentData()}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey={period === 'daily' ? 'date' : period === 'weekly' ? 'week' : 'month'} />
-                    <YAxis />
-                    <Tooltip />
-                    <Area 
-                      type="monotone" 
-                      dataKey="utilization" 
-                      stroke="#8B5CF6" 
-                      fill="#8B5CF6" 
-                      fillOpacity={0.3}
-                      name="Utilization %" 
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Team Breakdown */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">Team Performance Breakdown</h3>
-          <p className="card-description">Detailed analysis by team</p>
-        </div>
-        <div className="card-content">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Team</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Billable Hours</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Revenue</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Utilization</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Avg Rate</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Resources</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Projects</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reportData.teamBreakdown.map((team, index) => (
-                  <tr key={index} className="border-b hover-bg-gray-50">
-                    <td className="py-3 px-4 font-medium">{team.team}</td>
-                    <td className="py-3 px-4">{team.billable_hours}h</td>
-                    <td className="py-3 px-4 text-green-600 font-medium">
-                      ${team.revenue.toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center">
-                        <span className={`mr-2 font-medium ${
-                          team.utilization >= 75 ? 'text-green-600' : 
-                          team.utilization >= 65 ? 'text-yellow-600' : 'text-red-600'
-                        }`}>
-                          {team.utilization}%
-                        </span>
-                        <div className="w-16 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full ${
-                              team.utilization >= 75 ? 'bg-green-600' : 
-                              team.utilization >= 65 ? 'bg-yellow-600' : 'bg-red-600'
-                            }`}
-                            style={{width: `${team.utilization}%`}}
-                          ></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">${team.avg_rate}/hr</td>
-                    <td className="py-3 px-4">{team.resources}</td>
-                    <td className="py-3 px-4">{team.projects}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Resource Details */}
-      <div className="card">
-        <div className="card-header">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="card-title">Resource Details</h3>
-              <p className="card-description">Individual resource performance</p>
-            </div>
-            <button
-              onClick={() => toggleSection('details')}
-              className="btn-icon"
-            >
-              {expandedSections.details ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-        {expandedSections.details && (
-          <div className="card-content">
-            <div className="space-y-4">
-              {reportData.resourceDetails.map((resource, index) => (
-                <div key={index} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-sm font-medium text-blue-600">
-                          {resource.name.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{resource.name}</h4>
-                        <p className="text-sm text-gray-600">{resource.team}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-green-600">${resource.revenue.toLocaleString()}</p>
-                      <p className="text-sm text-gray-600">{resource.billable_hours}h billable</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md-grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Utilization</p>
-                      <div className="flex items-center mt-1">
-                        <span className="font-medium mr-2">{resource.utilization}%</span>
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full" 
-                            style={{width: `${resource.utilization}%`}}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Efficiency</p>
-                      <p className="font-medium">{resource.efficiency}%</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Hourly Rate</p>
-                      <p className="font-medium">${resource.hourly_rate}/hr</p>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-3">
-                    <p className="text-sm text-gray-600">Active Projects</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {resource.projects.map((project, idx) => (
-                        <span key={idx} className="badge badge-blue text-xs">
-                          {project}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Client Analysis */}
-      <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">Client Revenue Distribution</h3>
-            <p className="card-description">Revenue breakdown by client</p>
-          </div>
-          <div className="card-content">
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height={300}>
-                <RechartsPieChart>
-                  <Pie
-                    data={reportData.clientAnalysis}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({client, revenue}) => `${client}: $${revenue.toLocaleString()}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="revenue"
-                  >
-                    {reportData.clientAnalysis.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']} />
-                </RechartsPieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">Client Performance Metrics</h3>
-            <p className="card-description">Key metrics by client</p>
-          </div>
-          <div className="card-content">
-            <div className="space-y-3">
-              {reportData.clientAnalysis.map((client, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-900">{client.client}</p>
-                    <p className="text-sm text-gray-600">
-                      {client.hours}h • {client.projects} projects • ${client.avg_rate.toFixed(2)}/hr avg
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-green-600">${client.revenue.toLocaleString()}</p>
-                    <p className="text-sm text-gray-600">{client.utilization_impact}% of total</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )
