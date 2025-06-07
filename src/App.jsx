@@ -1,6 +1,10 @@
+// ENHANCED APP.JSX WITH ANALYTICS AND REPORTING
+// This is your complete App.jsx file with all admin features + analytics + reporting
+
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
-import { Clock, Users, BarChart3, Settings, LogOut, Menu, X, AlertCircle, CheckCircle, Plus, Check, XCircle, Download, Filter, Search, Edit, Trash2, UserPlus, Shield } from 'lucide-react'
+import { Clock, Users, BarChart3, Settings, LogOut, Menu, X, AlertCircle, CheckCircle, Plus, Check, XCircle, Download, Filter, Search, Edit, Trash2, UserPlus, Shield, TrendingUp, DollarSign, Calendar, FileText } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Input } from '@/components/ui/input.jsx'
@@ -12,7 +16,672 @@ import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute.jsx'
 import api from './lib/api'
 import './App.css'
 
-// ADMIN TIMESHEET APPROVAL COMPONENT
+// ANALYTICS DASHBOARD COMPONENT
+function AnalyticsDashboard() {
+  const { user } = useAuth()
+  const [analyticsData, setAnalyticsData] = useState({
+    timeDistribution: [],
+    productivityTrends: [],
+    teamPerformance: [],
+    hoursByDay: [],
+    approvalStats: [],
+    overtimeAnalysis: []
+  })
+  const [loading, setLoading] = useState(true)
+  const [dateRange, setDateRange] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  })
+  const [selectedMetric, setSelectedMetric] = useState('overview')
+
+  useEffect(() => {
+    fetchAnalyticsData()
+  }, [dateRange])
+
+  const fetchAnalyticsData = async () => {
+    try {
+      setLoading(true)
+      
+      // Mock data for demonstration - replace with actual API calls
+      const mockData = {
+        timeDistribution: [
+          { name: 'Campaign A', hours: 120, percentage: 35 },
+          { name: 'Campaign B', hours: 85, percentage: 25 },
+          { name: 'Campaign C', hours: 95, percentage: 28 },
+          { name: 'Admin Tasks', hours: 40, percentage: 12 }
+        ],
+        productivityTrends: [
+          { date: '2024-01-01', productivity: 85, hours: 8.2 },
+          { date: '2024-01-02', productivity: 92, hours: 8.5 },
+          { date: '2024-01-03', productivity: 78, hours: 7.8 },
+          { date: '2024-01-04', productivity: 88, hours: 8.3 },
+          { date: '2024-01-05', productivity: 95, hours: 8.7 },
+          { date: '2024-01-06', productivity: 82, hours: 8.0 },
+          { date: '2024-01-07', productivity: 90, hours: 8.4 }
+        ],
+        teamPerformance: [
+          { name: 'John Doe', hours: 168, efficiency: 92, overtime: 8 },
+          { name: 'Jane Smith', hours: 160, efficiency: 88, overtime: 0 },
+          { name: 'Mike Johnson', hours: 172, efficiency: 95, overtime: 12 },
+          { name: 'Sarah Wilson', hours: 156, efficiency: 85, overtime: 4 }
+        ],
+        hoursByDay: [
+          { day: 'Mon', regular: 32, overtime: 4 },
+          { day: 'Tue', regular: 35, overtime: 2 },
+          { day: 'Wed', regular: 38, overtime: 6 },
+          { day: 'Thu', regular: 36, overtime: 3 },
+          { day: 'Fri', regular: 34, overtime: 5 },
+          { day: 'Sat', regular: 12, overtime: 8 },
+          { day: 'Sun', regular: 8, overtime: 2 }
+        ],
+        approvalStats: [
+          { status: 'Approved', count: 145, percentage: 78 },
+          { status: 'Pending', count: 28, percentage: 15 },
+          { status: 'Rejected', count: 13, percentage: 7 }
+        ],
+        overtimeAnalysis: [
+          { week: 'Week 1', planned: 160, actual: 168, overtime: 8 },
+          { week: 'Week 2', planned: 160, actual: 165, overtime: 5 },
+          { week: 'Week 3', planned: 160, actual: 172, overtime: 12 },
+          { week: 'Week 4', planned: 160, actual: 158, overtime: 0 }
+        ]
+      }
+      
+      setAnalyticsData(mockData)
+    } catch (error) {
+      console.error('Error fetching analytics data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4']
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <BarChart3 className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
+          <p className="text-gray-600">Loading analytics...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+          <p className="text-gray-600">Comprehensive insights into team performance and productivity</p>
+        </div>
+        <div className="flex space-x-4">
+          <div className="flex space-x-2">
+            <Input
+              type="date"
+              value={dateRange.start}
+              onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+              className="w-40"
+            />
+            <Input
+              type="date"
+              value={dateRange.end}
+              onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+              className="w-40"
+            />
+          </div>
+          <Button onClick={fetchAnalyticsData}>
+            <Download className="w-4 h-4 mr-2" />
+            Export Report
+          </Button>
+        </div>
+      </div>
+
+      {/* Metric Selection Tabs */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        {[
+          { id: 'overview', name: 'Overview', icon: BarChart3 },
+          { id: 'productivity', name: 'Productivity', icon: TrendingUp },
+          { id: 'team', name: 'Team Performance', icon: Users },
+          { id: 'time', name: 'Time Analysis', icon: Clock }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSelectedMetric(tab.id)}
+            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              selectedMetric === tab.id
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <tab.icon className="w-4 h-4 mr-2" />
+            {tab.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Overview Tab */}
+      {selectedMetric === 'overview' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Time Distribution Pie Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Time Distribution by Campaign</CardTitle>
+              <CardDescription>How time is allocated across different campaigns</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={analyticsData.timeDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({name, percentage}) => `${name}: ${percentage}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="hours"
+                  >
+                    {analyticsData.timeDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Approval Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Timesheet Approval Status</CardTitle>
+              <CardDescription>Current status of timesheet submissions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={analyticsData.approvalStats}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="status" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#3B82F6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Hours by Day */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Daily Hours Breakdown</CardTitle>
+              <CardDescription>Regular vs overtime hours by day of the week</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={analyticsData.hoursByDay}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="regular" stackId="a" fill="#10B981" name="Regular Hours" />
+                  <Bar dataKey="overtime" stackId="a" fill="#F59E0B" name="Overtime Hours" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Productivity Tab */}
+      {selectedMetric === 'productivity' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Productivity Trends</CardTitle>
+              <CardDescription>Daily productivity scores and hours worked</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={analyticsData.productivityTrends}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Line yAxisId="left" type="monotone" dataKey="productivity" stroke="#3B82F6" name="Productivity %" />
+                  <Line yAxisId="right" type="monotone" dataKey="hours" stroke="#10B981" name="Hours Worked" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Overtime Analysis</CardTitle>
+              <CardDescription>Planned vs actual hours with overtime tracking</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={analyticsData.overtimeAnalysis}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="week" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Area type="monotone" dataKey="planned" stackId="1" stroke="#8884d8" fill="#8884d8" name="Planned Hours" />
+                  <Area type="monotone" dataKey="overtime" stackId="1" stroke="#82ca9d" fill="#82ca9d" name="Overtime Hours" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Team Performance Tab */}
+      {selectedMetric === 'team' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Team Performance Metrics</CardTitle>
+              <CardDescription>Individual team member performance analysis</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {analyticsData.teamPerformance.map((member, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-blue-600">
+                          {member.name.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{member.name}</p>
+                        <p className="text-sm text-gray-600">{member.hours} hours this month</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-6">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600">Efficiency</p>
+                        <p className="text-lg font-semibold text-green-600">{member.efficiency}%</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600">Overtime</p>
+                        <p className="text-lg font-semibold text-orange-600">{member.overtime}h</p>
+                      </div>
+                      <div className="w-24 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full" 
+                          style={{width: `${member.efficiency}%`}}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Time Analysis Tab */}
+      {selectedMetric === 'time' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Time Utilization</CardTitle>
+              <CardDescription>How time is being utilized across the organization</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Productive Work', value: 75, color: '#10B981' },
+                      { name: 'Meetings', value: 15, color: '#3B82F6' },
+                      { name: 'Admin Tasks', value: 7, color: '#F59E0B' },
+                      { name: 'Breaks', value: 3, color: '#EF4444' }
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({name, value}) => `${name}: ${value}%`}
+                  >
+                    {[
+                      { name: 'Productive Work', value: 75, color: '#10B981' },
+                      { name: 'Meetings', value: 15, color: '#3B82F6' },
+                      { name: 'Admin Tasks', value: 7, color: '#F59E0B' },
+                      { name: 'Breaks', value: 3, color: '#EF4444' }
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Peak Hours Analysis</CardTitle>
+              <CardDescription>When your team is most productive</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={[
+                  { hour: '9 AM', productivity: 65 },
+                  { hour: '10 AM', productivity: 85 },
+                  { hour: '11 AM', productivity: 92 },
+                  { hour: '12 PM', productivity: 78 },
+                  { hour: '1 PM', productivity: 45 },
+                  { hour: '2 PM', productivity: 88 },
+                  { hour: '3 PM', productivity: 95 },
+                  { hour: '4 PM', productivity: 82 },
+                  { hour: '5 PM', productivity: 70 }
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="hour" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="productivity" fill="#3B82F6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// REPORTS PAGE COMPONENT
+function ReportsPage() {
+  const { user } = useAuth()
+  const [activeReport, setActiveReport] = useState('payroll')
+  const [reportData, setReportData] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [filters, setFilters] = useState({
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    department: 'all',
+    employee: 'all',
+    status: 'all'
+  })
+
+  const reportTypes = [
+    { id: 'payroll', name: 'Payroll Report', icon: DollarSign, description: 'Generate payroll summaries for accounting' },
+    { id: 'productivity', name: 'Productivity Report', icon: TrendingUp, description: 'Analyze team productivity metrics' },
+    { id: 'attendance', name: 'Attendance Report', icon: Calendar, description: 'Track attendance and time patterns' },
+    { id: 'overtime', name: 'Overtime Report', icon: Clock, description: 'Monitor overtime hours and costs' },
+    { id: 'billing', name: 'Client Billing', icon: FileText, description: 'Generate client billing reports' },
+    { id: 'custom', name: 'Custom Report', icon: Settings, description: 'Create custom reports with filters' }
+  ]
+
+  const generateReport = async (reportType) => {
+    setLoading(true)
+    try {
+      // Mock report generation - replace with actual API calls
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      const mockReportData = {
+        payroll: {
+          totalHours: 1240,
+          totalCost: 22320,
+          employees: [
+            { name: 'John Doe', hours: 168, rate: 18.50, gross: 3108 },
+            { name: 'Jane Smith', hours: 160, rate: 20.00, gross: 3200 },
+            { name: 'Mike Johnson', hours: 172, rate: 19.25, gross: 3311 }
+          ]
+        },
+        productivity: {
+          averageEfficiency: 87,
+          topPerformer: 'Mike Johnson',
+          improvementAreas: ['Time tracking accuracy', 'Break time optimization']
+        }
+      }
+      
+      setReportData(mockReportData[reportType] || {})
+    } catch (error) {
+      console.error('Error generating report:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const exportReport = async (format) => {
+    try {
+      // Mock export - replace with actual API call
+      const blob = new Blob(['Mock report data'], { type: 'text/plain' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${activeReport}_report.${format}`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('Error exporting report:', error)
+    }
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
+          <p className="text-gray-600">Generate comprehensive reports for payroll, billing, and analysis</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => exportReport('csv')}>
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button variant="outline" onClick={() => exportReport('pdf')}>
+            <Download className="w-4 h-4 mr-2" />
+            Export PDF
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Report Type Selection */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Report Types</CardTitle>
+              <CardDescription>Select the type of report to generate</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {reportTypes.map((report) => (
+                <button
+                  key={report.id}
+                  onClick={() => setActiveReport(report.id)}
+                  className={`w-full flex items-center p-3 rounded-lg text-left transition-colors ${
+                    activeReport === report.id
+                      ? 'bg-blue-100 text-blue-900 border border-blue-200'
+                      : 'hover:bg-gray-50 border border-transparent'
+                  }`}
+                >
+                  <report.icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">{report.name}</p>
+                    <p className="text-xs text-gray-600">{report.description}</p>
+                  </div>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Report Configuration and Results */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Filters */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Report Filters</CardTitle>
+              <CardDescription>Configure your report parameters</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">End Date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={filters.endDate}
+                    onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department</Label>
+                  <select
+                    id="department"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filters.department}
+                    onChange={(e) => setFilters({...filters, department: e.target.value})}
+                  >
+                    <option value="all">All Departments</option>
+                    <option value="campaign_a">Campaign A</option>
+                    <option value="campaign_b">Campaign B</option>
+                    <option value="admin">Administration</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="employee">Employee</Label>
+                  <select
+                    id="employee"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filters.employee}
+                    onChange={(e) => setFilters({...filters, employee: e.target.value})}
+                  >
+                    <option value="all">All Employees</option>
+                    <option value="john_doe">John Doe</option>
+                    <option value="jane_smith">Jane Smith</option>
+                    <option value="mike_johnson">Mike Johnson</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-4">
+                <Button onClick={() => generateReport(activeReport)} disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Clock className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <BarChart3 className="w-4 h-4 mr-2" />
+                      Generate Report
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Report Results */}
+          {reportData && (
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {reportTypes.find(r => r.id === activeReport)?.name} Results
+                </CardTitle>
+                <CardDescription>
+                  Report generated for {filters.startDate} to {filters.endDate}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {activeReport === 'payroll' && reportData.employees && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <p className="text-sm text-blue-600">Total Hours</p>
+                        <p className="text-2xl font-bold text-blue-900">{reportData.totalHours}</p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <p className="text-sm text-green-600">Total Cost</p>
+                        <p className="text-2xl font-bold text-green-900">${reportData.totalCost.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-purple-50 p-4 rounded-lg">
+                        <p className="text-sm text-purple-600">Employees</p>
+                        <p className="text-2xl font-bold text-purple-900">{reportData.employees.length}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse border border-gray-300">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th className="border border-gray-300 px-4 py-2 text-left">Employee</th>
+                            <th className="border border-gray-300 px-4 py-2 text-left">Hours</th>
+                            <th className="border border-gray-300 px-4 py-2 text-left">Rate</th>
+                            <th className="border border-gray-300 px-4 py-2 text-left">Gross Pay</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reportData.employees.map((employee, index) => (
+                            <tr key={index}>
+                              <td className="border border-gray-300 px-4 py-2">{employee.name}</td>
+                              <td className="border border-gray-300 px-4 py-2">{employee.hours}</td>
+                              <td className="border border-gray-300 px-4 py-2">${employee.rate}</td>
+                              <td className="border border-gray-300 px-4 py-2">${employee.gross.toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                
+                {activeReport === 'productivity' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <p className="text-sm text-green-600">Average Efficiency</p>
+                        <p className="text-2xl font-bold text-green-900">{reportData.averageEfficiency}%</p>
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <p className="text-sm text-blue-600">Top Performer</p>
+                        <p className="text-2xl font-bold text-blue-900">{reportData.topPerformer}</p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium mb-2">Areas for Improvement:</h4>
+                      <ul className="list-disc list-inside space-y-1">
+                        {reportData.improvementAreas.map((area, index) => (
+                          <li key={index} className="text-gray-600">{area}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ADMIN TIMESHEET APPROVAL COMPONENT (from previous implementation)
 function AdminTimesheetApproval() {
   const { user } = useAuth()
   const [allTimesheets, setAllTimesheets] = useState([])
@@ -487,7 +1156,7 @@ function TimesheetsPage() {
   )
 }
 
-// ENHANCED TEAM PAGE WITH ADMIN FEATURES
+// ENHANCED TEAM PAGE WITH ADMIN FEATURES (from previous implementation)
 function TeamPage() {
   const { user } = useAuth()
   const [teamMembers, setTeamMembers] = useState([])
@@ -780,7 +1449,7 @@ function TeamPage() {
   )
 }
 
-// ENHANCED DASHBOARD WITH ADMIN METRICS
+// ENHANCED DASHBOARD WITH ADMIN METRICS (from previous implementation)
 function Dashboard() {
   const { user } = useAuth()
   const [dashboardData, setDashboardData] = useState({
@@ -1020,7 +1689,7 @@ function Dashboard() {
               <CardDescription>Common administrative tasks</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Link to="/timesheets">
                   <Button className="w-full" variant="outline">
                     <Shield className="w-4 h-4 mr-2" />
@@ -1033,10 +1702,18 @@ function Dashboard() {
                     Manage Team
                   </Button>
                 </Link>
-                <Button className="w-full" variant="outline">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Reports
-                </Button>
+                <Link to="/analytics">
+                  <Button className="w-full" variant="outline">
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    View Analytics
+                  </Button>
+                </Link>
+                <Link to="/reports">
+                  <Button className="w-full" variant="outline">
+                    <Download className="w-4 h-4 mr-2" />
+                    Generate Reports
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
@@ -1367,7 +2044,7 @@ function LoginPage() {
   )
 }
 
-// SIDEBAR COMPONENT (unchanged)
+// SIDEBAR COMPONENT (updated with new navigation items)
 function Sidebar({ isMobileOpen, setIsMobileOpen }) {
   const { user, logout } = useAuth()
   const location = useLocation()
@@ -1376,6 +2053,8 @@ function Sidebar({ isMobileOpen, setIsMobileOpen }) {
     { name: 'Dashboard', icon: BarChart3, href: '/', current: location.pathname === '/' },
     { name: 'Timesheets', icon: Clock, href: '/timesheets', current: location.pathname === '/timesheets' },
     { name: 'Team', icon: Users, href: '/team', current: location.pathname === '/team', roles: ['admin', 'campaign_lead'] },
+    { name: 'Analytics', icon: TrendingUp, href: '/analytics', current: location.pathname === '/analytics', roles: ['admin'] },
+    { name: 'Reports', icon: FileText, href: '/reports', current: location.pathname === '/reports', roles: ['admin'] },
     { name: 'Settings', icon: Settings, href: '/settings', current: location.pathname === '/settings' },
   ]
 
@@ -1483,7 +2162,7 @@ function Sidebar({ isMobileOpen, setIsMobileOpen }) {
   )
 }
 
-// MAIN LAYOUT COMPONENT (unchanged)
+// MAIN LAYOUT COMPONENT (updated with new routes)
 function MainLayout() {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
 
@@ -1511,6 +2190,8 @@ function MainLayout() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/timesheets" element={<TimesheetsPage />} />
             <Route path="/team" element={<TeamPage />} />
+            <Route path="/analytics" element={<AnalyticsDashboard />} />
+            <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </main>
