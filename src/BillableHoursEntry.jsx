@@ -1,4 +1,4 @@
-// BillableHoursEntry.jsx - Enhanced with full functionality and proper scrolling
+// BillableHoursEntry.jsx - Enhanced with full functionality and proper scrolling 
 
 import React, { useState, useEffect } from 'react'
 import { 
