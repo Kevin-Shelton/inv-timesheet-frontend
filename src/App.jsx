@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
-import { Clock, Users, BarChart3, Settings, LogOut, Menu, X, AlertCircle, CheckCircle, Plus } from 'lucide-react'
+import { Clock, Users, BarChart3, Settings, LogOut, Menu, X, AlertCircle, CheckCircle, Plus, Check, XCircle, Download, Filter, Search, Edit, Trash2, UserPlus, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Input } from '@/components/ui/input.jsx'
@@ -12,9 +12,278 @@ import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute.jsx'
 import api from './lib/api'
 import './App.css'
 
-// TIMESHEETS PAGE COMPONENT
+// ADMIN TIMESHEET APPROVAL COMPONENT
+function AdminTimesheetApproval() {
+  const { user } = useAuth()
+  const [allTimesheets, setAllTimesheets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [filter, setFilter] = useState('pending')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedTimesheet, setSelectedTimesheet] = useState(null)
+  const [approvalComment, setApprovalComment] = useState('')
+
+  useEffect(() => {
+    fetchAllTimesheets()
+  }, [filter])
+
+  const fetchAllTimesheets = async () => {
+    try {
+      setLoading(true)
+      const data = await api.getTimesheets({ status: filter === 'all' ? undefined : filter })
+      setAllTimesheets(data)
+    } catch (error) {
+      setError('Failed to load timesheets')
+      console.error('Error fetching timesheets:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApproval = async (timesheetId, action) => {
+    try {
+      if (action === 'approve') {
+        await api.approveTimesheet(timesheetId, approvalComment)
+      } else {
+        await api.rejectTimesheet(timesheetId, approvalComment)
+      }
+      setApprovalComment('')
+      setSelectedTimesheet(null)
+      fetchAllTimesheets()
+    } catch (error) {
+      setError(`Failed to ${action} timesheet`)
+      console.error(`Error ${action}ing timesheet:`, error)
+    }
+  }
+
+  const filteredTimesheets = allTimesheets.filter(timesheet =>
+    timesheet.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    timesheet.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'approved':
+        return <CheckCircle className="w-4 h-4 text-green-600" />
+      case 'rejected':
+        return <XCircle className="w-4 h-4 text-red-600" />
+      default:
+        return <AlertCircle className="w-4 h-4 text-yellow-600" />
+    }
+  }
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800'
+      case 'rejected':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-yellow-100 text-yellow-800'
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-spin" />
+          <p className="text-gray-600">Loading timesheets...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Timesheet Approvals</h1>
+          <p className="text-gray-600">Review and approve team timesheet entries</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => fetchAllTimesheets()}>
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+        </div>
+      </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Filters and Search */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex space-x-2">
+          {['all', 'pending', 'approved', 'rejected'].map((status) => (
+            <Button
+              key={status}
+              variant={filter === status ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter(status)}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </Button>
+          ))}
+        </div>
+        <div className="flex-1 max-w-sm">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search by user or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Timesheets List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Timesheets</CardTitle>
+          <CardDescription>All timesheet entries requiring review</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {filteredTimesheets.length === 0 ? (
+            <div className="text-center py-8">
+              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No timesheets found</h3>
+              <p className="text-gray-600">No timesheets match your current filter</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredTimesheets.map((timesheet) => (
+                <div key={timesheet.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{timesheet.user_name || 'Unknown User'}</p>
+                      <p className="text-sm text-gray-600">{timesheet.date} • {timesheet.hours} hours</p>
+                      {timesheet.description && (
+                        <p className="text-sm text-gray-500">{timesheet.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-1">
+                      {getStatusIcon(timesheet.status)}
+                      <Badge className={getStatusColor(timesheet.status)}>
+                        {timesheet.status}
+                      </Badge>
+                    </div>
+                    {timesheet.status === 'pending' && (
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-green-600 border-green-600 hover:bg-green-50"
+                          onClick={() => {
+                            setSelectedTimesheet(timesheet)
+                            setApprovalComment('')
+                          }}
+                        >
+                          <Check className="w-4 h-4 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 border-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            setSelectedTimesheet(timesheet)
+                            setApprovalComment('')
+                          }}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Approval Modal */}
+      {selectedTimesheet && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>
+                {selectedTimesheet.status === 'pending' ? 'Review Timesheet' : 'Timesheet Details'}
+              </CardTitle>
+              <CardDescription>
+                {selectedTimesheet.user_name} • {selectedTimesheet.date} • {selectedTimesheet.hours} hours
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {selectedTimesheet.description && (
+                <div>
+                  <Label>Description</Label>
+                  <p className="text-sm text-gray-600 mt-1">{selectedTimesheet.description}</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="comment">Comments (optional)</Label>
+                <Input
+                  id="comment"
+                  placeholder="Add a comment..."
+                  value={approvalComment}
+                  onChange={(e) => setApprovalComment(e.target.value)}
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  className="flex-1"
+                  onClick={() => handleApproval(selectedTimesheet.id, 'approve')}
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  Approve
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => handleApproval(selectedTimesheet.id, 'reject')}
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Reject
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedTimesheet(null)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ENHANCED TIMESHEETS PAGE WITH ADMIN VIEW
 function TimesheetsPage() {
   const { user } = useAuth()
+  
+  // If user is admin, show the approval interface
+  if (user?.role === 'admin') {
+    return <AdminTimesheetApproval />
+  }
+
+  // Regular user timesheet interface (existing code)
   const [timesheets, setTimesheets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -64,7 +333,7 @@ function TimesheetsPage() {
       case 'approved':
         return <CheckCircle className="w-4 h-4 text-green-600" />
       case 'rejected':
-        return <X className="w-4 h-4 text-red-600" />
+        return <XCircle className="w-4 h-4 text-red-600" />
       default:
         return <AlertCircle className="w-4 h-4 text-yellow-600" />
     }
@@ -96,7 +365,7 @@ function TimesheetsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Timesheets</h1>
+          <h1 className="text-2xl font-bold text-gray-900">My Timesheets</h1>
           <p className="text-gray-600">Track and manage your time entries</p>
         </div>
         <Button onClick={() => setShowAddForm(true)}>
@@ -170,7 +439,7 @@ function TimesheetsPage() {
       {/* Timesheets List */}
       <Card>
         <CardHeader>
-          <CardTitle>Time Entries</CardTitle>
+          <CardTitle>My Time Entries</CardTitle>
           <CardDescription>Your submitted timesheet entries</CardDescription>
         </CardHeader>
         <CardContent>
@@ -218,13 +487,14 @@ function TimesheetsPage() {
   )
 }
 
-// TEAM PAGE COMPONENT  
+// ENHANCED TEAM PAGE WITH ADMIN FEATURES
 function TeamPage() {
   const { user } = useAuth()
   const [teamMembers, setTeamMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editingUser, setEditingUser] = useState(null)
   const [newMember, setNewMember] = useState({
     email: '',
     full_name: '',
@@ -252,11 +522,15 @@ function TeamPage() {
   const handleSubmitMember = async (e) => {
     e.preventDefault()
     try {
-      await api.createUser({
-        ...newMember,
-        password: 'TempPass123!',
-        send_welcome_email: true
-      })
+      if (editingUser) {
+        await api.updateUser(editingUser.id, newMember)
+      } else {
+        await api.createUser({
+          ...newMember,
+          password: 'TempPass123!',
+          send_welcome_email: true
+        })
+      }
       setNewMember({
         email: '',
         full_name: '',
@@ -264,10 +538,34 @@ function TeamPage() {
         pay_rate_per_hour: ''
       })
       setShowAddForm(false)
+      setEditingUser(null)
       fetchTeamMembers()
     } catch (error) {
-      setError('Failed to create team member')
-      console.error('Error creating team member:', error)
+      setError(`Failed to ${editingUser ? 'update' : 'create'} team member`)
+      console.error(`Error ${editingUser ? 'updating' : 'creating'} team member:`, error)
+    }
+  }
+
+  const handleEditUser = (member) => {
+    setEditingUser(member)
+    setNewMember({
+      email: member.email,
+      full_name: member.full_name,
+      role: member.role,
+      pay_rate_per_hour: member.pay_rate_per_hour || ''
+    })
+    setShowAddForm(true)
+  }
+
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        await api.deleteUser(userId)
+        fetchTeamMembers()
+      } catch (error) {
+        setError('Failed to delete user')
+        console.error('Error deleting user:', error)
+      }
     }
   }
 
@@ -294,6 +592,7 @@ function TeamPage() {
   }
 
   const canManageTeam = user?.role === 'admin' || user?.role === 'campaign_lead'
+  const isAdmin = user?.role === 'admin'
 
   return (
     <div className="p-6 space-y-6">
@@ -303,8 +602,17 @@ function TeamPage() {
           <p className="text-gray-600">Manage your team members and their roles</p>
         </div>
         {canManageTeam && (
-          <Button onClick={() => setShowAddForm(true)}>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button onClick={() => {
+            setEditingUser(null)
+            setNewMember({
+              email: '',
+              full_name: '',
+              role: 'team_member',
+              pay_rate_per_hour: ''
+            })
+            setShowAddForm(true)
+          }}>
+            <UserPlus className="w-4 h-4 mr-2" />
             Add Member
           </Button>
         )}
@@ -324,12 +632,14 @@ function TeamPage() {
         </Alert>
       )}
 
-      {/* Add Member Form */}
+      {/* Add/Edit Member Form */}
       {showAddForm && canManageTeam && (
         <Card>
           <CardHeader>
-            <CardTitle>Add Team Member</CardTitle>
-            <CardDescription>Invite a new member to join your team</CardDescription>
+            <CardTitle>{editingUser ? 'Edit Team Member' : 'Add Team Member'}</CardTitle>
+            <CardDescription>
+              {editingUser ? 'Update team member information' : 'Invite a new member to join your team'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmitMember} className="space-y-4">
@@ -367,7 +677,7 @@ function TeamPage() {
                   >
                     <option value="team_member">Team Member</option>
                     <option value="campaign_lead">Campaign Lead</option>
-                    {user?.role === 'admin' && <option value="admin">Admin</option>}
+                    {isAdmin && <option value="admin">Admin</option>}
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -384,8 +694,13 @@ function TeamPage() {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button type="submit">Add Member</Button>
-                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
+                <Button type="submit">
+                  {editingUser ? 'Update Member' : 'Add Member'}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => {
+                  setShowAddForm(false)
+                  setEditingUser(null)
+                }}>
                   Cancel
                 </Button>
               </div>
@@ -408,7 +723,7 @@ function TeamPage() {
               <p className="text-gray-600 mb-4">Start building your team by adding members</p>
               {canManageTeam && (
                 <Button onClick={() => setShowAddForm(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
+                  <UserPlus className="w-4 h-4 mr-2" />
                   Add First Member
                 </Button>
               )}
@@ -435,6 +750,25 @@ function TeamPage() {
                     <Badge className={getRoleColor(member.role)}>
                       {member.role?.replace('_', ' ')}
                     </Badge>
+                    {isAdmin && member.id !== user.id && (
+                      <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditUser(member)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 border-red-600 hover:bg-red-50"
+                          onClick={() => handleDeleteUser(member.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -446,7 +780,273 @@ function TeamPage() {
   )
 }
 
-// SETTINGS PAGE COMPONENT
+// ENHANCED DASHBOARD WITH ADMIN METRICS
+function Dashboard() {
+  const { user } = useAuth()
+  const [dashboardData, setDashboardData] = useState({
+    personalStats: {
+      hoursThisWeek: 32.5,
+      pendingApprovals: 3,
+      monthlyTotal: 128.5,
+      overtimeHours: 4.5
+    },
+    adminStats: {
+      totalUsers: 0,
+      activeTimesheets: 0,
+      pendingApprovals: 0,
+      totalHoursThisMonth: 0
+    },
+    recentTimesheets: []
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
+      
+      // Fetch personal timesheets
+      const personalTimesheets = await api.getTimesheets()
+      
+      // If admin, fetch additional data
+      if (user?.role === 'admin') {
+        const [allUsers, allTimesheets] = await Promise.all([
+          api.getUsers(),
+          api.getTimesheets({ status: 'all' })
+        ])
+        
+        setDashboardData(prev => ({
+          ...prev,
+          adminStats: {
+            totalUsers: allUsers.length,
+            activeTimesheets: allTimesheets.filter(t => t.status === 'pending').length,
+            pendingApprovals: allTimesheets.filter(t => t.status === 'pending').length,
+            totalHoursThisMonth: allTimesheets.reduce((sum, t) => sum + parseFloat(t.hours || 0), 0)
+          },
+          recentTimesheets: allTimesheets.slice(0, 5)
+        }))
+      } else {
+        setDashboardData(prev => ({
+          ...prev,
+          recentTimesheets: personalTimesheets.slice(0, 5)
+        }))
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <BarChart3 className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-pulse" />
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const isAdmin = user?.role === 'admin'
+  
+  return (
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">
+          Welcome back, {user?.full_name?.split(' ')[0] || 'User'}!
+        </h1>
+        <p className="text-gray-600">
+          {isAdmin ? "Here's your organization overview" : "Here's your timesheet overview"}
+        </p>
+      </div>
+      
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {isAdmin ? (
+          <>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Users</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData.adminStats.totalUsers}</p>
+                    <p className="text-xs text-blue-600">Active team members</p>
+                  </div>
+                  <Users className="w-8 h-8 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData.adminStats.pendingApprovals}</p>
+                    <p className="text-xs text-orange-600">Require your review</p>
+                  </div>
+                  <AlertCircle className="w-8 h-8 text-orange-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Hours (Month)</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData.adminStats.totalHoursThisMonth}</p>
+                    <p className="text-xs text-green-600">Organization wide</p>
+                  </div>
+                  <Clock className="w-8 h-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Active Timesheets</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData.adminStats.activeTimesheets}</p>
+                    <p className="text-xs text-gray-600">In review</p>
+                  </div>
+                  <BarChart3 className="w-8 h-8 text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Hours This Week</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData.personalStats.hoursThisWeek}</p>
+                    <p className="text-xs text-green-600">+2.1 from last week</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData.personalStats.pendingApprovals}</p>
+                    <p className="text-xs text-gray-600">2 submitted today</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">This Month</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData.personalStats.monthlyTotal}</p>
+                    <p className="text-xs text-green-600">+12% from last month</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Overtime Hours</p>
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData.personalStats.overtimeHours}</p>
+                    <p className="text-xs text-gray-600">Within limits</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
+      
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {isAdmin ? 'Recent Team Activity' : 'Recent Timesheets'}
+          </CardTitle>
+          <CardDescription>
+            {isAdmin ? 'Latest timesheet submissions from your team' : 'Your latest timesheet entries'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {dashboardData.recentTimesheets.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No recent activity</p>
+            ) : (
+              dashboardData.recentTimesheets.map((timesheet, index) => (
+                <div key={timesheet.id || index} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <Clock className="w-5 h-5 text-blue-500" />
+                    <div>
+                      <p className="font-medium">
+                        {isAdmin && timesheet.user_name ? `${timesheet.user_name} - ` : ''}
+                        {timesheet.date}
+                      </p>
+                      <p className="text-sm text-gray-600">{timesheet.hours} hours</p>
+                    </div>
+                  </div>
+                  <Badge variant={timesheet.status === 'approved' ? 'secondary' : 'outline'}>
+                    {timesheet.status}
+                  </Badge>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions for Admin */}
+      {isAdmin && (
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Common administrative tasks</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Link to="/timesheets">
+                  <Button className="w-full" variant="outline">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Review Timesheets
+                  </Button>
+                </Link>
+                <Link to="/team">
+                  <Button className="w-full" variant="outline">
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Manage Team
+                  </Button>
+                </Link>
+                <Button className="w-full" variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Reports
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// SETTINGS PAGE (unchanged from previous version)
 function SettingsPage() {
   const { user, updateUser } = useAuth()
   const [activeTab, setActiveTab] = useState('profile')
@@ -698,7 +1298,7 @@ function SettingsPage() {
   )
 }
 
-// Login Component
+// LOGIN COMPONENT (unchanged)
 function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -767,7 +1367,7 @@ function LoginPage() {
   )
 }
 
-// Sidebar Component
+// SIDEBAR COMPONENT (unchanged)
 function Sidebar({ isMobileOpen, setIsMobileOpen }) {
   const { user, logout } = useAuth()
   const location = useLocation()
@@ -883,103 +1483,7 @@ function Sidebar({ isMobileOpen, setIsMobileOpen }) {
   )
 }
 
-// Dashboard Component
-function Dashboard() {
-  const { user } = useAuth()
-  
-  return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.full_name?.split(' ')[0] || 'User'}!</h1>
-        <p className="text-gray-600">Here's your timesheet overview</p>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Hours This Week</p>
-                <p className="text-2xl font-bold text-gray-900">32.5</p>
-                <p className="text-xs text-green-600">+2.1 from last week</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
-                <p className="text-2xl font-bold text-gray-900">3</p>
-                <p className="text-xs text-gray-600">2 submitted today</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">This Month</p>
-                <p className="text-2xl font-bold text-gray-900">128.5</p>
-                <p className="text-xs text-green-600">+12% from last month</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Overtime Hours</p>
-                <p className="text-2xl font-bold text-gray-900">4.5</p>
-                <p className="text-xs text-gray-600">Within limits</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Timesheets</CardTitle>
-          <CardDescription>Your latest timesheet entries</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Clock className="w-5 h-5 text-blue-500" />
-                <div>
-                  <p className="font-medium">2025-06-05</p>
-                  <p className="text-sm text-gray-600">8.0 hours</p>
-                </div>
-              </div>
-              <Badge variant="secondary">approved</Badge>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Clock className="w-5 h-5 text-blue-500" />
-                <div>
-                  <p className="font-medium">2025-06-04</p>
-                  <p className="text-sm text-gray-600">7.5 hours</p>
-                </div>
-              </div>
-              <Badge variant="outline">pending</Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Main Layout Component
+// MAIN LAYOUT COMPONENT (unchanged)
 function MainLayout() {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
 
@@ -1015,7 +1519,7 @@ function MainLayout() {
   )
 }
 
-// Main App Component
+// MAIN APP COMPONENT (unchanged)
 function App() {
   return (
     <AuthProvider>
