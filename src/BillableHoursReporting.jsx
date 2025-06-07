@@ -1,4 +1,4 @@
-// BillableHoursReporting.jsx - Enhanced with full functionality and drill-down capabilities
+// BillableHoursReporting.jsx - Enhanced with full functionality and drill-down capabilities 
 
 import React, { useState, useEffect } from 'react'
 import { 
