@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge.jsx'
 import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx'
 import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute.jsx'
-import { api } from './lib/api.js'
+import api from './lib/api'
 import './App.css'
 
 // TIMESHEETS PAGE COMPONENT
