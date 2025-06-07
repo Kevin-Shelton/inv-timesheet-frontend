@@ -20,9 +20,9 @@ import './App.css'
 // Import new components
 import DataUploadCockpit from './DataUploadCockpit.jsx'
 import EnhancedEmployeeManagement from './EnhancedEmployeeManagement.jsx'
-import BillableHoursEntry from './BillableHoursEntry.jsx'
-import UtilizationAnalytics from './UtilizationAnalytics.jsx'
-import BillableHoursReporting from './BillableHoursReporting.jsx'
+import BillableHoursEntry from './BillableHoursEntry_Fixed.jsx'
+import UtilizationAnalytics from './UtilizationAnalytics_Fixed.jsx'
+import BillableHoursReporting from './BillableHoursReporting_Fixed.jsx'
 import { calculateEmployeeStatus } from './dataTemplates.jsx'
 import { downloadEmployeeTemplate, downloadPayrollTemplate } from './templateGenerator.jsx'
 
