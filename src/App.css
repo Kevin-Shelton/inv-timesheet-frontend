@@ -204,6 +204,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100vh;
   overflow: hidden;
 }
 
@@ -215,6 +216,7 @@ body {
   background: white;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 @media (min-width: 768px) {
@@ -237,10 +239,39 @@ body {
   font-weight: 600;
 }
 
+.page-main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .page-content {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px;
+  height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.page-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.page-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.page-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.page-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 @media (min-width: 768px) {
@@ -1447,6 +1478,346 @@ body {
   
   .print-break-inside-avoid {
     break-inside: avoid;
+  }
+}
+
+
+
+/* Modal and Form Responsive Fixes */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.modal-close:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Form Responsive Improvements */
+.form-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.form-grid-2 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .form-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.form-grid-3 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .form-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .form-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Table Responsive Improvements */
+.table-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+}
+
+.table-container table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+.table-container th,
+.table-container td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.table-container th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.table-container tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Chart Container Responsive */
+.chart-container {
+  width: 100%;
+  height: 300px;
+  min-height: 300px;
+}
+
+@media (min-width: 768px) {
+  .chart-container {
+    height: 400px;
+    min-height: 400px;
+  }
+}
+
+/* Card Responsive Improvements */
+.card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.card-description {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 4px 0 0 0;
+}
+
+.card-content {
+  padding: 24px;
+}
+
+/* Stat Card Responsive */
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 4px 0;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  line-height: 1;
+}
+
+.stat-change {
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Mobile Responsive Improvements */
+@media (max-width: 767px) {
+  .page-content {
+    padding: 12px;
+  }
+  
+  .card-header,
+  .card-content {
+    padding: 16px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .stat-value {
+    font-size: 20px;
+  }
+  
+  .modal-content {
+    margin: 16px;
+    max-height: calc(100vh - 32px);
+  }
+  
+  .modal-header,
+  .modal-body {
+    padding: 16px;
+  }
+  
+  .form-grid {
+    gap: 12px;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .btn + .btn {
+    margin-top: 8px;
+  }
+  
+  .flex-col.sm\\:flex-row {
+    flex-direction: column;
+  }
+  
+  .flex-col.sm\\:flex-row .btn {
+    margin-top: 8px;
+  }
+  
+  .flex-col.sm\\:flex-row .btn:first-child {
+    margin-top: 0;
+  }
+}
+
+/* Ensure proper spacing for all content */
+.space-y-6 > * + * {
+  margin-top: 24px;
+}
+
+.space-y-4 > * + * {
+  margin-top: 16px;
+}
+
+.space-y-3 > * + * {
+  margin-top: 12px;
+}
+
+.space-y-2 > * + * {
+  margin-top: 8px;
+}
+
+/* Bottom padding for scrollable content */
+.pb-6 {
+  padding-bottom: 24px;
+}
+
+.pb-4 {
+  padding-bottom: 16px;
+}
+
+/* Ensure forms don't get cut off */
+.form-section {
+  margin-bottom: 32px;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Fix for employee management form */
+.employee-form {
+  max-height: none;
+  overflow: visible;
+}
+
+.employee-form .form-grid {
+  margin-bottom: 24px;
+}
+
+.employee-form .form-actions {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .employee-form .form-actions {
+    flex-direction: column;
   }
 }
 
