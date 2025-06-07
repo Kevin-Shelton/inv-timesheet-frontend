@@ -8,7 +8,7 @@ import {
   CheckCircle, Plus, Check, XCircle, Download, Filter, Search, Edit, 
   Trash2, UserPlus, Shield, TrendingUp, DollarSign, Calendar, FileText,
   Home, Eye, EyeOff, Database, Upload, Target, Activity, Save, Printer,
-  RefreshCw, ChevronDown, ChevronUp, Bell, Globe, Lock, User
+  RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Bell, Globe, Lock, User
 } from 'lucide-react'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
