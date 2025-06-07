@@ -1,4 +1,4 @@
-/// ENHANCED TIMESHEET MANAGEMENT APPLICATION
+// ENHANCED TIMESHEET MANAGEMENT APPLICATION
 // Complete integration of existing functionality with new data loading features
 
 import React, { useState, useEffect, createContext, useContext } from 'react'
