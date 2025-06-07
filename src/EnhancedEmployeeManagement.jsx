@@ -239,8 +239,14 @@ const EnhancedEmployeeManagement = ({ user, api }) => {
     return matchesSearch && matchesStatus && matchesActive
   })
 
-  const canManageEmployees = user?.role === "admin" || user?.role === "campaign_lead"
-  const isAdmin = user?.role === "admin"
+  // Enhanced permission check with case insensitivity and debugging
+  const canManageEmployees = user?.role?.toLowerCase() === "admin" || user?.role?.toLowerCase() === "campaign_lead"
+  const isAdmin = user?.role?.toLowerCase() === "admin"
+  
+  // Debug logging (remove in production)
+  console.log('Employee Management - User:', user)
+  console.log('Employee Management - User Role:', user?.role)
+  console.log('Employee Management - Can Manage:', canManageEmployees)
 
   if (loading) {
     return (
