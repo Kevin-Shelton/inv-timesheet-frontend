@@ -1023,54 +1023,48 @@ function TimesheetsPage() {
           </div>
         </div>
 
-        {/* Apple-inspired Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
-                <Clock className="w-6 h-6 text-blue-600" />
+        {/* Compact Apple-inspired Summary Cards */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+          <div className="flex flex-wrap items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                <Clock className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-light text-gray-500">Regular Hours</p>
-                <p className="text-2xl font-light text-gray-900">{weeklyBreakdown.regular.toFixed(1)}h</p>
+                <p className="text-xs font-light text-gray-500">Regular Hours</p>
+                <p className="text-lg font-light text-gray-900">{weeklyBreakdown.regular.toFixed(1)}h</p>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-green-600" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-light text-gray-500">Time Off</p>
-                <p className="text-2xl font-light text-gray-900">
+                <p className="text-xs font-light text-gray-500">Time Off</p>
+                <p className="text-lg font-light text-gray-900">
                   {(weeklyBreakdown.vacation + weeklyBreakdown.sick + weeklyBreakdown.holiday).toFixed(1)}h
                 </p>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center">
-                <Plus className="w-6 h-6 text-purple-600" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                <Plus className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-light text-gray-500">Overtime</p>
-                <p className="text-2xl font-light text-gray-900">{weeklyBreakdown.overtime.toFixed(1)}h</p>
+                <p className="text-xs font-light text-gray-500">Overtime</p>
+                <p className="text-lg font-light text-gray-900">{weeklyBreakdown.overtime.toFixed(1)}h</p>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-gray-600" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-gray-600" />
               </div>
               <div>
-                <p className="text-sm font-light text-gray-500">Total Hours</p>
-                <p className="text-2xl font-light text-gray-900">{calculateWeeklyTotal().toFixed(1)}h</p>
+                <p className="text-xs font-light text-gray-500">Total Hours</p>
+                <p className="text-lg font-light text-gray-900">{calculateWeeklyTotal().toFixed(1)}h</p>
               </div>
             </div>
           </div>
