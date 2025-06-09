@@ -1356,7 +1356,7 @@ function ApprovalPage() {
               <p className="text-gray-600">No {filter} timesheets found</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
