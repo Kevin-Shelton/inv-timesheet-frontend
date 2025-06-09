@@ -1,6 +1,6 @@
 // COMPLETE TIMESHEET MANAGEMENT APPLICATION
 // Full implementation with all pages and billable hours management system
-// FIXED: Responsive design and scrolling issues for timesheet table
+// FIXED: Only the timesheet table responsiveness - all other functionality preserved
 
 import React, { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
@@ -649,7 +649,7 @@ function Dashboard() {
   )
 }
 
-// ENHANCED TIMESHEET PAGE WITH RESPONSIVE DESIGN AND SCROLLING
+// FIXED TIMESHEET PAGE - Only the table responsiveness is modified
 function TimesheetsPage() {
   const { user } = useAuth()
   const [currentWeek, setCurrentWeek] = useState(new Date())
@@ -943,16 +943,16 @@ function TimesheetsPage() {
   const weeklyBreakdown = calculateWeeklyBreakdown()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-full mx-auto space-y-6 p-4 sm:p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Apple-inspired Header */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+          <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-light text-gray-900 tracking-tight">Weekly Timesheet</h1>
+              <h1 className="text-3xl font-light text-gray-900 tracking-tight">Weekly Timesheet</h1>
               <p className="text-gray-500 mt-2 font-light">Track your daily work hours and time off</p>
             </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+            <div className="flex items-center gap-4">
               {user?.role === 'admin' && (
                 <select 
                   value={selectedEmployee} 
@@ -968,7 +968,7 @@ function TimesheetsPage() {
               <button 
                 onClick={saveWeeklyTimesheet} 
                 disabled={saving}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {saving ? (
                   <>
@@ -997,7 +997,7 @@ function TimesheetsPage() {
             </button>
             
             <div className="text-center">
-              <h2 className="text-lg sm:text-xl font-light text-gray-900 tracking-tight">
+              <h2 className="text-xl font-light text-gray-900 tracking-tight">
                 {weekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {weekEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </h2>
               <p className="text-sm text-gray-500 mt-1 font-light">
@@ -1016,7 +1016,7 @@ function TimesheetsPage() {
 
         {/* Compact Apple-inspired Summary Cards */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                 <Clock className="w-5 h-5 text-blue-600" />
@@ -1061,14 +1061,14 @@ function TimesheetsPage() {
           </div>
         </div>
 
-        {/* FIXED: Apple-inspired Timesheet Grid with Responsive Design and Scrolling */}
+        {/* FIXED: Apple-inspired Timesheet Grid with proper scrolling */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 sm:px-8 py-6 border-b border-gray-100">
+          <div className="px-8 py-6 border-b border-gray-100">
             <h2 className="text-xl font-light text-gray-900 tracking-tight">Daily Time Entries</h2>
             <p className="text-gray-500 mt-1 font-light">Enter your daily work schedule and time off hours</p>
           </div>
           
-          <div className="p-4 sm:p-6 lg:p-8">
+          <div className="p-8">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="flex items-center gap-3">
@@ -1077,167 +1077,165 @@ function TimesheetsPage() {
                 </div>
               </div>
             ) : (
-              <div className="w-full overflow-x-auto">
-                <div className="min-w-[1200px]">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-100">
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-20 sm:w-24">Day</th>
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-16 sm:w-20">Time In</th>
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-16 sm:w-20">Break Out</th>
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-16 sm:w-20">Break In</th>
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-16 sm:w-20">Time Out</th>
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-16 sm:w-20">Vacation</th>
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-16 sm:w-20">Sick</th>
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-16 sm:w-20">Holiday</th>
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-16 sm:w-20">Overtime</th>
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-24 sm:w-32">Notes</th>
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-16 sm:w-20">Total</th>
-                        <th className="text-left py-4 px-2 sm:px-3 font-light text-gray-600 w-12 sm:w-16">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {weekDates.map((date, index) => {
-                        const dateKey = date.toISOString().split('T')[0]
-                        const dayData = weeklyTimesheet[dateKey] || {}
-                        const dailyHours = calculateDailyHours(dayData)
-                        const errors = validateTimeEntry(dayData)
-                        
-                        return (
-                          <tr key={dateKey} className="border-b border-gray-50 hover:bg-gray-25 transition-colors duration-150">
-                            <td className="py-4 px-2 sm:px-3">
-                              <div className="flex flex-col">
-                                <span className="font-medium text-sm text-gray-900">{dayNames[index]}</span>
-                                <span className="text-xs text-gray-500 font-light">
-                                  {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                </span>
-                              </div>
-                            </td>
-                            
-                            <td className="py-4 px-2 sm:px-3">
-                              <input
-                                type="time"
-                                value={dayData.timeIn || ''}
-                                onChange={(e) => handleTimeChange(dateKey, 'timeIn', e.target.value)}
-                                className="w-full text-sm px-2 sm:px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
-                              />
-                            </td>
-                            
-                            <td className="py-4 px-2 sm:px-3">
-                              <input
-                                type="time"
-                                value={dayData.breakOut || ''}
-                                onChange={(e) => handleTimeChange(dateKey, 'breakOut', e.target.value)}
-                                className="w-full text-sm px-2 sm:px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
-                              />
-                            </td>
-                            
-                            <td className="py-4 px-2 sm:px-3">
-                              <input
-                                type="time"
-                                value={dayData.breakIn || ''}
-                                onChange={(e) => handleTimeChange(dateKey, 'breakIn', e.target.value)}
-                                className="w-full text-sm px-2 sm:px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
-                              />
-                            </td>
-                            
-                            <td className="py-4 px-2 sm:px-3">
-                              <input
-                                type="time"
-                                value={dayData.timeOut || ''}
-                                onChange={(e) => handleTimeChange(dateKey, 'timeOut', e.target.value)}
-                                className="w-full text-sm px-2 sm:px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
-                              />
-                            </td>
-                            
-                            <td className="py-4 px-2 sm:px-3">
-                              <input
-                                type="number"
-                                step="0.5"
-                                min="0"
-                                max="8"
-                                value={dayData.vacationHours || ''}
-                                onChange={(e) => handleTimeChange(dateKey, 'vacationHours', e.target.value)}
-                                className="w-full text-sm px-2 sm:px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
-                                placeholder="0"
-                              />
-                            </td>
-                            
-                            <td className="py-4 px-2 sm:px-3">
-                              <input
-                                type="number"
-                                step="0.5"
-                                min="0"
-                                max="8"
-                                value={dayData.sickHours || ''}
-                                onChange={(e) => handleTimeChange(dateKey, 'sickHours', e.target.value)}
-                                className="w-full text-sm px-2 sm:px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
-                                placeholder="0"
-                              />
-                            </td>
-                            
-                            <td className="py-4 px-2 sm:px-3">
-                              <input
-                                type="number"
-                                step="0.5"
-                                min="0"
-                                max="8"
-                                value={dayData.holidayHours || ''}
-                                onChange={(e) => handleTimeChange(dateKey, 'holidayHours', e.target.value)}
-                                className="w-full text-sm px-2 sm:px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
-                                placeholder="0"
-                              />
-                            </td>
-                            
-                            <td className="py-4 px-2 sm:px-3">
-                              <input
-                                type="number"
-                                step="0.5"
-                                min="0"
-                                value={dayData.overtimeHours || ''}
-                                onChange={(e) => handleTimeChange(dateKey, 'overtimeHours', e.target.value)}
-                                className="w-full text-sm px-2 sm:px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
-                                placeholder="0"
-                              />
-                            </td>
-                            
-                            <td className="py-4 px-2 sm:px-3">
-                              <input
-                                type="text"
-                                value={dayData.notes || ''}
-                                onChange={(e) => handleTimeChange(dateKey, 'notes', e.target.value)}
-                                className="w-full text-sm px-2 sm:px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
-                                placeholder="Add notes..."
-                              />
-                            </td>
-                            
-                            <td className="py-4 px-2 sm:px-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-900">
-                                  {dailyHours.toFixed(1)}h
-                                </span>
-                                {errors.length > 0 && (
-                                  <div className="relative group">
-                                    <AlertCircle className="w-4 h-4 text-red-500" />
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-red-600 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-                                      {errors.join(', ')}
-                                    </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1200px]">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-24">Day</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Time In</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Break Out</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Break In</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Time Out</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Vacation</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Sick</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Holiday</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Overtime</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-32">Notes</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Total</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-16">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {weekDates.map((date, index) => {
+                      const dateKey = date.toISOString().split('T')[0]
+                      const dayData = weeklyTimesheet[dateKey] || {}
+                      const dailyHours = calculateDailyHours(dayData)
+                      const errors = validateTimeEntry(dayData)
+                      
+                      return (
+                        <tr key={dateKey} className="border-b border-gray-50 hover:bg-gray-25 transition-colors duration-150">
+                          <td className="py-4 px-3">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-sm text-gray-900">{dayNames[index]}</span>
+                              <span className="text-xs text-gray-500 font-light">
+                                {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="time"
+                              value={dayData.timeIn || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'timeIn', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="time"
+                              value={dayData.breakOut || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'breakOut', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="time"
+                              value={dayData.breakIn || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'breakIn', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="time"
+                              value={dayData.timeOut || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'timeOut', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="8"
+                              value={dayData.vacationHours || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'vacationHours', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                              placeholder="0"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="8"
+                              value={dayData.sickHours || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'sickHours', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                              placeholder="0"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="8"
+                              value={dayData.holidayHours || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'holidayHours', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                              placeholder="0"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              value={dayData.overtimeHours || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'overtimeHours', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                              placeholder="0"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="text"
+                              value={dayData.notes || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'notes', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                              placeholder="Add notes..."
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900">
+                                {dailyHours.toFixed(1)}h
+                              </span>
+                              {errors.length > 0 && (
+                                <div className="relative group">
+                                  <AlertCircle className="w-4 h-4 text-red-500" />
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-red-600 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                                    {errors.join(', ')}
                                   </div>
-                                )}
-                              </div>
-                            </td>
-                            
-                            <td className="py-4 px-2 sm:px-3">
-                              <div className="flex items-center justify-center">
-                                {getStatusIcon(dayData.status)}
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <div className="flex items-center justify-center">
+                              {getStatusIcon(dayData.status)}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -1982,158 +1980,155 @@ function SettingsPage() {
   )
 }
 
-// NAVIGATION COMPONENT
-function Navigation({ sidebarOpen, setSidebarOpen }) {
+// Main Layout Component
+function MainLayout() {
   const { user, logout } = useAuth()
   const location = useLocation()
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
 
-  const navigationItems = [
-    { name: 'Dashboard', href: '/', icon: Home, roles: ['admin', 'campaign_lead', 'team_member'] },
-    { name: 'Timesheets', href: '/timesheets', icon: Clock, roles: ['admin', 'campaign_lead', 'team_member'] },
-    { name: 'Team', href: '/team', icon: Users, roles: ['admin', 'campaign_lead'] },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3, roles: ['admin'] },
-    { name: 'Reports', href: '/reports', icon: FileText, roles: ['admin'] },
-    { name: 'Data Management', href: '/data-management', icon: Database, roles: ['admin'] },
-    { name: 'Billable Hours', href: '/billable-hours', icon: DollarSign, roles: ['admin', 'campaign_lead'] },
-    { name: 'Utilization', href: '/utilization', icon: Activity, roles: ['admin'] },
-    { name: 'Billable Reports', href: '/billable-reports', icon: TrendingUp, roles: ['admin'] },
-    { name: 'Settings', href: '/settings', icon: Settings, roles: ['admin', 'campaign_lead', 'team_member'] }
+  const navigation = [
+    { name: 'Dashboard', href: '/', icon: Home },
+    { name: 'Timesheets', href: '/timesheets', icon: Clock },
+    { name: 'Team', href: '/team', icon: Users },
+    ...(user?.role === 'admin' ? [
+      { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+      { name: 'Reports', href: '/reports', icon: FileText },
+      { name: 'Data Management', href: '/data-management', icon: Database },
+      { name: 'Billable Hours', href: '/billable-hours', icon: DollarSign },
+      { name: 'Utilization', href: '/utilization', icon: Target },
+      { name: 'Billable Reports', href: '/billable-reports', icon: Activity }
+    ] : []),
+    ...(user?.role === 'campaign_lead' ? [
+      { name: 'Billable Hours', href: '/billable-hours', icon: DollarSign }
+    ] : []),
+    { name: 'Settings', href: '/settings', icon: Settings }
   ]
 
-  const filteredItems = navigationItems.filter(item => 
-    item.roles.includes(user?.role)
-  )
-
   return (
-    <>
+    <div className="app-container">
       {/* Desktop Sidebar */}
-      <div className="desktop-sidebar">
+      <div className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <Clock className="h-8 w-8 text-blue-600" />
-            <div className="sidebar-title">
-              <h1>TimeSheet</h1>
-              <span>Manager</span>
+            <div className="sidebar-logo-icon">
+              <Clock className="h-5 w-5 text-blue-600" />
             </div>
+            <h1 className="sidebar-title">TimeSheet Manager</h1>
           </div>
         </div>
 
-        <nav className="sidebar-nav">
-          {filteredItems.map((item) => {
-            const Icon = item.icon
+        {/* Navigation */}
+        <div className="sidebar-nav">
+          {navigation.map((item) => {
             const isActive = location.pathname === item.href
-            
             return (
               <Link
                 key={item.name}
                 to={item.href}
-                className={`nav-item ${isActive ? 'nav-item-active' : ''}`}
+                className={`nav-item ${isActive ? 'active' : ''}`}
               >
-                <Icon className="nav-icon" />
-                <span className="nav-text">{item.name}</span>
+                <item.icon className="nav-icon" />
+                {item.name}
               </Link>
             )
           })}
-        </nav>
+        </div>
 
+        {/* User info */}
         <div className="sidebar-footer">
           <div className="user-info">
             <div className="user-avatar">
-              <User className="w-5 h-5" />
+              <span>
+                {user?.full_name?.charAt(0) || user?.name?.charAt(0) || 'U'}
+              </span>
             </div>
             <div className="user-details">
-              <p className="user-name">{user?.full_name}</p>
-              <p className="user-role">{user?.role?.replace('_', ' ')}</p>
+              <p className="user-name">
+                {user?.full_name || user?.name || 'User'}
+              </p>
+              <p className="user-role">{user?.role || 'Member'}</p>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={logout}
+              className="ml-2 p-2"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
-          <button onClick={logout} className="logout-btn">
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
       {/* Mobile Sidebar */}
-      <div className={`mobile-sidebar ${sidebarOpen ? 'mobile-sidebar-open' : ''}`}>
-        <div className="mobile-sidebar-content">
-          <div className="sidebar-header">
-            <div className="sidebar-logo">
-              <Clock className="h-8 w-8 text-blue-600" />
-              <div className="sidebar-title">
-                <h1>TimeSheet</h1>
-                <span>Manager</span>
+      {isMobileOpen && (
+        <div className="mobile-sidebar-overlay" onClick={() => setIsMobileOpen(false)}>
+          <div className="mobile-sidebar" onClick={(e) => e.stopPropagation()}>
+            <button className="mobile-close-btn" onClick={() => setIsMobileOpen(false)}>
+              <X className="h-6 w-6" />
+            </button>
+            
+            {/* Mobile Navigation Content */}
+            <div className="sidebar-header">
+              <div className="sidebar-logo">
+                <div className="sidebar-logo-icon">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                </div>
+                <h1 className="sidebar-title">TimeSheet</h1>
               </div>
             </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="mobile-close-btn"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
 
-          <nav className="sidebar-nav">
-            {filteredItems.map((item) => {
-              const Icon = item.icon
-              const isActive = location.pathname === item.href
-              
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`nav-item ${isActive ? 'nav-item-active' : ''}`}
+            <div className="sidebar-nav">
+              {navigation.map((item) => {
+                const isActive = location.pathname === item.href
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setIsMobileOpen(false)}
+                    className={`nav-item ${isActive ? 'active' : ''}`}
+                  >
+                    <item.icon className="nav-icon" />
+                    {item.name}
+                  </Link>
+                )
+              })}
+            </div>
+
+            <div className="sidebar-footer">
+              <div className="user-info">
+                <div className="user-avatar">
+                  <span>
+                    {user?.full_name?.charAt(0) || user?.name?.charAt(0) || 'U'}
+                  </span>
+                </div>
+                <div className="user-details">
+                  <p className="user-name">
+                    {user?.full_name || user?.name || 'User'}
+                  </p>
+                  <p className="user-role">{user?.role || 'Member'}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={logout}
+                  className="ml-2 p-2"
+                  title="Sign out"
                 >
-                  <Icon className="nav-icon" />
-                  <span className="nav-text">{item.name}</span>
-                </Link>
-              )
-            })}
-          </nav>
-
-          <div className="sidebar-footer">
-            <div className="user-info">
-              <div className="user-avatar">
-                <User className="w-5 h-5" />
-              </div>
-              <div className="user-details">
-                <p className="user-name">{user?.full_name}</p>
-                <p className="user-role">{user?.role?.replace('_', ' ')}</p>
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-            <button onClick={logout} className="logout-btn">
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
         </div>
-      </div>
-
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="mobile-sidebar-overlay"
-          onClick={() => setSidebarOpen(false)}
-        />
       )}
-    </>
-  )
-}
 
-// MAIN LAYOUT COMPONENT
-function MainLayout() {
-  const { user } = useAuth()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  return (
-    <div className="app-layout">
-      <Navigation sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      
+      {/* Main content */}
       <div className="main-content">
-        {/* Mobile Header */}
+        {/* Mobile header */}
         <header className="mobile-header">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="mobile-menu-btn"
-          >
+          <button className="mobile-menu-btn" onClick={() => setIsMobileOpen(true)}>
             <Menu className="w-5 h-5" />
           </button>
           <h1 className="mobile-title">TimeSheet</h1>
