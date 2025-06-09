@@ -1819,8 +1819,10 @@ function ReportsPage() {
   )
 }
 
-// DATA MANAGEMENT PAGE IMPLEMENTATION
+// DATA MANAGEMENT PAGE IMPLEMENTATION - FIXED
 function DataManagementPage() {
+  const [showModal, setShowModal] = useState(false)
+
   return (
     <div className="page-content space-y-6">
       <div>
@@ -1828,7 +1830,48 @@ function DataManagementPage() {
         <p className="text-gray-600 mt-1">Manage employee data and payroll information</p>
       </div>
 
-      <DataUploadCockpit />
+      <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Employee Data</CardTitle>
+            <CardDescription>Upload and manage employee information</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setShowModal(true)} className="w-full">
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Employee Data
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Payroll Data</CardTitle>
+            <CardDescription>Upload historical payroll and time records</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setShowModal(true)} className="w-full">
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Payroll Data
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="modal-close"
+              onClick={() => setShowModal(false)}
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <DataUploadCockpit onClose={() => setShowModal(false)} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
