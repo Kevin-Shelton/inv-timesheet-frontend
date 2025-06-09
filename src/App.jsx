@@ -539,65 +539,84 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        {user?.role === 'admin' && (
-          <>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <div className="stat-icon-container stat-icon-yellow">
-                    <AlertCircle className="w-6 h-6" />
-                  </div>
-                  <div className="stat-details">
-                    <p className="stat-title">Pending Approvals</p>
-                    <p className="stat-value">{stats.pendingApprovals}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <div className="stat-icon-container stat-icon-orange">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div className="stat-details">
+                <p className="stat-title">Pending Approvals</p>
+                <p className="stat-value">{stats.pendingApprovals}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <div className="stat-icon-container stat-icon-indigo">
-                    <Users className="w-6 h-6" />
-                  </div>
-                  <div className="stat-details">
-                    <p className="stat-title">Total Users</p>
-                    <p className="stat-value">{stats.totalUsers}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <div className="stat-icon-container stat-icon-indigo">
+                <Users className="w-6 h-6" />
+              </div>
+              <div className="stat-details">
+                <p className="stat-title">Total Users</p>
+                <p className="stat-value">{stats.totalUsers}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <div className="stat-icon-container stat-icon-green">
+                <DollarSign className="w-6 h-6" />
+              </div>
+              <div className="stat-details">
+                <p className="stat-title">Revenue</p>
+                <p className="stat-value">${stats.revenue.toLocaleString()}</p>
+                <p className="stat-change text-green-600">
+                  +8% vs last month
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions */}
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks and shortcuts</CardDescription>
+          <CardDescription>
+            Common tasks and shortcuts
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md-grid-cols-2 lg-grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md-grid-cols-4 gap-4">
             <Link to="/timesheets" className="quick-action-card">
               <Clock className="w-8 h-8 text-blue-600 mb-2" />
-              <h3 className="font-medium">Log Hours</h3>
-              <p className="text-sm text-gray-600">Submit timesheet</p>
+              <h3 className="font-medium">Timesheets</h3>
+              <p className="text-sm text-gray-600">Enter hours</p>
+            </Link>
+
+            <Link to="/billable-hours" className="quick-action-card">
+              <DollarSign className="w-8 h-8 text-green-600 mb-2" />
+              <h3 className="font-medium">Billable Hours</h3>
+              <p className="text-sm text-gray-600">Track billing</p>
             </Link>
 
             {(user?.role === 'admin' || user?.role === 'campaign_lead') && (
-              <Link to="/billable-hours" className="quick-action-card">
-                <DollarSign className="w-8 h-8 text-green-600 mb-2" />
-                <h3 className="font-medium">Billable Hours</h3>
-                <p className="text-sm text-gray-600">Enter billable time</p>
-              </Link>
-            )}
-
-            {user?.role === 'admin' && (
               <>
+                <Link to="/team" className="quick-action-card">
+                  <Users className="w-8 h-8 text-purple-600 mb-2" />
+                  <h3 className="font-medium">Employees</h3>
+                  <p className="text-sm text-gray-600">Manage team</p>
+                </Link>
+
                 <Link to="/utilization" className="quick-action-card">
-                  <Target className="w-8 h-8 text-purple-600 mb-2" />
+                  <BarChart3 className="w-8 h-8 text-indigo-600 mb-2" />
                   <h3 className="font-medium">Utilization</h3>
                   <p className="text-sm text-gray-600">View analytics</p>
                 </Link>
@@ -616,7 +635,7 @@ function Dashboard() {
   )
 }
 
-// COMPLETE TIMESHEETS PAGE IMPLEMENTATION
+// COMPLETE TIMESHEETS PAGE IMPLEMENTATION WITH APPLE-LIKE DESIGN
 function TimesheetsPage() {
   const { user } = useAuth()
   const [currentWeek, setCurrentWeek] = useState(new Date())
@@ -730,28 +749,160 @@ function TimesheetsPage() {
     }))
   }
 
+  // Enhanced calculation function that includes all hour types
   const calculateDailyHours = (dayData) => {
-    if (!dayData.timeIn || !dayData.timeOut) return 0
+    let totalHours = 0
     
-    const timeIn = new Date(`2000-01-01 ${dayData.timeIn}`)
-    const timeOut = new Date(`2000-01-01 ${dayData.timeOut}`)
-    const breakOut = dayData.breakOut ? new Date(`2000-01-01 ${dayData.breakOut}`) : null
-    const breakIn = dayData.breakIn ? new Date(`2000-01-01 ${dayData.breakIn}`) : null
-    
-    let totalMinutes = (timeOut - timeIn) / (1000 * 60)
-    
-    if (breakOut && breakIn) {
-      const breakMinutes = (breakIn - breakOut) / (1000 * 60)
-      totalMinutes -= breakMinutes
+    // Calculate regular work hours from time in/out
+    if (dayData.timeIn && dayData.timeOut) {
+      try {
+        const timeIn = new Date(`2000-01-01 ${dayData.timeIn}`)
+        const timeOut = new Date(`2000-01-01 ${dayData.timeOut}`)
+        
+        // Handle overnight shifts
+        let workMinutes = (timeOut - timeIn) / (1000 * 60)
+        if (workMinutes < 0) {
+          workMinutes += 24 * 60 // Add 24 hours for overnight shifts
+        }
+        
+        // Subtract break time if both break out and break in are provided
+        if (dayData.breakOut && dayData.breakIn) {
+          const breakOut = new Date(`2000-01-01 ${dayData.breakOut}`)
+          const breakIn = new Date(`2000-01-01 ${dayData.breakIn}`)
+          let breakMinutes = (breakIn - breakOut) / (1000 * 60)
+          
+          // Validate break times
+          if (breakMinutes > 0 && breakMinutes <= 120) { // Max 2 hour break
+            workMinutes -= breakMinutes
+          }
+        }
+        
+        totalHours += Math.max(0, workMinutes / 60)
+      } catch (error) {
+        console.error('Error calculating work hours:', error)
+      }
     }
     
-    return Math.max(0, totalMinutes / 60)
+    // Add vacation hours
+    if (dayData.vacationHours) {
+      const vacation = parseFloat(dayData.vacationHours) || 0
+      totalHours += Math.max(0, Math.min(vacation, 8)) // Max 8 hours vacation per day
+    }
+    
+    // Add sick hours
+    if (dayData.sickHours) {
+      const sick = parseFloat(dayData.sickHours) || 0
+      totalHours += Math.max(0, Math.min(sick, 8)) // Max 8 hours sick per day
+    }
+    
+    // Add holiday hours
+    if (dayData.holidayHours) {
+      const holiday = parseFloat(dayData.holidayHours) || 0
+      totalHours += Math.max(0, Math.min(holiday, 8)) // Max 8 hours holiday per day
+    }
+    
+    // Add overtime hours
+    if (dayData.overtimeHours) {
+      const overtime = parseFloat(dayData.overtimeHours) || 0
+      totalHours += Math.max(0, Math.min(overtime, 12)) // Max 12 hours overtime per day
+    }
+    
+    return totalHours
   }
 
+  // Enhanced weekly total calculation
   const calculateWeeklyTotal = () => {
     return Object.values(weeklyTimesheet).reduce((total, dayData) => {
       return total + calculateDailyHours(dayData)
     }, 0)
+  }
+
+  // Calculate different types of hours separately for better reporting
+  const calculateWeeklyBreakdown = () => {
+    const breakdown = {
+      regular: 0,
+      vacation: 0,
+      sick: 0,
+      holiday: 0,
+      overtime: 0
+    }
+    
+    Object.values(weeklyTimesheet).forEach(dayData => {
+      // Regular hours (work time minus breaks)
+      if (dayData.timeIn && dayData.timeOut) {
+        try {
+          const timeIn = new Date(`2000-01-01 ${dayData.timeIn}`)
+          const timeOut = new Date(`2000-01-01 ${dayData.timeOut}`)
+          let workMinutes = (timeOut - timeIn) / (1000 * 60)
+          
+          if (workMinutes < 0) workMinutes += 24 * 60
+          
+          if (dayData.breakOut && dayData.breakIn) {
+            const breakOut = new Date(`2000-01-01 ${dayData.breakOut}`)
+            const breakIn = new Date(`2000-01-01 ${dayData.breakIn}`)
+            const breakMinutes = (breakIn - breakOut) / (1000 * 60)
+            if (breakMinutes > 0 && breakMinutes <= 120) {
+              workMinutes -= breakMinutes
+            }
+          }
+          
+          breakdown.regular += Math.max(0, workMinutes / 60)
+        } catch (error) {
+          console.error('Error calculating regular hours:', error)
+        }
+      }
+      
+      // Add other hour types
+      breakdown.vacation += parseFloat(dayData.vacationHours) || 0
+      breakdown.sick += parseFloat(dayData.sickHours) || 0
+      breakdown.holiday += parseFloat(dayData.holidayHours) || 0
+      breakdown.overtime += parseFloat(dayData.overtimeHours) || 0
+    })
+    
+    return breakdown
+  }
+
+  // Validate time entries
+  const validateTimeEntry = (dayData) => {
+    const errors = []
+    
+    if (dayData.timeIn && dayData.timeOut) {
+      const timeIn = new Date(`2000-01-01 ${dayData.timeIn}`)
+      const timeOut = new Date(`2000-01-01 ${dayData.timeOut}`)
+      
+      // Check if time out is after time in (accounting for overnight shifts)
+      let workMinutes = (timeOut - timeIn) / (1000 * 60)
+      if (workMinutes < 0) workMinutes += 24 * 60
+      
+      if (workMinutes > 16 * 60) { // More than 16 hours
+        errors.push('Work shift cannot exceed 16 hours')
+      }
+      
+      // Validate break times
+      if (dayData.breakOut && dayData.breakIn) {
+        const breakOut = new Date(`2000-01-01 ${dayData.breakOut}`)
+        const breakIn = new Date(`2000-01-01 ${dayData.breakIn}`)
+        
+        if (breakOut < timeIn || breakOut > timeOut) {
+          errors.push('Break start must be within work hours')
+        }
+        
+        if (breakIn < timeIn || breakIn > timeOut) {
+          errors.push('Break end must be within work hours')
+        }
+        
+        if (breakIn <= breakOut) {
+          errors.push('Break end must be after break start')
+        }
+        
+        const breakMinutes = (breakIn - breakOut) / (1000 * 60)
+        if (breakMinutes > 120) {
+          errors.push('Break cannot exceed 2 hours')
+        }
+      }
+    }
+    
+    return errors
   }
 
   const saveWeeklyTimesheet = async () => {
@@ -798,275 +949,548 @@ function TimesheetsPage() {
     }
   }
 
-  return (
-    <div className="page-content space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Weekly Timesheet</h1>
-          <p className="text-gray-600 mt-1">Track your daily work hours and time off</p>
-        </div>
-        <div className="flex items-center gap-4">
-          {user?.role === 'admin' && (
-            <Select 
-              value={selectedEmployee} 
-              onChange={(e) => setSelectedEmployee(e.target.value)}
-              className="min-w-48"
-            >
-              <option value="">Select Employee</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>{emp.name}</option>
-              ))}
-            </Select>
-          )}
-          <Button onClick={saveWeeklyTimesheet} disabled={saving}>
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Timesheet'}
-          </Button>
-        </div>
-      </div>
+  const weeklyBreakdown = calculateWeeklyBreakdown()
 
-      {/* Week Navigation */}
-      <Card>
-        <CardContent className="p-4">
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Apple-inspired Header */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-light text-gray-900 tracking-tight">Weekly Timesheet</h1>
+              <p className="text-gray-500 mt-2 font-light">Track your daily work hours and time off</p>
+            </div>
+            <div className="flex items-center gap-4">
+              {user?.role === 'admin' && (
+                <select 
+                  value={selectedEmployee} 
+                  onChange={(e) => setSelectedEmployee(e.target.value)}
+                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-48 font-light"
+                >
+                  <option value="">Select Employee</option>
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                  ))}
+                </select>
+              )}
+              <button 
+                onClick={saveWeeklyTimesheet} 
+                disabled={saving}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Timesheet
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Apple-inspired Week Navigation */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between">
-            <Button variant="outline" onClick={() => navigateWeek(-1)}>
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Previous Week
-            </Button>
+            <button
+              onClick={() => navigateWeek(-1)}
+              className="flex items-center justify-center w-12 h-12 bg-gray-50 hover:bg-gray-100 rounded-full transition-all duration-200 group"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600 group-hover:text-gray-800" />
+            </button>
             
             <div className="text-center">
-              <h3 className="text-lg font-semibold">
+              <h2 className="text-xl font-light text-gray-900 tracking-tight">
                 {weekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {weekEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </h3>
-              <p className="text-sm text-gray-600">
-                Total Hours: {calculateWeeklyTotal().toFixed(2)}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1 font-light">
+                Total Hours: {calculateWeeklyTotal().toFixed(1)}h
               </p>
             </div>
             
-            <Button variant="outline" onClick={() => navigateWeek(1)}>
-              Next Week
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
+            <button
+              onClick={() => navigateWeek(1)}
+              className="flex items-center justify-center w-12 h-12 bg-gray-50 hover:bg-gray-100 rounded-full transition-all duration-200 group"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gray-800" />
+            </button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Weekly Timesheet Grid */}
+        {/* Apple-inspired Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
+                <Clock className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-light text-gray-500">Regular Hours</p>
+                <p className="text-2xl font-light text-gray-900">{weeklyBreakdown.regular.toFixed(1)}h</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm font-light text-gray-500">Time Off</p>
+                <p className="text-2xl font-light text-gray-900">
+                  {(weeklyBreakdown.vacation + weeklyBreakdown.sick + weeklyBreakdown.holiday).toFixed(1)}h
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center">
+                <Plus className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-light text-gray-500">Overtime</p>
+                <p className="text-2xl font-light text-gray-900">{weeklyBreakdown.overtime.toFixed(1)}h</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-gray-600" />
+              </div>
+              <div>
+                <p className="text-sm font-light text-gray-500">Total Hours</p>
+                <p className="text-2xl font-light text-gray-900">{calculateWeeklyTotal().toFixed(1)}h</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Apple-inspired Timesheet Grid */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-8 py-6 border-b border-gray-100">
+            <h2 className="text-xl font-light text-gray-900 tracking-tight">Daily Time Entries</h2>
+            <p className="text-gray-500 mt-1 font-light">Enter your daily work schedule and time off hours</p>
+          </div>
+          
+          <div className="p-8">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex items-center gap-3">
+                  <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
+                  <span className="text-gray-500 font-light">Loading timesheet...</span>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1200px]">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-24">Day</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Time In</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Break Out</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Break In</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Time Out</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Vacation</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Sick</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Holiday</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Overtime</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-32">Notes</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-20">Total</th>
+                      <th className="text-left py-4 px-3 font-light text-gray-600 w-16">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {weekDates.map((date, index) => {
+                      const dateKey = date.toISOString().split('T')[0]
+                      const dayData = weeklyTimesheet[dateKey] || {}
+                      const dailyHours = calculateDailyHours(dayData)
+                      const errors = validateTimeEntry(dayData)
+                      
+                      return (
+                        <tr key={dateKey} className="border-b border-gray-50 hover:bg-gray-25 transition-colors duration-150">
+                          <td className="py-4 px-3">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-sm text-gray-900">{dayNames[index]}</span>
+                              <span className="text-xs text-gray-500 font-light">
+                                {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="time"
+                              value={dayData.timeIn || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'timeIn', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="time"
+                              value={dayData.breakOut || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'breakOut', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="time"
+                              value={dayData.breakIn || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'breakIn', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="time"
+                              value={dayData.timeOut || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'timeOut', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="8"
+                              value={dayData.vacationHours || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'vacationHours', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                              placeholder="0"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="8"
+                              value={dayData.sickHours || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'sickHours', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                              placeholder="0"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="8"
+                              value={dayData.holidayHours || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'holidayHours', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                              placeholder="0"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              value={dayData.overtimeHours || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'overtimeHours', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                              placeholder="0"
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <input
+                              type="text"
+                              value={dayData.notes || ''}
+                              onChange={(e) => handleTimeChange(dateKey, 'notes', e.target.value)}
+                              className="w-full text-sm px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-light"
+                              placeholder="Add notes..."
+                            />
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900">
+                                {dailyHours.toFixed(1)}h
+                              </span>
+                              {errors.length > 0 && (
+                                <div className="relative group">
+                                  <AlertCircle className="w-4 h-4 text-red-500" />
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-red-600 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                                    {errors.join(', ')}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          
+                          <td className="py-4 px-3">
+                            <div className="flex items-center justify-center">
+                              {getStatusIcon(dayData.status)}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// COMPLETE APPROVAL PAGE IMPLEMENTATION
+function ApprovalPage() {
+  const [timesheets, setTimesheets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('pending')
+  const [selectedTimesheet, setSelectedTimesheet] = useState(null)
+  const [comment, setComment] = useState('')
+  const [actionLoading, setActionLoading] = useState(false)
+
+  useEffect(() => {
+    fetchTimesheets()
+  }, [filter])
+
+  const fetchTimesheets = async () => {
+    try {
+      setLoading(true)
+      const data = await api.getTimesheets({ status: filter })
+      setTimesheets(data)
+    } catch (error) {
+      console.error('Error fetching timesheets:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApprove = async (id) => {
+    try {
+      setActionLoading(true)
+      await api.approveTimesheet(id, comment)
+      setTimesheets(prev => prev.map(ts => 
+        ts.id === id ? { ...ts, status: 'approved' } : ts
+      ))
+      setSelectedTimesheet(null)
+      setComment('')
+    } catch (error) {
+      console.error('Error approving timesheet:', error)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleReject = async (id) => {
+    try {
+      setActionLoading(true)
+      await api.rejectTimesheet(id, comment)
+      setTimesheets(prev => prev.map(ts => 
+        ts.id === id ? { ...ts, status: 'rejected' } : ts
+      ))
+      setSelectedTimesheet(null)
+      setComment('')
+    } catch (error) {
+      console.error('Error rejecting timesheet:', error)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const getStatusBadge = (status) => {
+    const variants = {
+      pending: 'orange',
+      approved: 'green',
+      rejected: 'red'
+    }
+    return <Badge variant={variants[status]}>{status}</Badge>
+  }
+
+  return (
+    <div className="page-content space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Timesheet Approvals</h1>
+        <p className="text-gray-600 mt-1">Review and approve team member timesheets</p>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+        {['pending', 'approved', 'rejected'].map((status) => (
+          <button
+            key={status}
+            onClick={() => setFilter(status)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              filter === status
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Timesheets List */}
       <Card>
         <CardHeader>
-          <CardTitle>Daily Time Entries</CardTitle>
+          <CardTitle>Timesheets</CardTitle>
           <CardDescription>
-            Enter your daily work schedule and time off hours
+            {filter === 'pending' ? 'Pending approval' : `${filter} timesheets`}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="loading-spinner"></div>
-              <span className="ml-2">Loading timesheet...</span>
+              <span className="ml-2">Loading timesheets...</span>
+            </div>
+          ) : timesheets.length === 0 ? (
+            <div className="text-center py-8">
+              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">No {filter} timesheets found</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1200px]">
+              <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-24">Day</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Time In</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Break Out</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Break In</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Time Out</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Vacation</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Sick</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Holiday</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Overtime</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-32">Notes</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-20">Total</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-900 w-16">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Employee</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Hours</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Description</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {weekDates.map((date, index) => {
-                    const dateKey = date.toISOString().split('T')[0]
-                    const dayData = weeklyTimesheet[dateKey] || {}
-                    const dailyHours = calculateDailyHours(dayData)
-                    
-                    return (
-                      <tr key={dateKey} className="border-b border-gray-100 hover-bg-gray-50">
-                        <td className="py-2 px-2">
-                          <div className="flex flex-col">
-                            <span className="font-medium text-sm">{dayNames[index]}</span>
-                            <span className="text-xs text-gray-500">
-                              {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </span>
+                  {timesheets.map((timesheet) => (
+                    <tr key={timesheet.id} className="border-b border-gray-100 hover-bg-gray-50">
+                      <td className="py-3 px-4">{timesheet.user_name}</td>
+                      <td className="py-3 px-4">
+                        {new Date(timesheet.date).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4">{timesheet.hours}h</td>
+                      <td className="py-3 px-4">{timesheet.description}</td>
+                      <td className="py-3 px-4">{getStatusBadge(timesheet.status)}</td>
+                      <td className="py-3 px-4">
+                        {timesheet.status === 'pending' && (
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              onClick={() => setSelectedTimesheet(timesheet)}
+                            >
+                              Review
+                            </Button>
                           </div>
-                        </td>
-                        
-                        <td className="py-2 px-2">
-                          <Input
-                            type="time"
-                            value={dayData.timeIn || ''}
-                            onChange={(e) => handleTimeChange(dateKey, 'timeIn', e.target.value)}
-                            className="w-full text-sm"
-                          />
-                        </td>
-                        
-                        <td className="py-2 px-2">
-                          <Input
-                            type="time"
-                            value={dayData.breakOut || ''}
-                            onChange={(e) => handleTimeChange(dateKey, 'breakOut', e.target.value)}
-                            className="w-full text-sm"
-                          />
-                        </td>
-                        
-                        <td className="py-2 px-2">
-                          <Input
-                            type="time"
-                            value={dayData.breakIn || ''}
-                            onChange={(e) => handleTimeChange(dateKey, 'breakIn', e.target.value)}
-                            className="w-full text-sm"
-                          />
-                        </td>
-                        
-                        <td className="py-2 px-2">
-                          <Input
-                            type="time"
-                            value={dayData.timeOut || ''}
-                            onChange={(e) => handleTimeChange(dateKey, 'timeOut', e.target.value)}
-                            className="w-full text-sm"
-                          />
-                        </td>
-                        
-                        <td className="py-2 px-2">
-                          <Input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            max="8"
-                            value={dayData.vacationHours || ''}
-                            onChange={(e) => handleTimeChange(dateKey, 'vacationHours', e.target.value)}
-                            className="w-full text-sm"
-                            placeholder="0"
-                          />
-                        </td>
-                        
-                        <td className="py-2 px-2">
-                          <Input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            max="8"
-                            value={dayData.sickHours || ''}
-                            onChange={(e) => handleTimeChange(dateKey, 'sickHours', e.target.value)}
-                            className="w-full text-sm"
-                            placeholder="0"
-                          />
-                        </td>
-                        
-                        <td className="py-2 px-2">
-                          <Input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            max="8"
-                            value={dayData.holidayHours || ''}
-                            onChange={(e) => handleTimeChange(dateKey, 'holidayHours', e.target.value)}
-                            className="w-full text-sm"
-                            placeholder="0"
-                          />
-                        </td>
-                        
-                        <td className="py-2 px-2">
-                          <Input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            value={dayData.overtimeHours || ''}
-                            onChange={(e) => handleTimeChange(dateKey, 'overtimeHours', e.target.value)}
-                            className="w-full text-sm"
-                            placeholder="0"
-                          />
-                        </td>
-                        
-                        <td className="py-2 px-2">
-                          <Input
-                            type="text"
-                            value={dayData.notes || ''}
-                            onChange={(e) => handleTimeChange(dateKey, 'notes', e.target.value)}
-                            className="w-full text-sm"
-                            placeholder="Notes..."
-                          />
-                        </td>
-                        
-                        <td className="py-2 px-2 text-center">
-                          <span className="font-medium text-sm">
-                            {dailyHours.toFixed(1)}h
-                          </span>
-                        </td>
-                        
-                        <td className="py-2 px-2 text-center">
-                          {getStatusIcon(dayData.status)}
-                        </td>
-                      </tr>
-                    )
-                  })}
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-gray-300 bg-gray-50">
-                    <td className="py-3 px-2 font-semibold">Weekly Total</td>
-                    <td colSpan="9" className="py-3 px-2"></td>
-                    <td className="py-3 px-2 text-center font-bold text-lg">
-                      {calculateWeeklyTotal().toFixed(1)}h
-                    </td>
-                    <td className="py-3 px-2"></td>
-                  </tr>
-                </tfoot>
               </table>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Clock className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-            <h3 className="font-semibold mb-1">Regular Hours</h3>
-            <p className="text-2xl font-bold text-blue-600">
-              {calculateWeeklyTotal().toFixed(1)}h
-            </p>
-            <p className="text-sm text-gray-600">This week</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Calendar className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <h3 className="font-semibold mb-1">Time Off</h3>
-            <p className="text-2xl font-bold text-green-600">
-              {Object.values(weeklyTimesheet).reduce((total, day) => {
-                return total + parseFloat(day.vacationHours || 0) + parseFloat(day.sickHours || 0) + parseFloat(day.holidayHours || 0)
-              }, 0).toFixed(1)}h
-            </p>
-            <p className="text-sm text-gray-600">This week</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Plus className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-            <h3 className="font-semibold mb-1">Overtime</h3>
-            <p className="text-2xl font-bold text-purple-600">
-              {Object.values(weeklyTimesheet).reduce((total, day) => {
-                return total + parseFloat(day.overtimeHours || 0)
-              }, 0).toFixed(1)}h
-            </p>
-            <p className="text-sm text-gray-600">This week</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Review Modal */}
+      {selectedTimesheet && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">Review Timesheet</h3>
+              <button 
+                onClick={() => setSelectedTimesheet(null)}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Employee</Label>
+                  <p className="text-gray-900">{selectedTimesheet.user_name}</p>
+                </div>
+                <div>
+                  <Label>Date</Label>
+                  <p className="text-gray-900">
+                    {new Date(selectedTimesheet.date).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <Label>Hours</Label>
+                  <p className="text-gray-900">{selectedTimesheet.hours}h</p>
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  {getStatusBadge(selectedTimesheet.status)}
+                </div>
+              </div>
+              
+              <div>
+                <Label>Description</Label>
+                <p className="text-gray-900">{selectedTimesheet.description}</p>
+              </div>
+              
+              <div>
+                <Label htmlFor="comment">Comment (optional)</Label>
+                <Textarea
+                  id="comment"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  rows={3}
+                />
+              </div>
+            </div>
+            
+            <div className="modal-footer">
+              <Button
+                variant="outline"
+                onClick={() => setSelectedTimesheet(null)}
+                disabled={actionLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleReject(selectedTimesheet.id)}
+                disabled={actionLoading}
+              >
+                {actionLoading ? 'Processing...' : 'Reject'}
+              </Button>
+              <Button
+                onClick={() => handleApprove(selectedTimesheet.id)}
+                disabled={actionLoading}
+              >
+                {actionLoading ? 'Processing...' : 'Approve'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1074,49 +1498,55 @@ function TimesheetsPage() {
 // COMPLETE ANALYTICS DASHBOARD IMPLEMENTATION
 function AnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [dateRange, setDateRange] = useState({
-    start: '2024-01-01',
-    end: '2024-01-31'
-  })
+  const [dateRange, setDateRange] = useState('30d')
+  const [loading, setLoading] = useState(false)
 
   // Mock data for charts
   const overviewData = [
-    { name: 'Week 1', hours: 320, billable: 240, efficiency: 75 },
-    { name: 'Week 2', hours: 340, billable: 280, efficiency: 82 },
-    { name: 'Week 3', hours: 310, billable: 250, efficiency: 81 },
-    { name: 'Week 4', hours: 350, billable: 290, efficiency: 83 }
+    { name: 'Week 1', hours: 320, efficiency: 85, overtime: 12 },
+    { name: 'Week 2', hours: 340, efficiency: 88, overtime: 8 },
+    { name: 'Week 3', hours: 310, efficiency: 82, overtime: 15 },
+    { name: 'Week 4', hours: 350, efficiency: 90, overtime: 5 }
   ]
 
   const productivityData = [
-    { date: '2024-01-01', productivity: 78, hours: 42 },
-    { date: '2024-01-02', productivity: 82, hours: 45 },
-    { date: '2024-01-03', productivity: 75, hours: 38 },
-    { date: '2024-01-04', productivity: 88, hours: 48 },
-    { date: '2024-01-05', productivity: 85, hours: 46 }
+    { date: '2024-01-01', productivity: 85, hours: 8.2 },
+    { date: '2024-01-02', productivity: 88, hours: 8.5 },
+    { date: '2024-01-03', productivity: 82, hours: 7.8 },
+    { date: '2024-01-04', productivity: 90, hours: 8.7 },
+    { date: '2024-01-05', productivity: 87, hours: 8.3 }
   ]
 
   const teamData = [
-    { name: 'John Doe', hours: 168, efficiency: 87, overtime: 8, status: 'excellent' },
-    { name: 'Jane Smith', hours: 160, efficiency: 92, overtime: 4, status: 'excellent' },
-    { name: 'Mike Johnson', hours: 152, efficiency: 78, overtime: 12, status: 'good' },
-    { name: 'Sarah Wilson', hours: 144, efficiency: 85, overtime: 6, status: 'good' }
+    { name: 'John Doe', hours: 168, efficiency: 92, overtime: 3, status: 'excellent' },
+    { name: 'Jane Smith', hours: 160, efficiency: 88, overtime: 0, status: 'good' },
+    { name: 'Mike Johnson', hours: 172, efficiency: 85, overtime: 8, status: 'good' },
+    { name: 'Sarah Wilson', hours: 156, efficiency: 90, overtime: 2, status: 'excellent' }
   ]
 
   const timeAnalysisData = [
-    { hour: '9 AM', utilization: 65 },
-    { hour: '10 AM', utilization: 78 },
-    { hour: '11 AM', utilization: 85 },
-    { hour: '12 PM', utilization: 72 },
-    { hour: '1 PM', utilization: 68 },
-    { hour: '2 PM', utilization: 82 },
-    { hour: '3 PM', utilization: 88 },
-    { hour: '4 PM', utilization: 75 }
+    { hour: '9 AM', utilization: 95 },
+    { hour: '10 AM', utilization: 98 },
+    { hour: '11 AM', utilization: 92 },
+    { hour: '12 PM', utilization: 85 },
+    { hour: '1 PM', utilization: 78 },
+    { hour: '2 PM', utilization: 88 },
+    { hour: '3 PM', utilization: 94 },
+    { hour: '4 PM', utilization: 90 },
+    { hour: '5 PM', utilization: 87 }
   ]
 
   const pieData = [
-    { name: 'Productive Work', value: 78, color: '#3b82f6' },
-    { name: 'Meetings', value: 15, color: '#10b981' },
-    { name: 'Administrative', value: 7, color: '#f59e0b' }
+    { name: 'Productive', value: 75, color: '#10b981' },
+    { name: 'Meetings', value: 15, color: '#3b82f6' },
+    { name: 'Breaks', value: 8, color: '#f59e0b' },
+    { name: 'Other', value: 2, color: '#ef4444' }
+  ]
+
+  const tabs = [
+    { id: 'overview', name: 'Overview', icon: BarChart3 },
+    { id: 'team', name: 'Team Performance', icon: Users },
+    { id: 'time', name: 'Time Analysis', icon: Clock }
   ]
 
   return (
@@ -1126,50 +1556,40 @@ function AnalyticsDashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
           <p className="text-gray-600 mt-1">Comprehensive insights into team performance and productivity</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-              className="w-auto"
-            />
-            <span className="text-gray-500">to</span>
-            <Input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-              className="w-auto"
-            />
-          </div>
+        
+        <div className="flex items-center space-x-4">
+          <Select value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="1y">Last year</option>
+          </Select>
+          
           <Button variant="outline">
             <Download className="w-4 h-4 mr-2" />
-            Export Report
+            Export
           </Button>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-        {[
-          { id: 'overview', label: 'Overview', icon: BarChart3 },
-          { id: 'productivity', label: 'Productivity', icon: TrendingUp },
-          { id: 'team', label: 'Team Performance', icon: Users },
-          { id: 'time', label: 'Time Analysis', icon: Clock }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-              activeTab === tab.id
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover-text-gray-900'
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center ${
+                activeTab === tab.id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <tab.icon className="w-4 h-4 mr-2" />
+              {tab.name}
+            </button>
+          ))}
+        </nav>
       </div>
 
       {/* Tab Content */}
@@ -1182,23 +1602,10 @@ function AnalyticsDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Hours</p>
-                    <p className="text-2xl font-bold text-gray-900">1,320</p>
-                    <p className="text-xs text-green-600">+12% from last month</p>
+                    <p className="text-2xl font-bold text-gray-900">1,320h</p>
+                    <p className="text-xs text-green-600">+5% from last month</p>
                   </div>
                   <Clock className="w-8 h-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Billable Hours</p>
-                    <p className="text-2xl font-bold text-gray-900">1,060</p>
-                    <p className="text-xs text-green-600">80.3% utilization</p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-green-600" />
                 </div>
               </CardContent>
             </Card>
@@ -1208,10 +1615,10 @@ function AnalyticsDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Avg Efficiency</p>
-                    <p className="text-2xl font-bold text-gray-900">85.7%</p>
-                    <p className="text-xs text-green-600">+3.2% improvement</p>
+                    <p className="text-2xl font-bold text-gray-900">86%</p>
+                    <p className="text-xs text-green-600">+2% from last month</p>
                   </div>
-                  <Target className="w-8 h-8 text-purple-600" />
+                  <TrendingUp className="w-8 h-8 text-green-600" />
                 </div>
               </CardContent>
             </Card>
@@ -1220,11 +1627,24 @@ function AnalyticsDashboard() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Payroll Hours</p>
-                    <p className="text-2xl font-bold text-gray-900">168</p>
-                    <p className="text-xs text-blue-600">Current pay period</p>
+                    <p className="text-sm font-medium text-gray-600">Overtime Hours</p>
+                    <p className="text-2xl font-bold text-gray-900">28h</p>
+                    <p className="text-xs text-red-600">-15% from last month</p>
                   </div>
-                  <Clock className="w-8 h-8 text-blue-600" />
+                  <AlertCircle className="w-8 h-8 text-orange-600" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Team Size</p>
+                    <p className="text-2xl font-bold text-gray-900">16</p>
+                    <p className="text-xs text-blue-600">2 new hires</p>
+                  </div>
+                  <Users className="w-8 h-8 text-purple-600" />
                 </div>
               </CardContent>
             </Card>
@@ -1234,28 +1654,8 @@ function AnalyticsDashboard() {
           <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Weekly Performance Overview</CardTitle>
-                <CardDescription>Hours worked vs billable hours by week</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={overviewData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="hours" fill="#3b82f6" name="Total Hours" />
-                    <Bar dataKey="billable" fill="#10b981" name="Billable Hours" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Efficiency Trends</CardTitle>
-                <CardDescription>Weekly efficiency percentage</CardDescription>
+                <CardTitle>Weekly Performance Trends</CardTitle>
+                <CardDescription>Hours worked and efficiency over time</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -1264,100 +1664,30 @@ function AnalyticsDashboard() {
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip />
-                    <Line type="monotone" dataKey="efficiency" stroke="#8b5cf6" strokeWidth={2} />
+                    <Legend />
+                    <Line type="monotone" dataKey="hours" stroke="#3b82f6" name="Hours" />
+                    <Line type="monotone" dataKey="efficiency" stroke="#10b981" name="Efficiency %" />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-          </div>
-        </div>
-      )}
 
-      {activeTab === 'productivity' && (
-        <div className="space-y-6">
-          {/* Productivity Metrics */}
-          <div className="grid grid-cols-1 md-grid-cols-3 gap-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Average Productivity</p>
-                    <p className="text-2xl font-bold text-gray-900">87.6%</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: '87.6%' }}></div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Task Completion Rate</p>
-                    <p className="text-2xl font-bold text-gray-900">94.2%</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div className="bg-green-600 h-2 rounded-full" style={{ width: '94.2%' }}></div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Quality Score</p>
-                    <p className="text-2xl font-bold text-gray-900">91.8%</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div className="bg-purple-600 h-2 rounded-full" style={{ width: '91.8%' }}></div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Productivity Charts */}
-          <div className="grid grid-cols-1 lg-grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Daily Productivity Trends</CardTitle>
-                <CardDescription>Productivity percentage and hours worked</CardDescription>
+                <CardTitle>Productivity vs Hours</CardTitle>
+                <CardDescription>Daily productivity correlation with hours worked</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={productivityData}>
+                  <AreaChart data={productivityData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="productivity" stroke="#3b82f6" name="Productivity %" />
-                    <Line type="monotone" dataKey="hours" stroke="#10b981" name="Hours Worked" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Overtime Analysis</CardTitle>
-                <CardDescription>Planned vs overtime hours by week</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={overviewData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="hours" fill="#3b82f6" name="Regular Hours" />
-                    <Bar dataKey="billable" fill="#f59e0b" name="Overtime Hours" />
-                  </BarChart>
+                    <Area type="monotone" dataKey="productivity" stackId="1" stroke="#3b82f6" fill="#3b82f6" />
+                    <Area type="monotone" dataKey="hours" stackId="1" stroke="#10b981" fill="#10b981" />
+                  </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -1379,7 +1709,7 @@ function AnalyticsDashboard() {
                   <thead>
                     <tr className="border-b border-gray-200">
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Team Member</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900">Hours Worked</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900">Hours</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Efficiency</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Overtime</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
@@ -1388,16 +1718,7 @@ function AnalyticsDashboard() {
                   <tbody>
                     {teamData.map((member, index) => (
                       <tr key={index} className="border-b border-gray-100 hover-bg-gray-50">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                              <span className="text-sm font-medium text-blue-600">
-                                {member.name.split(' ').map(n => n[0]).join('')}
-                              </span>
-                            </div>
-                            {member.name}
-                          </div>
-                        </td>
+                        <td className="py-3 px-4">{member.name}</td>
                         <td className="py-3 px-4">{member.hours}h</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center">
@@ -1822,7 +2143,7 @@ function ReportsPage() {
                   <Button onClick={handleGenerateReport} disabled={loading}>
                     {loading ? (
                       <>
-                        <div className="loading-spinner mr-2"></div>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                         Generating...
                       </>
                     ) : (
@@ -1837,57 +2158,48 @@ function ReportsPage() {
             </Card>
           )}
 
-          {/* Report Preview */}
+          {/* Report Results */}
           {reportData && (
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Report Preview</CardTitle>
-                    <CardDescription>
-                      Generated on {new Date(reportData.generatedAt).toLocaleString()}
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => handleExportReport('pdf')}>
-                      <Download className="w-4 h-4 mr-2" />
-                      PDF
-                    </Button>
-                    <Button variant="outline" onClick={() => handleExportReport('excel')}>
-                      <Download className="w-4 h-4 mr-2" />
-                      Excel
-                    </Button>
-                    <Button variant="outline" onClick={() => window.print()}>
-                      <Printer className="w-4 h-4 mr-2" />
-                      Print
-                    </Button>
-                  </div>
-                </div>
+                <CardTitle>Report Results</CardTitle>
+                <CardDescription>
+                  Generated on {new Date(reportData.generatedAt).toLocaleString()}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md-grid-cols-4 gap-4 mb-6">
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-center">
                     <p className="text-2xl font-bold text-gray-900">{reportData.data.totalEntries}</p>
                     <p className="text-sm text-gray-600">Total Entries</p>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-gray-900">{reportData.data.totalHours}</p>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{reportData.data.totalHours}h</p>
                     <p className="text-sm text-gray-600">Total Hours</p>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-gray-900">{reportData.data.averageHours}</p>
-                    <p className="text-sm text-gray-600">Avg Hours/Day</p>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{reportData.data.averageHours}h</p>
+                    <p className="text-sm text-gray-600">Average Hours</p>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-center">
                     <p className="text-2xl font-bold text-gray-900">{reportData.data.approvalRate}%</p>
                     <p className="text-sm text-gray-600">Approval Rate</p>
                   </div>
                 </div>
                 
-                <div className="text-center text-gray-500 py-8">
-                  <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p>Detailed report content would be displayed here</p>
-                  <p className="text-sm">Including charts, tables, and analysis</p>
+                <div className="flex space-x-2">
+                  <Button variant="outline" onClick={() => handleExportReport('pdf')}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export PDF
+                  </Button>
+                  <Button variant="outline" onClick={() => handleExportReport('excel')}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export Excel
+                  </Button>
+                  <Button variant="outline" onClick={() => handleExportReport('csv')}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -1902,29 +2214,22 @@ function ReportsPage() {
               <CardDescription>Previously generated reports</CardDescription>
             </CardHeader>
             <CardContent>
-              {recentReports.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">No recent reports</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {recentReports.map((report) => (
-                    <div key={report.id} className="p-3 border border-gray-200 rounded-lg">
-                      <h4 className="font-medium text-sm text-gray-900 mb-1">{report.name}</h4>
-                      <p className="text-xs text-gray-600 mb-2">
-                        {new Date(report.generatedAt).toLocaleDateString()}
-                      </p>
-                      <div className="flex justify-between items-center">
-                        <Badge variant="green">Completed</Badge>
-                        <Button size="sm" variant="ghost">
-                          <Download className="w-3 h-3" />
-                        </Button>
-                      </div>
+              <div className="space-y-3">
+                {recentReports.map((report) => (
+                  <div key={report.id} className="p-3 border rounded-lg hover-bg-gray-50">
+                    <h4 className="font-medium text-sm text-gray-900">{report.name}</h4>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {new Date(report.generatedAt).toLocaleDateString()}
+                    </p>
+                    <div className="flex justify-between items-center mt-2">
+                      <Badge variant="green">{report.status}</Badge>
+                      <Button size="sm" variant="ghost">
+                        <Download className="w-3 h-3" />
+                      </Button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -1933,66 +2238,35 @@ function ReportsPage() {
   )
 }
 
-// COMPLETE SETTINGS PAGE IMPLEMENTATION
+// SETTINGS PAGE IMPLEMENTATION
 function SettingsPage() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('notifications')
-  const [loading, setLoading] = useState(false)
-  const [saved, setSaved] = useState(false)
-
-  // Settings state
+  const [activeTab, setActiveTab] = useState('profile')
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
       push: false,
-      timesheetReminders: true,
-      approvalNotifications: true,
-      weeklyReports: false
+      weekly_summary: true
     },
     preferences: {
-      theme: 'light',
-      timezone: 'America/New_York',
-      dateFormat: 'MM/DD/YYYY',
-      timeFormat: '12h',
-      language: 'en'
-    },
-    privacy: {
-      profileVisibility: 'team',
-      activityTracking: true,
-      dataSharing: false,
-      analyticsOptIn: true
+      timezone: 'UTC',
+      date_format: 'MM/DD/YYYY',
+      time_format: '12h'
     }
   })
 
-  const handleSave = async () => {
-    setLoading(true)
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-    } catch (error) {
-      console.error('Error saving settings:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const updateSetting = (category, key, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [key]: value
-      }
-    }))
-  }
+  const tabs = [
+    { id: 'profile', name: 'Profile', icon: User },
+    { id: 'notifications', name: 'Notifications', icon: Bell },
+    { id: 'preferences', name: 'Preferences', icon: Settings },
+    { id: 'security', name: 'Security', icon: Lock }
+  ]
 
   return (
     <div className="page-content space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">Manage your account preferences and notifications</p>
+        <p className="text-gray-600 mt-1">Manage your account settings and preferences</p>
       </div>
 
       <div className="grid grid-cols-1 lg-grid-cols-4 gap-6">
@@ -2001,23 +2275,18 @@ function SettingsPage() {
           <Card>
             <CardContent className="p-0">
               <nav className="space-y-1">
-                {[
-                  { id: 'notifications', label: 'Notifications', icon: Bell },
-                  { id: 'preferences', label: 'Preferences', icon: Settings },
-                  { id: 'privacy', label: 'Privacy', icon: Lock },
-                  { id: 'account', label: 'Account', icon: User }
-                ].map((tab) => (
+                {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center px-4 py-3 text-left text-sm font-medium transition-colors ${
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-none first:rounded-t-lg last:rounded-b-lg ${
                       activeTab === tab.id
-                        ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
-                        : 'text-gray-600 hover-bg-gray-50'
+                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-500'
+                        : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
                     <tab.icon className="w-4 h-4 mr-3" />
-                    {tab.label}
+                    {tab.name}
                   </button>
                 ))}
               </nav>
@@ -2027,369 +2296,242 @@ function SettingsPage() {
 
         {/* Settings Content */}
         <div className="lg-col-span-3">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
+          {activeTab === 'profile' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+                <CardDescription>Update your personal information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md-grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="full_name">Full Name</Label>
+                    <Input
+                      id="full_name"
+                      defaultValue={user?.full_name}
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      defaultValue={user?.email}
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                </div>
+                
                 <div>
-                  <CardTitle>
-                    {activeTab === 'notifications' && 'Notification Settings'}
-                    {activeTab === 'preferences' && 'User Preferences'}
-                    {activeTab === 'privacy' && 'Privacy Controls'}
-                    {activeTab === 'account' && 'Account Information'}
-                  </CardTitle>
-                  <CardDescription>
-                    {activeTab === 'notifications' && 'Configure how you receive notifications'}
-                    {activeTab === 'preferences' && 'Customize your application experience'}
-                    {activeTab === 'privacy' && 'Manage your privacy and data settings'}
-                    {activeTab === 'account' && 'View and manage your account details'}
-                  </CardDescription>
+                  <Label htmlFor="role">Role</Label>
+                  <Input
+                    id="role"
+                    defaultValue={user?.role}
+                    disabled
+                    className="bg-gray-50"
+                  />
                 </div>
-                {activeTab !== 'account' && (
-                  <Button onClick={handleSave} disabled={loading}>
-                    {loading ? (
-                      <>
-                        <div className="loading-spinner mr-2"></div>
-                        Saving...
-                      </>
-                    ) : saved ? (
-                      <>
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Saved
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Notifications Tab */}
-              {activeTab === 'notifications' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Email Notifications</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-900">Email notifications</Label>
-                          <p className="text-sm text-gray-600">Receive notifications via email</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={settings.notifications.email}
-                          onChange={(e) => updateSetting('notifications', 'email', e.target.checked)}
-                          className="form-checkbox"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-900">Timesheet reminders</Label>
-                          <p className="text-sm text-gray-600">Daily reminders to submit timesheets</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={settings.notifications.timesheetReminders}
-                          onChange={(e) => updateSetting('notifications', 'timesheetReminders', e.target.checked)}
-                          className="form-checkbox"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-900">Approval notifications</Label>
-                          <p className="text-sm text-gray-600">When timesheets are approved or rejected</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={settings.notifications.approvalNotifications}
-                          onChange={(e) => updateSetting('notifications', 'approvalNotifications', e.target.checked)}
-                          className="form-checkbox"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-900">Weekly reports</Label>
-                          <p className="text-sm text-gray-600">Weekly summary of your activity</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={settings.notifications.weeklyReports}
-                          onChange={(e) => updateSetting('notifications', 'weeklyReports', e.target.checked)}
-                          className="form-checkbox"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                
+                <div className="flex justify-end">
+                  <Button>Save Changes</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Push Notifications</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-900">Browser notifications</Label>
-                          <p className="text-sm text-gray-600">Show notifications in your browser</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={settings.notifications.push}
-                          onChange={(e) => updateSetting('notifications', 'push', e.target.checked)}
-                          className="form-checkbox"
-                        />
-                      </div>
+          {activeTab === 'notifications' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Notification Preferences</CardTitle>
+                <CardDescription>Choose how you want to be notified</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Email Notifications</Label>
+                      <p className="text-sm text-gray-600">Receive notifications via email</p>
                     </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.notifications.email}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        notifications: { ...settings.notifications, email: e.target.checked }
+                      })}
+                      className="toggle"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Push Notifications</Label>
+                      <p className="text-sm text-gray-600">Receive push notifications in browser</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.notifications.push}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        notifications: { ...settings.notifications, push: e.target.checked }
+                      })}
+                      className="toggle"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Weekly Summary</Label>
+                      <p className="text-sm text-gray-600">Receive weekly timesheet summary</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.notifications.weekly_summary}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        notifications: { ...settings.notifications, weekly_summary: e.target.checked }
+                      })}
+                      className="toggle"
+                    />
                   </div>
                 </div>
-              )}
+                
+                <div className="flex justify-end">
+                  <Button>Save Preferences</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-              {/* Preferences Tab */}
-              {activeTab === 'preferences' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md-grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="theme">Theme</Label>
-                      <Select
-                        id="theme"
-                        value={settings.preferences.theme}
-                        onChange={(e) => updateSetting('preferences', 'theme', e.target.value)}
-                      >
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="auto">Auto</option>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="timezone">Timezone</Label>
-                      <Select
-                        id="timezone"
-                        value={settings.preferences.timezone}
-                        onChange={(e) => updateSetting('preferences', 'timezone', e.target.value)}
-                      >
-                        <option value="America/New_York">Eastern Time</option>
-                        <option value="America/Chicago">Central Time</option>
-                        <option value="America/Denver">Mountain Time</option>
-                        <option value="America/Los_Angeles">Pacific Time</option>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="dateFormat">Date Format</Label>
-                      <Select
-                        id="dateFormat"
-                        value={settings.preferences.dateFormat}
-                        onChange={(e) => updateSetting('preferences', 'dateFormat', e.target.value)}
-                      >
-                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                        <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="timeFormat">Time Format</Label>
-                      <Select
-                        id="timeFormat"
-                        value={settings.preferences.timeFormat}
-                        onChange={(e) => updateSetting('preferences', 'timeFormat', e.target.value)}
-                      >
-                        <option value="12h">12 Hour</option>
-                        <option value="24h">24 Hour</option>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="language">Language</Label>
-                      <Select
-                        id="language"
-                        value={settings.preferences.language}
-                        onChange={(e) => updateSetting('preferences', 'language', e.target.value)}
-                      >
-                        <option value="en">English</option>
-                        <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                      </Select>
-                    </div>
+          {activeTab === 'preferences' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Application Preferences</CardTitle>
+                <CardDescription>Customize your application experience</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md-grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <Select
+                      id="timezone"
+                      value={settings.preferences.timezone}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        preferences: { ...settings.preferences, timezone: e.target.value }
+                      })}
+                    >
+                      <option value="UTC">UTC</option>
+                      <option value="EST">Eastern Time</option>
+                      <option value="PST">Pacific Time</option>
+                      <option value="CST">Central Time</option>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="date_format">Date Format</Label>
+                    <Select
+                      id="date_format"
+                      value={settings.preferences.date_format}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        preferences: { ...settings.preferences, date_format: e.target.value }
+                      })}
+                    >
+                      <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                      <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                      <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                    </Select>
                   </div>
                 </div>
-              )}
-
-              {/* Privacy Tab */}
-              {activeTab === 'privacy' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Profile Visibility</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="profileVisibility">Who can see your profile</Label>
-                        <Select
-                          id="profileVisibility"
-                          value={settings.privacy.profileVisibility}
-                          onChange={(e) => updateSetting('privacy', 'profileVisibility', e.target.value)}
-                        >
-                          <option value="everyone">Everyone</option>
-                          <option value="team">Team members only</option>
-                          <option value="managers">Managers only</option>
-                          <option value="private">Private</option>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Data & Analytics</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-900">Activity tracking</Label>
-                          <p className="text-sm text-gray-600">Track your activity for productivity insights</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={settings.privacy.activityTracking}
-                          onChange={(e) => updateSetting('privacy', 'activityTracking', e.target.checked)}
-                          className="form-checkbox"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-900">Data sharing</Label>
-                          <p className="text-sm text-gray-600">Share anonymized data for product improvement</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={settings.privacy.dataSharing}
-                          onChange={(e) => updateSetting('privacy', 'dataSharing', e.target.checked)}
-                          className="form-checkbox"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-900">Analytics opt-in</Label>
-                          <p className="text-sm text-gray-600">Include your data in team analytics</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={settings.privacy.analyticsOptIn}
-                          onChange={(e) => updateSetting('privacy', 'analyticsOptIn', e.target.checked)}
-                          className="form-checkbox"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                
+                <div>
+                  <Label htmlFor="time_format">Time Format</Label>
+                  <Select
+                    id="time_format"
+                    value={settings.preferences.time_format}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      preferences: { ...settings.preferences, time_format: e.target.value }
+                    })}
+                  >
+                    <option value="12h">12 Hour</option>
+                    <option value="24h">24 Hour</option>
+                  </Select>
                 </div>
-              )}
-
-              {/* Account Tab */}
-              {activeTab === 'account' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Account Information</h3>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="grid grid-cols-1 md-grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-600">Full Name</Label>
-                          <p className="text-sm font-medium text-gray-900">{user?.full_name || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium text-gray-600">Email</Label>
-                          <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium text-gray-600">Role</Label>
-                          <p className="text-sm font-medium text-gray-900 capitalize">{user?.role?.replace('_', ' ')}</p>
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium text-gray-600">Member Since</Label>
-                          <p className="text-sm font-medium text-gray-900">January 2024</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Account Actions</h3>
-                    <div className="space-y-3">
-                      <Button variant="outline" className="w-full justify-start">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Profile
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start">
-                        <Lock className="w-4 h-4 mr-2" />
-                        Change Password
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start">
-                        <Download className="w-4 h-4 mr-2" />
-                        Download Data
-                      </Button>
-                    </div>
-                  </div>
+                
+                <div className="flex justify-end">
+                  <Button>Save Preferences</Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'security' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Security Settings</CardTitle>
+                <CardDescription>Manage your account security</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="current_password">Current Password</Label>
+                  <Input
+                    id="current_password"
+                    type="password"
+                    placeholder="Enter current password"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="new_password">New Password</Label>
+                  <Input
+                    id="new_password"
+                    type="password"
+                    placeholder="Enter new password"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="confirm_password">Confirm New Password</Label>
+                  <Input
+                    id="confirm_password"
+                    type="password"
+                    placeholder="Confirm new password"
+                  />
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button>Update Password</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-// Data Management Page
+// DATA MANAGEMENT PAGE IMPLEMENTATION
 function DataManagementPage() {
-  const { user } = useAuth()
-  const [showUploadCockpit, setShowUploadCockpit] = useState(false)
   const [uploadStats, setUploadStats] = useState({
-    totalEmployees: 0,
-    totalPayrollRecords: 0,
-    lastUpload: null
+    totalEmployees: 16,
+    totalPayrollRecords: 245,
+    lastUpload: '2024-01-15'
   })
+  const [showUploadCockpit, setShowUploadCockpit] = useState(false)
 
-  useEffect(() => {
-    fetchUploadStats()
-  }, [])
-
-  const fetchUploadStats = async () => {
-    try {
-      const users = await api.getUsers()
-      const payroll = await api.getPayrollData()
-      setUploadStats({
-        totalEmployees: users.length,
-        totalPayrollRecords: payroll.length,
-        lastUpload: new Date().toLocaleDateString()
-      })
-    } catch (error) {
-      console.error('Error fetching upload stats:', error)
-    }
-  }
-
-  const handleDataUploaded = async (data, type) => {
-    try {
-      if (type === 'employee') {
-        await api.bulkCreateUsers(data)
-      } else if (type === 'payroll') {
-        await api.bulkCreatePayroll(data)
-      }
-      fetchUploadStats()
-    } catch (error) {
-      throw new Error(`Failed to upload ${type} data: ${error.message}`)
-    }
-  }
-
-  if (user?.role !== 'admin') {
-    return (
-      <div className="page-content">
-        <Alert variant="destructive">
-          <AlertDescription>You don't have permission to access data management features.</AlertDescription>
-        </Alert>
-      </div>
-    )
+  const handleDataUploaded = (data) => {
+    console.log('Data uploaded:', data)
+    setUploadStats(prev => ({
+      ...prev,
+      totalEmployees: prev.totalEmployees + (data.employees?.length || 0),
+      totalPayrollRecords: prev.totalPayrollRecords + (data.payroll?.length || 0),
+      lastUpload: new Date().toISOString().split('T')[0]
+    }))
+    setShowUploadCockpit(false)
   }
 
   return (
