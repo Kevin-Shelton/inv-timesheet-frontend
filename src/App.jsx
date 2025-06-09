@@ -1061,7 +1061,7 @@ function TimesheetsPage() {
           </div>
         </div>
 
-        {/* FIXED: Apple-inspired Timesheet Grid with proper scrolling */}
+        {/* FIXED: Apple-inspired Timesheet Grid with proper horizontal and vertical scrolling */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-8 py-6 border-b border-gray-100">
             <h2 className="text-xl font-light text-gray-900 tracking-tight">Daily Time Entries</h2>
@@ -1077,7 +1077,7 @@ function TimesheetsPage() {
                 </div>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
                 <table className="w-full min-w-[1200px]">
                   <thead>
                     <tr className="border-b border-gray-100">
@@ -1356,7 +1356,7 @@ function ApprovalPage() {
               <p className="text-gray-600">No {filter} timesheets found</p>
             </div>
           ) : (
-            <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+            <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
