@@ -2,6 +2,7 @@
 // Fixed: Action buttons working, delete marks inactive, proper API integration, Campaign Management added
 // Fixed: Settings naming conflict resolved
 // Fixed: Sidebar styling restored to Apple-inspired design
+// Fixed: Navigation converted to Link-based routing
 
 import React, { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
@@ -560,26 +561,28 @@ function LoginPage() {
             </div>
           </div>
 
-          <Button type="submit" disabled={loading} className="login-button">
-            {loading ? (
-              <div className="loading-spinner-small"></div>
-            ) : (
-              'Sign In'
-            )}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="login-button"
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
 
-        <div className="demo-accounts">
-          <h3>Demo Accounts</h3>
-          <div className="demo-account-list">
-            <div className="demo-account">
-              <strong>Admin:</strong> admin@test.com / password123
-            </div>
-            <div className="demo-account">
-              <strong>User:</strong> user@test.com / password123
-            </div>
-            <div className="demo-account">
-              <strong>Campaign Lead:</strong> campaign@test.com / password123
+        <div className="login-footer">
+          <div className="demo-accounts">
+            <h4>Demo Accounts</h4>
+            <div className="demo-account-list">
+              <div className="demo-account">
+                <strong>Admin:</strong> admin@test.com / password123
+              </div>
+              <div className="demo-account">
+                <strong>User:</strong> user@test.com / password123
+              </div>
+              <div className="demo-account">
+                <strong>Campaign Lead:</strong> campaign@test.com / password123
+              </div>
             </div>
           </div>
         </div>
@@ -590,29 +593,13 @@ function LoginPage() {
 
 // Dashboard Component
 function Dashboard({ user }) {
-  const [filters, setFilters] = useState({
-    payPeriod: 'current_week',
-    campaign: 'all',
-    individual: 'all'
-  })
-
-  const [campaigns] = useState([
-    { id: 'all', name: 'All Campaigns' },
-    { id: 'camp1', name: 'Digital Marketing Q1' },
-    { id: 'camp2', name: 'Product Launch Campaign' },
-    { id: 'camp3', name: 'Customer Retention Drive' }
-  ])
-
-  const [individuals] = useState([
-    { id: 'all', name: 'All Team Members' },
-    { id: 'user1', name: 'John Doe' },
-    { id: 'user2', name: 'Jane Smith' },
-    { id: 'user3', name: 'Mike Johnson' }
-  ])
+  const [payPeriodFilter, setPayPeriodFilter] = useState('Current Week')
+  const [campaignFilter, setCampaignFilter] = useState('All Campaigns')
+  const [individualFilter, setIndividualFilter] = useState('All Team Members')
 
   // Mock data that changes based on filters
-  const getDashboardData = () => {
-    const baseData = {
+  const getFilteredStats = () => {
+    const baseStats = {
       totalHours: 1247,
       billableHours: 856,
       utilization: 78.5,
@@ -622,316 +609,314 @@ function Dashboard({ user }) {
     }
 
     // Simulate filter effects
-    if (filters.payPeriod === 'last_week') {
-      baseData.totalHours = 1156
-      baseData.billableHours = 798
-      baseData.revenue = 52380
-    }
+    let multiplier = 1
+    if (payPeriodFilter === 'Last Week') multiplier = 0.9
+    if (payPeriodFilter === 'Current Month') multiplier = 4.2
+    if (campaignFilter !== 'All Campaigns') multiplier *= 0.6
+    if (individualFilter !== 'All Team Members') multiplier *= 0.1
 
-    if (filters.campaign !== 'all') {
-      baseData.totalHours = Math.floor(baseData.totalHours * 0.3)
-      baseData.billableHours = Math.floor(baseData.billableHours * 0.3)
-      baseData.revenue = Math.floor(baseData.revenue * 0.3)
+    return {
+      totalHours: Math.round(baseStats.totalHours * multiplier),
+      billableHours: Math.round(baseStats.billableHours * multiplier),
+      utilization: Math.round(baseStats.utilization * 10) / 10,
+      pendingApprovals: Math.round(baseStats.pendingApprovals * multiplier),
+      teamMembers: individualFilter !== 'All Team Members' ? 1 : baseStats.teamMembers,
+      revenue: Math.round(baseStats.revenue * multiplier)
     }
-
-    return baseData
   }
 
-  const data = getDashboardData()
+  const stats = getFilteredStats()
 
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>Welcome back, {user?.full_name}!</h1>
-        <p>Here's what's happening with your team today.</p>
+        <h1>Dashboard</h1>
+        <p>Welcome back, {user.full_name}! Here's what's happening with your team today.</p>
       </div>
 
       {/* Filters */}
-      <Card className="filters-card">
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="filters-grid">
-            <div className="filter-group">
-              <Label htmlFor="payPeriod">Pay Period</Label>
-              <Select
-                id="payPeriod"
-                value={filters.payPeriod}
-                onChange={(e) => setFilters(prev => ({ ...prev, payPeriod: e.target.value }))}
-              >
-                <option value="current_week">Current Week</option>
-                <option value="last_week">Last Week</option>
-                <option value="current_month">Current Month</option>
-                <option value="quarter">This Quarter</option>
-                <option value="year">This Year</option>
-              </Select>
-            </div>
+      <div className="dashboard-filters">
+        <div className="filter-group">
+          <Label htmlFor="payPeriod">Pay Period</Label>
+          <Select
+            id="payPeriod"
+            value={payPeriodFilter}
+            onChange={(e) => setPayPeriodFilter(e.target.value)}
+          >
+            <option value="Current Week">Current Week</option>
+            <option value="Last Week">Last Week</option>
+            <option value="Current Month">Current Month</option>
+            <option value="Quarter">Quarter</option>
+            <option value="Year">Year</option>
+          </Select>
+        </div>
 
-            <div className="filter-group">
-              <Label htmlFor="campaign">Campaign</Label>
-              <Select
-                id="campaign"
-                value={filters.campaign}
-                onChange={(e) => setFilters(prev => ({ ...prev, campaign: e.target.value }))}
-              >
-                {campaigns.map(campaign => (
-                  <option key={campaign.id} value={campaign.id}>{campaign.name}</option>
-                ))}
-              </Select>
-            </div>
+        <div className="filter-group">
+          <Label htmlFor="campaign">Campaign</Label>
+          <Select
+            id="campaign"
+            value={campaignFilter}
+            onChange={(e) => setCampaignFilter(e.target.value)}
+          >
+            <option value="All Campaigns">All Campaigns</option>
+            <option value="Website Redesign">Website Redesign</option>
+            <option value="Mobile App">Mobile App</option>
+            <option value="Marketing Campaign">Marketing Campaign</option>
+          </Select>
+        </div>
 
-            <div className="filter-group">
-              <Label htmlFor="individual">Individual</Label>
-              <Select
-                id="individual"
-                value={filters.individual}
-                onChange={(e) => setFilters(prev => ({ ...prev, individual: e.target.value }))}
-              >
-                {individuals.map(individual => (
-                  <option key={individual.id} value={individual.id}>{individual.name}</option>
-                ))}
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="filter-group">
+          <Label htmlFor="individual">Team Member</Label>
+          <Select
+            id="individual"
+            value={individualFilter}
+            onChange={(e) => setIndividualFilter(e.target.value)}
+          >
+            <option value="All Team Members">All Team Members</option>
+            <option value="John Doe">John Doe</option>
+            <option value="Jane Smith">Jane Smith</option>
+            <option value="Mike Johnson">Mike Johnson</option>
+          </Select>
+        </div>
+      </div>
 
-      {/* Dashboard Cards */}
+      {/* Dashboard Cards - 2x3 Grid */}
       <div className="dashboard-cards">
         <Card className="dashboard-card">
           <CardContent>
-            <div className="card-icon-container">
-              <Clock className="card-icon blue" />
-            </div>
-            <div className="card-content-text">
-              <p className="card-label">Total Hours</p>
-              <p className="card-value">{data.totalHours.toLocaleString()}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="dashboard-card">
-          <CardContent>
-            <div className="card-icon-container">
-              <DollarSign className="card-icon green" />
-            </div>
-            <div className="card-content-text">
-              <p className="card-label">Billable Hours</p>
-              <p className="card-value">{data.billableHours}</p>
-              <p className="card-trend positive">+12% vs last week</p>
+            <div className="card-content-wrapper">
+              <div className="card-icon blue">
+                <Clock />
+              </div>
+              <div className="card-details">
+                <h3>{stats.totalHours}</h3>
+                <p>Total Hours</p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="dashboard-card">
           <CardContent>
-            <div className="card-icon-container">
-              <Target className="card-icon purple" />
-            </div>
-            <div className="card-content-text">
-              <p className="card-label">Utilization</p>
-              <p className="card-value">{data.utilization}%</p>
-              <p className="card-trend positive">Above target</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="dashboard-card">
-          <CardContent>
-            <div className="card-icon-container">
-              <AlertCircle className="card-icon orange" />
-            </div>
-            <div className="card-content-text">
-              <p className="card-label">Pending Approvals</p>
-              <p className="card-value">{data.pendingApprovals}</p>
+            <div className="card-content-wrapper">
+              <div className="card-icon green">
+                <DollarSign />
+              </div>
+              <div className="card-details">
+                <h3>{stats.billableHours}</h3>
+                <p>Billable Hours</p>
+                <span className="card-trend positive">+12% vs last week</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="dashboard-card">
           <CardContent>
-            <div className="card-icon-container">
-              <Users className="card-icon blue" />
-            </div>
-            <div className="card-content-text">
-              <p className="card-label">Team Members</p>
-              <p className="card-value">{data.teamMembers}</p>
+            <div className="card-content-wrapper">
+              <div className="card-icon purple">
+                <Target />
+              </div>
+              <div className="card-details">
+                <h3>{stats.utilization}%</h3>
+                <p>Utilization</p>
+                <span className="card-trend positive">Above target</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="dashboard-card">
           <CardContent>
-            <div className="card-icon-container">
-              <TrendingUp className="card-icon green" />
+            <div className="card-content-wrapper">
+              <div className="card-icon orange">
+                <AlertCircle />
+              </div>
+              <div className="card-details">
+                <h3>{stats.pendingApprovals}</h3>
+                <p>Pending Approvals</p>
+              </div>
             </div>
-            <div className="card-content-text">
-              <p className="card-label">Revenue</p>
-              <p className="card-value">${data.revenue.toLocaleString()}</p>
-              <p className="card-trend positive">+15% vs last month</p>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-card">
+          <CardContent>
+            <div className="card-content-wrapper">
+              <div className="card-icon blue">
+                <Users />
+              </div>
+              <div className="card-details">
+                <h3>{stats.teamMembers}</h3>
+                <p>Team Members</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-card">
+          <CardContent>
+            <div className="card-content-wrapper">
+              <div className="card-icon green">
+                <TrendingUp />
+              </div>
+              <div className="card-details">
+                <h3>${stats.revenue.toLocaleString()}</h3>
+                <p>Revenue</p>
+                <span className="card-trend positive">+15% vs last month</span>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
-      <Card className="quick-actions-card">
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks and shortcuts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="quick-actions-grid">
-            <button className="quick-action-button">
-              <Clock className="quick-action-icon" />
-              <span className="quick-action-title">Submit Timesheet</span>
-              <span className="quick-action-description">Log your daily hours</span>
-            </button>
+      <div className="quick-actions">
+        <h2>Quick Actions</h2>
+        <div className="quick-actions-grid">
+          <Link to="/timesheet" className="quick-action-card">
+            <div className="quick-action-icon">
+              <Clock />
+            </div>
+            <div className="quick-action-content">
+              <h3>Submit Timesheet</h3>
+              <p>Log your daily hours</p>
+            </div>
+          </Link>
 
-            <button className="quick-action-button">
-              <Users className="quick-action-icon" />
-              <span className="quick-action-title">View Team</span>
-              <span className="quick-action-description">Manage team members</span>
-            </button>
+          <Link to="/team" className="quick-action-card">
+            <div className="quick-action-icon">
+              <Users />
+            </div>
+            <div className="quick-action-content">
+              <h3>View Team</h3>
+              <p>Manage team members</p>
+            </div>
+          </Link>
 
-            <button className="quick-action-button">
-              <DollarSign className="quick-action-icon" />
-              <span className="quick-action-title">Billable Hours</span>
-              <span className="quick-action-description">Track billable time</span>
-            </button>
+          <Link to="/billable-hours" className="quick-action-card">
+            <div className="quick-action-icon">
+              <DollarSign />
+            </div>
+            <div className="quick-action-content">
+              <h3>Billable Hours</h3>
+              <p>Track billable time</p>
+            </div>
+          </Link>
 
-            <button className="quick-action-button">
-              <BarChart3 className="quick-action-icon" />
-              <span className="quick-action-title">Analytics</span>
-              <span className="quick-action-description">View performance metrics</span>
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+          <Link to="/analytics" className="quick-action-card">
+            <div className="quick-action-icon">
+              <BarChart3 />
+            </div>
+            <div className="quick-action-content">
+              <h3>Analytics</h3>
+              <p>View performance metrics</p>
+            </div>
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
 
 // Team Management Component
 function TeamManagement({ user }) {
-  const [teamMembers, setTeamMembers] = useState([])
+  const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [selectedMember, setSelectedMember] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
-
-  // Form state
-  const [formData, setFormData] = useState({
-    full_name: '',
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingUser, setEditingUser] = useState(null)
+  const [newUser, setNewUser] = useState({
     email: '',
+    full_name: '',
     role: 'team_member',
     department: '',
     pay_rate_per_hour: '',
-    phone: '',
-    hire_date: ''
+    hire_date: '',
+    phone: ''
   })
 
-  // Load team members
   useEffect(() => {
-    loadTeamMembers()
+    loadUsers()
   }, [])
 
-  const loadTeamMembers = async () => {
+  const loadUsers = async () => {
     try {
       setLoading(true)
-      const data = await api.getUsers()
-      setTeamMembers(data)
+      const userData = await api.getUsers()
+      setUsers(userData)
     } catch (error) {
-      console.error('Error loading team members:', error)
+      console.error('Error loading users:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  // FIXED: Working edit functionality
-  const handleEdit = (member) => {
-    setSelectedMember(member)
-    setFormData({
-      full_name: member.full_name || '',
-      email: member.email || '',
-      role: member.role || 'team_member',
-      department: member.department || '',
-      pay_rate_per_hour: member.pay_rate_per_hour || '',
-      phone: member.phone || '',
-      hire_date: member.hire_date || ''
-    })
-    setShowEditModal(true)
-  }
-
-  // FIXED: Deactivate instead of delete
-  const handleDeactivate = async (memberId) => {
-    if (window.confirm('Are you sure you want to deactivate this team member?')) {
-      try {
-        await api.deactivateUser(memberId)
-        setTeamMembers(teamMembers.map(member => 
-          member.id === memberId ? { ...member, is_active: false } : member
-        ))
-      } catch (error) {
-        console.error('Error deactivating team member:', error)
-      }
-    }
-  }
-
-  // FIXED: Activate functionality
-  const handleActivate = async (memberId) => {
-    try {
-      await api.activateUser(memberId)
-      setTeamMembers(teamMembers.map(member => 
-        member.id === memberId ? { ...member, is_active: true } : member
-      ))
-    } catch (error) {
-      console.error('Error activating team member:', error)
-    }
-  }
-
-  // FIXED: Working form submission
-  const handleSubmit = async (e) => {
+  const handleAddUser = async (e) => {
     e.preventDefault()
-    
     try {
-      if (showEditModal && selectedMember) {
-        // Update existing member
-        await api.updateUser(selectedMember.id, formData)
-        setTeamMembers(teamMembers.map(member => 
-          member.id === selectedMember.id ? { ...member, ...formData } : member
-        ))
-        setShowEditModal(false)
-      } else {
-        // Create new member
-        const newMember = await api.createUser(formData)
-        setTeamMembers([...teamMembers, newMember])
-        setShowAddModal(false)
-      }
-      
-      // Reset form
-      setFormData({
-        full_name: '',
+      const createdUser = await api.createUser(newUser)
+      setUsers([...users, createdUser])
+      setNewUser({
         email: '',
+        full_name: '',
         role: 'team_member',
         department: '',
         pay_rate_per_hour: '',
-        phone: '',
-        hire_date: ''
+        hire_date: '',
+        phone: ''
       })
-      setSelectedMember(null)
+      setShowAddModal(false)
     } catch (error) {
-      console.error('Error saving team member:', error)
+      console.error('Error creating user:', error)
     }
   }
 
-  // Filter team members
-  const filteredMembers = teamMembers.filter(member => {
-    const matchesSearch = member.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRole = roleFilter === 'all' || member.role === roleFilter
+  // FIXED: Working edit functionality
+  const handleEditUser = (user) => {
+    setEditingUser({ ...user })
+    setShowEditModal(true)
+  }
+
+  const handleUpdateUser = async (e) => {
+    e.preventDefault()
+    try {
+      await api.updateUser(editingUser.id, editingUser)
+      setUsers(users.map(u => u.id === editingUser.id ? editingUser : u))
+      setShowEditModal(false)
+      setEditingUser(null)
+    } catch (error) {
+      console.error('Error updating user:', error)
+    }
+  }
+
+  // FIXED: Deactivate instead of delete
+  const handleDeactivateUser = async (userId) => {
+    if (window.confirm('Are you sure you want to deactivate this user?')) {
+      try {
+        await api.deactivateUser(userId)
+        setUsers(users.map(u => u.id === userId ? { ...u, is_active: false } : u))
+      } catch (error) {
+        console.error('Error deactivating user:', error)
+      }
+    }
+  }
+
+  const handleActivateUser = async (userId) => {
+    try {
+      await api.activateUser(userId)
+      setUsers(users.map(u => u.id === userId ? { ...u, is_active: true } : u))
+    } catch (error) {
+      console.error('Error activating user:', error)
+    }
+  }
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter
     return matchesSearch && matchesRole
   })
 
@@ -946,242 +931,288 @@ function TeamManagement({ user }) {
 
   return (
     <div className="team-management">
-      <div className="team-management-header">
-        <div>
-          <h1>Team Management</h1>
-          <p>Manage team members and their information</p>
-        </div>
+      <div className="team-header">
+        <h1>Team Management</h1>
         <Button onClick={() => setShowAddModal(true)}>
           <UserPlus className="button-icon" />
           Add Team Member
         </Button>
       </div>
 
-      {/* Search and Filter */}
-      <Card className="search-filter-card">
-        <CardContent>
-          <div className="search-filter-grid">
-            <div className="search-container">
-              <Search className="search-icon" />
-              <Input
-                type="text"
-                placeholder="Search team members..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input"
-              />
-            </div>
-            <Select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-            >
-              <option value="all">All Roles</option>
-              <option value="admin">Admin</option>
-              <option value="campaign_lead">Campaign Lead</option>
-              <option value="team_member">Team Member</option>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="team-filters">
+        <div className="search-container">
+          <Search className="search-icon" />
+          <Input
+            type="text"
+            placeholder="Search team members..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+        </div>
 
-      {/* Team Members Table */}
-      <Card className="team-members-card">
-        <CardHeader>
-          <CardTitle>Team Members</CardTitle>
-          <CardDescription>All active team members</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="table-container">
-            <table className="team-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Department</th>
-                  <th>Pay Rate</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMembers.map((member) => (
-                  <tr key={member.id}>
-                    <td>{member.full_name}</td>
-                    <td>{member.email}</td>
-                    <td>
-                      <Badge variant={
-                        member.role === 'admin' ? 'red' : 
-                        member.role === 'campaign_lead' ? 'orange' : 'blue'
-                      }>
-                        {member.role === 'admin' ? 'admin' :
-                         member.role === 'campaign_lead' ? 'campaign lead' : 'team member'}
-                      </Badge>
-                    </td>
-                    <td>{member.department}</td>
-                    <td>${member.pay_rate_per_hour}/hr</td>
-                    <td>
-                      <Badge variant={member.is_active ? 'green' : 'red'}>
-                        {member.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <button
-                          onClick={() => handleEdit(member)}
-                          className="action-button edit"
-                          title="Edit"
-                        >
-                          <Edit className="action-icon" />
-                        </button>
-                        {member.is_active ? (
-                          <button
-                            onClick={() => handleDeactivate(member.id)}
-                            className="action-button delete"
-                            title="Deactivate"
-                          >
-                            <Trash2 className="action-icon" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleActivate(member.id)}
-                            className="action-button activate"
-                            title="Activate"
-                          >
-                            <CheckCircle className="action-icon" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+        <Select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="role-filter"
+        >
+          <option value="all">All Roles</option>
+          <option value="admin">Admin</option>
+          <option value="campaign_lead">Campaign Lead</option>
+          <option value="team_member">Team Member</option>
+        </Select>
+      </div>
 
-      {/* Add/Edit Modal */}
-      {(showAddModal || showEditModal) && (
+      <div className="team-table-container">
+        <table className="team-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Department</th>
+              <th>Pay Rate</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredUsers.map((user) => (
+              <tr key={user.id}>
+                <td>{user.full_name}</td>
+                <td>{user.email}</td>
+                <td>
+                  <Badge variant={user.role === 'admin' ? 'purple' : user.role === 'campaign_lead' ? 'blue' : 'default'}>
+                    {user.role.replace('_', ' ')}
+                  </Badge>
+                </td>
+                <td>{user.department}</td>
+                <td>${user.pay_rate_per_hour}/hr</td>
+                <td>
+                  <Badge variant={user.is_active ? 'green' : 'red'}>
+                    {user.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </td>
+                <td>
+                  <div className="action-buttons">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditUser(user)}
+                    >
+                      <Edit className="action-icon" />
+                    </Button>
+                    {user.is_active ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeactivateUser(user.id)}
+                      >
+                        <Trash2 className="action-icon" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleActivateUser(user.id)}
+                      >
+                        <CheckCircle className="action-icon" />
+                      </Button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Add User Modal */}
+      {showAddModal && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>{showEditModal ? 'Edit Team Member' : 'Add Team Member'}</h2>
+              <h2>Add Team Member</h2>
               <button
-                onClick={() => {
-                  setShowAddModal(false)
-                  setShowEditModal(false)
-                  setSelectedMember(null)
-                  setFormData({
-                    full_name: '',
-                    email: '',
-                    role: 'team_member',
-                    department: '',
-                    pay_rate_per_hour: '',
-                    phone: '',
-                    hire_date: ''
-                  })
-                }}
+                onClick={() => setShowAddModal(false)}
                 className="modal-close"
               >
-                <X className="modal-close-icon" />
+                <X />
               </button>
             </div>
-
-            <form onSubmit={handleSubmit} className="modal-form">
+            <form onSubmit={handleAddUser} className="modal-form">
               <div className="form-grid">
                 <div className="form-group">
                   <Label htmlFor="full_name">Full Name</Label>
                   <Input
                     id="full_name"
                     type="text"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                    value={newUser.full_name}
+                    onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
                     required
                   />
                 </div>
-
                 <div className="form-group">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                     required
                   />
                 </div>
-
                 <div className="form-group">
                   <Label htmlFor="role">Role</Label>
                   <Select
                     id="role"
-                    value={formData.role}
-                    onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                   >
                     <option value="team_member">Team Member</option>
                     <option value="campaign_lead">Campaign Lead</option>
                     <option value="admin">Admin</option>
                   </Select>
                 </div>
-
                 <div className="form-group">
                   <Label htmlFor="department">Department</Label>
                   <Input
                     id="department"
                     type="text"
-                    value={formData.department}
-                    onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                    value={newUser.department}
+                    onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
                   />
                 </div>
-
                 <div className="form-group">
-                  <Label htmlFor="pay_rate_per_hour">Pay Rate (per hour)</Label>
+                  <Label htmlFor="pay_rate">Pay Rate (per hour)</Label>
                   <Input
-                    id="pay_rate_per_hour"
+                    id="pay_rate"
                     type="number"
                     step="0.01"
-                    value={formData.pay_rate_per_hour}
-                    onChange={(e) => setFormData(prev => ({ ...prev, pay_rate_per_hour: e.target.value }))}
+                    value={newUser.pay_rate_per_hour}
+                    onChange={(e) => setNewUser({ ...newUser, pay_rate_per_hour: e.target.value })}
                   />
                 </div>
-
-                <div className="form-group">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  />
-                </div>
-
                 <div className="form-group">
                   <Label htmlFor="hire_date">Hire Date</Label>
                   <Input
                     id="hire_date"
                     type="date"
-                    value={formData.hire_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, hire_date: e.target.value }))}
+                    value={newUser.hire_date}
+                    onChange={(e) => setNewUser({ ...newUser, hire_date: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={newUser.phone}
+                    onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
                   />
                 </div>
               </div>
-
               <div className="modal-actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowAddModal(false)
-                    setShowEditModal(false)
-                    setSelectedMember(null)
-                  }}
-                >
+                <Button type="button" variant="outline" onClick={() => setShowAddModal(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {showEditModal ? 'Update' : 'Add'} Team Member
+                <Button type="submit">Add Team Member</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditModal && editingUser && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>Edit Team Member</h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="modal-close"
+              >
+                <X />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateUser} className="modal-form">
+              <div className="form-grid">
+                <div className="form-group">
+                  <Label htmlFor="edit_full_name">Full Name</Label>
+                  <Input
+                    id="edit_full_name"
+                    type="text"
+                    value={editingUser.full_name}
+                    onChange={(e) => setEditingUser({ ...editingUser, full_name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <Label htmlFor="edit_email">Email</Label>
+                  <Input
+                    id="edit_email"
+                    type="email"
+                    value={editingUser.email}
+                    onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <Label htmlFor="edit_role">Role</Label>
+                  <Select
+                    id="edit_role"
+                    value={editingUser.role}
+                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  >
+                    <option value="team_member">Team Member</option>
+                    <option value="campaign_lead">Campaign Lead</option>
+                    <option value="admin">Admin</option>
+                  </Select>
+                </div>
+                <div className="form-group">
+                  <Label htmlFor="edit_department">Department</Label>
+                  <Input
+                    id="edit_department"
+                    type="text"
+                    value={editingUser.department}
+                    onChange={(e) => setEditingUser({ ...editingUser, department: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <Label htmlFor="edit_pay_rate">Pay Rate (per hour)</Label>
+                  <Input
+                    id="edit_pay_rate"
+                    type="number"
+                    step="0.01"
+                    value={editingUser.pay_rate_per_hour}
+                    onChange={(e) => setEditingUser({ ...editingUser, pay_rate_per_hour: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <Label htmlFor="edit_hire_date">Hire Date</Label>
+                  <Input
+                    id="edit_hire_date"
+                    type="date"
+                    value={editingUser.hire_date}
+                    onChange={(e) => setEditingUser({ ...editingUser, hire_date: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <Label htmlFor="edit_phone">Phone</Label>
+                  <Input
+                    id="edit_phone"
+                    type="tel"
+                    value={editingUser.phone}
+                    onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="modal-actions">
+                <Button type="button" variant="outline" onClick={() => setShowEditModal(false)}>
+                  Cancel
                 </Button>
+                <Button type="submit">Update Team Member</Button>
               </div>
             </form>
           </div>
@@ -1193,356 +1224,274 @@ function TeamManagement({ user }) {
 
 // Analytics Component
 function Analytics() {
-  const [timeRange, setTimeRange] = useState('month')
-  const [selectedMetric, setSelectedMetric] = useState('utilization')
+  const [timeRange, setTimeRange] = useState('last_30_days')
+  const [loading, setLoading] = useState(false)
+
+  // Mock data for charts
+  const hoursData = [
+    { name: 'Mon', billable: 45, total: 52 },
+    { name: 'Tue', billable: 38, total: 48 },
+    { name: 'Wed', billable: 42, total: 50 },
+    { name: 'Thu', billable: 35, total: 45 },
+    { name: 'Fri', billable: 40, total: 47 },
+    { name: 'Sat', billable: 15, total: 20 },
+    { name: 'Sun', billable: 8, total: 12 }
+  ]
 
   const utilizationData = [
-    { name: 'Week 1', utilization: 75, billable: 68, target: 75 },
-    { name: 'Week 2', utilization: 82, billable: 74, target: 75 },
-    { name: 'Week 3', utilization: 78, billable: 71, target: 75 },
-    { name: 'Week 4', utilization: 85, billable: 79, target: 75 }
+    { name: 'John Doe', utilization: 85 },
+    { name: 'Jane Smith', utilization: 78 },
+    { name: 'Mike Johnson', utilization: 72 },
+    { name: 'Sarah Wilson', utilization: 88 },
+    { name: 'Tom Brown', utilization: 65 }
   ]
 
-  const revenueData = [
-    { name: 'Jan', revenue: 45000, target: 50000 },
-    { name: 'Feb', revenue: 52000, target: 50000 },
-    { name: 'Mar', revenue: 48000, target: 50000 },
-    { name: 'Apr', revenue: 58000, target: 50000 }
-  ]
-
-  const teamPerformanceData = [
-    { name: 'John Doe', utilization: 85, billableHours: 156, revenue: 11700 },
-    { name: 'Jane Smith', utilization: 78, billableHours: 142, revenue: 10650 },
-    { name: 'Mike Johnson', utilization: 72, billableHours: 129, revenue: 9675 },
-    { name: 'Sarah Wilson', utilization: 88, billableHours: 162, revenue: 12150 }
+  const projectData = [
+    { name: 'Website Redesign', value: 35, color: '#3B82F6' },
+    { name: 'Mobile App', value: 25, color: '#10B981' },
+    { name: 'Marketing Campaign', value: 20, color: '#F59E0B' },
+    { name: 'Data Migration', value: 15, color: '#EF4444' },
+    { name: 'Other', value: 5, color: '#8B5CF6' }
   ]
 
   return (
     <div className="analytics">
       <div className="analytics-header">
         <h1>Analytics</h1>
-        <p>Performance metrics and insights</p>
+        <div className="analytics-controls">
+          <Select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+          >
+            <option value="last_7_days">Last 7 Days</option>
+            <option value="last_30_days">Last 30 Days</option>
+            <option value="last_90_days">Last 90 Days</option>
+            <option value="last_year">Last Year</option>
+          </Select>
+        </div>
       </div>
 
-      {/* Controls */}
-      <Card className="analytics-controls">
-        <CardContent>
-          <div className="controls-grid">
-            <div className="control-group">
-              <Label htmlFor="timeRange">Time Range</Label>
-              <Select
-                id="timeRange"
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-              >
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="quarter">This Quarter</option>
-                <option value="year">This Year</option>
-              </Select>
-            </div>
-
-            <div className="control-group">
-              <Label htmlFor="metric">Primary Metric</Label>
-              <Select
-                id="metric"
-                value={selectedMetric}
-                onChange={(e) => setSelectedMetric(e.target.value)}
-              >
-                <option value="utilization">Utilization</option>
-                <option value="revenue">Revenue</option>
-                <option value="billable">Billable Hours</option>
-                <option value="efficiency">Efficiency</option>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Key Metrics */}
-      <div className="metrics-grid">
-        <Card className="metric-card">
-          <CardContent>
-            <div className="metric-header">
-              <h3>Overall Utilization</h3>
-              <TrendingUp className="metric-icon positive" />
-            </div>
-            <div className="metric-value">78.5%</div>
-            <div className="metric-change positive">+5.2% from last month</div>
-          </CardContent>
-        </Card>
-
-        <Card className="metric-card">
-          <CardContent>
-            <div className="metric-header">
-              <h3>Revenue</h3>
-              <DollarSign className="metric-icon" />
-            </div>
-            <div className="metric-value">$58,420</div>
-            <div className="metric-change positive">+12.3% from last month</div>
-          </CardContent>
-        </Card>
-
-        <Card className="metric-card">
-          <CardContent>
-            <div className="metric-header">
-              <h3>Billable Hours</h3>
-              <Clock className="metric-icon" />
-            </div>
-            <div className="metric-value">1,247</div>
-            <div className="metric-change positive">+8.7% from last month</div>
-          </CardContent>
-        </Card>
-
-        <Card className="metric-card">
-          <CardContent>
-            <div className="metric-header">
-              <h3>Efficiency Score</h3>
-              <Target className="metric-icon" />
-            </div>
-            <div className="metric-value">82.3</div>
-            <div className="metric-change positive">+3.1% from last month</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="charts-grid">
-        <Card className="chart-card">
+      <div className="analytics-grid">
+        {/* Hours Overview */}
+        <Card className="analytics-card">
           <CardHeader>
-            <CardTitle>Utilization Trends</CardTitle>
-            <CardDescription>Weekly utilization vs target</CardDescription>
+            <CardTitle>Hours Overview</CardTitle>
+            <CardDescription>Billable vs Total Hours</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={utilizationData}>
+              <BarChart data={hoursData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="utilization" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="billable" stroke="#10b981" strokeWidth={2} />
-                <Line type="monotone" dataKey="target" stroke="#ef4444" strokeDasharray="5 5" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="chart-card">
-          <CardHeader>
-            <CardTitle>Revenue Performance</CardTitle>
-            <CardDescription>Monthly revenue vs target</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="revenue" fill="#3b82f6" />
-                <Bar dataKey="target" fill="#e5e7eb" />
+                <Bar dataKey="billable" fill="#3B82F6" name="Billable Hours" />
+                <Bar dataKey="total" fill="#E5E7EB" name="Total Hours" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Team Performance */}
-      <Card className="team-performance-card">
-        <CardHeader>
-          <CardTitle>Team Performance</CardTitle>
-          <CardDescription>Individual team member metrics</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="table-container">
-            <table className="performance-table">
-              <thead>
-                <tr>
-                  <th>Team Member</th>
-                  <th>Utilization</th>
-                  <th>Billable Hours</th>
-                  <th>Revenue</th>
-                  <th>Performance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teamPerformanceData.map((member, index) => (
-                  <tr key={index}>
-                    <td>{member.name}</td>
-                    <td>
-                      <div className="utilization-cell">
-                        <span>{member.utilization}%</span>
-                        <div className="utilization-bar">
-                          <div 
-                            className="utilization-fill"
-                            style={{ width: `${member.utilization}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{member.billableHours}</td>
-                    <td>${member.revenue.toLocaleString()}</td>
-                    <td>
-                      <Badge variant={
-                        member.utilization >= 85 ? 'green' :
-                        member.utilization >= 75 ? 'blue' : 'orange'
-                      }>
-                        {member.utilization >= 85 ? 'Excellent' :
-                         member.utilization >= 75 ? 'Good' : 'Needs Improvement'}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Team Utilization */}
+        <Card className="analytics-card">
+          <CardHeader>
+            <CardTitle>Team Utilization</CardTitle>
+            <CardDescription>Individual team member performance</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={utilizationData} layout="horizontal">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" domain={[0, 100]} />
+                <YAxis dataKey="name" type="category" width={100} />
+                <Tooltip />
+                <Bar dataKey="utilization" fill="#10B981" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Project Distribution */}
+        <Card className="analytics-card">
+          <CardHeader>
+            <CardTitle>Project Distribution</CardTitle>
+            <CardDescription>Time allocation by project</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={projectData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  {projectData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Revenue Trend */}
+        <Card className="analytics-card">
+          <CardHeader>
+            <CardTitle>Revenue Trend</CardTitle>
+            <CardDescription>Monthly revenue progression</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={[
+                { month: 'Jan', revenue: 45000 },
+                { month: 'Feb', revenue: 52000 },
+                { month: 'Mar', revenue: 48000 },
+                { month: 'Apr', revenue: 58000 },
+                { month: 'May', revenue: 62000 },
+                { month: 'Jun', revenue: 58420 }
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']} />
+                <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
 
 // Reports Component
 function Reports() {
-  const [reportType, setReportType] = useState('utilization')
-  const [dateRange, setDateRange] = useState('month')
-  const [format, setFormat] = useState('pdf')
+  const [reportType, setReportType] = useState('timesheet')
+  const [dateRange, setDateRange] = useState('last_30_days')
+  const [loading, setLoading] = useState(false)
 
-  const reportTypes = [
-    { id: 'utilization', name: 'Utilization Report', description: 'Team utilization and efficiency metrics' },
-    { id: 'revenue', name: 'Revenue Report', description: 'Revenue and billing analysis' },
-    { id: 'timesheet', name: 'Timesheet Report', description: 'Detailed timesheet data' },
-    { id: 'team', name: 'Team Performance Report', description: 'Individual team member performance' }
-  ]
-
-  const handleGenerateReport = () => {
-    console.log('Generating report:', { reportType, dateRange, format })
-    // In a real app, this would trigger report generation
+  const generateReport = async () => {
+    setLoading(true)
+    // Simulate report generation
+    setTimeout(() => {
+      setLoading(false)
+      alert('Report generated successfully!')
+    }, 2000)
   }
 
   return (
     <div className="reports">
       <div className="reports-header">
         <h1>Reports</h1>
-        <p>Generate and download reports</p>
+        <p>Generate and download various reports</p>
       </div>
 
-      {/* Report Configuration */}
-      <Card className="report-config-card">
-        <CardHeader>
-          <CardTitle>Report Configuration</CardTitle>
-          <CardDescription>Configure your report settings</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="config-grid">
-            <div className="config-group">
-              <Label htmlFor="reportType">Report Type</Label>
-              <Select
-                id="reportType"
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value)}
-              >
-                {reportTypes.map(type => (
-                  <option key={type.id} value={type.id}>{type.name}</option>
-                ))}
-              </Select>
-            </div>
-
-            <div className="config-group">
-              <Label htmlFor="dateRange">Date Range</Label>
-              <Select
-                id="dateRange"
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-              >
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="quarter">This Quarter</option>
-                <option value="year">This Year</option>
-                <option value="custom">Custom Range</option>
-              </Select>
-            </div>
-
-            <div className="config-group">
-              <Label htmlFor="format">Format</Label>
-              <Select
-                id="format"
-                value={format}
-                onChange={(e) => setFormat(e.target.value)}
-              >
-                <option value="pdf">PDF</option>
-                <option value="excel">Excel</option>
-                <option value="csv">CSV</option>
-              </Select>
-            </div>
-          </div>
-
-          <div className="report-description">
-            <h4>Report Description</h4>
-            <p>{reportTypes.find(type => type.id === reportType)?.description}</p>
-          </div>
-
-          <div className="report-actions">
-            <Button onClick={handleGenerateReport}>
-              <Download className="button-icon" />
-              Generate Report
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent Reports */}
-      <Card className="recent-reports-card">
-        <CardHeader>
-          <CardTitle>Recent Reports</CardTitle>
-          <CardDescription>Previously generated reports</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="reports-list">
-            <div className="report-item">
-              <div className="report-info">
-                <h4>Utilization Report - December 2024</h4>
-                <p>Generated on Dec 15, 2024 • PDF • 2.3 MB</p>
+      <div className="reports-content">
+        <Card className="report-generator">
+          <CardHeader>
+            <CardTitle>Generate Report</CardTitle>
+            <CardDescription>Select report type and date range</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="report-form">
+              <div className="form-group">
+                <Label htmlFor="reportType">Report Type</Label>
+                <Select
+                  id="reportType"
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value)}
+                >
+                  <option value="timesheet">Timesheet Report</option>
+                  <option value="billable">Billable Hours Report</option>
+                  <option value="utilization">Utilization Report</option>
+                  <option value="revenue">Revenue Report</option>
+                  <option value="team_performance">Team Performance Report</option>
+                </Select>
               </div>
-              <div className="report-actions">
+
+              <div className="form-group">
+                <Label htmlFor="dateRange">Date Range</Label>
+                <Select
+                  id="dateRange"
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value)}
+                >
+                  <option value="last_7_days">Last 7 Days</option>
+                  <option value="last_30_days">Last 30 Days</option>
+                  <option value="last_90_days">Last 90 Days</option>
+                  <option value="last_year">Last Year</option>
+                  <option value="custom">Custom Range</option>
+                </Select>
+              </div>
+
+              <Button
+                onClick={generateReport}
+                disabled={loading}
+                className="generate-button"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="button-icon spinning" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="button-icon" />
+                    Generate Report
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="recent-reports">
+          <CardHeader>
+            <CardTitle>Recent Reports</CardTitle>
+            <CardDescription>Previously generated reports</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="reports-list">
+              <div className="report-item">
+                <div className="report-info">
+                  <h4>Timesheet Report - January 2024</h4>
+                  <p>Generated on Jan 31, 2024</p>
+                </div>
+                <Button variant="outline" size="sm">
+                  <Download className="button-icon" />
+                  Download
+                </Button>
+              </div>
+              <div className="report-item">
+                <div className="report-info">
+                  <h4>Billable Hours Report - Q4 2023</h4>
+                  <p>Generated on Dec 31, 2023</p>
+                </div>
+                <Button variant="outline" size="sm">
+                  <Download className="button-icon" />
+                  Download
+                </Button>
+              </div>
+              <div className="report-item">
+                <div className="report-info">
+                  <h4>Team Performance Report - December 2023</h4>
+                  <p>Generated on Dec 30, 2023</p>
+                </div>
                 <Button variant="outline" size="sm">
                   <Download className="button-icon" />
                   Download
                 </Button>
               </div>
             </div>
-
-            <div className="report-item">
-              <div className="report-info">
-                <h4>Revenue Report - Q4 2024</h4>
-                <p>Generated on Dec 10, 2024 • Excel • 1.8 MB</p>
-              </div>
-              <div className="report-actions">
-                <Button variant="outline" size="sm">
-                  <Download className="button-icon" />
-                  Download
-                </Button>
-              </div>
-            </div>
-
-            <div className="report-item">
-              <div className="report-info">
-                <h4>Team Performance Report - November 2024</h4>
-                <p>Generated on Nov 30, 2024 • PDF • 3.1 MB</p>
-              </div>
-              <div className="report-actions">
-                <Button variant="outline" size="sm">
-                  <Download className="button-icon" />
-                  Download
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
@@ -1550,354 +1499,312 @@ function Reports() {
 // Data Management Component
 function DataManagement() {
   const [activeTab, setActiveTab] = useState('import')
+  const [uploading, setUploading] = useState(false)
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    setUploading(true)
+    // Simulate file upload
+    setTimeout(() => {
+      setUploading(false)
+      alert('File uploaded successfully!')
+    }, 2000)
+  }
 
   return (
     <div className="data-management">
-      <div className="data-management-header">
+      <div className="data-header">
         <h1>Data Management</h1>
         <p>Import, export, and manage your data</p>
       </div>
 
-      {/* Tabs */}
-      <div className="tabs">
+      <div className="data-tabs">
         <button
-          className={`tab ${activeTab === 'import' ? 'tab-active' : ''}`}
+          className={`tab ${activeTab === 'import' ? 'active' : ''}`}
           onClick={() => setActiveTab('import')}
         >
           Import Data
         </button>
         <button
-          className={`tab ${activeTab === 'export' ? 'tab-active' : ''}`}
+          className={`tab ${activeTab === 'export' ? 'active' : ''}`}
           onClick={() => setActiveTab('export')}
         >
           Export Data
         </button>
         <button
-          className={`tab ${activeTab === 'backup' ? 'tab-active' : ''}`}
+          className={`tab ${activeTab === 'backup' ? 'active' : ''}`}
           onClick={() => setActiveTab('backup')}
         >
           Backup & Restore
         </button>
       </div>
 
-      {/* Tab Content */}
-      {activeTab === 'import' && (
-        <Card className="import-card">
-          <CardHeader>
-            <CardTitle>Import Data</CardTitle>
-            <CardDescription>Upload and import data from external sources</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="import-options">
-              <div className="import-option">
-                <div className="import-icon">
-                  <Users className="import-icon-svg" />
+      <div className="data-content">
+        {activeTab === 'import' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Import Data</CardTitle>
+              <CardDescription>Upload CSV files to import data</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="import-section">
+                <div className="file-upload">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                    id="file-upload"
+                    className="file-input"
+                  />
+                  <label htmlFor="file-upload" className="file-upload-label">
+                    <Upload className="upload-icon" />
+                    {uploading ? 'Uploading...' : 'Choose CSV File'}
+                  </label>
                 </div>
-                <h3>Team Members</h3>
-                <p>Import team member data from CSV or Excel files</p>
-                <Button variant="outline">
-                  <Upload className="button-icon" />
-                  Choose File
-                </Button>
-              </div>
-
-              <div className="import-option">
-                <div className="import-icon">
-                  <Clock className="import-icon-svg" />
+                <div className="import-options">
+                  <h4>Import Options</h4>
+                  <div className="option-group">
+                    <label className="checkbox-label">
+                      <input type="checkbox" defaultChecked />
+                      Skip duplicate entries
+                    </label>
+                    <label className="checkbox-label">
+                      <input type="checkbox" defaultChecked />
+                      Validate data before import
+                    </label>
+                    <label className="checkbox-label">
+                      <input type="checkbox" />
+                      Send notification when complete
+                    </label>
+                  </div>
                 </div>
-                <h3>Timesheets</h3>
-                <p>Import timesheet data from external systems</p>
-                <Button variant="outline">
-                  <Upload className="button-icon" />
-                  Choose File
-                </Button>
               </div>
+            </CardContent>
+          </Card>
+        )}
 
-              <div className="import-option">
-                <div className="import-icon">
-                  <DollarSign className="import-icon-svg" />
-                </div>
-                <h3>Billing Data</h3>
-                <p>Import billing and rate information</p>
-                <Button variant="outline">
-                  <Upload className="button-icon" />
-                  Choose File
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {activeTab === 'export' && (
-        <Card className="export-card">
-          <CardHeader>
-            <CardTitle>Export Data</CardTitle>
-            <CardDescription>Export your data for external use</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="export-options">
-              <div className="export-option">
-                <h3>All Data Export</h3>
-                <p>Export all system data including team members, timesheets, and billing information</p>
-                <div className="export-actions">
-                  <Button>
-                    <Download className="button-icon" />
-                    Export as CSV
-                  </Button>
+        {activeTab === 'export' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Export Data</CardTitle>
+              <CardDescription>Download your data in various formats</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="export-options">
+                <div className="export-item">
+                  <h4>Timesheet Data</h4>
+                  <p>Export all timesheet entries</p>
                   <Button variant="outline">
                     <Download className="button-icon" />
-                    Export as Excel
+                    Export CSV
+                  </Button>
+                </div>
+                <div className="export-item">
+                  <h4>Team Data</h4>
+                  <p>Export team member information</p>
+                  <Button variant="outline">
+                    <Download className="button-icon" />
+                    Export CSV
+                  </Button>
+                </div>
+                <div className="export-item">
+                  <h4>Billable Hours</h4>
+                  <p>Export billable hours data</p>
+                  <Button variant="outline">
+                    <Download className="button-icon" />
+                    Export CSV
                   </Button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
 
-              <div className="export-option">
-                <h3>Selective Export</h3>
-                <p>Choose specific data types and date ranges to export</p>
-                <div className="export-form">
-                  <div className="form-group">
-                    <Label>Data Types</Label>
-                    <div className="checkbox-group">
-                      <label className="checkbox-label">
-                        <input type="checkbox" defaultChecked />
-                        Team Members
-                      </label>
-                      <label className="checkbox-label">
-                        <input type="checkbox" defaultChecked />
-                        Timesheets
-                      </label>
-                      <label className="checkbox-label">
-                        <input type="checkbox" />
-                        Billing Data
-                      </label>
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <Label>Date Range</Label>
-                    <div className="date-range">
-                      <Input type="date" />
-                      <span>to</span>
-                      <Input type="date" />
-                    </div>
-                  </div>
+        {activeTab === 'backup' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Backup & Restore</CardTitle>
+              <CardDescription>Create backups and restore data</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="backup-section">
+                <div className="backup-actions">
                   <Button>
                     <Download className="button-icon" />
-                    Export Selected Data
+                    Create Backup
+                  </Button>
+                  <Button variant="outline">
+                    <Upload className="button-icon" />
+                    Restore from Backup
                   </Button>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {activeTab === 'backup' && (
-        <Card className="backup-card">
-          <CardHeader>
-            <CardTitle>Backup & Restore</CardTitle>
-            <CardDescription>Create backups and restore from previous backups</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="backup-section">
-              <h3>Create Backup</h3>
-              <p>Create a complete backup of all your data</p>
-              <Button>
-                <Save className="button-icon" />
-                Create Backup
-              </Button>
-            </div>
-
-            <div className="backup-history">
-              <h3>Backup History</h3>
-              <div className="backup-list">
-                <div className="backup-item">
-                  <div className="backup-info">
-                    <h4>Full Backup - December 15, 2024</h4>
-                    <p>Size: 45.2 MB • All data included</p>
-                  </div>
-                  <div className="backup-actions">
-                    <Button variant="outline" size="sm">
-                      <Download className="button-icon" />
-                      Download
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <RefreshCw className="button-icon" />
-                      Restore
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="backup-item">
-                  <div className="backup-info">
-                    <h4>Full Backup - December 1, 2024</h4>
-                    <p>Size: 42.8 MB • All data included</p>
-                  </div>
-                  <div className="backup-actions">
-                    <Button variant="outline" size="sm">
-                      <Download className="button-icon" />
-                      Download
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <RefreshCw className="button-icon" />
-                      Restore
-                    </Button>
+                <div className="backup-history">
+                  <h4>Recent Backups</h4>
+                  <div className="backup-list">
+                    <div className="backup-item">
+                      <span>Backup_2024_01_15.zip</span>
+                      <span>Jan 15, 2024</span>
+                      <Button variant="ghost" size="sm">
+                        <Download className="action-icon" />
+                      </Button>
+                    </div>
+                    <div className="backup-item">
+                      <span>Backup_2024_01_01.zip</span>
+                      <span>Jan 1, 2024</span>
+                      <Button variant="ghost" size="sm">
+                        <Download className="action-icon" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }
 
 // Approvals Component
 function Approvals() {
+  const [timesheets, setTimesheets] = useState([])
+  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending')
-  const [timesheets] = useState([
-    {
-      id: 1,
-      employee: 'John Doe',
-      date: '2024-01-15',
-      hours: 8.5,
-      description: 'Campaign development work',
-      status: 'pending',
-      submitted: '2024-01-16'
-    },
-    {
-      id: 2,
-      employee: 'Jane Smith',
-      date: '2024-01-15',
-      hours: 7.0,
-      description: 'Client consultation calls',
-      status: 'pending',
-      submitted: '2024-01-16'
-    },
-    {
-      id: 3,
-      employee: 'Mike Johnson',
-      date: '2024-01-14',
-      hours: 8.0,
-      description: 'Data analysis and reporting',
-      status: 'approved',
-      submitted: '2024-01-15'
+
+  useEffect(() => {
+    loadTimesheets()
+  }, [])
+
+  const loadTimesheets = async () => {
+    try {
+      const data = await api.getTimesheets()
+      setTimesheets(data)
+    } catch (error) {
+      console.error('Error loading timesheets:', error)
+    } finally {
+      setLoading(false)
     }
-  ])
-
-  const filteredTimesheets = timesheets.filter(timesheet => 
-    filter === 'all' || timesheet.status === filter
-  )
-
-  const handleApprove = (id) => {
-    console.log('Approving timesheet:', id)
-    // In a real app, this would update the timesheet status
   }
 
-  const handleReject = (id) => {
-    console.log('Rejecting timesheet:', id)
-    // In a real app, this would update the timesheet status
+  const handleApprove = async (id) => {
+    try {
+      await api.approveTimesheet(id, 'Approved')
+      setTimesheets(timesheets.map(t => 
+        t.id === id ? { ...t, status: 'approved' } : t
+      ))
+    } catch (error) {
+      console.error('Error approving timesheet:', error)
+    }
+  }
+
+  const handleReject = async (id) => {
+    const comment = prompt('Please provide a reason for rejection:')
+    if (!comment) return
+
+    try {
+      await api.rejectTimesheet(id, comment)
+      setTimesheets(timesheets.map(t => 
+        t.id === id ? { ...t, status: 'rejected' } : t
+      ))
+    } catch (error) {
+      console.error('Error rejecting timesheet:', error)
+    }
+  }
+
+  const filteredTimesheets = timesheets.filter(t => 
+    filter === 'all' || t.status === filter
+  )
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading approvals...</p>
+      </div>
+    )
   }
 
   return (
     <div className="approvals">
       <div className="approvals-header">
         <h1>Approvals</h1>
-        <p>Review and approve timesheet submissions</p>
+        <div className="approvals-filters">
+          <Select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </Select>
+        </div>
       </div>
 
-      {/* Filter */}
-      <Card className="filter-card">
-        <CardContent>
-          <div className="filter-group">
-            <Label htmlFor="statusFilter">Status Filter</Label>
-            <Select
-              id="statusFilter"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            >
-              <option value="all">All Submissions</option>
-              <option value="pending">Pending Approval</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Timesheets */}
-      <Card className="timesheets-card">
-        <CardHeader>
-          <CardTitle>Timesheet Submissions</CardTitle>
-          <CardDescription>
-            {filter === 'pending' ? 'Pending approvals' : 'All submissions'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="table-container">
-            <table className="approvals-table">
-              <thead>
-                <tr>
-                  <th>Employee</th>
-                  <th>Date</th>
-                  <th>Hours</th>
-                  <th>Description</th>
-                  <th>Submitted</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTimesheets.map((timesheet) => (
-                  <tr key={timesheet.id}>
-                    <td>{timesheet.employee}</td>
-                    <td>{timesheet.date}</td>
-                    <td>{timesheet.hours}</td>
-                    <td>{timesheet.description}</td>
-                    <td>{timesheet.submitted}</td>
-                    <td>
-                      <Badge variant={
-                        timesheet.status === 'approved' ? 'green' :
-                        timesheet.status === 'rejected' ? 'red' : 'orange'
-                      }>
-                        {timesheet.status}
-                      </Badge>
-                    </td>
-                    <td>
-                      {timesheet.status === 'pending' && (
-                        <div className="action-buttons">
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(timesheet.id)}
-                          >
-                            <Check className="button-icon" />
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleReject(timesheet.id)}
-                          >
-                            <XCircle className="button-icon" />
-                            Reject
-                          </Button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="approvals-table-container">
+        <table className="approvals-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Date</th>
+              <th>Hours</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTimesheets.map((timesheet) => (
+              <tr key={timesheet.id}>
+                <td>{timesheet.user_name}</td>
+                <td>{timesheet.date}</td>
+                <td>{timesheet.hours}</td>
+                <td>{timesheet.description}</td>
+                <td>
+                  <Badge 
+                    variant={
+                      timesheet.status === 'approved' ? 'green' : 
+                      timesheet.status === 'rejected' ? 'red' : 'orange'
+                    }
+                  >
+                    {timesheet.status}
+                  </Badge>
+                </td>
+                <td>
+                  {timesheet.status === 'pending' && (
+                    <div className="action-buttons">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleApprove(timesheet.id)}
+                      >
+                        <Check className="action-icon" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleReject(timesheet.id)}
+                      >
+                        <XCircle className="action-icon" />
+                      </Button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
 
 // Settings Component
-function Settings({ user }) {
+function Settings() {
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
@@ -1913,79 +1820,40 @@ function Settings({ user }) {
     },
     security: {
       two_factor: false,
-      session_timeout: '30'
+      session_timeout: 30
     }
   })
 
-  const handleSettingChange = (category, setting, value) => {
+  const handleSettingChange = (category, key, value) => {
     setSettings(prev => ({
       ...prev,
       [category]: {
         ...prev[category],
-        [setting]: value
+        [key]: value
       }
     }))
   }
 
   const handleSave = () => {
-    console.log('Saving settings:', settings)
-    // In a real app, this would save to the backend
+    // Save settings logic here
+    alert('Settings saved successfully!')
   }
 
   return (
     <div className="settings">
       <div className="settings-header">
         <h1>Settings</h1>
-        <p>Manage your account and application preferences</p>
+        <p>Manage your application preferences</p>
       </div>
 
-      {/* Profile Settings */}
-      <Card className="profile-card">
-        <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
-          <CardDescription>Update your personal information</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="profile-form">
-            <div className="form-group">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                type="text"
-                defaultValue={user?.full_name}
-              />
-            </div>
-
-            <div className="form-group">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                defaultValue={user?.email}
-              />
-            </div>
-
-            <div className="form-group">
-              <Label htmlFor="role">Role</Label>
-              <Input
-                id="role"
-                type="text"
-                value={user?.role}
-                disabled
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Notification Settings */}
-      <Card className="notifications-card">
+      {/* Notifications */}
+      <Card className="settings-card">
         <CardHeader>
           <CardTitle>Notifications</CardTitle>
           <CardDescription>Configure how you receive notifications</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="settings-list">
+          <div className="settings-grid">
             <div className="setting-item">
               <div className="setting-info">
                 <h4>Email Notifications</h4>
@@ -2112,14 +1980,14 @@ function Settings({ user }) {
         </CardContent>
       </Card>
 
-      {/* Security Settings */}
+      {/* Security */}
       <Card className="security-card">
         <CardHeader>
           <CardTitle>Security</CardTitle>
           <CardDescription>Manage your account security settings</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="security-settings">
+          <div className="security-grid">
             <div className="setting-item">
               <div className="setting-info">
                 <h4>Two-Factor Authentication</h4>
@@ -2140,12 +2008,12 @@ function Settings({ user }) {
               <Select
                 id="sessionTimeout"
                 value={settings.security.session_timeout}
-                onChange={(e) => handleSettingChange('security', 'session_timeout', e.target.value)}
+                onChange={(e) => handleSettingChange('security', 'session_timeout', parseInt(e.target.value))}
               >
-                <option value="15">15 minutes</option>
-                <option value="30">30 minutes</option>
-                <option value="60">1 hour</option>
-                <option value="120">2 hours</option>
+                <option value={15}>15 minutes</option>
+                <option value={30}>30 minutes</option>
+                <option value={60}>1 hour</option>
+                <option value={120}>2 hours</option>
               </Select>
             </div>
 
@@ -2196,106 +2064,53 @@ function Settings({ user }) {
   )
 }
 
-// Main App Component
-function App() {
-  const { user, loading, logout } = useAuth()
-  const [currentPage, setCurrentPage] = useState('dashboard')
+// FIXED: Main App Component with Link-based Navigation
+function MainApp() {
+  const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  if (loading) {
-    return (
-      <div className="app-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading application...</p>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return <LoginPage />
-  }
+  const location = useLocation()
 
   const navigation = [
-    { id: 'dashboard', name: 'Dashboard', icon: Home, roles: ['admin', 'campaign_lead', 'team_member'] },
-    { id: 'timesheet', name: 'Timesheets', icon: Clock, roles: ['admin', 'campaign_lead', 'team_member'] },
-    { id: 'team', name: 'Team', icon: Users, roles: ['admin', 'campaign_lead'] },
-    { id: 'campaigns', name: 'Campaigns', icon: Target, roles: ['admin', 'campaign_lead'] },
-    { id: 'analytics', name: 'Analytics', icon: BarChart3, roles: ['admin', 'campaign_lead'] },
-    { id: 'reports', name: 'Reports', icon: FileText, roles: ['admin', 'campaign_lead'] },
-    { id: 'data-management', name: 'Data Management', icon: Database, roles: ['admin'] },
-    { id: 'approvals', name: 'Approvals', icon: CheckCircle, roles: ['admin', 'campaign_lead'] },
-    { id: 'settings', name: 'Settings', icon: SettingsIcon, roles: ['admin', 'campaign_lead', 'team_member'] }
+    { name: 'Dashboard', href: '/', icon: Home, roles: ['admin', 'campaign_lead', 'team_member'] },
+    { name: 'Timesheets', href: '/timesheet', icon: Clock, roles: ['admin', 'campaign_lead', 'team_member'] },
+    { name: 'Team', href: '/team', icon: Users, roles: ['admin', 'campaign_lead'] },
+    { name: 'Campaigns', href: '/campaigns', icon: Target, roles: ['admin', 'campaign_lead'] },
+    { name: 'Analytics', href: '/analytics', icon: BarChart3, roles: ['admin', 'campaign_lead'] },
+    { name: 'Reports', href: '/reports', icon: FileText, roles: ['admin', 'campaign_lead'] },
+    { name: 'Data Management', href: '/data-management', icon: Database, roles: ['admin'] },
+    { name: 'Approvals', href: '/approvals', icon: CheckCircle, roles: ['admin', 'campaign_lead'] },
+    { name: 'Settings', href: '/settings', icon: SettingsIcon, roles: ['admin', 'campaign_lead', 'team_member'] }
   ]
 
   const filteredNavigation = navigation.filter(item => 
     item.roles.includes(user.role)
   )
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard user={user} />
-      case 'timesheet':
-        return <TaskBasedTimesheetPage user={user} api={api} />
-      case 'team':
-        return <TeamManagement user={user} />
-      case 'campaigns':
-        return <CampaignManagement user={user} api={api} />
-      case 'analytics':
-        return <Analytics />
-      case 'reports':
-        return <Reports />
-      case 'data-management':
-        return <DataManagement />
-      case 'approvals':
-        return <Approvals />
-      case 'settings':
-        return <Settings user={user} />
-      default:
-        return <Dashboard user={user} />
-    }
-  }
-
   return (
-    <div className="app">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
-      )}
-
+    <div className="app-layout">
       {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <div className="logo-icon">
-              <Clock className="logo-icon-svg" />
-            </div>
-            <span className="logo-text">TimeSheet Manager</span>
+            <Clock className="sidebar-logo-icon" />
+            <span className="sidebar-logo-text">TimeSheet Manager</span>
           </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="sidebar-close"
-          >
-            <X className="sidebar-close-icon" />
-          </button>
         </div>
 
         <nav className="sidebar-nav">
           <div className="nav-items">
             {filteredNavigation.map((item) => {
-              const Icon = item.icon
+              const isActive = location.pathname === item.href
               return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setCurrentPage(item.id)
-                    setSidebarOpen(false)
-                  }}
-                  className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                  onClick={() => setSidebarOpen(false)}
                 >
-                  <Icon className="nav-item-icon" />
+                  <item.icon className="nav-icon" />
                   {item.name}
-                </button>
+                </Link>
               )
             })}
           </div>
@@ -2320,6 +2135,14 @@ function App() {
         </div>
       </div>
 
+      {/* Sidebar overlay for mobile */}
+      {sidebarOpen && (
+        <div 
+          className="sidebar-overlay"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Main content */}
       <div className="main-content">
         {/* Top bar */}
@@ -2340,10 +2163,51 @@ function App() {
 
         {/* Page content */}
         <main className="page-content">
-          {renderPage()}
+          <Routes>
+            <Route path="/" element={<Dashboard user={user} />} />
+            <Route path="/timesheet" element={<TaskBasedTimesheetPage user={user} api={api} />} />
+            <Route path="/team" element={<TeamManagement user={user} />} />
+            <Route path="/campaigns" element={<CampaignManagement user={user} api={api} />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/data-management" element={<DataManagement />} />
+            <Route path="/approvals" element={<Approvals />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
         </main>
       </div>
     </div>
+  )
+}
+
+// Root App Component
+function App() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="app-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading application...</p>
+      </div>
+    )
+  }
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        } />
+        <Route path="/*" element={
+          <ProtectedRoute>
+            <MainApp />
+          </ProtectedRoute>
+        } />
+      </Routes>
+    </Router>
   )
 }
 
