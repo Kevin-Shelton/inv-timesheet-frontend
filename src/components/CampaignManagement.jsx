@@ -1,4 +1,4 @@
-// CampaignManagement.jsx - Campaign Management with COMPACT MODAL LAYOUT
+// CampaignManagement.jsx - Campaign Management with COMPLETE COMPACT MODAL LAYOUT
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -41,7 +41,7 @@ const CampaignManagement = ({ user, api }) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
 
-  // Form state for_campaign creation/editing
+  // Form state for campaign creation/editing
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -975,5 +975,27 @@ const CampaignManagement = ({ user, api }) => {
               <button
                 onClick={handleSaveCampaign}
                 className="btn btn-primary btn-sm"
-                disable
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3 h-3 mr-2" />
+                    Update Campaign
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CampaignManagement;
 
