@@ -1,4 +1,4 @@
-// CampaignManagement.jsx - Campaign Management with COMPLETE COMPACT MODAL LAYOUT
+// CampaignManagement.jsx - Ultra-Compact Modal Design
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -522,30 +522,27 @@ const CampaignManagement = ({ user, api }) => {
         </div>
       </div>
 
-      {/* Create Campaign Modal - COMPACT LAYOUT */}
+      {/* ULTRA-COMPACT Create Campaign Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-semibold text-gray-900">Create New Campaign</h2>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="btn btn-ghost btn-sm"
-              >
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[80vh] overflow-y-auto">
+            {/* Sticky Header */}
+            <div className="flex items-center justify-between p-3 border-b border-gray-200 sticky top-0 bg-white z-10">
+              <h2 className="text-base font-semibold text-gray-900">Create Campaign</h2>
+              <button onClick={() => setShowCreateModal(false)} className="btn btn-ghost btn-sm">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-4">
+            <div className="p-3">
+              {/* Error Display */}
               {formErrors.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+                <div className="bg-red-50 border border-red-200 rounded p-2 mb-3">
                   <div className="flex">
-                    <AlertCircle className="h-4 w-4 text-red-400 mt-0.5" />
+                    <AlertCircle className="h-3 w-3 text-red-400 mt-0.5" />
                     <div className="ml-2">
-                      <h3 className="text-sm font-medium text-red-800">
-                        Please fix the following errors:
-                      </h3>
-                      <ul className="mt-1 text-sm text-red-700 list-disc list-inside">
+                      <h3 className="text-xs font-medium text-red-800">Please fix:</h3>
+                      <ul className="text-xs text-red-700 list-disc list-inside">
                         {formErrors.map((error, index) => (
                           <li key={index}>{error}</li>
                         ))}
@@ -555,75 +552,76 @@ const CampaignManagement = ({ user, api }) => {
                 </div>
               )}
 
-              {/* COMPACT TWO-COLUMN LAYOUT */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* LEFT COLUMN - Basic Information */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Basic Information</h3>
+              {/* ULTRA-COMPACT FORM - 3 COLUMNS */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                
+                {/* COLUMN 1 - Basic Info */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-gray-700 border-b pb-1">Basic Info</h4>
                   
-                  <div className="form-group">
-                    <label className="form-label text-sm">Campaign Name *</label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Name *</label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="form-input text-sm"
-                      placeholder="Enter campaign name"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Campaign name"
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm">Campaign Code</label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Code</label>
                     <input
                       type="text"
                       value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className="form-input text-sm"
-                      placeholder="Auto-generated if empty"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Auto-generated"
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm">Client Name *</label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Client *</label>
                     <input
                       type="text"
                       value={formData.client_name}
                       onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-                      className="form-input text-sm"
-                      placeholder="Enter client name"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Client name"
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm">Campaign Lead</label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Lead</label>
                     <input
                       type="text"
                       value={formData.campaign_lead}
                       onChange={(e) => setFormData({ ...formData, campaign_lead: e.target.value })}
-                      className="form-input text-sm"
-                      placeholder="Enter campaign lead name"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Campaign lead"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="form-group">
-                      <label className="form-label text-sm">Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
                       <select
                         value={formData.type}
                         onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                        className="form-select text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="client">Client</option>
                         <option value="internal">Internal</option>
                       </select>
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label text-sm">Status</label>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
                       <select
                         value={formData.status}
                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        className="form-select text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="planning">Planning</option>
                         <option value="active">Active</option>
@@ -634,12 +632,12 @@ const CampaignManagement = ({ user, api }) => {
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm">Priority</label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
                     <select
                       value={formData.priority}
                       onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                      className="form-select text-sm"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
@@ -648,31 +646,31 @@ const CampaignManagement = ({ user, api }) => {
                   </div>
                 </div>
 
-                {/* RIGHT COLUMN - Financial & Timeline */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Financial & Timeline</h3>
+                {/* COLUMN 2 - Financial & Dates */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-gray-700 border-b pb-1">Financial & Timeline</h4>
                   
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="form-group">
-                      <label className="form-label text-sm">Budget</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Budget</label>
                       <input
                         type="number"
                         value={formData.budget}
                         onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                        className="form-input text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="0"
                         min="0"
                         step="0.01"
                       />
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label text-sm">Hourly Rate</label>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Rate/hr</label>
                       <input
                         type="number"
                         value={formData.hourly_rate}
                         onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
-                        className="form-input text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="0"
                         min="0"
                         step="0.01"
@@ -680,76 +678,81 @@ const CampaignManagement = ({ user, api }) => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="form-group">
-                      <label className="form-label text-sm">Start Date *</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Start Date *</label>
                       <input
                         type="date"
                         value={formData.start_date}
                         onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                        className="form-input text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label text-sm">End Date *</label>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">End Date *</label>
                       <input
                         type="date"
                         value={formData.end_date}
                         onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                        className="form-input text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm flex items-center">
+                  <div>
+                    <label className="flex items-center text-xs font-medium text-gray-700">
                       <input
                         type="checkbox"
                         checked={formData.is_billable}
                         onChange={(e) => setFormData({ ...formData, is_billable: e.target.checked })}
-                        className="mr-2"
+                        className="mr-2 h-3 w-3"
                       />
                       Billable Campaign
                     </label>
                   </div>
+                </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm">Description</label>
+                {/* COLUMN 3 - Description */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-gray-700 border-b pb-1">Description</h4>
+                  
+                  <div>
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="form-input text-sm"
-                      rows="4"
-                      placeholder="Enter campaign description"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      rows="8"
+                      placeholder="Campaign description and notes..."
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 p-4 border-t border-gray-200 sticky bottom-0 bg-white">
+            {/* Sticky Footer */}
+            <div className="flex justify-end gap-2 p-3 border-t border-gray-200 sticky bottom-0 bg-white">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="btn btn-outline btn-sm"
+                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
                 disabled={saving}
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveCampaign}
-                className="btn btn-primary btn-sm"
+                className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
                 disabled={saving}
               >
                 {saving ? (
                   <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-2 w-2 border-b border-white mr-1"></div>
                     Creating...
                   </>
                 ) : (
                   <>
-                    <Save className="w-3 h-3 mr-2" />
-                    Create Campaign
+                    <Save className="w-2 h-2 mr-1" />
+                    Create
                   </>
                 )}
               </button>
@@ -758,30 +761,27 @@ const CampaignManagement = ({ user, api }) => {
         </div>
       )}
 
-      {/* Edit Campaign Modal - COMPACT LAYOUT */}
+      {/* ULTRA-COMPACT Edit Campaign Modal */}
       {showEditModal && selectedCampaign && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-semibold text-gray-900">Edit Campaign</h2>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="btn btn-ghost btn-sm"
-              >
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[80vh] overflow-y-auto">
+            {/* Sticky Header */}
+            <div className="flex items-center justify-between p-3 border-b border-gray-200 sticky top-0 bg-white z-10">
+              <h2 className="text-base font-semibold text-gray-900">Edit Campaign</h2>
+              <button onClick={() => setShowEditModal(false)} className="btn btn-ghost btn-sm">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-4">
+            <div className="p-3">
+              {/* Error Display */}
               {formErrors.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+                <div className="bg-red-50 border border-red-200 rounded p-2 mb-3">
                   <div className="flex">
-                    <AlertCircle className="h-4 w-4 text-red-400 mt-0.5" />
+                    <AlertCircle className="h-3 w-3 text-red-400 mt-0.5" />
                     <div className="ml-2">
-                      <h3 className="text-sm font-medium text-red-800">
-                        Please fix the following errors:
-                      </h3>
-                      <ul className="mt-1 text-sm text-red-700 list-disc list-inside">
+                      <h3 className="text-xs font-medium text-red-800">Please fix:</h3>
+                      <ul className="text-xs text-red-700 list-disc list-inside">
                         {formErrors.map((error, index) => (
                           <li key={index}>{error}</li>
                         ))}
@@ -791,75 +791,76 @@ const CampaignManagement = ({ user, api }) => {
                 </div>
               )}
 
-              {/* COMPACT TWO-COLUMN LAYOUT */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* LEFT COLUMN - Basic Information */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Basic Information</h3>
+              {/* ULTRA-COMPACT FORM - 3 COLUMNS */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                
+                {/* COLUMN 1 - Basic Info */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-gray-700 border-b pb-1">Basic Info</h4>
                   
-                  <div className="form-group">
-                    <label className="form-label text-sm">Campaign Name *</label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Name *</label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="form-input text-sm"
-                      placeholder="Enter campaign name"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Campaign name"
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm">Campaign Code</label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Code</label>
                     <input
                       type="text"
                       value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className="form-input text-sm"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Campaign code"
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm">Client Name *</label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Client *</label>
                     <input
                       type="text"
                       value={formData.client_name}
                       onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-                      className="form-input text-sm"
-                      placeholder="Enter client name"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Client name"
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm">Campaign Lead</label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Lead</label>
                     <input
                       type="text"
                       value={formData.campaign_lead}
                       onChange={(e) => setFormData({ ...formData, campaign_lead: e.target.value })}
-                      className="form-input text-sm"
-                      placeholder="Enter campaign lead name"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Campaign lead"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="form-group">
-                      <label className="form-label text-sm">Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
                       <select
                         value={formData.type}
                         onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                        className="form-select text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="client">Client</option>
                         <option value="internal">Internal</option>
                       </select>
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label text-sm">Status</label>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
                       <select
                         value={formData.status}
                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        className="form-select text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="planning">Planning</option>
                         <option value="active">Active</option>
@@ -870,12 +871,12 @@ const CampaignManagement = ({ user, api }) => {
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm">Priority</label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
                     <select
                       value={formData.priority}
                       onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                      className="form-select text-sm"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
@@ -884,31 +885,31 @@ const CampaignManagement = ({ user, api }) => {
                   </div>
                 </div>
 
-                {/* RIGHT COLUMN - Financial & Timeline */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Financial & Timeline</h3>
+                {/* COLUMN 2 - Financial & Dates */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-gray-700 border-b pb-1">Financial & Timeline</h4>
                   
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="form-group">
-                      <label className="form-label text-sm">Budget</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Budget</label>
                       <input
                         type="number"
                         value={formData.budget}
                         onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                        className="form-input text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="0"
                         min="0"
                         step="0.01"
                       />
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label text-sm">Hourly Rate</label>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Rate/hr</label>
                       <input
                         type="number"
                         value={formData.hourly_rate}
                         onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
-                        className="form-input text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="0"
                         min="0"
                         step="0.01"
@@ -916,76 +917,81 @@ const CampaignManagement = ({ user, api }) => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="form-group">
-                      <label className="form-label text-sm">Start Date *</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Start Date *</label>
                       <input
                         type="date"
                         value={formData.start_date}
                         onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                        className="form-input text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label text-sm">End Date *</label>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">End Date *</label>
                       <input
                         type="date"
                         value={formData.end_date}
                         onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                        className="form-input text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm flex items-center">
+                  <div>
+                    <label className="flex items-center text-xs font-medium text-gray-700">
                       <input
                         type="checkbox"
                         checked={formData.is_billable}
                         onChange={(e) => setFormData({ ...formData, is_billable: e.target.checked })}
-                        className="mr-2"
+                        className="mr-2 h-3 w-3"
                       />
                       Billable Campaign
                     </label>
                   </div>
+                </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-sm">Description</label>
+                {/* COLUMN 3 - Description */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-gray-700 border-b pb-1">Description</h4>
+                  
+                  <div>
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="form-input text-sm"
-                      rows="4"
-                      placeholder="Enter campaign description"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      rows="8"
+                      placeholder="Campaign description and notes..."
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 p-4 border-t border-gray-200 sticky bottom-0 bg-white">
+            {/* Sticky Footer */}
+            <div className="flex justify-end gap-2 p-3 border-t border-gray-200 sticky bottom-0 bg-white">
               <button
                 onClick={() => setShowEditModal(false)}
-                className="btn btn-outline btn-sm"
+                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
                 disabled={saving}
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveCampaign}
-                className="btn btn-primary btn-sm"
+                className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
                 disabled={saving}
               >
                 {saving ? (
                   <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-2 w-2 border-b border-white mr-1"></div>
                     Updating...
                   </>
                 ) : (
                   <>
-                    <Save className="w-3 h-3 mr-2" />
-                    Update Campaign
+                    <Save className="w-2 h-2 mr-1" />
+                    Update
                   </>
                 )}
               </button>
