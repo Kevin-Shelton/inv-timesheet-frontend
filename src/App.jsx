@@ -2290,7 +2290,9 @@ function App() {
                   onClick={() => {
                     setCurrentPage(item.id)
                     setSidebarOpen(false)
-                                className={`nav-item ${currentPage === item.id ? 'active' : ''}`}               >
+                  }}
+                  className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
+                >
                   <Icon className="nav-item-icon" />
                   {item.name}
                 </button>
