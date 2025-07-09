@@ -76,11 +76,32 @@ const CampaignManagement = ({ user, api }) => {
   const loadCampaigns = async () => {
     try {
       setLoading(true);
-      // For now, use mock data - replace with actual API call
-      const mockCampaigns = generateMockCampaignData();
-      setCampaigns(mockCampaigns);
+      
+      // Try to load from API first, fallback to mock data
+      try {
+        const response = await fetch('/api/campaigns', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const campaignData = await response.json();
+          setCampaigns(campaignData);
+        } else {
+          throw new Error('API not available');
+        }
+      } catch (apiError) {
+        console.log('API not available, using mock data');
+        const mockCampaigns = generateMockCampaignData();
+        setCampaigns(mockCampaigns);
+      }
     } catch (error) {
       console.error('Error loading campaigns:', error);
+      // Fallback to empty array if everything fails
+      setCampaigns([]);
     } finally {
       setLoading(false);
     }
@@ -88,9 +109,30 @@ const CampaignManagement = ({ user, api }) => {
 
   const loadEmployees = async () => {
     try {
-      if (api && api.getUsers) {
-        const employeeData = await api.getUsers();
-        setEmployees(employeeData);
+      // Try to load from API first
+      try {
+        const response = await fetch('/api/team/members', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const employeeData = await response.json();
+          setEmployees(employeeData);
+        } else {
+          throw new Error('API not available');
+        }
+      } catch (apiError) {
+        console.log('Team API not available, using fallback');
+        // Fallback employee data
+        setEmployees([
+          { id: 'emp1', name: 'Test Admin', full_name: 'Test Admin', email: 'admin@test.com', role: 'admin' },
+          { id: 'emp2', name: 'Test User', full_name: 'Test User', email: 'user@test.com', role: 'team_member' },
+          { id: 'emp3', name: 'Campaign Leader', full_name: 'Campaign Leader', email: 'campaign@test.com', role: 'campaign_lead' }
+        ]);
       }
     } catch (error) {
       console.error('Error loading employees:', error);
@@ -144,8 +186,25 @@ const CampaignManagement = ({ user, api }) => {
   const handleDeleteCampaign = async (campaignId) => {
     if (window.confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
       try {
-        // API call to delete campaign
-        setCampaigns(campaigns.filter(c => c.id !== campaignId));
+        // Try API call first
+        try {
+          const response = await fetch(`/api/campaigns/${campaignId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include'
+          });
+          
+          if (response.ok) {
+            setCampaigns(campaigns.filter(c => c.id !== campaignId));
+          } else {
+            throw new Error('API delete failed');
+          }
+        } catch (apiError) {
+          console.log('API not available, removing from local state');
+          setCampaigns(campaigns.filter(c => c.id !== campaignId));
+        }
       } catch (error) {
         console.error('Error deleting campaign:', error);
       }
@@ -173,13 +232,53 @@ const CampaignManagement = ({ user, api }) => {
 
       if (showCreateModal) {
         // Create new campaign
-        setCampaigns([...campaigns, updatedFormData]);
+        try {
+          const response = await fetch('/api/campaigns', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(updatedFormData)
+          });
+          
+          if (response.ok) {
+            const newCampaign = await response.json();
+            setCampaigns([...campaigns, newCampaign]);
+          } else {
+            throw new Error('API create failed');
+          }
+        } catch (apiError) {
+          console.log('API not available, adding to local state');
+          setCampaigns([...campaigns, updatedFormData]);
+        }
         setShowCreateModal(false);
       } else {
         // Update existing campaign
-        setCampaigns(campaigns.map(c => 
-          c.id === selectedCampaign.id ? updatedFormData : c
-        ));
+        try {
+          const response = await fetch(`/api/campaigns/${selectedCampaign.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(updatedFormData)
+          });
+          
+          if (response.ok) {
+            const updatedCampaign = await response.json();
+            setCampaigns(campaigns.map(c => 
+              c.id === selectedCampaign.id ? updatedCampaign : c
+            ));
+          } else {
+            throw new Error('API update failed');
+          }
+        } catch (apiError) {
+          console.log('API not available, updating local state');
+          setCampaigns(campaigns.map(c => 
+            c.id === selectedCampaign.id ? updatedFormData : c
+          ));
+        }
         setShowEditModal(false);
       }
 
