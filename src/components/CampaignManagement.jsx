@@ -1,4 +1,4 @@
-// CampaignManagement.jsx - Campaign Management Interface Component
+// CampaignManagement.jsx - Campaign Management with REAL DATA ONLY
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -25,47 +25,45 @@ import {
   Building,
   User,
   Mail,
-  Phone
+  Phone,
+  Briefcase
 } from 'lucide-react';
-
-import {
-  CAMPAIGN_STATUS,
-  CAMPAIGN_TYPE,
-  CAMPAIGN_PRIORITY,
-  CAMPAIGN_MASTER_DATA_TEMPLATE,
-  SUB_CAMPAIGN_TEMPLATE,
-  CAMPAIGN_COLOR_SCHEME,
-  CAMPAIGN_STATUS_COLORS,
-  PRIORITY_COLORS,
-  validateCampaignData,
-  generateCampaignCode,
-  getCampaignStatusLabel,
-  getCampaignTypeLabel,
-  generateMockCampaignData
-} from './CampaignDataModels.jsx';
 
 const CampaignManagement = ({ user, api }) => {
   const [campaigns, setCampaigns] = useState([]);
   const [filteredCampaigns, setFilteredCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [expandedCampaigns, setExpandedCampaigns] = useState(new Set());
-  const [employees, setEmployees] = useState([]);
 
   // Form state for campaign creation/editing
-  const [formData, setFormData] = useState(CAMPAIGN_MASTER_DATA_TEMPLATE);
+  const [formData, setFormData] = useState({
+    name: '',
+    code: '',
+    type: 'client',
+    status: 'planning',
+    priority: 'medium',
+    client_name: '',
+    start_date: '',
+    end_date: '',
+    budget: '',
+    hourly_rate: '',
+    description: '',
+    campaign_lead: '',
+    team_members: [],
+    is_billable: true
+  });
   const [formErrors, setFormErrors] = useState([]);
   const [saving, setSaving] = useState(false);
 
   // Load initial data
   useEffect(() => {
     loadCampaigns();
-    loadEmployees();
   }, []);
 
   // Filter campaigns when search or filters change
@@ -76,66 +74,21 @@ const CampaignManagement = ({ user, api }) => {
   const loadCampaigns = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Try to load from API first, fallback to mock data
-      try {
-        const response = await fetch('/api/campaigns', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          const campaignData = await response.json();
-          setCampaigns(campaignData);
-        } else {
-          throw new Error('API not available');
-        }
-      } catch (apiError) {
-        console.log('API not available, using mock data');
-        const mockCampaigns = generateMockCampaignData();
-        setCampaigns(mockCampaigns);
+      // Only use real API calls - no mock data
+      if (!api || !api.getCampaigns) {
+        throw new Error('API not available. Please ensure your backend is connected.');
       }
+
+      const campaignData = await api.getCampaigns();
+      setCampaigns(campaignData || []);
     } catch (error) {
       console.error('Error loading campaigns:', error);
-      // Fallback to empty array if everything fails
+      setError(error.message || 'Failed to load campaigns from database');
       setCampaigns([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadEmployees = async () => {
-    try {
-      // Try to load from API first
-      try {
-        const response = await fetch('/api/team/members', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          const employeeData = await response.json();
-          setEmployees(employeeData);
-        } else {
-          throw new Error('API not available');
-        }
-      } catch (apiError) {
-        console.log('Team API not available, using fallback');
-        // Fallback employee data
-        setEmployees([
-          { id: 'emp1', name: 'Test Admin', full_name: 'Test Admin', email: 'admin@test.com', role: 'admin' },
-          { id: 'emp2', name: 'Test User', full_name: 'Test User', email: 'user@test.com', role: 'team_member' },
-          { id: 'emp3', name: 'Campaign Leader', full_name: 'Campaign Leader', email: 'campaign@test.com', role: 'campaign_lead' }
-        ]);
-      }
-    } catch (error) {
-      console.error('Error loading employees:', error);
     }
   };
 
@@ -145,9 +98,9 @@ const CampaignManagement = ({ user, api }) => {
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(campaign =>
-        campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.client_name.toLowerCase().includes(searchTerm.toLowerCase())
+        campaign.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        campaign.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        campaign.client_name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -166,11 +119,20 @@ const CampaignManagement = ({ user, api }) => {
 
   const handleCreateCampaign = () => {
     setFormData({
-      ...CAMPAIGN_MASTER_DATA_TEMPLATE,
-      id: `camp_${Date.now()}`,
-      code: generateCampaignCode(CAMPAIGN_TYPE.CLIENT),
-      created_date: new Date().toISOString().split('T')[0],
-      created_by: user?.id || 'current_user'
+      name: '',
+      code: '',
+      type: 'client',
+      status: 'planning',
+      priority: 'medium',
+      client_name: '',
+      start_date: '',
+      end_date: '',
+      budget: '',
+      hourly_rate: '',
+      description: '',
+      campaign_lead: '',
+      team_members: [],
+      is_billable: true
     });
     setFormErrors([]);
     setShowCreateModal(true);
@@ -178,986 +140,822 @@ const CampaignManagement = ({ user, api }) => {
 
   const handleEditCampaign = (campaign) => {
     setSelectedCampaign(campaign);
-    setFormData({ ...campaign });
+    setFormData({
+      name: campaign.name || '',
+      code: campaign.code || '',
+      type: campaign.type || 'client',
+      status: campaign.status || 'planning',
+      priority: campaign.priority || 'medium',
+      client_name: campaign.client_name || '',
+      start_date: campaign.start_date || '',
+      end_date: campaign.end_date || '',
+      budget: campaign.budget?.toString() || '',
+      hourly_rate: campaign.hourly_rate?.toString() || '',
+      description: campaign.description || '',
+      campaign_lead: campaign.campaign_lead || '',
+      team_members: campaign.team_members || [],
+      is_billable: campaign.is_billable !== false
+    });
     setFormErrors([]);
     setShowEditModal(true);
   };
 
   const handleDeleteCampaign = async (campaignId) => {
-    if (window.confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
-      try {
-        // Try API call first
-        try {
-          const response = await fetch(`/api/campaigns/${campaignId}`, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include'
-          });
-          
-          if (response.ok) {
-            setCampaigns(campaigns.filter(c => c.id !== campaignId));
-          } else {
-            throw new Error('API delete failed');
-          }
-        } catch (apiError) {
-          console.log('API not available, removing from local state');
-          setCampaigns(campaigns.filter(c => c.id !== campaignId));
-        }
-      } catch (error) {
-        console.error('Error deleting campaign:', error);
-      }
-    }
-  };
-
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-
-    // Validate form data
-    const errors = validateCampaignData(formData);
-    if (errors.length > 0) {
-      setFormErrors(errors);
-      setSaving(false);
+    if (!window.confirm('Are you sure you want to delete this campaign?')) {
       return;
     }
 
     try {
-      const updatedFormData = {
-        ...formData,
-        last_modified: new Date().toISOString().split('T')[0],
-        modified_by: user?.id || 'current_user'
-      };
-
-      if (showCreateModal) {
-        // Create new campaign
-        try {
-          const response = await fetch('/api/campaigns', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(updatedFormData)
-          });
-          
-          if (response.ok) {
-            const newCampaign = await response.json();
-            setCampaigns([...campaigns, newCampaign]);
-          } else {
-            throw new Error('API create failed');
-          }
-        } catch (apiError) {
-          console.log('API not available, adding to local state');
-          setCampaigns([...campaigns, updatedFormData]);
-        }
-        setShowCreateModal(false);
-      } else {
-        // Update existing campaign
-        try {
-          const response = await fetch(`/api/campaigns/${selectedCampaign.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(updatedFormData)
-          });
-          
-          if (response.ok) {
-            const updatedCampaign = await response.json();
-            setCampaigns(campaigns.map(c => 
-              c.id === selectedCampaign.id ? updatedCampaign : c
-            ));
-          } else {
-            throw new Error('API update failed');
-          }
-        } catch (apiError) {
-          console.log('API not available, updating local state');
-          setCampaigns(campaigns.map(c => 
-            c.id === selectedCampaign.id ? updatedFormData : c
-          ));
-        }
-        setShowEditModal(false);
+      if (!api || !api.deleteCampaign) {
+        throw new Error('API not available');
       }
 
-      setFormData(CAMPAIGN_MASTER_DATA_TEMPLATE);
-      setSelectedCampaign(null);
+      await api.deleteCampaign(campaignId);
+      
+      // Reload campaigns from database
+      await loadCampaigns();
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      alert('Error deleting campaign: ' + (error.message || 'Please try again.'));
+    }
+  };
+
+  const handleSaveCampaign = async () => {
+    try {
+      setSaving(true);
+      setFormErrors([]);
+
+      // Basic validation
+      const errors = [];
+      if (!formData.name?.trim()) errors.push('Campaign name is required');
+      if (!formData.client_name?.trim()) errors.push('Client name is required');
+      if (!formData.start_date) errors.push('Start date is required');
+      if (!formData.end_date) errors.push('End date is required');
+
+      if (errors.length > 0) {
+        setFormErrors(errors);
+        return;
+      }
+
+      if (!api) {
+        throw new Error('API not available');
+      }
+
+      const campaignData = {
+        ...formData,
+        budget: parseFloat(formData.budget) || 0,
+        hourly_rate: parseFloat(formData.hourly_rate) || 0,
+        code: formData.code || `CMP-${Date.now()}`
+      };
+
+      if (showEditModal && selectedCampaign) {
+        // Update existing campaign
+        if (!api.updateCampaign) {
+          throw new Error('Update campaign API not available');
+        }
+        
+        await api.updateCampaign(selectedCampaign.id, campaignData);
+        setShowEditModal(false);
+      } else {
+        // Create new campaign
+        if (!api.createCampaign) {
+          throw new Error('Create campaign API not available');
+        }
+        
+        await api.createCampaign(campaignData);
+        setShowCreateModal(false);
+      }
+
+      // Reload campaigns from database
+      await loadCampaigns();
+
+      // Reset form
+      setFormData({
+        name: '',
+        code: '',
+        type: 'client',
+        status: 'planning',
+        priority: 'medium',
+        client_name: '',
+        start_date: '',
+        end_date: '',
+        budget: '',
+        hourly_rate: '',
+        description: '',
+        campaign_lead: '',
+        team_members: [],
+        is_billable: true
+      });
     } catch (error) {
       console.error('Error saving campaign:', error);
-      setFormErrors(['Failed to save campaign. Please try again.']);
+      setFormErrors([error.message || 'Error saving campaign. Please try again.']);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleFormChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      active: { label: 'Active', class: 'bg-green-100 text-green-800' },
+      planning: { label: 'Planning', class: 'bg-blue-100 text-blue-800' },
+      paused: { label: 'Paused', class: 'bg-yellow-100 text-yellow-800' },
+      completed: { label: 'Completed', class: 'bg-gray-100 text-gray-800' },
+      cancelled: { label: 'Cancelled', class: 'bg-red-100 text-red-800' }
+    };
 
-    // Auto-generate campaign code when type changes
-    if (field === 'type') {
-      setFormData(prev => ({
-        ...prev,
-        code: generateCampaignCode(value)
-      }));
-    }
+    const config = statusConfig[status] || statusConfig.planning;
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.class}`}>
+        {config.label}
+      </span>
+    );
   };
 
-  const toggleCampaignExpansion = (campaignId) => {
-    const newExpanded = new Set(expandedCampaigns);
-    if (newExpanded.has(campaignId)) {
-      newExpanded.delete(campaignId);
-    } else {
-      newExpanded.add(campaignId);
-    }
-    setExpandedCampaigns(newExpanded);
+  const getPriorityBadge = (priority) => {
+    const priorityConfig = {
+      high: { label: 'High', class: 'bg-red-100 text-red-800' },
+      medium: { label: 'Medium', class: 'bg-yellow-100 text-yellow-800' },
+      low: { label: 'Low', class: 'bg-green-100 text-green-800' }
+    };
+
+    const config = priorityConfig[priority] || priorityConfig.medium;
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.class}`}>
+        {config.label}
+      </span>
+    );
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case CAMPAIGN_STATUS.ACTIVE:
-        return <CheckCircle className="w-4 h-4" />;
-      case CAMPAIGN_STATUS.PLANNING:
-        return <Clock className="w-4 h-4" />;
-      case CAMPAIGN_STATUS.ON_HOLD:
-        return <Pause className="w-4 h-4" />;
-      case CAMPAIGN_STATUS.COMPLETED:
-        return <Target className="w-4 h-4" />;
-      case CAMPAIGN_STATUS.CANCELLED:
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return <AlertCircle className="w-4 h-4" />;
-    }
-  };
+  const getTypeBadge = (type) => {
+    const typeConfig = {
+      client: { label: 'Client', class: 'bg-blue-100 text-blue-800' },
+      internal: { label: 'Internal', class: 'bg-purple-100 text-purple-800' }
+    };
 
-  const getEmployeeName = (employeeId) => {
-    const employee = employees.find(emp => emp.id === employeeId);
-    return employee ? employee.full_name || employee.name : 'Unknown Employee';
+    const config = typeConfig[type] || typeConfig.client;
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.class}`}>
+        {config.label}
+      </span>
+    );
   };
 
   if (loading) {
     return (
-      <div className="campaign-management-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading campaigns...</p>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading campaigns from database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Database Connection Error</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={loadCampaigns}
+            className="btn btn-primary"
+          >
+            Retry Connection
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="campaign-management">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="campaign-header">
-        <div className="header-left">
-          <h1>Campaign Management</h1>
-          <p>Manage campaigns, projects, and team assignments</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Campaign Management</h1>
+          <p className="text-gray-600">Manage campaigns, projects, and team assignments</p>
         </div>
-        <div className="header-right">
-          <button 
-            className="btn btn-primary"
-            onClick={handleCreateCampaign}
-          >
-            <Plus className="w-4 h-4" />
-            Create Campaign
-          </button>
-        </div>
+        <button
+          onClick={handleCreateCampaign}
+          className="btn btn-primary flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Create Campaign
+        </button>
       </div>
 
-      {/* Filters and Search */}
-      <div className="campaign-filters">
-        <div className="search-box">
-          <Search className="w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search campaigns..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      {/* Filters */}
+      <div className="card">
+        <div className="card-content">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search campaigns..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-input pl-10"
+              />
+            </div>
 
-        <div className="filter-group">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            {Object.values(CAMPAIGN_STATUS).map(status => (
-              <option key={status} value={status}>
-                {getCampaignStatusLabel(status)}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-          >
-            <option value="all">All Types</option>
-            {Object.values(CAMPAIGN_TYPE).map(type => (
-              <option key={type} value={type}>
-                {getCampaignTypeLabel(type)}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Campaign List */}
-      <div className="campaign-list">
-        {filteredCampaigns.length === 0 ? (
-          <div className="empty-state">
-            <Target className="w-12 h-12" />
-            <h3>No campaigns found</h3>
-            <p>Create your first campaign to get started</p>
-            <button 
-              className="btn btn-primary"
-              onClick={handleCreateCampaign}
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="form-select"
             >
-              Create Campaign
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="planning">Planning</option>
+              <option value="paused">Paused</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+
+            {/* Type Filter */}
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="form-select"
+            >
+              <option value="all">All Types</option>
+              <option value="client">Client</option>
+              <option value="internal">Internal</option>
+            </select>
+
+            {/* Clear Filters */}
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('all');
+                setTypeFilter('all');
+              }}
+              className="btn btn-outline"
+            >
+              Clear Filters
             </button>
           </div>
-        ) : (
-          filteredCampaigns.map(campaign => (
-            <div key={campaign.id} className="campaign-card">
-              <div className="campaign-card-header">
-                <div className="campaign-info">
-                  <div className="campaign-title">
+        </div>
+      </div>
+
+      {/* Campaigns Table */}
+      <div className="card">
+        <div className="card-content p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Campaign
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Client
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Priority
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Budget
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Timeline
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredCampaigns.map((campaign) => (
+                  <tr key={campaign.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {campaign.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {campaign.code}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{campaign.client_name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getTypeBadge(campaign.type)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(campaign.status)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getPriorityBadge(campaign.priority)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        ${campaign.budget?.toLocaleString() || '0'}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        ${campaign.hourly_rate || '0'}/hr
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {campaign.start_date ? new Date(campaign.start_date).toLocaleDateString() : 'N/A'} - {campaign.end_date ? new Date(campaign.end_date).toLocaleDateString() : 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEditCampaign(campaign)}
+                          className="btn btn-ghost btn-sm"
+                          title="Edit Campaign"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCampaign(campaign.id)}
+                          className="btn btn-ghost btn-sm text-red-600 hover:text-red-700"
+                          title="Delete Campaign"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {filteredCampaigns.length === 0 && (
+              <div className="text-center py-12">
+                <Briefcase className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No campaigns found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
+                    ? 'Try adjusting your search or filters.'
+                    : 'Get started by creating a new campaign.'}
+                </p>
+                {!searchTerm && statusFilter === 'all' && typeFilter === 'all' && (
+                  <div className="mt-6">
                     <button
-                      className="expand-button"
-                      onClick={() => toggleCampaignExpansion(campaign.id)}
+                      onClick={handleCreateCampaign}
+                      className="btn btn-primary"
                     >
-                      {expandedCampaigns.has(campaign.id) ? 
-                        <ChevronDown className="w-4 h-4" /> : 
-                        <ChevronRight className="w-4 h-4" />
-                      }
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Campaign
                     </button>
-                    <h3>{campaign.name}</h3>
-                    <span 
-                      className="campaign-type-badge"
-                      style={{ backgroundColor: CAMPAIGN_COLOR_SCHEME[campaign.type] }}
-                    >
-                      {getCampaignTypeLabel(campaign.type)}
-                    </span>
-                  </div>
-                  <div className="campaign-meta">
-                    <span className="campaign-code">{campaign.code}</span>
-                    <span 
-                      className="campaign-status"
-                      style={{ color: CAMPAIGN_STATUS_COLORS[campaign.status] }}
-                    >
-                      {getStatusIcon(campaign.status)}
-                      {getCampaignStatusLabel(campaign.status)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="campaign-actions">
-                  <button
-                    className="btn btn-icon"
-                    onClick={() => handleEditCampaign(campaign)}
-                    title="Edit Campaign"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    className="btn btn-icon btn-danger"
-                    onClick={() => handleDeleteCampaign(campaign.id)}
-                    title="Delete Campaign"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Campaign Summary */}
-              <div className="campaign-summary">
-                <div className="summary-item">
-                  <Calendar className="w-4 h-4" />
-                  <span>{campaign.start_date} - {campaign.end_date}</span>
-                </div>
-                <div className="summary-item">
-                  <Users className="w-4 h-4" />
-                  <span>{campaign.assigned_team_members?.length || 0} team members</span>
-                </div>
-                {campaign.is_billable && (
-                  <div className="summary-item">
-                    <DollarSign className="w-4 h-4" />
-                    <span>${campaign.budget?.toLocaleString()}</span>
                   </div>
                 )}
-                <div className="summary-item">
-                  <Clock className="w-4 h-4" />
-                  <span>{campaign.planned_hours}h planned</span>
-                </div>
               </div>
-
-              {/* Expanded Details */}
-              {expandedCampaigns.has(campaign.id) && (
-                <div className="campaign-details">
-                  <div className="details-section">
-                    <h4>Description</h4>
-                    <p>{campaign.description || 'No description provided'}</p>
-                  </div>
-
-                  {campaign.client_name && (
-                    <div className="details-section">
-                      <h4>Client Information</h4>
-                      <div className="client-info">
-                        <div className="info-item">
-                          <Building className="w-4 h-4" />
-                          <span>{campaign.client_name}</span>
-                        </div>
-                        {campaign.client_contact_name && (
-                          <div className="info-item">
-                            <User className="w-4 h-4" />
-                            <span>{campaign.client_contact_name}</span>
-                          </div>
-                        )}
-                        {campaign.client_contact_email && (
-                          <div className="info-item">
-                            <Mail className="w-4 h-4" />
-                            <span>{campaign.client_contact_email}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="details-section">
-                    <h4>Team Assignments</h4>
-                    <div className="team-assignments">
-                      {campaign.assigned_campaign_leaders?.length > 0 && (
-                        <div className="assignment-group">
-                          <strong>Campaign Leaders:</strong>
-                          <ul>
-                            {campaign.assigned_campaign_leaders.map(leaderId => (
-                              <li key={leaderId}>{getEmployeeName(leaderId)}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {campaign.assigned_team_members?.length > 0 && (
-                        <div className="assignment-group">
-                          <strong>Team Members:</strong>
-                          <ul>
-                            {campaign.assigned_team_members.map(memberId => (
-                              <li key={memberId}>{getEmployeeName(memberId)}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {campaign.assigned_executives?.length > 0 && (
-                        <div className="assignment-group">
-                          <strong>Executives:</strong>
-                          <ul>
-                            {campaign.assigned_executives.map(execId => (
-                              <li key={execId}>{getEmployeeName(execId)}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))
-        )}
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Create Campaign Modal */}
       {showCreateModal && (
-        <div className="modal-overlay">
-          <div className="modal campaign-modal">
-            <div className="modal-header">
-              <h2>Create New Campaign</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Create New Campaign</h2>
               <button
-                className="btn btn-icon"
                 onClick={() => setShowCreateModal(false)}
+                className="btn btn-ghost btn-sm"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleFormSubmit} className="modal-body">
+            <div className="p-6 space-y-4">
               {formErrors.length > 0 && (
-                <div className="error-messages">
-                  {formErrors.map((error, index) => (
-                    <div key={index} className="error-message">
-                      <AlertCircle className="w-4 h-4" />
-                      {error}
+                <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                  <div className="flex">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">
+                        Please fix the following errors:
+                      </h3>
+                      <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
+                        {formErrors.map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
                     </div>
-                  ))}
+                  </div>
                 </div>
               )}
 
-              <div className="form-grid">
-                {/* Basic Information */}
-                <div className="form-section">
-                  <h3>Basic Information</h3>
-                  
-                  <div className="form-group">
-                    <label>Campaign Name *</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => handleFormChange('name', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Campaign Code *</label>
-                    <input
-                      type="text"
-                      value={formData.code}
-                      onChange={(e) => handleFormChange('code', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Description</label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => handleFormChange('description', e.target.value)}
-                      rows="3"
-                    />
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Type *</label>
-                      <select
-                        value={formData.type}
-                        onChange={(e) => handleFormChange('type', e.target.value)}
-                        required
-                      >
-                        {Object.values(CAMPAIGN_TYPE).map(type => (
-                          <option key={type} value={type}>
-                            {getCampaignTypeLabel(type)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label>Priority</label>
-                      <select
-                        value={formData.priority}
-                        onChange={(e) => handleFormChange('priority', e.target.value)}
-                      >
-                        {Object.values(CAMPAIGN_PRIORITY).map(priority => (
-                          <option key={priority} value={priority}>
-                            {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Start Date *</label>
-                      <input
-                        type="date"
-                        value={formData.start_date}
-                        onChange={(e) => handleFormChange('start_date', e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>End Date *</label>
-                      <input
-                        type="date"
-                        value={formData.end_date}
-                        onChange={(e) => handleFormChange('end_date', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Planned Hours</label>
-                    <input
-                      type="number"
-                      value={formData.planned_hours}
-                      onChange={(e) => handleFormChange('planned_hours', parseInt(e.target.value) || 0)}
-                      min="0"
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="form-label">Campaign Name *</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="form-input"
+                    placeholder="Enter campaign name"
+                  />
                 </div>
 
-                {/* Client Information */}
-                <div className="form-section">
-                  <h3>Client Information</h3>
-                  
-                  <div className="form-group">
-                    <label>Client Name</label>
-                    <input
-                      type="text"
-                      value={formData.client_name}
-                      onChange={(e) => handleFormChange('client_name', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Client Contact Name</label>
-                    <input
-                      type="text"
-                      value={formData.client_contact_name}
-                      onChange={(e) => handleFormChange('client_contact_name', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Client Contact Email</label>
-                    <input
-                      type="email"
-                      value={formData.client_contact_email}
-                      onChange={(e) => handleFormChange('client_contact_email', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Client Contact Phone</label>
-                    <input
-                      type="tel"
-                      value={formData.client_contact_phone}
-                      onChange={(e) => handleFormChange('client_contact_phone', e.target.value)}
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Campaign Code</label>
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    className="form-input"
+                    placeholder="Auto-generated if empty"
+                  />
                 </div>
 
-                {/* Financial Information */}
-                <div className="form-section">
-                  <h3>Financial Information</h3>
-                  
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Budget</label>
-                      <input
-                        type="number"
-                        value={formData.budget}
-                        onChange={(e) => handleFormChange('budget', parseFloat(e.target.value) || 0)}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Hourly Rate</label>
-                      <input
-                        type="number"
-                        value={formData.hourly_rate}
-                        onChange={(e) => handleFormChange('hourly_rate', parseFloat(e.target.value) || 0)}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Billing Type</label>
-                      <select
-                        value={formData.billing_type}
-                        onChange={(e) => handleFormChange('billing_type', e.target.value)}
-                      >
-                        <option value="hourly">Hourly</option>
-                        <option value="fixed">Fixed Price</option>
-                        <option value="retainer">Retainer</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label>Currency</label>
-                      <select
-                        value={formData.currency}
-                        onChange={(e) => handleFormChange('currency', e.target.value)}
-                      >
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="GBP">GBP</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={formData.is_billable}
-                        onChange={(e) => handleFormChange('is_billable', e.target.checked)}
-                      />
-                      This is a billable campaign
-                    </label>
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Client Name *</label>
+                  <input
+                    type="text"
+                    value={formData.client_name}
+                    onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                    className="form-input"
+                    placeholder="Enter client name"
+                  />
                 </div>
 
-                {/* Additional Information */}
-                <div className="form-section">
-                  <h3>Additional Information</h3>
-                  
-                  <div className="form-group">
-                    <label>Notes</label>
-                    <textarea
-                      value={formData.notes}
-                      onChange={(e) => handleFormChange('notes', e.target.value)}
-                      rows="3"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Campaign Lead</label>
+                  <input
+                    type="text"
+                    value={formData.campaign_lead}
+                    onChange={(e) => setFormData({ ...formData, campaign_lead: e.target.value })}
+                    className="form-input"
+                    placeholder="Enter campaign lead name"
+                  />
+                </div>
 
-                  <div className="form-group">
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={formData.requires_approval}
-                        onChange={(e) => handleFormChange('requires_approval', e.target.checked)}
-                      />
-                      Requires approval for time entries
-                    </label>
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Type</label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    className="form-select"
+                  >
+                    <option value="client">Client</option>
+                    <option value="internal">Internal</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="form-select"
+                  >
+                    <option value="planning">Planning</option>
+                    <option value="active">Active</option>
+                    <option value="paused">Paused</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Priority</label>
+                  <select
+                    value={formData.priority}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                    className="form-select"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Budget</label>
+                  <input
+                    type="number"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    className="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Hourly Rate</label>
+                  <input
+                    type="number"
+                    value={formData.hourly_rate}
+                    onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+                    className="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Start Date *</label>
+                  <input
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">End Date *</label>
+                  <input
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group md:col-span-2">
+                  <label className="form-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_billable}
+                      onChange={(e) => setFormData({ ...formData, is_billable: e.target.checked })}
+                      className="mr-2"
+                    />
+                    Billable Campaign
+                  </label>
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowCreateModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <>
-                      <div className="loading-spinner small"></div>
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      Create Campaign
-                    </>
-                  )}
-                </button>
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="form-input"
+                  rows="3"
+                  placeholder="Enter campaign description"
+                />
               </div>
-            </form>
+            </div>
+
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="btn btn-outline"
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveCampaign}
+                className="btn btn-primary"
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Create Campaign
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Edit Campaign Modal */}
       {showEditModal && selectedCampaign && (
-        <div className="modal-overlay">
-          <div className="modal campaign-modal">
-            <div className="modal-header">
-              <h2>Edit Campaign</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Edit Campaign</h2>
               <button
-                className="btn btn-icon"
                 onClick={() => setShowEditModal(false)}
+                className="btn btn-ghost btn-sm"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleFormSubmit} className="modal-body">
+            <div className="p-6 space-y-4">
               {formErrors.length > 0 && (
-                <div className="error-messages">
-                  {formErrors.map((error, index) => (
-                    <div key={index} className="error-message">
-                      <AlertCircle className="w-4 h-4" />
-                      {error}
+                <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                  <div className="flex">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">
+                        Please fix the following errors:
+                      </h3>
+                      <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
+                        {formErrors.map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
                     </div>
-                  ))}
+                  </div>
                 </div>
               )}
 
-              {/* Same form fields as create modal */}
-              <div className="form-grid">
-                {/* Basic Information */}
-                <div className="form-section">
-                  <h3>Basic Information</h3>
-                  
-                  <div className="form-group">
-                    <label>Campaign Name *</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => handleFormChange('name', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Campaign Code *</label>
-                    <input
-                      type="text"
-                      value={formData.code}
-                      onChange={(e) => handleFormChange('code', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Description</label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => handleFormChange('description', e.target.value)}
-                      rows="3"
-                    />
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Type *</label>
-                      <select
-                        value={formData.type}
-                        onChange={(e) => handleFormChange('type', e.target.value)}
-                        required
-                      >
-                        {Object.values(CAMPAIGN_TYPE).map(type => (
-                          <option key={type} value={type}>
-                            {getCampaignTypeLabel(type)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label>Priority</label>
-                      <select
-                        value={formData.priority}
-                        onChange={(e) => handleFormChange('priority', e.target.value)}
-                      >
-                        {Object.values(CAMPAIGN_PRIORITY).map(priority => (
-                          <option key={priority} value={priority}>
-                            {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Status</label>
-                      <select
-                        value={formData.status}
-                        onChange={(e) => handleFormChange('status', e.target.value)}
-                      >
-                        {Object.values(CAMPAIGN_STATUS).map(status => (
-                          <option key={status} value={status}>
-                            {getCampaignStatusLabel(status)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Start Date *</label>
-                      <input
-                        type="date"
-                        value={formData.start_date}
-                        onChange={(e) => handleFormChange('start_date', e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>End Date *</label>
-                      <input
-                        type="date"
-                        value={formData.end_date}
-                        onChange={(e) => handleFormChange('end_date', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Planned Hours</label>
-                    <input
-                      type="number"
-                      value={formData.planned_hours}
-                      onChange={(e) => handleFormChange('planned_hours', parseInt(e.target.value) || 0)}
-                      min="0"
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="form-label">Campaign Name *</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="form-input"
+                    placeholder="Enter campaign name"
+                  />
                 </div>
 
-                {/* Client Information - Same as create modal */}
-                <div className="form-section">
-                  <h3>Client Information</h3>
-                  
-                  <div className="form-group">
-                    <label>Client Name</label>
-                    <input
-                      type="text"
-                      value={formData.client_name}
-                      onChange={(e) => handleFormChange('client_name', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Client Contact Name</label>
-                    <input
-                      type="text"
-                      value={formData.client_contact_name}
-                      onChange={(e) => handleFormChange('client_contact_name', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Client Contact Email</label>
-                    <input
-                      type="email"
-                      value={formData.client_contact_email}
-                      onChange={(e) => handleFormChange('client_contact_email', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Client Contact Phone</label>
-                    <input
-                      type="tel"
-                      value={formData.client_contact_phone}
-                      onChange={(e) => handleFormChange('client_contact_phone', e.target.value)}
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Campaign Code</label>
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    className="form-input"
+                    placeholder="Campaign code"
+                  />
                 </div>
 
-                {/* Financial Information - Same as create modal */}
-                <div className="form-section">
-                  <h3>Financial Information</h3>
-                  
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Budget</label>
-                      <input
-                        type="number"
-                        value={formData.budget}
-                        onChange={(e) => handleFormChange('budget', parseFloat(e.target.value) || 0)}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Hourly Rate</label>
-                      <input
-                        type="number"
-                        value={formData.hourly_rate}
-                        onChange={(e) => handleFormChange('hourly_rate', parseFloat(e.target.value) || 0)}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Billing Type</label>
-                      <select
-                        value={formData.billing_type}
-                        onChange={(e) => handleFormChange('billing_type', e.target.value)}
-                      >
-                        <option value="hourly">Hourly</option>
-                        <option value="fixed">Fixed Price</option>
-                        <option value="retainer">Retainer</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label>Currency</label>
-                      <select
-                        value={formData.currency}
-                        onChange={(e) => handleFormChange('currency', e.target.value)}
-                      >
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="GBP">GBP</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={formData.is_billable}
-                        onChange={(e) => handleFormChange('is_billable', e.target.checked)}
-                      />
-                      This is a billable campaign
-                    </label>
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Client Name *</label>
+                  <input
+                    type="text"
+                    value={formData.client_name}
+                    onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                    className="form-input"
+                    placeholder="Enter client name"
+                  />
                 </div>
 
-                {/* Additional Information - Same as create modal */}
-                <div className="form-section">
-                  <h3>Additional Information</h3>
-                  
-                  <div className="form-group">
-                    <label>Notes</label>
-                    <textarea
-                      value={formData.notes}
-                      onChange={(e) => handleFormChange('notes', e.target.value)}
-                      rows="3"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Campaign Lead</label>
+                  <input
+                    type="text"
+                    value={formData.campaign_lead}
+                    onChange={(e) => setFormData({ ...formData, campaign_lead: e.target.value })}
+                    className="form-input"
+                    placeholder="Enter campaign lead name"
+                  />
+                </div>
 
-                  <div className="form-group">
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={formData.requires_approval}
-                        onChange={(e) => handleFormChange('requires_approval', e.target.checked)}
-                      />
-                      Requires approval for time entries
-                    </label>
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Type</label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    className="form-select"
+                  >
+                    <option value="client">Client</option>
+                    <option value="internal">Internal</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="form-select"
+                  >
+                    <option value="planning">Planning</option>
+                    <option value="active">Active</option>
+                    <option value="paused">Paused</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Priority</label>
+                  <select
+                    value={formData.priority}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                    className="form-select"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Budget</label>
+                  <input
+                    type="number"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    className="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Hourly Rate</label>
+                  <input
+                    type="number"
+                    value={formData.hourly_rate}
+                    onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+                    className="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Start Date *</label>
+                  <input
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">End Date *</label>
+                  <input
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group md:col-span-2">
+                  <label className="form-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_billable}
+                      onChange={(e) => setFormData({ ...formData, is_billable: e.target.checked })}
+                      className="mr-2"
+                    />
+                    Billable Campaign
+                  </label>
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowEditModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <>
-                      <div className="loading-spinner small"></div>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      Save Changes
-                    </>
-                  )}
-                </button>
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="form-input"
+                  rows="3"
+                  placeholder="Enter campaign description"
+                />
               </div>
-            </form>
+            </div>
+
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="btn btn-outline"
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveCampaign}
+                className="btn btn-primary"
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Update Campaign
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
