@@ -1,6 +1,6 @@
-// COMPLETE TIMESHEET MANAGEMENT SYSTEM - CARDS FIXED TO 2x3 GRID
-// Dashboard cards now properly arranged in 2 rows of 3 cards each
-// Filters remain unchanged as requested
+// COMPLETE TIMESHEET MANAGEMENT SYSTEM - QUICK ACTIONS FIXED
+// Dashboard cards in 2x3 grid, filters horizontal, Quick Actions in single row
+// Only Quick Actions section modified, everything else unchanged
 
 import React, { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
@@ -423,7 +423,7 @@ function LoginPage() {
   )
 }
 
-// FIXED Dashboard Component - 2x3 Card Grid Layout
+// Dashboard Component - Cards in 2x3 grid, Quick Actions FIXED to single row
 function Dashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState({
@@ -519,7 +519,7 @@ function Dashboard() {
         <p className="text-gray-600 mt-1">Here's what's happening with your team today.</p>
       </div>
 
-      {/* Filters Section - UNCHANGED as requested */}
+      {/* Filters Section - UNCHANGED */}
       <Card>
         <CardHeader>
           <CardTitle>Filters</CardTitle>
@@ -578,7 +578,7 @@ function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* FIXED: Stats Cards - Exactly 2 rows of 3 cards each */}
+      {/* Stats Cards - 2x3 Grid Layout - UNCHANGED */}
       <div className="grid grid-cols-3 gap-4">
         {/* Row 1: Total Hours, Billable Hours, Utilization */}
         <Card className="dashboard-stat-card">
@@ -670,14 +670,14 @@ function Dashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions Section (Preserved from Original) */}
+      {/* FIXED: Quick Actions Section - Now in single horizontal row */}
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
           <CardDescription>Common tasks and shortcuts</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <Link to="/timesheets" className="quick-action-card">
               <Clock className="quick-action-icon text-blue-600" />
               <div>
