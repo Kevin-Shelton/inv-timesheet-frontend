@@ -1,10 +1,11 @@
 // COMPLETE TIMESHEET MANAGEMENT SYSTEM - ALL ISSUES FIXED
 // Fixed: Action buttons working, delete marks inactive, proper API integration, Campaign Management added
+// Fixed: Settings naming conflict resolved
 
 import React, { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
 import { 
-  Clock, Users, BarChart3, Settings, LogOut, Menu, X, AlertCircle, 
+  Clock, Users, BarChart3, Settings as SettingsIcon, LogOut, Menu, X, AlertCircle, 
   CheckCircle, Plus, Check, XCircle, Download, Filter, Search, Edit, 
   Trash2, UserPlus, Shield, TrendingUp, DollarSign, Calendar, FileText,
   Home, Eye, EyeOff, Database, Upload, Target, Activity, Save, Printer,
@@ -2277,7 +2278,7 @@ function Approvals() {
   )
 }
 
-// Settings Component
+// Settings Component - FIXED: Renamed to avoid conflict
 function Settings({ user }) {
   const [settings, setSettings] = useState({
     notifications: true,
@@ -2425,7 +2426,7 @@ function App() {
     { id: 'reports', name: 'Reports', icon: FileText, roles: ['admin', 'campaign_lead'] },
     { id: 'data-management', name: 'Data Management', icon: Database, roles: ['admin'] },
     { id: 'approvals', name: 'Approvals', icon: CheckCircle, roles: ['admin', 'campaign_lead'] },
-    { id: 'settings', name: 'Settings', icon: Settings, roles: ['admin', 'campaign_lead', 'team_member'] }
+    { id: 'settings', name: 'Settings', icon: SettingsIcon, roles: ['admin', 'campaign_lead', 'team_member'] }
   ]
 
   const filteredNavigation = navigation.filter(item => 
