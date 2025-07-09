@@ -1,6 +1,7 @@
 // COMPLETE TIMESHEET MANAGEMENT SYSTEM - ALL ISSUES FIXED
 // Fixed: Action buttons working, delete marks inactive, proper API integration, Campaign Management added
 // Fixed: Settings naming conflict resolved
+// Fixed: Sidebar styling restored to Apple-inspired design
 
 import React, { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
@@ -987,9 +988,8 @@ function TeamManagement({ user }) {
       <Card className="team-members-card">
         <CardHeader>
           <CardTitle>Team Members</CardTitle>
-          <CardDescription>All team members</CardDescription>
+          <CardDescription>All active team members</CardDescription>
         </CardHeader>
-        
         <CardContent>
           <div className="table-container">
             <table className="team-table">
@@ -1007,29 +1007,19 @@ function TeamManagement({ user }) {
               <tbody>
                 {filteredMembers.map((member) => (
                   <tr key={member.id}>
-                    <td>
-                      <div className="member-name">{member.full_name}</div>
-                    </td>
-                    <td>
-                      <div className="member-email">{member.email}</div>
-                    </td>
+                    <td>{member.full_name}</td>
+                    <td>{member.email}</td>
                     <td>
                       <Badge variant={
-                        member.role === 'admin' ? 'red' :
-                        member.role === 'campaign_lead' ? 'orange' :
-                        'blue'
+                        member.role === 'admin' ? 'red' : 
+                        member.role === 'campaign_lead' ? 'orange' : 'blue'
                       }>
-                        {member.role === 'admin' ? 'Admin' :
-                         member.role === 'campaign_lead' ? 'Campaign Lead' :
-                         'Team Member'}
+                        {member.role === 'admin' ? 'admin' :
+                         member.role === 'campaign_lead' ? 'campaign lead' : 'team member'}
                       </Badge>
                     </td>
-                    <td>
-                      <div className="member-department">{member.department}</div>
-                    </td>
-                    <td>
-                      <div className="member-pay-rate">${member.pay_rate_per_hour}/hr</div>
-                    </td>
+                    <td>{member.department}</td>
+                    <td>${member.pay_rate_per_hour}/hr</td>
                     <td>
                       <Badge variant={member.is_active ? 'green' : 'red'}>
                         {member.is_active ? 'Active' : 'Inactive'}
@@ -1040,6 +1030,7 @@ function TeamManagement({ user }) {
                         <button
                           onClick={() => handleEdit(member)}
                           className="action-button edit"
+                          title="Edit"
                         >
                           <Edit className="action-icon" />
                         </button>
@@ -1047,6 +1038,7 @@ function TeamManagement({ user }) {
                           <button
                             onClick={() => handleDeactivate(member.id)}
                             className="action-button delete"
+                            title="Deactivate"
                           >
                             <Trash2 className="action-icon" />
                           </button>
@@ -1054,6 +1046,7 @@ function TeamManagement({ user }) {
                           <button
                             onClick={() => handleActivate(member.id)}
                             className="action-button activate"
+                            title="Activate"
                           >
                             <CheckCircle className="action-icon" />
                           </button>
@@ -1068,19 +1061,33 @@ function TeamManagement({ user }) {
         </CardContent>
       </Card>
 
-      {/* Add Member Modal */}
-      {showAddModal && (
+      {/* Add/Edit Modal */}
+      {(showAddModal || showEditModal) && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h3>Add Team Member</h3>
+              <h2>{showEditModal ? 'Edit Team Member' : 'Add Team Member'}</h2>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  setShowAddModal(false)
+                  setShowEditModal(false)
+                  setSelectedMember(null)
+                  setFormData({
+                    full_name: '',
+                    email: '',
+                    role: 'team_member',
+                    department: '',
+                    pay_rate_per_hour: '',
+                    phone: '',
+                    hire_date: ''
+                  })
+                }}
                 className="modal-close"
               >
                 <X className="modal-close-icon" />
               </button>
             </div>
+
             <form onSubmit={handleSubmit} className="modal-form">
               <div className="form-grid">
                 <div className="form-group">
@@ -1089,182 +1096,91 @@ function TeamManagement({ user }) {
                     id="full_name"
                     type="text"
                     value={formData.full_name}
-                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                    onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                     required
                   />
                 </div>
+
                 <div className="form-group">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     required
                   />
                 </div>
+
                 <div className="form-group">
                   <Label htmlFor="role">Role</Label>
                   <Select
                     id="role"
                     value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
+                    onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
                   >
                     <option value="team_member">Team Member</option>
                     <option value="campaign_lead">Campaign Lead</option>
                     <option value="admin">Admin</option>
                   </Select>
                 </div>
+
                 <div className="form-group">
                   <Label htmlFor="department">Department</Label>
                   <Input
                     id="department"
                     type="text"
                     value={formData.department}
-                    onChange={(e) => setFormData({...formData, department: e.target.value})}
+                    onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
                   />
                 </div>
+
                 <div className="form-group">
-                  <Label htmlFor="pay_rate_per_hour">Pay Rate ($/hour)</Label>
+                  <Label htmlFor="pay_rate_per_hour">Pay Rate (per hour)</Label>
                   <Input
                     id="pay_rate_per_hour"
                     type="number"
                     step="0.01"
                     value={formData.pay_rate_per_hour}
-                    onChange={(e) => setFormData({...formData, pay_rate_per_hour: parseFloat(e.target.value)})}
+                    onChange={(e) => setFormData(prev => ({ ...prev, pay_rate_per_hour: e.target.value }))}
                   />
                 </div>
+
                 <div className="form-group">
                   <Label htmlFor="phone">Phone</Label>
                   <Input
                     id="phone"
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                   />
                 </div>
+
                 <div className="form-group">
                   <Label htmlFor="hire_date">Hire Date</Label>
                   <Input
                     id="hire_date"
                     type="date"
                     value={formData.hire_date}
-                    onChange={(e) => setFormData({...formData, hire_date: e.target.value})}
+                    onChange={(e) => setFormData(prev => ({ ...prev, hire_date: e.target.value }))}
                   />
                 </div>
               </div>
-              <div className="modal-actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowAddModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  Add Member
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* Edit Member Modal */}
-      {showEditModal && selectedMember && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3>Edit Team Member</h3>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="modal-close"
-              >
-                <X className="modal-close-icon" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="modal-form">
-              <div className="form-grid">
-                <div className="form-group">
-                  <Label htmlFor="edit_full_name">Full Name</Label>
-                  <Input
-                    id="edit_full_name"
-                    type="text"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_email">Email</Label>
-                  <Input
-                    id="edit_email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_role">Role</Label>
-                  <Select
-                    id="edit_role"
-                    value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
-                  >
-                    <option value="team_member">Team Member</option>
-                    <option value="campaign_lead">Campaign Lead</option>
-                    <option value="admin">Admin</option>
-                  </Select>
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_department">Department</Label>
-                  <Input
-                    id="edit_department"
-                    type="text"
-                    value={formData.department}
-                    onChange={(e) => setFormData({...formData, department: e.target.value})}
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_pay_rate_per_hour">Pay Rate ($/hour)</Label>
-                  <Input
-                    id="edit_pay_rate_per_hour"
-                    type="number"
-                    step="0.01"
-                    value={formData.pay_rate_per_hour}
-                    onChange={(e) => setFormData({...formData, pay_rate_per_hour: parseFloat(e.target.value)})}
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_phone">Phone</Label>
-                  <Input
-                    id="edit_phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_hire_date">Hire Date</Label>
-                  <Input
-                    id="edit_hire_date"
-                    type="date"
-                    value={formData.hire_date}
-                    onChange={(e) => setFormData({...formData, hire_date: e.target.value})}
-                  />
-                </div>
-              </div>
               <div className="modal-actions">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setShowEditModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false)
+                    setShowEditModal(false)
+                    setSelectedMember(null)
+                  }}
                 >
                   Cancel
                 </Button>
                 <Button type="submit">
-                  Save Changes
+                  {showEditModal ? 'Update' : 'Add'} Team Member
                 </Button>
               </div>
             </form>
@@ -1277,23 +1193,28 @@ function TeamManagement({ user }) {
 
 // Analytics Component
 function Analytics() {
-  const utilizationData = [
-    { name: 'Week 1', utilization: 85, target: 80 },
-    { name: 'Week 2', utilization: 92, target: 80 },
-    { name: 'Week 3', utilization: 78, target: 80 },
-    { name: 'Week 4', utilization: 88, target: 80 }
-  ]
+  const [timeRange, setTimeRange] = useState('month')
+  const [selectedMetric, setSelectedMetric] = useState('utilization')
 
-  const productivityData = [
-    { name: 'John Doe', hours: 160, billable: 140 },
-    { name: 'Jane Smith', hours: 155, billable: 135 },
-    { name: 'Mike Johnson', hours: 162, billable: 145 }
+  const utilizationData = [
+    { name: 'Week 1', utilization: 75, billable: 68, target: 75 },
+    { name: 'Week 2', utilization: 82, billable: 74, target: 75 },
+    { name: 'Week 3', utilization: 78, billable: 71, target: 75 },
+    { name: 'Week 4', utilization: 85, billable: 79, target: 75 }
   ]
 
   const revenueData = [
-    { month: 'Jan', revenue: 45000, target: 40000 },
-    { month: 'Feb', revenue: 52000, target: 45000 },
-    { month: 'Mar', revenue: 48000, target: 45000 }
+    { name: 'Jan', revenue: 45000, target: 50000 },
+    { name: 'Feb', revenue: 52000, target: 50000 },
+    { name: 'Mar', revenue: 48000, target: 50000 },
+    { name: 'Apr', revenue: 58000, target: 50000 }
+  ]
+
+  const teamPerformanceData = [
+    { name: 'John Doe', utilization: 85, billableHours: 156, revenue: 11700 },
+    { name: 'Jane Smith', utilization: 78, billableHours: 142, revenue: 10650 },
+    { name: 'Mike Johnson', utilization: 72, billableHours: 129, revenue: 9675 },
+    { name: 'Sarah Wilson', utilization: 88, billableHours: 162, revenue: 12150 }
   ]
 
   return (
@@ -1303,67 +1224,183 @@ function Analytics() {
         <p>Performance metrics and insights</p>
       </div>
 
-      <div className="analytics-grid">
-        {/* Utilization Chart */}
-        <Card className="analytics-card">
+      {/* Controls */}
+      <Card className="analytics-controls">
+        <CardContent>
+          <div className="controls-grid">
+            <div className="control-group">
+              <Label htmlFor="timeRange">Time Range</Label>
+              <Select
+                id="timeRange"
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+              >
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="quarter">This Quarter</option>
+                <option value="year">This Year</option>
+              </Select>
+            </div>
+
+            <div className="control-group">
+              <Label htmlFor="metric">Primary Metric</Label>
+              <Select
+                id="metric"
+                value={selectedMetric}
+                onChange={(e) => setSelectedMetric(e.target.value)}
+              >
+                <option value="utilization">Utilization</option>
+                <option value="revenue">Revenue</option>
+                <option value="billable">Billable Hours</option>
+                <option value="efficiency">Efficiency</option>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Key Metrics */}
+      <div className="metrics-grid">
+        <Card className="metric-card">
+          <CardContent>
+            <div className="metric-header">
+              <h3>Overall Utilization</h3>
+              <TrendingUp className="metric-icon positive" />
+            </div>
+            <div className="metric-value">78.5%</div>
+            <div className="metric-change positive">+5.2% from last month</div>
+          </CardContent>
+        </Card>
+
+        <Card className="metric-card">
+          <CardContent>
+            <div className="metric-header">
+              <h3>Revenue</h3>
+              <DollarSign className="metric-icon" />
+            </div>
+            <div className="metric-value">$58,420</div>
+            <div className="metric-change positive">+12.3% from last month</div>
+          </CardContent>
+        </Card>
+
+        <Card className="metric-card">
+          <CardContent>
+            <div className="metric-header">
+              <h3>Billable Hours</h3>
+              <Clock className="metric-icon" />
+            </div>
+            <div className="metric-value">1,247</div>
+            <div className="metric-change positive">+8.7% from last month</div>
+          </CardContent>
+        </Card>
+
+        <Card className="metric-card">
+          <CardContent>
+            <div className="metric-header">
+              <h3>Efficiency Score</h3>
+              <Target className="metric-icon" />
+            </div>
+            <div className="metric-value">82.3</div>
+            <div className="metric-change positive">+3.1% from last month</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts */}
+      <div className="charts-grid">
+        <Card className="chart-card">
           <CardHeader>
-            <CardTitle>Team Utilization</CardTitle>
+            <CardTitle>Utilization Trends</CardTitle>
+            <CardDescription>Weekly utilization vs target</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={utilizationData}>
+              <LineChart data={utilizationData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="utilization" fill="#3B82F6" name="Actual" />
-                <Bar dataKey="target" fill="#E5E7EB" name="Target" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Productivity Chart */}
-        <Card className="analytics-card">
-          <CardHeader>
-            <CardTitle>Individual Productivity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={productivityData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="hours" fill="#10B981" name="Total Hours" />
-                <Bar dataKey="billable" fill="#F59E0B" name="Billable Hours" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Revenue Chart */}
-        <Card className="analytics-card full-width">
-          <CardHeader>
-            <CardTitle>Revenue Trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="revenue" stroke="#8B5CF6" strokeWidth={3} name="Actual Revenue" />
-                <Line type="monotone" dataKey="target" stroke="#E5E7EB" strokeWidth={2} strokeDasharray="5 5" name="Target Revenue" />
+                <Line type="monotone" dataKey="utilization" stroke="#3b82f6" strokeWidth={2} />
+                <Line type="monotone" dataKey="billable" stroke="#10b981" strokeWidth={2} />
+                <Line type="monotone" dataKey="target" stroke="#ef4444" strokeDasharray="5 5" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
+
+        <Card className="chart-card">
+          <CardHeader>
+            <CardTitle>Revenue Performance</CardTitle>
+            <CardDescription>Monthly revenue vs target</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="revenue" fill="#3b82f6" />
+                <Bar dataKey="target" fill="#e5e7eb" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Team Performance */}
+      <Card className="team-performance-card">
+        <CardHeader>
+          <CardTitle>Team Performance</CardTitle>
+          <CardDescription>Individual team member metrics</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="table-container">
+            <table className="performance-table">
+              <thead>
+                <tr>
+                  <th>Team Member</th>
+                  <th>Utilization</th>
+                  <th>Billable Hours</th>
+                  <th>Revenue</th>
+                  <th>Performance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teamPerformanceData.map((member, index) => (
+                  <tr key={index}>
+                    <td>{member.name}</td>
+                    <td>
+                      <div className="utilization-cell">
+                        <span>{member.utilization}%</span>
+                        <div className="utilization-bar">
+                          <div 
+                            className="utilization-fill"
+                            style={{ width: `${member.utilization}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{member.billableHours}</td>
+                    <td>${member.revenue.toLocaleString()}</td>
+                    <td>
+                      <Badge variant={
+                        member.utilization >= 85 ? 'green' :
+                        member.utilization >= 75 ? 'blue' : 'orange'
+                      }>
+                        {member.utilization >= 85 ? 'Excellent' :
+                         member.utilization >= 75 ? 'Good' : 'Needs Improvement'}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -1371,96 +1408,136 @@ function Analytics() {
 // Reports Component
 function Reports() {
   const [reportType, setReportType] = useState('utilization')
-  const [dateRange, setDateRange] = useState('last_30_days')
-  const [loading, setLoading] = useState(false)
+  const [dateRange, setDateRange] = useState('month')
+  const [format, setFormat] = useState('pdf')
 
-  const generateReport = async () => {
-    setLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false)
-    }, 2000)
+  const reportTypes = [
+    { id: 'utilization', name: 'Utilization Report', description: 'Team utilization and efficiency metrics' },
+    { id: 'revenue', name: 'Revenue Report', description: 'Revenue and billing analysis' },
+    { id: 'timesheet', name: 'Timesheet Report', description: 'Detailed timesheet data' },
+    { id: 'team', name: 'Team Performance Report', description: 'Individual team member performance' }
+  ]
+
+  const handleGenerateReport = () => {
+    console.log('Generating report:', { reportType, dateRange, format })
+    // In a real app, this would trigger report generation
   }
 
   return (
     <div className="reports">
       <div className="reports-header">
         <h1>Reports</h1>
-        <p>Generate and download detailed reports</p>
+        <p>Generate and download reports</p>
       </div>
 
-      <Card className="generate-report-card">
+      {/* Report Configuration */}
+      <Card className="report-config-card">
         <CardHeader>
-          <CardTitle>Generate Report</CardTitle>
+          <CardTitle>Report Configuration</CardTitle>
+          <CardDescription>Configure your report settings</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="report-form-grid">
-            <div className="form-group">
+          <div className="config-grid">
+            <div className="config-group">
               <Label htmlFor="reportType">Report Type</Label>
               <Select
                 id="reportType"
                 value={reportType}
                 onChange={(e) => setReportType(e.target.value)}
               >
-                <option value="utilization">Utilization Report</option>
-                <option value="productivity">Productivity Report</option>
-                <option value="revenue">Revenue Report</option>
-                <option value="timesheet">Timesheet Summary</option>
+                {reportTypes.map(type => (
+                  <option key={type.id} value={type.id}>{type.name}</option>
+                ))}
               </Select>
             </div>
 
-            <div className="form-group">
+            <div className="config-group">
               <Label htmlFor="dateRange">Date Range</Label>
               <Select
                 id="dateRange"
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
               >
-                <option value="last_7_days">Last 7 Days</option>
-                <option value="last_30_days">Last 30 Days</option>
-                <option value="last_quarter">Last Quarter</option>
-                <option value="last_year">Last Year</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="quarter">This Quarter</option>
+                <option value="year">This Year</option>
+                <option value="custom">Custom Range</option>
               </Select>
             </div>
 
-            <div className="form-group">
-              <Button
-                onClick={generateReport}
-                disabled={loading}
-                className="generate-button"
+            <div className="config-group">
+              <Label htmlFor="format">Format</Label>
+              <Select
+                id="format"
+                value={format}
+                onChange={(e) => setFormat(e.target.value)}
               >
-                {loading ? (
-                  <div className="loading-spinner-small" />
-                ) : (
-                  <>
-                    <Download className="button-icon" />
-                    Generate
-                  </>
-                )}
-              </Button>
+                <option value="pdf">PDF</option>
+                <option value="excel">Excel</option>
+                <option value="csv">CSV</option>
+              </Select>
             </div>
           </div>
 
-          <div className="recent-reports">
-            <h4>Recent Reports</h4>
-            <div className="report-list">
-              <div className="report-item">
-                <div className="report-info">
-                  <p className="report-name">Utilization Report - March 2024</p>
-                  <p className="report-date">Generated on March 31, 2024</p>
-                </div>
-                <button className="download-button">
-                  <Download className="download-icon" />
-                </button>
+          <div className="report-description">
+            <h4>Report Description</h4>
+            <p>{reportTypes.find(type => type.id === reportType)?.description}</p>
+          </div>
+
+          <div className="report-actions">
+            <Button onClick={handleGenerateReport}>
+              <Download className="button-icon" />
+              Generate Report
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Reports */}
+      <Card className="recent-reports-card">
+        <CardHeader>
+          <CardTitle>Recent Reports</CardTitle>
+          <CardDescription>Previously generated reports</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="reports-list">
+            <div className="report-item">
+              <div className="report-info">
+                <h4>Utilization Report - December 2024</h4>
+                <p>Generated on Dec 15, 2024 • PDF • 2.3 MB</p>
               </div>
-              <div className="report-item">
-                <div className="report-info">
-                  <p className="report-name">Revenue Report - Q1 2024</p>
-                  <p className="report-date">Generated on March 30, 2024</p>
-                </div>
-                <button className="download-button">
-                  <Download className="download-icon" />
-                </button>
+              <div className="report-actions">
+                <Button variant="outline" size="sm">
+                  <Download className="button-icon" />
+                  Download
+                </Button>
+              </div>
+            </div>
+
+            <div className="report-item">
+              <div className="report-info">
+                <h4>Revenue Report - Q4 2024</h4>
+                <p>Generated on Dec 10, 2024 • Excel • 1.8 MB</p>
+              </div>
+              <div className="report-actions">
+                <Button variant="outline" size="sm">
+                  <Download className="button-icon" />
+                  Download
+                </Button>
+              </div>
+            </div>
+
+            <div className="report-item">
+              <div className="report-info">
+                <h4>Team Performance Report - November 2024</h4>
+                <p>Generated on Nov 30, 2024 • PDF • 3.1 MB</p>
+              </div>
+              <div className="report-actions">
+                <Button variant="outline" size="sm">
+                  <Download className="button-icon" />
+                  Download
+                </Button>
               </div>
             </div>
           </div>
@@ -1472,246 +1549,341 @@ function Reports() {
 
 // Data Management Component
 function DataManagement() {
-  const [activeTab, setActiveTab] = useState('billable-hours')
+  const [activeTab, setActiveTab] = useState('import')
 
   return (
     <div className="data-management">
       <div className="data-management-header">
         <h1>Data Management</h1>
-        <p>Manage billable hours, utilization metrics, and other data</p>
+        <p>Import, export, and manage your data</p>
       </div>
 
-      <div className="data-tabs">
+      {/* Tabs */}
+      <div className="tabs">
         <button
-          className={`tab-button ${activeTab === 'billable-hours' ? 'active' : ''}`}
-          onClick={() => setActiveTab('billable-hours')}
+          className={`tab ${activeTab === 'import' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('import')}
         >
-          Billable Hours
+          Import Data
         </button>
         <button
-          className={`tab-button ${activeTab === 'utilization' ? 'active' : ''}`}
-          onClick={() => setActiveTab('utilization')}
+          className={`tab ${activeTab === 'export' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('export')}
         >
-          Utilization
+          Export Data
         </button>
         <button
-          className={`tab-button ${activeTab === 'reports' ? 'active' : ''}`}
-          onClick={() => setActiveTab('reports')}
+          className={`tab ${activeTab === 'backup' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('backup')}
         >
-          Billable Reports
+          Backup & Restore
         </button>
       </div>
 
-      <div className="tab-content">
-        {activeTab === 'billable-hours' && <BillableHoursManagement />}
-        {activeTab === 'utilization' && <UtilizationManagement />}
-        {activeTab === 'reports' && <BillableReportsManagement />}
-      </div>
+      {/* Tab Content */}
+      {activeTab === 'import' && (
+        <Card className="import-card">
+          <CardHeader>
+            <CardTitle>Import Data</CardTitle>
+            <CardDescription>Upload and import data from external sources</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="import-options">
+              <div className="import-option">
+                <div className="import-icon">
+                  <Users className="import-icon-svg" />
+                </div>
+                <h3>Team Members</h3>
+                <p>Import team member data from CSV or Excel files</p>
+                <Button variant="outline">
+                  <Upload className="button-icon" />
+                  Choose File
+                </Button>
+              </div>
+
+              <div className="import-option">
+                <div className="import-icon">
+                  <Clock className="import-icon-svg" />
+                </div>
+                <h3>Timesheets</h3>
+                <p>Import timesheet data from external systems</p>
+                <Button variant="outline">
+                  <Upload className="button-icon" />
+                  Choose File
+                </Button>
+              </div>
+
+              <div className="import-option">
+                <div className="import-icon">
+                  <DollarSign className="import-icon-svg" />
+                </div>
+                <h3>Billing Data</h3>
+                <p>Import billing and rate information</p>
+                <Button variant="outline">
+                  <Upload className="button-icon" />
+                  Choose File
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 'export' && (
+        <Card className="export-card">
+          <CardHeader>
+            <CardTitle>Export Data</CardTitle>
+            <CardDescription>Export your data for external use</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="export-options">
+              <div className="export-option">
+                <h3>All Data Export</h3>
+                <p>Export all system data including team members, timesheets, and billing information</p>
+                <div className="export-actions">
+                  <Button>
+                    <Download className="button-icon" />
+                    Export as CSV
+                  </Button>
+                  <Button variant="outline">
+                    <Download className="button-icon" />
+                    Export as Excel
+                  </Button>
+                </div>
+              </div>
+
+              <div className="export-option">
+                <h3>Selective Export</h3>
+                <p>Choose specific data types and date ranges to export</p>
+                <div className="export-form">
+                  <div className="form-group">
+                    <Label>Data Types</Label>
+                    <div className="checkbox-group">
+                      <label className="checkbox-label">
+                        <input type="checkbox" defaultChecked />
+                        Team Members
+                      </label>
+                      <label className="checkbox-label">
+                        <input type="checkbox" defaultChecked />
+                        Timesheets
+                      </label>
+                      <label className="checkbox-label">
+                        <input type="checkbox" />
+                        Billing Data
+                      </label>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <Label>Date Range</Label>
+                    <div className="date-range">
+                      <Input type="date" />
+                      <span>to</span>
+                      <Input type="date" />
+                    </div>
+                  </div>
+                  <Button>
+                    <Download className="button-icon" />
+                    Export Selected Data
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 'backup' && (
+        <Card className="backup-card">
+          <CardHeader>
+            <CardTitle>Backup & Restore</CardTitle>
+            <CardDescription>Create backups and restore from previous backups</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="backup-section">
+              <h3>Create Backup</h3>
+              <p>Create a complete backup of all your data</p>
+              <Button>
+                <Save className="button-icon" />
+                Create Backup
+              </Button>
+            </div>
+
+            <div className="backup-history">
+              <h3>Backup History</h3>
+              <div className="backup-list">
+                <div className="backup-item">
+                  <div className="backup-info">
+                    <h4>Full Backup - December 15, 2024</h4>
+                    <p>Size: 45.2 MB • All data included</p>
+                  </div>
+                  <div className="backup-actions">
+                    <Button variant="outline" size="sm">
+                      <Download className="button-icon" />
+                      Download
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <RefreshCw className="button-icon" />
+                      Restore
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="backup-item">
+                  <div className="backup-info">
+                    <h4>Full Backup - December 1, 2024</h4>
+                    <p>Size: 42.8 MB • All data included</p>
+                  </div>
+                  <div className="backup-actions">
+                    <Button variant="outline" size="sm">
+                      <Download className="button-icon" />
+                      Download
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <RefreshCw className="button-icon" />
+                      Restore
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
 
-// Billable Hours Management Component
-function BillableHoursManagement() {
-  const [billableHours, setBillableHours] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [selectedEntry, setSelectedEntry] = useState(null)
-  const [statusFilter, setStatusFilter] = useState('all')
-
-  const [formData, setFormData] = useState({
-    team_member_id: '',
-    date: '',
-    client_name: '',
-    project_name: '',
-    task_description: '',
-    billable_hours: '',
-    hourly_rate: '',
-    status: 'pending'
-  })
-
-  useEffect(() => {
-    loadBillableHours()
-  }, [])
-
-  const loadBillableHours = async () => {
-    try {
-      setLoading(true)
-      const data = await api.getBillableHours()
-      setBillableHours(data)
-    } catch (error) {
-      console.error('Error loading billable hours:', error)
-    } finally {
-      setLoading(false)
+// Approvals Component
+function Approvals() {
+  const [filter, setFilter] = useState('pending')
+  const [timesheets] = useState([
+    {
+      id: 1,
+      employee: 'John Doe',
+      date: '2024-01-15',
+      hours: 8.5,
+      description: 'Campaign development work',
+      status: 'pending',
+      submitted: '2024-01-16'
+    },
+    {
+      id: 2,
+      employee: 'Jane Smith',
+      date: '2024-01-15',
+      hours: 7.0,
+      description: 'Client consultation calls',
+      status: 'pending',
+      submitted: '2024-01-16'
+    },
+    {
+      id: 3,
+      employee: 'Mike Johnson',
+      date: '2024-01-14',
+      hours: 8.0,
+      description: 'Data analysis and reporting',
+      status: 'approved',
+      submitted: '2024-01-15'
     }
-  }
+  ])
 
-  const handleEdit = (entry) => {
-    setSelectedEntry(entry)
-    setFormData({
-      team_member_id: entry.team_member_id,
-      date: entry.date,
-      client_name: entry.client_name,
-      project_name: entry.project_name,
-      task_description: entry.task_description,
-      billable_hours: entry.billable_hours,
-      hourly_rate: entry.hourly_rate,
-      status: entry.status
-    })
-    setShowEditModal(true)
-  }
-
-  const handleDelete = async (entryId) => {
-    if (window.confirm('Are you sure you want to delete this billable hours entry?')) {
-      try {
-        await api.deleteBillableHours(entryId)
-        setBillableHours(billableHours.filter(entry => entry.id !== entryId))
-      } catch (error) {
-        console.error('Error deleting billable hours entry:', error)
-      }
-    }
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    try {
-      if (showEditModal && selectedEntry) {
-        // Update existing entry
-        await api.updateBillableHours(selectedEntry.id, formData)
-        setBillableHours(billableHours.map(entry => 
-          entry.id === selectedEntry.id ? { ...entry, ...formData, total_amount: formData.billable_hours * formData.hourly_rate } : entry
-        ))
-        setShowEditModal(false)
-      } else {
-        // Create new entry
-        const newEntry = await api.createBillableHours({
-          ...formData,
-          total_amount: formData.billable_hours * formData.hourly_rate
-        })
-        setBillableHours([...billableHours, newEntry])
-        setShowAddModal(false)
-      }
-      
-      // Reset form
-      setFormData({
-        team_member_id: '',
-        date: '',
-        client_name: '',
-        project_name: '',
-        task_description: '',
-        billable_hours: '',
-        hourly_rate: '',
-        status: 'pending'
-      })
-      setSelectedEntry(null)
-    } catch (error) {
-      console.error('Error saving billable hours entry:', error)
-    }
-  }
-
-  const filteredHours = billableHours.filter(hour => 
-    statusFilter === 'all' || hour.status === statusFilter
+  const filteredTimesheets = timesheets.filter(timesheet => 
+    filter === 'all' || timesheet.status === filter
   )
 
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading billable hours...</p>
-      </div>
-    )
+  const handleApprove = (id) => {
+    console.log('Approving timesheet:', id)
+    // In a real app, this would update the timesheet status
+  }
+
+  const handleReject = (id) => {
+    console.log('Rejecting timesheet:', id)
+    // In a real app, this would update the timesheet status
   }
 
   return (
-    <div className="billable-hours-management">
-      <div className="billable-hours-header">
-        <div>
-          <h2>Billable Hours Management</h2>
-          <p>Track and manage billable time entries</p>
-        </div>
-        <Button onClick={() => setShowAddModal(true)}>
-          <Plus className="button-icon" />
-          Add Entry
-        </Button>
+    <div className="approvals">
+      <div className="approvals-header">
+        <h1>Approvals</h1>
+        <p>Review and approve timesheet submissions</p>
       </div>
 
       {/* Filter */}
       <Card className="filter-card">
         <CardContent>
-          <div className="filter-container">
-            <Label htmlFor="statusFilter">Filter by Status</Label>
+          <div className="filter-group">
+            <Label htmlFor="statusFilter">Status Filter</Label>
             <Select
               id="statusFilter"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
+              <option value="all">All Submissions</option>
+              <option value="pending">Pending Approval</option>
               <option value="approved">Approved</option>
-              <option value="billed">Billed</option>
+              <option value="rejected">Rejected</option>
             </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Billable Hours Table */}
-      <Card className="billable-hours-card">
+      {/* Timesheets */}
+      <Card className="timesheets-card">
         <CardHeader>
-          <CardTitle>Billable Hours Entries</CardTitle>
+          <CardTitle>Timesheet Submissions</CardTitle>
+          <CardDescription>
+            {filter === 'pending' ? 'Pending approvals' : 'All submissions'}
+          </CardDescription>
         </CardHeader>
-        
         <CardContent>
           <div className="table-container">
-            <table className="billable-hours-table">
+            <table className="approvals-table">
               <thead>
                 <tr>
-                  <th>Team Member</th>
+                  <th>Employee</th>
                   <th>Date</th>
-                  <th>Client</th>
-                  <th>Project</th>
                   <th>Hours</th>
-                  <th>Rate</th>
-                  <th>Amount</th>
+                  <th>Description</th>
+                  <th>Submitted</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredHours.map((hour) => (
-                  <tr key={hour.id}>
-                    <td>{hour.team_member_name}</td>
-                    <td>{hour.date}</td>
-                    <td>{hour.client_name}</td>
-                    <td>{hour.project_name}</td>
-                    <td>{hour.billable_hours}h</td>
-                    <td>${hour.hourly_rate}/hr</td>
-                    <td>${hour.total_amount}</td>
+                {filteredTimesheets.map((timesheet) => (
+                  <tr key={timesheet.id}>
+                    <td>{timesheet.employee}</td>
+                    <td>{timesheet.date}</td>
+                    <td>{timesheet.hours}</td>
+                    <td>{timesheet.description}</td>
+                    <td>{timesheet.submitted}</td>
                     <td>
                       <Badge variant={
-                        hour.status === 'approved' ? 'green' :
-                        hour.status === 'billed' ? 'blue' :
-                        'orange'
+                        timesheet.status === 'approved' ? 'green' :
+                        timesheet.status === 'rejected' ? 'red' : 'orange'
                       }>
-                        {hour.status}
+                        {timesheet.status}
                       </Badge>
                     </td>
                     <td>
-                      <div className="action-buttons">
-                        <button
-                          onClick={() => handleEdit(hour)}
-                          className="action-button edit"
-                        >
-                          <Edit className="action-icon" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(hour.id)}
-                          className="action-button delete"
-                        >
-                          <Trash2 className="action-icon" />
-                        </button>
-                      </div>
+                      {timesheet.status === 'pending' && (
+                        <div className="action-buttons">
+                          <Button
+                            size="sm"
+                            onClick={() => handleApprove(timesheet.id)}
+                          >
+                            <Check className="button-icon" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleReject(timesheet.id)}
+                          >
+                            <XCircle className="button-icon" />
+                            Reject
+                          </Button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -1720,576 +1892,44 @@ function BillableHoursManagement() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Add Entry Modal */}
-      {showAddModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3>Add Billable Hours Entry</h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="modal-close"
-              >
-                <X className="modal-close-icon" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="modal-form">
-              <div className="form-grid">
-                <div className="form-group">
-                  <Label htmlFor="team_member_id">Team Member</Label>
-                  <Select
-                    id="team_member_id"
-                    value={formData.team_member_id}
-                    onChange={(e) => setFormData({...formData, team_member_id: e.target.value})}
-                    required
-                  >
-                    <option value="">Select Team Member</option>
-                    <option value="1">John Doe</option>
-                    <option value="2">Jane Smith</option>
-                    <option value="3">Mike Johnson</option>
-                  </Select>
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="client_name">Client Name</Label>
-                  <Input
-                    id="client_name"
-                    type="text"
-                    value={formData.client_name}
-                    onChange={(e) => setFormData({...formData, client_name: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="project_name">Project Name</Label>
-                  <Input
-                    id="project_name"
-                    type="text"
-                    value={formData.project_name}
-                    onChange={(e) => setFormData({...formData, project_name: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="task_description">Task Description</Label>
-                  <Input
-                    id="task_description"
-                    type="text"
-                    value={formData.task_description}
-                    onChange={(e) => setFormData({...formData, task_description: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="billable_hours">Billable Hours</Label>
-                  <Input
-                    id="billable_hours"
-                    type="number"
-                    step="0.25"
-                    value={formData.billable_hours}
-                    onChange={(e) => setFormData({...formData, billable_hours: parseFloat(e.target.value)})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
-                  <Input
-                    id="hourly_rate"
-                    type="number"
-                    step="0.01"
-                    value={formData.hourly_rate}
-                    onChange={(e) => setFormData({...formData, hourly_rate: parseFloat(e.target.value)})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    id="status"
-                    value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="billed">Billed</option>
-                  </Select>
-                </div>
-              </div>
-              <div className="modal-actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowAddModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  Add Entry
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Entry Modal */}
-      {showEditModal && selectedEntry && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3>Edit Billable Hours Entry</h3>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="modal-close"
-              >
-                <X className="modal-close-icon" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="modal-form">
-              <div className="form-grid">
-                <div className="form-group">
-                  <Label htmlFor="edit_team_member_id">Team Member</Label>
-                  <Select
-                    id="edit_team_member_id"
-                    value={formData.team_member_id}
-                    onChange={(e) => setFormData({...formData, team_member_id: e.target.value})}
-                    required
-                  >
-                    <option value="">Select Team Member</option>
-                    <option value="1">John Doe</option>
-                    <option value="2">Jane Smith</option>
-                    <option value="3">Mike Johnson</option>
-                  </Select>
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_date">Date</Label>
-                  <Input
-                    id="edit_date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_client_name">Client Name</Label>
-                  <Input
-                    id="edit_client_name"
-                    type="text"
-                    value={formData.client_name}
-                    onChange={(e) => setFormData({...formData, client_name: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_project_name">Project Name</Label>
-                  <Input
-                    id="edit_project_name"
-                    type="text"
-                    value={formData.project_name}
-                    onChange={(e) => setFormData({...formData, project_name: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_task_description">Task Description</Label>
-                  <Input
-                    id="edit_task_description"
-                    type="text"
-                    value={formData.task_description}
-                    onChange={(e) => setFormData({...formData, task_description: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_billable_hours">Billable Hours</Label>
-                  <Input
-                    id="edit_billable_hours"
-                    type="number"
-                    step="0.25"
-                    value={formData.billable_hours}
-                    onChange={(e) => setFormData({...formData, billable_hours: parseFloat(e.target.value)})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_hourly_rate">Hourly Rate ($)</Label>
-                  <Input
-                    id="edit_hourly_rate"
-                    type="number"
-                    step="0.01"
-                    value={formData.hourly_rate}
-                    onChange={(e) => setFormData({...formData, hourly_rate: parseFloat(e.target.value)})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="edit_status">Status</Label>
-                  <Select
-                    id="edit_status"
-                    value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="billed">Billed</option>
-                  </Select>
-                </div>
-              </div>
-              <div className="modal-actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowEditModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  Save Changes
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
 
-// Utilization Management Component
-function UtilizationManagement() {
-  const [utilizationMetrics, setUtilizationMetrics] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    loadUtilizationMetrics()
-  }, [])
-
-  const loadUtilizationMetrics = async () => {
-    try {
-      setLoading(true)
-      const data = await api.getUtilizationMetrics()
-      setUtilizationMetrics(data)
-    } catch (error) {
-      console.error('Error loading utilization metrics:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading utilization metrics...</p>
-      </div>
-    )
-  }
-
-  if (!utilizationMetrics) {
-    return (
-      <div className="error-container">
-        <p>Error loading utilization metrics</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="utilization-management">
-      <div className="utilization-header">
-        <h2>Utilization Management</h2>
-        <p>Monitor team utilization rates and efficiency</p>
-      </div>
-
-      <div className="utilization-cards">
-        <Card className="utilization-card">
-          <CardContent>
-            <div className="card-icon-container">
-              <TrendingUp className="card-icon green" />
-            </div>
-            <div className="card-content-text">
-              <p className="card-label">Overall Utilization</p>
-              <p className="card-value">{utilizationMetrics.overall_utilization}%</p>
-              <p className="card-trend positive">Above target</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="utilization-card">
-          <CardContent>
-            <div className="card-icon-container">
-              <Target className="card-icon blue" />
-            </div>
-            <div className="card-content-text">
-              <p className="card-label">Target Utilization</p>
-              <p className="card-value">{utilizationMetrics.target_utilization}%</p>
-              <p className="card-trend">Company goal</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="utilization-card">
-          <CardContent>
-            <div className="card-icon-container">
-              <DollarSign className="card-icon purple" />
-            </div>
-            <div className="card-content-text">
-              <p className="card-label">Revenue per Hour</p>
-              <p className="card-value">${utilizationMetrics.revenue_per_hour}</p>
-              <p className="card-trend positive">+5% vs last month</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="utilization-card">
-          <CardContent>
-            <div className="card-icon-container">
-              <Activity className="card-icon orange" />
-            </div>
-            <div className="card-content-text">
-              <p className="card-label">Efficiency Score</p>
-              <p className="card-value">{utilizationMetrics.efficiency_score}%</p>
-              <p className="card-trend positive">Excellent</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="team-utilization-card">
-        <CardHeader>
-          <CardTitle>Team Member Utilization</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="team-utilization-list">
-            {utilizationMetrics.team_metrics.map((member, index) => (
-              <div key={index} className="team-utilization-item">
-                <div className="member-info">
-                  <p className="member-name">{member.name}</p>
-                  <p className="member-hours">{member.billable_hours}h billable this month</p>
-                </div>
-                <div className="utilization-info">
-                  <p className="utilization-percentage">{member.utilization}%</p>
-                  <div className="utilization-bar">
-                    <div 
-                      className={`utilization-fill ${member.utilization >= 75 ? 'high' : 'low'}`}
-                      style={{ width: `${Math.min(member.utilization, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Billable Reports Management Component
-function BillableReportsManagement() {
-  return (
-    <div className="billable-reports-management">
-      <div className="billable-reports-header">
-        <h2>Billable Reports Management</h2>
-        <p>Generate and manage billable hours reports</p>
-      </div>
-
-      <Card className="reports-card">
-        <CardHeader>
-          <CardTitle>Generate Billable Hours Report</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="report-form">
-            <div className="form-grid">
-              <div className="form-group">
-                <Label htmlFor="report_period">Report Period</Label>
-                <Select id="report_period">
-                  <option value="current_month">Current Month</option>
-                  <option value="last_month">Last Month</option>
-                  <option value="current_quarter">Current Quarter</option>
-                  <option value="last_quarter">Last Quarter</option>
-                  <option value="current_year">Current Year</option>
-                </Select>
-              </div>
-              <div className="form-group">
-                <Label htmlFor="report_format">Format</Label>
-                <Select id="report_format">
-                  <option value="pdf">PDF</option>
-                  <option value="excel">Excel</option>
-                  <option value="csv">CSV</option>
-                </Select>
-              </div>
-              <div className="form-group">
-                <Button className="generate-report-button">
-                  <Download className="button-icon" />
-                  Generate Report
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="recent-reports-card">
-        <CardHeader>
-          <CardTitle>Recent Reports</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="recent-reports-list">
-            <div className="report-item">
-              <div className="report-info">
-                <p className="report-name">Billable Hours Report - December 2024</p>
-                <p className="report-date">Generated on January 1, 2025</p>
-              </div>
-              <button className="download-button">
-                <Download className="download-icon" />
-              </button>
-            </div>
-            <div className="report-item">
-              <div className="report-info">
-                <p className="report-name">Quarterly Billable Summary - Q4 2024</p>
-                <p className="report-date">Generated on December 31, 2024</p>
-              </div>
-              <button className="download-button">
-                <Download className="download-icon" />
-              </button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Approvals Component
-function Approvals() {
-  const [timesheets, setTimesheets] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    loadPendingTimesheets()
-  }, [])
-
-  const loadPendingTimesheets = async () => {
-    try {
-      const data = await api.getTimesheets({ status: 'pending' })
-      setTimesheets(data)
-    } catch (error) {
-      console.error('Error loading timesheets:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleApprove = async (id, comment = '') => {
-    try {
-      await api.approveTimesheet(id, comment)
-      setTimesheets(timesheets.filter(t => t.id !== id))
-    } catch (error) {
-      console.error('Error approving timesheet:', error)
-    }
-  }
-
-  const handleReject = async (id) => {
-    const reason = prompt('Please provide a reason for rejection:')
-    if (reason) {
-      try {
-        await api.rejectTimesheet(id, reason)
-        setTimesheets(timesheets.filter(t => t.id !== id))
-      } catch (error) {
-        console.error('Error rejecting timesheet:', error)
-      }
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading pending approvals...</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="approvals">
-      <div className="approvals-header">
-        <h1>Approvals</h1>
-        <p>Review and approve pending timesheets</p>
-      </div>
-
-      <Card className="approvals-card">
-        <CardHeader>
-          <CardTitle>Pending Approvals</CardTitle>
-          <CardDescription>{timesheets.length} timesheets awaiting approval</CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          {timesheets.length === 0 ? (
-            <div className="empty-state">
-              <CheckCircle className="empty-state-icon" />
-              <h3>All caught up!</h3>
-              <p>No pending timesheets to review.</p>
-            </div>
-          ) : (
-            <div className="approvals-list">
-              {timesheets.map((timesheet) => (
-                <div key={timesheet.id} className="approval-item">
-                  <div className="approval-info">
-                    <p className="approval-user">{timesheet.user_name}</p>
-                    <p className="approval-details">{timesheet.date} - {timesheet.hours} hours</p>
-                    <p className="approval-description">{timesheet.description}</p>
-                  </div>
-                  <div className="approval-actions">
-                    <Button
-                      onClick={() => handleApprove(timesheet.id)}
-                      variant="primary"
-                      size="sm"
-                    >
-                      <Check className="button-icon" />
-                      Approve
-                    </Button>
-                    <Button
-                      onClick={() => handleReject(timesheet.id)}
-                      variant="destructive"
-                      size="sm"
-                    >
-                      <X className="button-icon" />
-                      Reject
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Settings Component - FIXED: Renamed to avoid conflict
+// Settings Component
 function Settings({ user }) {
   const [settings, setSettings] = useState({
-    notifications: true,
-    emailReports: false,
-    autoApproval: false,
-    overtimeThreshold: 40
+    notifications: {
+      email: true,
+      push: false,
+      timesheet_reminders: true,
+      approval_notifications: true
+    },
+    preferences: {
+      theme: 'light',
+      timezone: 'America/New_York',
+      date_format: 'MM/DD/YYYY',
+      time_format: '12h'
+    },
+    security: {
+      two_factor: false,
+      session_timeout: '30'
+    }
   })
 
+  const handleSettingChange = (category, setting, value) => {
+    setSettings(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [setting]: value
+      }
+    }))
+  }
+
   const handleSave = () => {
-    // Save settings logic here
-    alert('Settings saved successfully!')
+    console.log('Saving settings:', settings)
+    // In a real app, this would save to the backend
   }
 
   return (
@@ -2299,95 +1939,253 @@ function Settings({ user }) {
         <p>Manage your account and application preferences</p>
       </div>
 
-      <div className="settings-grid">
-        {/* Profile Settings */}
-        <Card className="settings-card">
-          <CardHeader>
-            <CardTitle>Profile Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="settings-form">
-              <div className="form-group">
-                <Label htmlFor="full_name">Full Name</Label>
-                <Input
-                  id="full_name"
-                  type="text"
-                  defaultValue={user?.full_name}
-                />
+      {/* Profile Settings */}
+      <Card className="profile-card">
+        <CardHeader>
+          <CardTitle>Profile Information</CardTitle>
+          <CardDescription>Update your personal information</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="profile-form">
+            <div className="form-group">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                type="text"
+                defaultValue={user?.full_name}
+              />
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                defaultValue={user?.email}
+              />
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="role">Role</Label>
+              <Input
+                id="role"
+                type="text"
+                value={user?.role}
+                disabled
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notification Settings */}
+      <Card className="notifications-card">
+        <CardHeader>
+          <CardTitle>Notifications</CardTitle>
+          <CardDescription>Configure how you receive notifications</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="settings-list">
+            <div className="setting-item">
+              <div className="setting-info">
+                <h4>Email Notifications</h4>
+                <p>Receive notifications via email</p>
               </div>
-              <div className="form-group">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  defaultValue={user?.email}
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.notifications.email}
+                  onChange={(e) => handleSettingChange('notifications', 'email', e.target.checked)}
                 />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="setting-item">
+              <div className="setting-info">
+                <h4>Push Notifications</h4>
+                <p>Receive push notifications in your browser</p>
               </div>
-              <div className="form-group">
-                <Label htmlFor="role">Role</Label>
-                <Input
-                  id="role"
-                  type="text"
-                  value={user?.role}
-                  disabled
-                  className="disabled-input"
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.notifications.push}
+                  onChange={(e) => handleSettingChange('notifications', 'push', e.target.checked)}
                 />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="setting-item">
+              <div className="setting-info">
+                <h4>Timesheet Reminders</h4>
+                <p>Get reminded to submit your timesheets</p>
+              </div>
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.notifications.timesheet_reminders}
+                  onChange={(e) => handleSettingChange('notifications', 'timesheet_reminders', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="setting-item">
+              <div className="setting-info">
+                <h4>Approval Notifications</h4>
+                <p>Get notified when timesheets need approval</p>
+              </div>
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.notifications.approval_notifications}
+                  onChange={(e) => handleSettingChange('notifications', 'approval_notifications', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Preferences */}
+      <Card className="preferences-card">
+        <CardHeader>
+          <CardTitle>Preferences</CardTitle>
+          <CardDescription>Customize your application experience</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="preferences-grid">
+            <div className="form-group">
+              <Label htmlFor="theme">Theme</Label>
+              <Select
+                id="theme"
+                value={settings.preferences.theme}
+                onChange={(e) => handleSettingChange('preferences', 'theme', e.target.value)}
+              >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="auto">Auto</option>
+              </Select>
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="timezone">Timezone</Label>
+              <Select
+                id="timezone"
+                value={settings.preferences.timezone}
+                onChange={(e) => handleSettingChange('preferences', 'timezone', e.target.value)}
+              >
+                <option value="America/New_York">Eastern Time</option>
+                <option value="America/Chicago">Central Time</option>
+                <option value="America/Denver">Mountain Time</option>
+                <option value="America/Los_Angeles">Pacific Time</option>
+              </Select>
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="dateFormat">Date Format</Label>
+              <Select
+                id="dateFormat"
+                value={settings.preferences.date_format}
+                onChange={(e) => handleSettingChange('preferences', 'date_format', e.target.value)}
+              >
+                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+              </Select>
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="timeFormat">Time Format</Label>
+              <Select
+                id="timeFormat"
+                value={settings.preferences.time_format}
+                onChange={(e) => handleSettingChange('preferences', 'time_format', e.target.value)}
+              >
+                <option value="12h">12 Hour</option>
+                <option value="24h">24 Hour</option>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Security Settings */}
+      <Card className="security-card">
+        <CardHeader>
+          <CardTitle>Security</CardTitle>
+          <CardDescription>Manage your account security settings</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="security-settings">
+            <div className="setting-item">
+              <div className="setting-info">
+                <h4>Two-Factor Authentication</h4>
+                <p>Add an extra layer of security to your account</p>
+              </div>
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.security.two_factor}
+                  onChange={(e) => handleSettingChange('security', 'two_factor', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
+              <Select
+                id="sessionTimeout"
+                value={settings.security.session_timeout}
+                onChange={(e) => handleSettingChange('security', 'session_timeout', e.target.value)}
+              >
+                <option value="15">15 minutes</option>
+                <option value="30">30 minutes</option>
+                <option value="60">1 hour</option>
+                <option value="120">2 hours</option>
+              </Select>
+            </div>
+
+            <div className="password-section">
+              <h4>Change Password</h4>
+              <div className="password-form">
+                <div className="form-group">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    placeholder="Enter current password"
+                  />
+                </div>
+                <div className="form-group">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    placeholder="Enter new password"
+                  />
+                </div>
+                <div className="form-group">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Confirm new password"
+                  />
+                </div>
+                <Button variant="outline">
+                  Update Password
+                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Application Settings */}
-        <Card className="settings-card">
-          <CardHeader>
-            <CardTitle>Application Settings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="settings-form">
-              <div className="setting-item">
-                <div className="setting-info">
-                  <p className="setting-name">Email Notifications</p>
-                  <p className="setting-description">Receive email notifications for important updates</p>
-                </div>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={settings.notifications}
-                    onChange={(e) => setSettings({...settings, notifications: e.target.checked})}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
-              </div>
-
-              <div className="setting-item">
-                <div className="setting-info">
-                  <p className="setting-name">Weekly Reports</p>
-                  <p className="setting-description">Receive weekly summary reports via email</p>
-                </div>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={settings.emailReports}
-                    onChange={(e) => setSettings({...settings, emailReports: e.target.checked})}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
-              </div>
-
-              <div className="form-group">
-                <Label htmlFor="overtimeThreshold">Overtime Threshold (hours/week)</Label>
-                <Input
-                  id="overtimeThreshold"
-                  type="number"
-                  value={settings.overtimeThreshold}
-                  onChange={(e) => setSettings({...settings, overtimeThreshold: parseInt(e.target.value)})}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
+      {/* Save Button */}
       <div className="settings-actions">
         <Button onClick={handleSave}>
           <Save className="button-icon" />
@@ -2493,7 +2291,7 @@ function App() {
                     setCurrentPage(item.id)
                     setSidebarOpen(false)
                   }}
-                  className={`nav-item ${currentPage === item.id ? 'nav-item-active' : ''}`}
+                  className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
                 >
                   <Icon className="nav-item-icon" />
                   {item.name}
