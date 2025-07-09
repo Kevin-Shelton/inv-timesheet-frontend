@@ -1,6 +1,6 @@
-// COMPLETE TIMESHEET MANAGEMENT SYSTEM - ALL 2100+ LINES - CORRECTED DASHBOARD
-// Full implementation with all pages, billable hours, and enhanced task-based timesheet features
-// CORRECTED: Dashboard now matches original design with 6 cards and filtering
+// COMPLETE TIMESHEET MANAGEMENT SYSTEM - LAYOUT FIXED
+// Dashboard cards and filters now properly laid out horizontally
+// Cards are smaller and in proper 3x2 grid, filters are in horizontal row
 
 import React, { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
@@ -423,7 +423,7 @@ function LoginPage() {
   )
 }
 
-// CORRECTED Dashboard Component - Matches Original Design Exactly
+// FIXED Dashboard Component - Proper Horizontal Layout
 function Dashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState({
@@ -519,20 +519,21 @@ function Dashboard() {
         <p className="text-gray-600 mt-1">Here's what's happening with your team today.</p>
       </div>
 
-      {/* Filters Section */}
+      {/* FIXED: Filters Section - Horizontal Layout */}
       <Card>
         <CardHeader>
           <CardTitle>Filters</CardTitle>
           <CardDescription>Filter dashboard data by pay period, campaign, and team member</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="payPeriod">Pay Period</Label>
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="flex-1 min-w-48">
+              <Label htmlFor="payPeriod" className="block text-sm font-medium text-gray-700 mb-1">Pay Period</Label>
               <Select
                 id="payPeriod"
                 value={filters.payPeriod}
                 onChange={(e) => updateFilter('payPeriod', e.target.value)}
+                className="w-full"
               >
                 <option value="current">Current Week</option>
                 <option value="last">Last Week</option>
@@ -542,12 +543,13 @@ function Dashboard() {
               </Select>
             </div>
             
-            <div>
-              <Label htmlFor="campaign">Campaign</Label>
+            <div className="flex-1 min-w-48">
+              <Label htmlFor="campaign" className="block text-sm font-medium text-gray-700 mb-1">Campaign</Label>
               <Select
                 id="campaign"
                 value={filters.campaign}
                 onChange={(e) => updateFilter('campaign', e.target.value)}
+                className="w-full"
               >
                 {campaigns.map(campaign => (
                   <option key={campaign.id} value={campaign.id}>
@@ -557,12 +559,13 @@ function Dashboard() {
               </Select>
             </div>
             
-            <div>
-              <Label htmlFor="individual">Team Member</Label>
+            <div className="flex-1 min-w-48">
+              <Label htmlFor="individual" className="block text-sm font-medium text-gray-700 mb-1">Team Member</Label>
               <Select
                 id="individual"
                 value={filters.individual}
                 onChange={(e) => updateFilter('individual', e.target.value)}
+                className="w-full"
               >
                 {teamMembers.map(member => (
                   <option key={member.id} value={member.id}>
@@ -575,33 +578,33 @@ function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Stats Cards - 3x2 Grid Layout (Original Design) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* FIXED: Stats Cards - Proper 3x2 Grid with Smaller Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Total Hours Card */}
-        <Card>
-          <CardContent className="p-6">
+        <Card className="dashboard-stat-card">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <div className="stat-icon bg-blue-100">
-                <Clock className="stat-icon-svg text-blue-600" />
+              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Clock className="w-5 h-5 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <p className="stat-label">Total Hours</p>
-                <p className="stat-value">{stats.totalHours.toLocaleString()}</p>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-500 truncate">Total Hours</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalHours.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Billable Hours Card */}
-        <Card>
-          <CardContent className="p-6">
+        <Card className="dashboard-stat-card">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <div className="stat-icon bg-green-100">
-                <DollarSign className="stat-icon-svg text-green-600" />
+              <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="stat-label">Billable Hours</p>
-                <p className="stat-value">{stats.billableHours.toLocaleString()}</p>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-500 truncate">Billable Hours</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.billableHours.toLocaleString()}</p>
                 <p className="text-xs text-green-600 mt-1">+12% vs last week</p>
               </div>
             </div>
@@ -609,15 +612,15 @@ function Dashboard() {
         </Card>
 
         {/* Utilization Card */}
-        <Card>
-          <CardContent className="p-6">
+        <Card className="dashboard-stat-card">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <div className="stat-icon bg-purple-100">
-                <Target className="stat-icon-svg text-purple-600" />
+              <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Target className="w-5 h-5 text-purple-600" />
               </div>
-              <div className="ml-4">
-                <p className="stat-label">Utilization</p>
-                <p className="stat-value">{stats.utilization}%</p>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-500 truncate">Utilization</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.utilization}%</p>
                 <p className="text-xs text-green-600 mt-1">Above target</p>
               </div>
             </div>
@@ -625,45 +628,45 @@ function Dashboard() {
         </Card>
 
         {/* Pending Approvals Card */}
-        <Card>
-          <CardContent className="p-6">
+        <Card className="dashboard-stat-card">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <div className="stat-icon bg-orange-100">
-                <AlertCircle className="stat-icon-svg text-orange-600" />
+              <div className="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-orange-600" />
               </div>
-              <div className="ml-4">
-                <p className="stat-label">Pending Approvals</p>
-                <p className="stat-value">{stats.pendingApprovals}</p>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-500 truncate">Pending Approvals</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.pendingApprovals}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Team Members Card */}
-        <Card>
-          <CardContent className="p-6">
+        <Card className="dashboard-stat-card">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <div className="stat-icon bg-blue-100">
-                <Users className="stat-icon-svg text-blue-600" />
+              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <p className="stat-label">Team Members</p>
-                <p className="stat-value">{stats.teamMembers}</p>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-500 truncate">Team Members</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.teamMembers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Revenue Card */}
-        <Card>
-          <CardContent className="p-6">
+        <Card className="dashboard-stat-card">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <div className="stat-icon bg-green-100">
-                <TrendingUp className="stat-icon-svg text-green-600" />
+              <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="stat-label">Revenue</p>
-                <p className="stat-value">${stats.revenue.toLocaleString()}</p>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-500 truncate">Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">${stats.revenue.toLocaleString()}</p>
                 <p className="text-xs text-green-600 mt-1">+15% vs last month</p>
               </div>
             </div>
