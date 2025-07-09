@@ -41,7 +41,7 @@ const CampaignManagement = ({ user, api }) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
 
-  // Form state for campaign creation/editing
+  // Form state for_campaign creation/editing
   const [formData, setFormData] = useState({
     name: '',
     code: '',
