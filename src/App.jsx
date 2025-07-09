@@ -1,6 +1,6 @@
-// COMPLETE TIMESHEET MANAGEMENT SYSTEM - ALL 2100+ LINES - UPDATED WITH TASK-BASED TIMESHEET
+// COMPLETE TIMESHEET MANAGEMENT SYSTEM - ALL 2100+ LINES - CORRECTED DASHBOARD
 // Full implementation with all pages, billable hours, and enhanced task-based timesheet features
-// UPDATED: Integrated TaskBasedTimesheetPage component while preserving all existing functionality
+// CORRECTED: Dashboard now matches original design with 6 cards and filtering
 
 import React, { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
@@ -423,24 +423,92 @@ function LoginPage() {
   )
 }
 
-// Dashboard
+// CORRECTED Dashboard Component - Matches Original Design Exactly
 function Dashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState({
-    totalHours: 0,
-    pendingApprovals: 0,
-    teamMembers: 0,
-    completedTasks: 0
+    totalHours: 1247,
+    billableHours: 856,
+    utilization: 78.5,
+    pendingApprovals: 12,
+    teamMembers: 16,
+    revenue: 58420
   })
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    payPeriod: 'current',
+    campaign: 'all',
+    individual: 'all'
+  })
+  
+  const [campaigns] = useState([
+    { id: 'all', name: 'All Campaigns' },
+    { id: 1, name: 'Customer Service - General' },
+    { id: 2, name: 'Technical Support' },
+    { id: 3, name: 'Sales Support' },
+    { id: 4, name: 'Training & Development' }
+  ])
+  
+  const [teamMembers] = useState([
+    { id: 'all', name: 'All Team Members' },
+    { id: 1, name: 'John Doe' },
+    { id: 2, name: 'Jane Smith' },
+    { id: 3, name: 'Mike Johnson' },
+    { id: 4, name: 'Sarah Wilson' }
+  ])
 
   useEffect(() => {
-    setStats({
-      totalHours: 156.5,
-      pendingApprovals: 8,
-      teamMembers: 12,
-      completedTasks: 24
-    })
-  }, [])
+    // Simulate data loading based on filters
+    loadDashboardData()
+  }, [filters])
+
+  const loadDashboardData = async () => {
+    // Mock data that changes based on filters
+    const baseStats = {
+      totalHours: 1247,
+      billableHours: 856,
+      utilization: 78.5,
+      pendingApprovals: 12,
+      teamMembers: 16,
+      revenue: 58420
+    }
+    
+    // Apply filter modifications (mock logic)
+    if (filters.payPeriod === 'last') {
+      baseStats.totalHours = 1156
+      baseStats.billableHours = 798
+      baseStats.utilization = 76.2
+      baseStats.revenue = 54280
+    } else if (filters.payPeriod === 'month') {
+      baseStats.totalHours = 4890
+      baseStats.billableHours = 3420
+      baseStats.utilization = 79.8
+      baseStats.revenue = 234560
+    }
+    
+    if (filters.campaign !== 'all') {
+      baseStats.totalHours = Math.floor(baseStats.totalHours * 0.3)
+      baseStats.billableHours = Math.floor(baseStats.billableHours * 0.3)
+      baseStats.revenue = Math.floor(baseStats.revenue * 0.3)
+    }
+    
+    if (filters.individual !== 'all') {
+      baseStats.totalHours = Math.floor(baseStats.totalHours * 0.15)
+      baseStats.billableHours = Math.floor(baseStats.billableHours * 0.15)
+      baseStats.revenue = Math.floor(baseStats.revenue * 0.15)
+      baseStats.teamMembers = 1
+    }
+    
+    setStats(baseStats)
+  }
+
+  const updateFilter = (filterType, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }))
+  }
 
   return (
     <div className="page-content space-y-6">
@@ -451,7 +519,65 @@ function Dashboard() {
         <p className="text-gray-600 mt-1">Here's what's happening with your team today.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Filters Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+          <CardDescription>Filter dashboard data by pay period, campaign, and team member</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="payPeriod">Pay Period</Label>
+              <Select
+                id="payPeriod"
+                value={filters.payPeriod}
+                onChange={(e) => updateFilter('payPeriod', e.target.value)}
+              >
+                <option value="current">Current Week</option>
+                <option value="last">Last Week</option>
+                <option value="month">Current Month</option>
+                <option value="quarter">Current Quarter</option>
+                <option value="year">Current Year</option>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="campaign">Campaign</Label>
+              <Select
+                id="campaign"
+                value={filters.campaign}
+                onChange={(e) => updateFilter('campaign', e.target.value)}
+              >
+                {campaigns.map(campaign => (
+                  <option key={campaign.id} value={campaign.id}>
+                    {campaign.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="individual">Team Member</Label>
+              <Select
+                id="individual"
+                value={filters.individual}
+                onChange={(e) => updateFilter('individual', e.target.value)}
+              >
+                {teamMembers.map(member => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats Cards - 3x2 Grid Layout (Original Design) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Total Hours Card */}
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
@@ -460,12 +586,45 @@ function Dashboard() {
               </div>
               <div className="ml-4">
                 <p className="stat-label">Total Hours</p>
-                <p className="stat-value">{stats.totalHours}</p>
+                <p className="stat-value">{stats.totalHours.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Billable Hours Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="stat-icon bg-green-100">
+                <DollarSign className="stat-icon-svg text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="stat-label">Billable Hours</p>
+                <p className="stat-value">{stats.billableHours.toLocaleString()}</p>
+                <p className="text-xs text-green-600 mt-1">+12% vs last week</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Utilization Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="stat-icon bg-purple-100">
+                <Target className="stat-icon-svg text-purple-600" />
+              </div>
+              <div className="ml-4">
+                <p className="stat-label">Utilization</p>
+                <p className="stat-value">{stats.utilization}%</p>
+                <p className="text-xs text-green-600 mt-1">Above target</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending Approvals Card */}
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
@@ -480,11 +639,12 @@ function Dashboard() {
           </CardContent>
         </Card>
 
+        {/* Team Members Card */}
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
-              <div className="stat-icon bg-green-100">
-                <Users className="stat-icon-svg text-green-600" />
+              <div className="stat-icon bg-blue-100">
+                <Users className="stat-icon-svg text-blue-600" />
               </div>
               <div className="ml-4">
                 <p className="stat-label">Team Members</p>
@@ -494,21 +654,24 @@ function Dashboard() {
           </CardContent>
         </Card>
 
+        {/* Revenue Card */}
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
-              <div className="stat-icon bg-purple-100">
-                <CheckCircle className="stat-icon-svg text-purple-600" />
+              <div className="stat-icon bg-green-100">
+                <TrendingUp className="stat-icon-svg text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="stat-label">Completed Tasks</p>
-                <p className="stat-value">{stats.completedTasks}</p>
+                <p className="stat-label">Revenue</p>
+                <p className="stat-value">${stats.revenue.toLocaleString()}</p>
+                <p className="text-xs text-green-600 mt-1">+15% vs last month</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Quick Actions Section (Preserved from Original) */}
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
@@ -519,8 +682,8 @@ function Dashboard() {
             <Link to="/timesheets" className="quick-action-card">
               <Clock className="quick-action-icon text-blue-600" />
               <div>
-                <h3 className="quick-action-title">New Timesheet</h3>
-                <p className="quick-action-description">Log your hours</p>
+                <h3 className="quick-action-title">Submit Timesheet</h3>
+                <p className="quick-action-description">Log your daily hours</p>
               </div>
             </Link>
             {user?.role !== 'team_member' && (
@@ -528,8 +691,8 @@ function Dashboard() {
                 <Link to="/team" className="quick-action-card">
                   <Users className="quick-action-icon text-green-600" />
                   <div>
-                    <h3 className="quick-action-title">Manage Team</h3>
-                    <p className="quick-action-description">Add or edit team members</p>
+                    <h3 className="quick-action-title">View Team</h3>
+                    <p className="quick-action-description">Manage team members</p>
                   </div>
                 </Link>
                 <Link to="/billable-hours" className="quick-action-card">
