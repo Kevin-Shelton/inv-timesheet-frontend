@@ -1,6 +1,6 @@
-// COMPLETE TIMESHEET MANAGEMENT SYSTEM - LAYOUT FIXED
-// Dashboard cards and filters now properly laid out horizontally
-// Cards are smaller and in proper 3x2 grid, filters are in horizontal row
+// COMPLETE TIMESHEET MANAGEMENT SYSTEM - CARDS FIXED TO 2x3 GRID
+// Dashboard cards now properly arranged in 2 rows of 3 cards each
+// Filters remain unchanged as requested
 
 import React, { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
@@ -423,7 +423,7 @@ function LoginPage() {
   )
 }
 
-// FIXED Dashboard Component - Proper Horizontal Layout
+// FIXED Dashboard Component - 2x3 Card Grid Layout
 function Dashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState({
@@ -519,7 +519,7 @@ function Dashboard() {
         <p className="text-gray-600 mt-1">Here's what's happening with your team today.</p>
       </div>
 
-      {/* FIXED: Filters Section - Horizontal Layout */}
+      {/* Filters Section - UNCHANGED as requested */}
       <Card>
         <CardHeader>
           <CardTitle>Filters</CardTitle>
@@ -578,9 +578,9 @@ function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* FIXED: Stats Cards - Proper 3x2 Grid with Smaller Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Total Hours Card */}
+      {/* FIXED: Stats Cards - Exactly 2 rows of 3 cards each */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* Row 1: Total Hours, Billable Hours, Utilization */}
         <Card className="dashboard-stat-card">
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -595,7 +595,6 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Billable Hours Card */}
         <Card className="dashboard-stat-card">
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -611,7 +610,6 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Utilization Card */}
         <Card className="dashboard-stat-card">
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -627,7 +625,7 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Pending Approvals Card */}
+        {/* Row 2: Pending Approvals, Team Members, Revenue */}
         <Card className="dashboard-stat-card">
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -642,7 +640,6 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Team Members Card */}
         <Card className="dashboard-stat-card">
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -657,7 +654,6 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Revenue Card */}
         <Card className="dashboard-stat-card">
           <CardContent className="p-4">
             <div className="flex items-center">
