@@ -1,530 +1,434 @@
-// CampaignDataModels.jsx - Comprehensive Campaign Management Data Models
-// Phase 1: Data Models, Campaign Master Data Structure, and Executive Role Integration
+// CampaignDataModels.jsx - Data models, constants, and utilities for Campaign Management
 
-// Campaign Status Enumeration
+// Campaign Status Constants
 export const CAMPAIGN_STATUS = {
   PLANNING: 'planning',
   ACTIVE: 'active',
   ON_HOLD: 'on_hold',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled'
-}
+};
 
-// Campaign Type Enumeration
+// Campaign Type Constants
 export const CAMPAIGN_TYPE = {
-  CLIENT_PROJECT: 'client_project',
-  INTERNAL_OPERATIONS: 'internal_operations',
-  TECHNICAL_INITIATIVE: 'technical_initiative',
+  CLIENT: 'client',
+  INTERNAL: 'internal',
   MARKETING: 'marketing',
-  RESEARCH_DEVELOPMENT: 'research_development',
-  COMPLIANCE: 'compliance',
-  TRAINING: 'training'
-}
+  PRODUCT_LAUNCH: 'product_launch',
+  BRAND_AWARENESS: 'brand_awareness',
+  LEAD_GENERATION: 'lead_generation',
+  DIGITAL_MARKETING: 'digital_marketing',
+  SOCIAL_MEDIA: 'social_media',
+  EMAIL_MARKETING: 'email_marketing',
+  CONTENT_MARKETING: 'content_marketing'
+};
 
-// Campaign Priority Levels
+// Campaign Priority Constants
 export const CAMPAIGN_PRIORITY = {
   LOW: 'low',
   MEDIUM: 'medium',
   HIGH: 'high',
   CRITICAL: 'critical'
-}
+};
 
-// User Role Enumeration (Enhanced)
-export const USER_ROLES = {
-  ADMIN: 'admin',
-  EXECUTIVE: 'executive',
-  CAMPAIGN_LEAD: 'campaign_lead',
-  TEAM_MEMBER: 'team_member'
-}
+// Campaign Status Colors
+export const CAMPAIGN_STATUS_COLORS = {
+  [CAMPAIGN_STATUS.PLANNING]: '#f59e0b',
+  [CAMPAIGN_STATUS.ACTIVE]: '#10b981',
+  [CAMPAIGN_STATUS.ON_HOLD]: '#ef4444',
+  [CAMPAIGN_STATUS.COMPLETED]: '#3b82f6',
+  [CAMPAIGN_STATUS.CANCELLED]: '#6b7280'
+};
 
-// Campaign Master Data Structure
-export const CAMPAIGN_MASTER_STRUCTURE = {
-  // Basic Campaign Information
+// Priority Colors
+export const PRIORITY_COLORS = {
+  [CAMPAIGN_PRIORITY.LOW]: '#10b981',
+  [CAMPAIGN_PRIORITY.MEDIUM]: '#f59e0b',
+  [CAMPAIGN_PRIORITY.HIGH]: '#ef4444',
+  [CAMPAIGN_PRIORITY.CRITICAL]: '#dc2626'
+};
+
+// Campaign Color Scheme
+export const CAMPAIGN_COLOR_SCHEME = {
+  [CAMPAIGN_TYPE.CLIENT]: '#3b82f6',
+  [CAMPAIGN_TYPE.INTERNAL]: '#8b5cf6',
+  [CAMPAIGN_TYPE.MARKETING]: '#f59e0b',
+  [CAMPAIGN_TYPE.PRODUCT_LAUNCH]: '#10b981',
+  [CAMPAIGN_TYPE.BRAND_AWARENESS]: '#ec4899',
+  [CAMPAIGN_TYPE.LEAD_GENERATION]: '#06b6d4',
+  [CAMPAIGN_TYPE.DIGITAL_MARKETING]: '#84cc16',
+  [CAMPAIGN_TYPE.SOCIAL_MEDIA]: '#f97316',
+  [CAMPAIGN_TYPE.EMAIL_MARKETING]: '#6366f1',
+  [CAMPAIGN_TYPE.CONTENT_MARKETING]: '#14b8a6'
+};
+
+// Campaign Master Data Template
+export const CAMPAIGN_MASTER_DATA_TEMPLATE = {
   id: '',
   name: '',
+  code: '',
   description: '',
-  code: '', // Unique campaign identifier
-  
-  // Campaign Classification
-  type: CAMPAIGN_TYPE.CLIENT_PROJECT,
-  priority: CAMPAIGN_PRIORITY.MEDIUM,
+  type: CAMPAIGN_TYPE.CLIENT,
   status: CAMPAIGN_STATUS.PLANNING,
-  
-  // Timeline Information
-  start_date: null,
-  end_date: null,
-  planned_duration_weeks: 0,
-  actual_duration_weeks: 0,
-  
-  // Client and Relationship Information
+  priority: CAMPAIGN_PRIORITY.MEDIUM,
+  start_date: '',
+  end_date: '',
+  planned_hours: 0,
+  actual_hours: 0,
+  budget: 0,
+  hourly_rate: 0,
+  billing_type: 'hourly',
+  currency: 'USD',
+  is_billable: true,
+  is_active: true,
   client_name: '',
   client_contact_name: '',
   client_contact_email: '',
   client_contact_phone: '',
-  relationship_manager_id: null,
-  relationship_manager_name: '',
-  
-  // Financial Information
-  budget_total: 0,
-  budget_allocated: 0,
-  budget_spent: 0,
-  hourly_rate_standard: 0,
-  hourly_rate_overtime: 0,
-  billing_currency: 'USD',
-  
-  // Project Management
-  project_manager_id: null,
-  project_manager_name: '',
-  delivery_manager_id: null,
-  delivery_manager_name: '',
-  
-  // Campaign Hierarchy
-  parent_campaign_id: null, // For sub-campaigns
-  campaign_level: 0, // 0 = main campaign, 1 = sub-campaign, 2 = project
-  
-  // Resource Planning
-  estimated_hours_total: 0,
-  estimated_hours_billable: 0,
-  actual_hours_total: 0,
-  actual_hours_billable: 0,
-  
-  // Team Assignment Information
-  assigned_executives: [], // Array of executive user IDs
-  assigned_campaign_leaders: [], // Array of campaign leader user IDs
-  assigned_team_members: [], // Array of team member user IDs
-  
-  // Operational Details
-  location: '',
-  department: '',
-  cost_center: '',
-  billing_code: '',
-  
-  // Compliance and Documentation
-  compliance_requirements: [],
-  documentation_links: [],
-  risk_level: 'medium',
-  
-  // Metadata
-  created_by: null,
-  created_date: null,
-  last_modified_by: null,
-  last_modified_date: null,
-  
-  // Color Coding for Visual Interface
-  color_code: '#3B82F6', // Default blue
-  
-  // Sub-campaigns/Projects
-  sub_campaigns: []
-}
+  client_address: '',
+  assigned_campaign_leaders: [],
+  assigned_team_members: [],
+  assigned_executives: [],
+  task_templates: [],
+  deliverables: [],
+  milestones: [],
+  notes: '',
+  tags: [],
+  created_date: '',
+  created_by: '',
+  last_modified: '',
+  modified_by: '',
+  completion_percentage: 0,
+  risk_level: 'low',
+  dependencies: [],
+  resources_required: [],
+  success_metrics: [],
+  approval_required: false,
+  approved_by: '',
+  approval_date: '',
+  archived: false,
+  archived_date: '',
+  archived_by: ''
+};
 
-// Sub-Campaign/Project Structure
-export const SUB_CAMPAIGN_STRUCTURE = {
+// Sub Campaign Template
+export const SUB_CAMPAIGN_TEMPLATE = {
   id: '',
   parent_campaign_id: '',
   name: '',
   description: '',
-  code: '',
-  type: 'project',
-  status: CAMPAIGN_STATUS.PLANNING,
-  start_date: null,
-  end_date: null,
-  estimated_hours: 0,
-  actual_hours: 0,
+  start_date: '',
+  end_date: '',
   assigned_team_members: [],
-  assigned_campaign_leaders: [],
-  budget_allocated: 0,
-  budget_spent: 0,
-  color_code: '#10B981', // Default green for sub-campaigns
-  created_date: null,
-  last_modified_date: null
-}
+  task_templates: [],
+  budget_allocation: 0,
+  status: CAMPAIGN_STATUS.PLANNING,
+  completion_percentage: 0,
+  deliverables: [],
+  notes: ''
+};
 
-// Enhanced User Structure with Executive Role
-export const ENHANCED_USER_STRUCTURE = {
-  id: '',
-  email: '',
-  full_name: '',
-  employee_id: '',
-  role: USER_ROLES.TEAM_MEMBER,
-  
-  // Executive-specific fields
-  executive_level: null, // CEO, CTO, COO, etc.
-  executive_scope: 'organization', // 'organization', 'department', 'campaigns'
-  
-  // Campaign Assignment Information
-  assigned_campaigns: [], // Array of campaign IDs
-  campaign_roles: {}, // Object mapping campaign_id to role in that campaign
-  
-  // Utilization and Capacity
-  weekly_capacity_hours: 40,
-  current_utilization_percentage: 0,
-  campaign_allocation_percentages: {}, // campaign_id: percentage
-  
-  // Visual Indicators
-  campaign_count: 0,
-  conflict_indicators: [],
-  overallocation_warning: false,
-  
-  // Contact and Profile Information
-  department: '',
-  title: '',
-  phone: '',
-  address: '',
-  hire_date: null,
-  end_date: null,
-  
-  // Emergency Contact
-  emergency_contact_name: '',
-  emergency_contact_phone: '',
-  emergency_contact_relationship: '',
-  
-  // Employment Status
-  employment_status: 'active', // active, on_leave, terminated
-  leave_type: null,
-  leave_start_date: null,
-  leave_end_date: null,
-  
-  // Pay Information
-  pay_rate: 0,
-  overtime_rate: 0,
-  
-  // Metadata
-  created_date: null,
-  last_modified_date: null
-}
-
-// Campaign Assignment Structure
-export const CAMPAIGN_ASSIGNMENT_STRUCTURE = {
+// Task Template Structure
+export const TASK_TEMPLATE = {
   id: '',
   campaign_id: '',
-  user_id: '',
-  role_in_campaign: '', // 'executive', 'campaign_leader', 'team_member'
-  assignment_percentage: 0, // Percentage of time allocated to this campaign
-  start_date: null,
-  end_date: null,
-  billable: true,
+  name: '',
+  description: '',
+  estimated_hours: 0,
   hourly_rate: 0,
-  weekly_scheduled_hours: 0,
-  status: 'active', // active, inactive, completed
-  created_by: null,
-  created_date: null,
-  notes: ''
-}
-
-// Weekly Schedule Structure (for Campaign Leaders)
-export const WEEKLY_SCHEDULE_STRUCTURE = {
-  id: '',
-  campaign_id: '',
-  user_id: '',
-  week_start_date: null, // Monday of the week
-  week_end_date: null, // Sunday of the week
-  
-  // Daily planned hours
-  monday_hours: 0,
-  tuesday_hours: 0,
-  wednesday_hours: 0,
-  thursday_hours: 0,
-  friday_hours: 0,
-  saturday_hours: 0,
-  sunday_hours: 0,
-  
-  total_planned_hours: 0,
-  
-  // Schedule metadata
-  created_by: null, // Campaign leader who created the schedule
-  created_date: null,
-  last_modified_by: null,
-  last_modified_date: null,
-  
-  // Status and approval
-  status: 'draft', // draft, submitted, approved, rejected
-  approved_by: null,
-  approved_date: null,
-  
-  notes: ''
-}
-
-// Enhanced Timesheet Structure (Campaign-Specific)
-export const CAMPAIGN_TIMESHEET_STRUCTURE = {
-  id: '',
-  user_id: '',
-  date: null,
-  
-  // Campaign-specific time entries
-  campaign_entries: [
-    {
-      campaign_id: '',
-      campaign_name: '',
-      sub_campaign_id: null,
-      sub_campaign_name: '',
-      
-      // Time tracking
-      time_in: null,
-      break_out: null,
-      break_in: null,
-      time_out: null,
-      
-      // Hours breakdown
-      regular_hours: 0,
-      overtime_hours: 0,
-      vacation_hours: 0,
-      sick_hours: 0,
-      holiday_hours: 0,
-      
-      // Billable information
-      billable_hours: 0,
-      non_billable_hours: 0,
-      hourly_rate: 0,
-      
-      // Task and notes
-      task_description: '',
-      notes: '',
-      
-      // Status
-      status: 'draft' // draft, submitted, approved, rejected
-    }
-  ],
-  
-  // Daily totals
-  total_hours: 0,
-  total_billable_hours: 0,
-  total_regular_hours: 0,
-  total_overtime_hours: 0,
-  
-  // Approval workflow
-  submitted_date: null,
-  approved_by: null,
-  approved_date: null,
-  rejection_reason: '',
-  
-  // Metadata
-  created_date: null,
-  last_modified_date: null
-}
-
-// Color Coding System for Visual Interface
-export const CAMPAIGN_COLOR_CODES = {
-  [CAMPAIGN_TYPE.CLIENT_PROJECT]: '#3B82F6', // Blue
-  [CAMPAIGN_TYPE.INTERNAL_OPERATIONS]: '#10B981', // Green
-  [CAMPAIGN_TYPE.TECHNICAL_INITIATIVE]: '#8B5CF6', // Purple
-  [CAMPAIGN_TYPE.MARKETING]: '#F59E0B', // Amber
-  [CAMPAIGN_TYPE.RESEARCH_DEVELOPMENT]: '#EF4444', // Red
-  [CAMPAIGN_TYPE.COMPLIANCE]: '#6B7280', // Gray
-  [CAMPAIGN_TYPE.TRAINING]: '#EC4899' // Pink
-}
-
-// Status Color Codes
-export const STATUS_COLOR_CODES = {
-  [CAMPAIGN_STATUS.PLANNING]: '#6B7280', // Gray
-  [CAMPAIGN_STATUS.ACTIVE]: '#10B981', // Green
-  [CAMPAIGN_STATUS.ON_HOLD]: '#F59E0B', // Amber
-  [CAMPAIGN_STATUS.COMPLETED]: '#3B82F6', // Blue
-  [CAMPAIGN_STATUS.CANCELLED]: '#EF4444' // Red
-}
-
-// Priority Color Codes
-export const PRIORITY_COLOR_CODES = {
-  [CAMPAIGN_PRIORITY.LOW]: '#10B981', // Green
-  [CAMPAIGN_PRIORITY.MEDIUM]: '#F59E0B', // Amber
-  [CAMPAIGN_PRIORITY.HIGH]: '#EF4444', // Red
-  [CAMPAIGN_PRIORITY.CRITICAL]: '#7C2D12' // Dark red
-}
+  is_billable: true,
+  required_skills: [],
+  assigned_roles: [],
+  dependencies: [],
+  priority: CAMPAIGN_PRIORITY.MEDIUM,
+  category: '',
+  tags: [],
+  deliverable_type: '',
+  approval_required: false,
+  recurring: false,
+  recurring_frequency: '',
+  template_active: true
+};
 
 // Validation Functions
-export const validateCampaignData = (campaign) => {
-  const errors = []
-  
-  if (!campaign.name || campaign.name.trim() === '') {
-    errors.push('Campaign name is required')
+export const validateCampaignData = (campaignData) => {
+  const errors = [];
+
+  // Required field validation
+  if (!campaignData.name || campaignData.name.trim() === '') {
+    errors.push('Campaign name is required');
   }
-  
-  if (!campaign.code || campaign.code.trim() === '') {
-    errors.push('Campaign code is required')
+
+  if (!campaignData.code || campaignData.code.trim() === '') {
+    errors.push('Campaign code is required');
   }
-  
-  if (!campaign.start_date) {
-    errors.push('Start date is required')
+
+  if (!campaignData.start_date) {
+    errors.push('Start date is required');
   }
-  
-  if (!campaign.end_date) {
-    errors.push('End date is required')
+
+  if (!campaignData.end_date) {
+    errors.push('End date is required');
   }
-  
-  if (campaign.start_date && campaign.end_date && new Date(campaign.start_date) >= new Date(campaign.end_date)) {
-    errors.push('End date must be after start date')
+
+  // Date validation
+  if (campaignData.start_date && campaignData.end_date) {
+    const startDate = new Date(campaignData.start_date);
+    const endDate = new Date(campaignData.end_date);
+    
+    if (startDate >= endDate) {
+      errors.push('End date must be after start date');
+    }
   }
-  
-  if (campaign.budget_total < 0) {
-    errors.push('Budget cannot be negative')
+
+  // Budget validation
+  if (campaignData.budget < 0) {
+    errors.push('Budget cannot be negative');
   }
-  
-  if (campaign.estimated_hours_total < 0) {
-    errors.push('Estimated hours cannot be negative')
+
+  if (campaignData.hourly_rate < 0) {
+    errors.push('Hourly rate cannot be negative');
   }
+
+  if (campaignData.planned_hours < 0) {
+    errors.push('Planned hours cannot be negative');
+  }
+
+  // Email validation
+  if (campaignData.client_contact_email && campaignData.client_contact_email.trim() !== '') {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(campaignData.client_contact_email)) {
+      errors.push('Invalid email format for client contact');
+    }
+  }
+
+  // Code uniqueness (would need to check against existing campaigns in real implementation)
+  if (campaignData.code && campaignData.code.length < 3) {
+    errors.push('Campaign code must be at least 3 characters long');
+  }
+
+  return errors;
+};
+
+// Campaign Code Generation
+export const generateCampaignCode = (campaignType, customPrefix = '') => {
+  const typePrefix = {
+    [CAMPAIGN_TYPE.CLIENT]: 'CLI',
+    [CAMPAIGN_TYPE.INTERNAL]: 'INT',
+    [CAMPAIGN_TYPE.MARKETING]: 'MKT',
+    [CAMPAIGN_TYPE.PRODUCT_LAUNCH]: 'PLN',
+    [CAMPAIGN_TYPE.BRAND_AWARENESS]: 'BRD',
+    [CAMPAIGN_TYPE.LEAD_GENERATION]: 'LGN',
+    [CAMPAIGN_TYPE.DIGITAL_MARKETING]: 'DIG',
+    [CAMPAIGN_TYPE.SOCIAL_MEDIA]: 'SOC',
+    [CAMPAIGN_TYPE.EMAIL_MARKETING]: 'EML',
+    [CAMPAIGN_TYPE.CONTENT_MARKETING]: 'CNT'
+  };
+
+  const prefix = customPrefix || typePrefix[campaignType] || 'CAM';
+  const timestamp = Date.now().toString().slice(-6);
+  const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
   
-  return errors
-}
+  return `${prefix}-${timestamp}-${randomSuffix}`;
+};
+
+// Status Label Functions
+export const getCampaignStatusLabel = (status) => {
+  const labels = {
+    [CAMPAIGN_STATUS.PLANNING]: 'Planning',
+    [CAMPAIGN_STATUS.ACTIVE]: 'Active',
+    [CAMPAIGN_STATUS.ON_HOLD]: 'On Hold',
+    [CAMPAIGN_STATUS.COMPLETED]: 'Completed',
+    [CAMPAIGN_STATUS.CANCELLED]: 'Cancelled'
+  };
+  return labels[status] || 'Unknown';
+};
+
+export const getCampaignTypeLabel = (type) => {
+  const labels = {
+    [CAMPAIGN_TYPE.CLIENT]: 'Client Project',
+    [CAMPAIGN_TYPE.INTERNAL]: 'Internal Project',
+    [CAMPAIGN_TYPE.MARKETING]: 'Marketing Campaign',
+    [CAMPAIGN_TYPE.PRODUCT_LAUNCH]: 'Product Launch',
+    [CAMPAIGN_TYPE.BRAND_AWARENESS]: 'Brand Awareness',
+    [CAMPAIGN_TYPE.LEAD_GENERATION]: 'Lead Generation',
+    [CAMPAIGN_TYPE.DIGITAL_MARKETING]: 'Digital Marketing',
+    [CAMPAIGN_TYPE.SOCIAL_MEDIA]: 'Social Media',
+    [CAMPAIGN_TYPE.EMAIL_MARKETING]: 'Email Marketing',
+    [CAMPAIGN_TYPE.CONTENT_MARKETING]: 'Content Marketing'
+  };
+  return labels[type] || 'Unknown';
+};
+
+export const getPriorityLabel = (priority) => {
+  const labels = {
+    [CAMPAIGN_PRIORITY.LOW]: 'Low Priority',
+    [CAMPAIGN_PRIORITY.MEDIUM]: 'Medium Priority',
+    [CAMPAIGN_PRIORITY.HIGH]: 'High Priority',
+    [CAMPAIGN_PRIORITY.CRITICAL]: 'Critical Priority'
+  };
+  return labels[priority] || 'Unknown';
+};
+
+// Mock Data Generation
+export const generateMockCampaignData = () => {
+  return [
+    {
+      id: 'camp_1',
+      name: 'Digital Marketing Q1 2024',
+      code: 'DIG-240101-ABC',
+      description: 'Comprehensive digital marketing campaign for Q1 2024 focusing on brand awareness and lead generation.',
+      type: CAMPAIGN_TYPE.DIGITAL_MARKETING,
+      status: CAMPAIGN_STATUS.ACTIVE,
+      priority: CAMPAIGN_PRIORITY.HIGH,
+      start_date: '2024-01-01',
+      end_date: '2024-03-31',
+      planned_hours: 480,
+      actual_hours: 120,
+      budget: 50000,
+      hourly_rate: 75,
+      billing_type: 'hourly',
+      currency: 'USD',
+      is_billable: true,
+      is_active: true,
+      client_name: 'Acme Corporation',
+      client_contact_name: 'John Smith',
+      client_contact_email: 'john.smith@acme.com',
+      client_contact_phone: '+1-555-0123',
+      assigned_campaign_leaders: ['emp3'],
+      assigned_team_members: ['emp2', 'emp4'],
+      assigned_executives: ['emp1'],
+      completion_percentage: 25,
+      created_date: '2023-12-15',
+      created_by: 'emp1',
+      last_modified: '2024-01-15',
+      modified_by: 'emp3'
+    },
+    {
+      id: 'camp_2',
+      name: 'Product Launch Campaign',
+      code: 'PLN-240201-XYZ',
+      description: 'Launch campaign for new mobile application with focus on user acquisition and market penetration.',
+      type: CAMPAIGN_TYPE.PRODUCT_LAUNCH,
+      status: CAMPAIGN_STATUS.PLANNING,
+      priority: CAMPAIGN_PRIORITY.CRITICAL,
+      start_date: '2024-02-01',
+      end_date: '2024-04-30',
+      planned_hours: 600,
+      actual_hours: 0,
+      budget: 75000,
+      hourly_rate: 85,
+      billing_type: 'project',
+      currency: 'USD',
+      is_billable: true,
+      is_active: true,
+      client_name: 'TechStart Inc',
+      client_contact_name: 'Sarah Johnson',
+      client_contact_email: 'sarah@techstart.com',
+      client_contact_phone: '+1-555-0456',
+      assigned_campaign_leaders: ['emp3'],
+      assigned_team_members: ['emp2'],
+      assigned_executives: ['emp1'],
+      completion_percentage: 0,
+      created_date: '2024-01-10',
+      created_by: 'emp1',
+      last_modified: '2024-01-20',
+      modified_by: 'emp3'
+    },
+    {
+      id: 'camp_3',
+      name: 'Internal Brand Refresh',
+      code: 'INT-240115-BRD',
+      description: 'Internal project to refresh company branding and marketing materials.',
+      type: CAMPAIGN_TYPE.INTERNAL,
+      status: CAMPAIGN_STATUS.COMPLETED,
+      priority: CAMPAIGN_PRIORITY.MEDIUM,
+      start_date: '2023-11-01',
+      end_date: '2024-01-15',
+      planned_hours: 200,
+      actual_hours: 185,
+      budget: 15000,
+      hourly_rate: 65,
+      billing_type: 'fixed',
+      currency: 'USD',
+      is_billable: false,
+      is_active: true,
+      client_name: '',
+      client_contact_name: '',
+      client_contact_email: '',
+      client_contact_phone: '',
+      assigned_campaign_leaders: ['emp3'],
+      assigned_team_members: ['emp2', 'emp4'],
+      assigned_executives: ['emp1'],
+      completion_percentage: 100,
+      created_date: '2023-10-15',
+      created_by: 'emp1',
+      last_modified: '2024-01-15',
+      modified_by: 'emp3'
+    }
+  ];
+};
 
 // Utility Functions
 export const calculateCampaignProgress = (campaign) => {
-  if (!campaign.start_date || !campaign.end_date) return 0
+  if (!campaign.start_date || !campaign.end_date) return 0;
   
-  const start = new Date(campaign.start_date)
-  const end = new Date(campaign.end_date)
-  const now = new Date()
+  const startDate = new Date(campaign.start_date);
+  const endDate = new Date(campaign.end_date);
+  const currentDate = new Date();
   
-  if (now < start) return 0
-  if (now > end) return 100
+  if (currentDate < startDate) return 0;
+  if (currentDate > endDate) return 100;
   
-  const totalDuration = end.getTime() - start.getTime()
-  const elapsed = now.getTime() - start.getTime()
+  const totalDuration = endDate.getTime() - startDate.getTime();
+  const elapsedDuration = currentDate.getTime() - startDate.getTime();
   
-  return Math.round((elapsed / totalDuration) * 100)
-}
+  return Math.round((elapsedDuration / totalDuration) * 100);
+};
 
-export const calculateUserUtilization = (user, campaigns) => {
-  let totalAllocatedPercentage = 0
+export const calculateBudgetUtilization = (campaign) => {
+  if (!campaign.budget || campaign.budget === 0) return 0;
   
-  user.assigned_campaigns.forEach(campaignId => {
-    const allocation = user.campaign_allocation_percentages[campaignId] || 0
-    totalAllocatedPercentage += allocation
-  })
+  const spentAmount = (campaign.actual_hours || 0) * (campaign.hourly_rate || 0);
+  return Math.round((spentAmount / campaign.budget) * 100);
+};
+
+export const getCampaignHealthStatus = (campaign) => {
+  const progress = calculateCampaignProgress(campaign);
+  const budgetUtilization = calculateBudgetUtilization(campaign);
+  const completionPercentage = campaign.completion_percentage || 0;
   
-  return {
-    utilization_percentage: totalAllocatedPercentage,
-    is_overallocated: totalAllocatedPercentage > 100,
-    available_capacity: Math.max(0, 100 - totalAllocatedPercentage)
+  // Simple health calculation
+  if (budgetUtilization > 90 && completionPercentage < 80) {
+    return { status: 'at_risk', color: '#ef4444', label: 'At Risk' };
+  } else if (progress > completionPercentage + 20) {
+    return { status: 'behind_schedule', color: '#f59e0b', label: 'Behind Schedule' };
+  } else if (completionPercentage > progress + 10) {
+    return { status: 'ahead_of_schedule', color: '#10b981', label: 'Ahead of Schedule' };
+  } else {
+    return { status: 'on_track', color: '#3b82f6', label: 'On Track' };
   }
-}
+};
 
-export const detectScheduleConflicts = (user, weeklySchedules) => {
-  const conflicts = []
-  const weeklyTotals = {}
-  
-  weeklySchedules.forEach(schedule => {
-    const weekKey = schedule.week_start_date
-    if (!weeklyTotals[weekKey]) {
-      weeklyTotals[weekKey] = 0
-    }
-    weeklyTotals[weekKey] += schedule.total_planned_hours
-  })
-  
-  Object.entries(weeklyTotals).forEach(([week, totalHours]) => {
-    if (totalHours > user.weekly_capacity_hours) {
-      conflicts.push({
-        week: week,
-        planned_hours: totalHours,
-        capacity_hours: user.weekly_capacity_hours,
-        overallocation: totalHours - user.weekly_capacity_hours
-      })
-    }
-  })
-  
-  return conflicts
-}
-
-// Mock Data Generators for Testing
-export const generateMockCampaigns = () => {
-  return [
-    {
-      ...CAMPAIGN_MASTER_STRUCTURE,
-      id: 'camp_001',
-      name: 'Digital Transformation Initiative',
-      description: 'Comprehensive digital transformation for client operations',
-      code: 'DTI-2025',
-      type: CAMPAIGN_TYPE.CLIENT_PROJECT,
-      priority: CAMPAIGN_PRIORITY.HIGH,
-      status: CAMPAIGN_STATUS.ACTIVE,
-      start_date: '2025-01-01',
-      end_date: '2025-06-30',
-      client_name: 'TechCorp Industries',
-      relationship_manager_name: 'Sarah Johnson',
-      budget_total: 500000,
-      estimated_hours_total: 2000,
-      color_code: CAMPAIGN_COLOR_CODES[CAMPAIGN_TYPE.CLIENT_PROJECT]
-    },
-    {
-      ...CAMPAIGN_MASTER_STRUCTURE,
-      id: 'camp_002',
-      name: 'Internal IT Infrastructure Upgrade',
-      description: 'Upgrading internal systems and infrastructure',
-      code: 'ITU-2025',
-      type: CAMPAIGN_TYPE.INTERNAL_OPERATIONS,
-      priority: CAMPAIGN_PRIORITY.MEDIUM,
-      status: CAMPAIGN_STATUS.PLANNING,
-      start_date: '2025-02-01',
-      end_date: '2025-04-30',
-      client_name: 'Internal',
-      relationship_manager_name: 'Mike Chen',
-      budget_total: 150000,
-      estimated_hours_total: 800,
-      color_code: CAMPAIGN_COLOR_CODES[CAMPAIGN_TYPE.INTERNAL_OPERATIONS]
-    }
-  ]
-}
-
-export const generateMockUsers = () => {
-  return [
-    {
-      ...ENHANCED_USER_STRUCTURE,
-      id: 1,
-      email: 'admin@test.com',
-      full_name: 'Test Admin',
-      role: USER_ROLES.ADMIN,
-      assigned_campaigns: ['camp_001', 'camp_002'],
-      campaign_count: 2
-    },
-    {
-      ...ENHANCED_USER_STRUCTURE,
-      id: 4,
-      email: 'ceo@test.com',
-      full_name: 'Chief Executive Officer',
-      role: USER_ROLES.EXECUTIVE,
-      executive_level: 'CEO',
-      executive_scope: 'organization',
-      assigned_campaigns: ['camp_001', 'camp_002'],
-      campaign_count: 2
-    },
-    {
-      ...ENHANCED_USER_STRUCTURE,
-      id: 3,
-      email: 'campaign@test.com',
-      full_name: 'Campaign Leader',
-      role: USER_ROLES.CAMPAIGN_LEAD,
-      assigned_campaigns: ['camp_001'],
-      campaign_count: 1
-    },
-    {
-      ...ENHANCED_USER_STRUCTURE,
-      id: 2,
-      email: 'user@test.com',
-      full_name: 'Test User',
-      role: USER_ROLES.TEAM_MEMBER,
-      assigned_campaigns: ['camp_001'],
-      campaign_count: 1
-    }
-  ]
-}
-
+// Export all constants and functions
 export default {
   CAMPAIGN_STATUS,
   CAMPAIGN_TYPE,
   CAMPAIGN_PRIORITY,
-  USER_ROLES,
-  CAMPAIGN_MASTER_STRUCTURE,
-  SUB_CAMPAIGN_STRUCTURE,
-  ENHANCED_USER_STRUCTURE,
-  CAMPAIGN_ASSIGNMENT_STRUCTURE,
-  WEEKLY_SCHEDULE_STRUCTURE,
-  CAMPAIGN_TIMESHEET_STRUCTURE,
-  CAMPAIGN_COLOR_CODES,
-  STATUS_COLOR_CODES,
-  PRIORITY_COLOR_CODES,
+  CAMPAIGN_STATUS_COLORS,
+  PRIORITY_COLORS,
+  CAMPAIGN_COLOR_SCHEME,
+  CAMPAIGN_MASTER_DATA_TEMPLATE,
+  SUB_CAMPAIGN_TEMPLATE,
+  TASK_TEMPLATE,
   validateCampaignData,
+  generateCampaignCode,
+  getCampaignStatusLabel,
+  getCampaignTypeLabel,
+  getPriorityLabel,
+  generateMockCampaignData,
   calculateCampaignProgress,
-  calculateUserUtilization,
-  detectScheduleConflicts,
-  generateMockCampaigns,
-  generateMockUsers
-}
+  calculateBudgetUtilization,
+  getCampaignHealthStatus
+};
 
