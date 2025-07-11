@@ -14,14 +14,14 @@ import {
   Trash2, UserPlus, Shield, TrendingUp, DollarSign, Calendar, FileText,
   Home, Eye, EyeOff, Database, Upload, Target, Activity, Save, Printer,
   RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Bell, Globe, Lock, User,
-  Briefcase
+  Briefcase, Copy
 } from 'lucide-react'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, 
   AreaChart, Area 
 } from 'recharts'
-import { supabase } from './lib/supabase'
+import { supabase } from './supabase_client'
 import './App.css'
 
 // REAL SUPABASE API - REPLACES ALL MOCK DATA
@@ -2541,36 +2541,62 @@ function AppLayout() {
 }
 
 // Task-Based Timesheet Page Component
+// Weekly Timesheet Grid Component - Matches the sophisticated interface shown in the image
 function TaskBasedTimesheetPage() {
   const { user } = useAuth()
-  const [timesheets, setTimesheets] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showAddEntry, setShowAddEntry] = useState(false)
-  const [newEntry, setNewEntry] = useState({
-    date: new Date().toISOString().split('T')[0],
-    hours: '',
-    description: '',
-    campaign_id: '',
-    task_type: 'development'
-  })
+  const [currentWeek, setCurrentWeek] = useState(new Date())
+  const [timesheetEntries, setTimesheetEntries] = useState([])
   const [campaigns, setCampaigns] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [isTimerRunning, setIsTimerRunning] = useState(false)
+  const [currentTimer, setCurrentTimer] = useState({ hours: 0, minutes: 0, seconds: 0 })
+  const [activeEntry, setActiveEntry] = useState(null)
+
+  // Get week dates
+  const getWeekDates = (date) => {
+    const week = []
+    const startOfWeek = new Date(date)
+    const day = startOfWeek.getDay()
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1) // Adjust for Monday start
+    startOfWeek.setDate(diff)
+    
+    for (let i = 0; i < 5; i++) { // Monday to Friday
+      const day = new Date(startOfWeek)
+      day.setDate(startOfWeek.getDate() + i)
+      week.push(day)
+    }
+    return week
+  }
+
+  const weekDates = getWeekDates(currentWeek)
+  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 
   useEffect(() => {
-    loadTimesheets()
     loadCampaigns()
-  }, [])
+    loadTimesheetData()
+  }, [currentWeek])
 
-  const loadTimesheets = async () => {
-    try {
-      setLoading(true)
-      const data = await api.getTimesheets({ user_id: user?.id })
-      setTimesheets(data)
-    } catch (error) {
-      console.error('Error loading timesheets:', error)
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    let interval = null
+    if (isTimerRunning) {
+      interval = setInterval(() => {
+        setCurrentTimer(prev => {
+          const newSeconds = prev.seconds + 1
+          const newMinutes = prev.minutes + Math.floor(newSeconds / 60)
+          const newHours = prev.hours + Math.floor(newMinutes / 60)
+          
+          return {
+            hours: newHours,
+            minutes: newMinutes % 60,
+            seconds: newSeconds % 60
+          }
+        })
+      }, 1000)
+    } else if (!isTimerRunning && interval) {
+      clearInterval(interval)
     }
-  }
+    return () => clearInterval(interval)
+  }, [isTimerRunning])
 
   const loadCampaigns = async () => {
     try {
@@ -2581,198 +2607,393 @@ function TaskBasedTimesheetPage() {
     }
   }
 
-  const handleSubmitEntry = async (e) => {
-    e.preventDefault()
+  const loadTimesheetData = async () => {
     try {
-      const entry = await api.createTimesheet({
-        ...newEntry,
+      setLoading(true)
+      const startDate = weekDates[0].toISOString().split('T')[0]
+      const endDate = weekDates[4].toISOString().split('T')[0]
+      
+      const data = await api.getTimesheets({ 
         user_id: user?.id,
-        status: 'pending'
+        start_date: startDate,
+        end_date: endDate
       })
-      setTimesheets([entry, ...timesheets])
-      setNewEntry({
-        date: new Date().toISOString().split('T')[0],
-        hours: '',
-        description: '',
-        campaign_id: '',
-        task_type: 'development'
-      })
-      setShowAddEntry(false)
+      
+      // Transform data into grid format
+      const gridData = transformToGridFormat(data)
+      setTimesheetEntries(gridData)
     } catch (error) {
-      console.error('Error creating timesheet entry:', error)
+      console.error('Error loading timesheet data:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const getStatusBadge = (status) => {
-    const variants = {
-      pending: 'orange',
-      approved: 'green',
-      rejected: 'red'
+  const transformToGridFormat = (data) => {
+    // Group by campaign and task
+    const grouped = {}
+    
+    data.forEach(entry => {
+      const key = `${entry.campaign_id || 'no-campaign'}-${entry.description || 'no-task'}`
+      if (!grouped[key]) {
+        grouped[key] = {
+          id: key,
+          campaign_id: entry.campaign_id,
+          campaign_name: entry.campaign_name || 'Not billable',
+          task_description: entry.description || 'Select/create a task...',
+          daily_hours: {},
+          total_hours: 0
+        }
+      }
+      
+      const dayIndex = new Date(entry.date).getDay()
+      const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1 // Convert Sunday=0 to Monday=0
+      
+      if (adjustedIndex >= 0 && adjustedIndex < 5) {
+        grouped[key].daily_hours[adjustedIndex] = entry.hours || 0
+      }
+    })
+
+    // Add empty rows if needed
+    const entries = Object.values(grouped)
+    
+    // Add a few empty rows for new entries
+    for (let i = 0; i < 3; i++) {
+      entries.push({
+        id: `empty-${i}`,
+        campaign_id: '',
+        campaign_name: 'Select/create a project...',
+        task_description: 'Select/create a task...',
+        daily_hours: {},
+        total_hours: 0,
+        is_empty: true
+      })
     }
-    return <Badge variant={variants[status]}>{status}</Badge>
+
+    // Calculate totals
+    entries.forEach(entry => {
+      entry.total_hours = Object.values(entry.daily_hours).reduce((sum, hours) => sum + (hours || 0), 0)
+    })
+
+    return entries
+  }
+
+  const updateTimeEntry = async (entryId, dayIndex, hours) => {
+    try {
+      const entry = timesheetEntries.find(e => e.id === entryId)
+      if (!entry || entry.is_empty) return
+
+      const date = weekDates[dayIndex].toISOString().split('T')[0]
+      
+      // Update or create timesheet entry
+      await api.createTimesheet({
+        user_id: user?.id,
+        campaign_id: entry.campaign_id,
+        date: date,
+        hours: parseFloat(hours) || 0,
+        description: entry.task_description,
+        status: 'pending'
+      })
+
+      // Update local state
+      setTimesheetEntries(prev => prev.map(e => {
+        if (e.id === entryId) {
+          const newDailyHours = { ...e.daily_hours, [dayIndex]: parseFloat(hours) || 0 }
+          const newTotal = Object.values(newDailyHours).reduce((sum, h) => sum + (h || 0), 0)
+          return { ...e, daily_hours: newDailyHours, total_hours: newTotal }
+        }
+        return e
+      }))
+    } catch (error) {
+      console.error('Error updating time entry:', error)
+    }
+  }
+
+  const startTimer = () => {
+    setIsTimerRunning(true)
+    setCurrentTimer({ hours: 0, minutes: 0, seconds: 0 })
+  }
+
+  const stopTimer = () => {
+    setIsTimerRunning(false)
+    // Here you could automatically add the timer time to a selected entry
+  }
+
+  const formatTime = (time) => {
+    return `${time.hours.toString().padStart(2, '0')}:${time.minutes.toString().padStart(2, '0')}:${time.seconds.toString().padStart(2, '0')}`
+  }
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  const navigateWeek = (direction) => {
+    const newWeek = new Date(currentWeek)
+    newWeek.setDate(currentWeek.getDate() + (direction * 7))
+    setCurrentWeek(newWeek)
+  }
+
+  const addTimesheetRow = () => {
+    const newId = `new-${Date.now()}`
+    const newEntry = {
+      id: newId,
+      campaign_id: '',
+      campaign_name: 'Select/create a project...',
+      task_description: 'Select/create a task...',
+      daily_hours: {},
+      total_hours: 0,
+      is_empty: true
+    }
+    setTimesheetEntries(prev => [...prev, newEntry])
+  }
+
+  const copyPreviousWeek = async () => {
+    try {
+      const prevWeek = new Date(currentWeek)
+      prevWeek.setDate(currentWeek.getDate() - 7)
+      const prevWeekDates = getWeekDates(prevWeek)
+      
+      const startDate = prevWeekDates[0].toISOString().split('T')[0]
+      const endDate = prevWeekDates[4].toISOString().split('T')[0]
+      
+      const prevData = await api.getTimesheets({ 
+        user_id: user?.id,
+        start_date: startDate,
+        end_date: endDate
+      })
+      
+      // Copy entries to current week
+      for (const entry of prevData) {
+        const originalDate = new Date(entry.date)
+        const dayOfWeek = originalDate.getDay()
+        const adjustedIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+        
+        if (adjustedIndex >= 0 && adjustedIndex < 5) {
+          const newDate = weekDates[adjustedIndex].toISOString().split('T')[0]
+          
+          await api.createTimesheet({
+            user_id: user?.id,
+            campaign_id: entry.campaign_id,
+            date: newDate,
+            hours: entry.hours,
+            description: entry.description,
+            status: 'pending'
+          })
+        }
+      }
+      
+      // Reload data
+      loadTimesheetData()
+    } catch (error) {
+      console.error('Error copying previous week:', error)
+    }
+  }
+
+  const calculateDayTotal = (dayIndex) => {
+    return timesheetEntries.reduce((sum, entry) => sum + (entry.daily_hours[dayIndex] || 0), 0)
+  }
+
+  const calculateWeekTotal = () => {
+    return timesheetEntries.reduce((sum, entry) => sum + entry.total_hours, 0)
+  }
+
+  if (loading) {
+    return (
+      <div className="page-content">
+        <div className="flex items-center justify-center py-8">
+          <div className="loading-spinner"></div>
+          <span className="ml-2">Loading timesheet...</span>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="page-content space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Timesheets</h1>
-          <p className="text-gray-600 mt-1">Submit and manage your timesheets</p>
+          <h1 className="text-2xl font-bold text-gray-900">Weekly timesheet</h1>
         </div>
-        <Button onClick={() => setShowAddEntry(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Entry
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>My Timesheet Entries</CardTitle>
-          <CardDescription>Your submitted timesheet entries</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="loading-spinner"></div>
-              <span className="ml-2">Loading timesheets...</span>
-            </div>
-          ) : timesheets.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No timesheet entries found</p>
-              <Button onClick={() => setShowAddEntry(true)} className="mt-4">
-                Add Your First Entry
-              </Button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Date</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Hours</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Description</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Campaign</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {timesheets.map((entry) => (
-                    <tr key={entry.id} className="border-b border-gray-100 hover-bg-gray-50">
-                      <td className="py-3 px-4">{new Date(entry.date).toLocaleDateString()}</td>
-                      <td className="py-3 px-4">{entry.hours}h</td>
-                      <td className="py-3 px-4">{entry.description}</td>
-                      <td className="py-3 px-4">{entry.campaign_name || 'N/A'}</td>
-                      <td className="py-3 px-4">{getStatusBadge(entry.status)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {showAddEntry && (
-        <div className="modal-overlay" onClick={() => setShowAddEntry(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Add Timesheet Entry</h3>
-                <button
-                  onClick={() => setShowAddEntry(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <form onSubmit={handleSubmitEntry} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="date">Date</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={newEntry.date}
-                      onChange={(e) => setNewEntry({...newEntry, date: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="hours">Hours</Label>
-                    <Input
-                      id="hours"
-                      type="number"
-                      step="0.25"
-                      value={newEntry.hours}
-                      onChange={(e) => setNewEntry({...newEntry, hours: e.target.value})}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="campaign">Campaign</Label>
-                  <Select
-                    value={newEntry.campaign_id}
-                    onChange={(e) => setNewEntry({...newEntry, campaign_id: e.target.value})}
-                  >
-                    <option value="">Select Campaign</option>
-                    {campaigns.map(campaign => (
-                      <option key={campaign.id} value={campaign.id}>{campaign.name}</option>
-                    ))}
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="task_type">Task Type</Label>
-                  <Select
-                    value={newEntry.task_type}
-                    onChange={(e) => setNewEntry({...newEntry, task_type: e.target.value})}
-                  >
-                    <option value="development">Development</option>
-                    <option value="design">Design</option>
-                    <option value="testing">Testing</option>
-                    <option value="meeting">Meeting</option>
-                    <option value="research">Research</option>
-                    <option value="documentation">Documentation</option>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Input
-                    id="description"
-                    value={newEntry.description}
-                    onChange={(e) => setNewEntry({...newEntry, description: e.target.value})}
-                    placeholder="Describe what you worked on..."
-                    required
-                  />
-                </div>
-                
-                <div className="flex justify-end space-x-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowAddEntry(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    Submit Entry
-                  </Button>
-                </div>
-              </form>
-            </div>
+        <div className="flex items-center space-x-4">
+          {/* Timer */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={stopTimer}
+              disabled={!isTimerRunning}
+              className="px-3 py-1 bg-red-500 text-white rounded text-sm disabled:opacity-50"
+            >
+              Stop
+            </button>
+            <button
+              onClick={startTimer}
+              disabled={isTimerRunning}
+              className="px-3 py-1 bg-green-500 text-white rounded text-sm disabled:opacity-50"
+            >
+              Start new
+            </button>
+            <span className="text-lg font-mono text-green-600">
+              {formatTime(currentTimer)}
+            </span>
+            <button className="px-3 py-1 bg-blue-500 text-white rounded text-sm">
+              timesheet...
+            </button>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Week Navigation */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => navigateWeek(-1)}
+            className="p-2 hover:bg-gray-100 rounded"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <span className="text-lg font-medium">
+            This week, {formatDate(weekDates[0])} - {formatDate(weekDates[4])} {weekDates[0].getFullYear()}
+          </span>
+          <button
+            onClick={() => navigateWeek(1)}
+            className="p-2 hover:bg-gray-100 rounded"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex items-center space-x-2">
+          <User className="w-5 h-5" />
+          <span>{user?.full_name} (me)</span>
+        </div>
+      </div>
+
+      {/* Timesheet Grid */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="text-left py-3 px-4 font-medium text-gray-900 w-64">CAMPAIGN</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 w-64">Task</th>
+                {weekDays.map((day, index) => (
+                  <th key={day} className="text-center py-3 px-4 font-medium text-gray-900 w-24">
+                    <div>{day}, {formatDate(weekDates[index]).split(' ')[1]}</div>
+                    <div className="text-lg font-bold">{formatDate(weekDates[index]).split(' ')[0]}</div>
+                  </th>
+                ))}
+                <th className="text-center py-3 px-4 font-medium text-gray-900 w-24">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {timesheetEntries.map((entry, entryIndex) => (
+                <tr key={entry.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="py-2 px-4">
+                    {entry.is_empty ? (
+                      <select
+                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                        value={entry.campaign_id}
+                        onChange={(e) => {
+                          const selectedCampaign = campaigns.find(c => c.id === e.target.value)
+                          setTimesheetEntries(prev => prev.map(e => 
+                            e.id === entry.id 
+                              ? { ...e, campaign_id: e.target.value, campaign_name: selectedCampaign?.name || 'Select/create a project...', is_empty: false }
+                              : e
+                          ))
+                        }}
+                      >
+                        <option value="">Select/create a project...</option>
+                        {campaigns.map(campaign => (
+                          <option key={campaign.id} value={campaign.id}>{campaign.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-sm">{entry.campaign_name}</span>
+                    )}
+                  </td>
+                  <td className="py-2 px-4">
+                    {entry.is_empty ? (
+                      <input
+                        type="text"
+                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                        placeholder="Select/create a task..."
+                        value={entry.task_description === 'Select/create a task...' ? '' : entry.task_description}
+                        onChange={(e) => {
+                          setTimesheetEntries(prev => prev.map(e => 
+                            e.id === entry.id 
+                              ? { ...e, task_description: e.target.value || 'Select/create a task...', is_empty: false }
+                              : e
+                          ))
+                        }}
+                      />
+                    ) : (
+                      <span className="text-sm">{entry.task_description}</span>
+                    )}
+                  </td>
+                  {weekDays.map((day, dayIndex) => (
+                    <td key={day} className="py-2 px-4 text-center">
+                      <input
+                        type="text"
+                        className="w-16 p-1 text-center border border-gray-300 rounded text-sm"
+                        placeholder="hh:mm"
+                        value={entry.daily_hours[dayIndex] ? `${Math.floor(entry.daily_hours[dayIndex])}:${String(Math.round((entry.daily_hours[dayIndex] % 1) * 60)).padStart(2, '0')}` : ''}
+                        onChange={(e) => {
+                          const timeStr = e.target.value
+                          const [hours, minutes] = timeStr.split(':').map(n => parseInt(n) || 0)
+                          const totalHours = hours + (minutes / 60)
+                          updateTimeEntry(entry.id, dayIndex, totalHours)
+                        }}
+                      />
+                    </td>
+                  ))}
+                  <td className="py-2 px-4 text-center font-medium">
+                    {entry.total_hours > 0 ? `${Math.floor(entry.total_hours)}:${String(Math.round((entry.total_hours % 1) * 60)).padStart(2, '0')}` : '0:00'}
+                  </td>
+                </tr>
+              ))}
+              
+              {/* Totals Row */}
+              <tr className="bg-gray-50 border-t-2 border-gray-300 font-medium">
+                <td className="py-3 px-4" colSpan="2"></td>
+                {weekDays.map((day, dayIndex) => (
+                  <td key={day} className="py-3 px-4 text-center">
+                    {(() => {
+                      const total = calculateDayTotal(dayIndex)
+                      return total > 0 ? `${Math.floor(total)}:${String(Math.round((total % 1) * 60)).padStart(2, '0')}` : '0:00'
+                    })()}
+                  </td>
+                ))}
+                <td className="py-3 px-4 text-center">
+                  {(() => {
+                    const total = calculateWeekTotal()
+                    return total > 0 ? `${Math.floor(total)}:${String(Math.round((total % 1) * 60)).padStart(2, '0')}` : '0:00'
+                  })()}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex items-center space-x-4">
+        <button
+          onClick={addTimesheetRow}
+          className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add timesheet row</span>
+        </button>
+        <button
+          onClick={copyPreviousWeek}
+          className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
+        >
+          <Copy className="w-4 h-4" />
+          <span>Copy previous week</span>
+        </button>
+      </div>
     </div>
   )
 }
-
-// Campaign Management Component (Simplified for inclusion)
 function CampaignManagement({ user, api, supabase }) {
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
