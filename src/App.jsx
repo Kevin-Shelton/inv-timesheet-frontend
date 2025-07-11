@@ -21,8 +21,24 @@ import {
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, 
   AreaChart, Area 
 } from 'recharts'
-import { supabase } from './supabase_client'
+import { createClient } from '@supabase/supabase-js'
 import './App.css'
+
+// INLINE SUPABASE CONFIGURATION - NO EXTERNAL IMPORTS NEEDED
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables')
+}
+
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+})
 
 // REAL SUPABASE API - REPLACES ALL MOCK DATA
 const api = {
