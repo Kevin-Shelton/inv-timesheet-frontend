@@ -395,7 +395,6 @@ const api = {
           email: userData.email,
           full_name: userData.full_name,
           role: userData.role,
-          department: userData.department,
           pay_rate_per_hour: userData.pay_rate_per_hour,
           hire_date: userData.hire_date,
           phone: userData.phone,
@@ -420,7 +419,6 @@ const api = {
           email: userData.email,
           full_name: userData.full_name,
           role: userData.role,
-          department: userData.department,
           pay_rate_per_hour: userData.pay_rate_per_hour,
           hire_date: userData.hire_date,
           phone: userData.phone,
@@ -1137,7 +1135,6 @@ function TeamPage() {
     full_name: '',
     email: '',
     role: 'team_member',
-    department: '',
     pay_rate_per_hour: '',
     hire_date: '',
     phone: ''
@@ -1169,7 +1166,6 @@ function TeamPage() {
         full_name: '',
         email: '',
         role: 'team_member',
-        department: '',
         pay_rate_per_hour: '',
         hire_date: '',
         phone: ''
@@ -1269,7 +1265,6 @@ function TeamPage() {
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Name</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Email</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Role</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Department</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Pay Rate</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
@@ -1281,7 +1276,6 @@ function TeamPage() {
                       <td className="py-3 px-4">{user.full_name}</td>
                       <td className="py-3 px-4">{user.email}</td>
                       <td className="py-3 px-4">{getRoleBadge(user.role)}</td>
-                      <td className="py-3 px-4">{user.department || 'N/A'}</td>
                       <td className="py-3 px-4">${user.pay_rate_per_hour || 0}/hr</td>
                       <td className="py-3 px-4">
                         <Badge variant={user.is_active ? 'green' : 'red'}>
@@ -1393,14 +1387,6 @@ function TeamPage() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="department">Department</Label>
-                    <Input
-                      id="department"
-                      value={newUser.department}
-                      onChange={(e) => setNewUser({...newUser, department: e.target.value})}
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="hire_date">Hire Date</Label>
                     <Input
                       id="hire_date"
@@ -1409,15 +1395,14 @@ function TeamPage() {
                       onChange={(e) => setNewUser({...newUser, hire_date: e.target.value})}
                     />
                   </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={newUser.phone}
-                    onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
-                  />
+                  <div>
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      value={newUser.phone}
+                      onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
+                    />
+                  </div>
                 </div>
                 
                 <div className="flex justify-end space-x-3 pt-4">
@@ -2456,7 +2441,7 @@ function AppLayout() {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home, roles: ['admin', 'campaign_lead', 'team_member'] },
     { name: 'Timesheets', href: '/timesheets', icon: Clock, roles: ['admin', 'campaign_lead', 'team_member'] },
-    { name: 'Team', href: '/team', icon: Users, roles: ['admin', 'campaign_lead'] },
+    { name: 'Team Members', href: '/team', icon: Users, roles: ['admin', 'campaign_lead'] },
     { name: 'Campaigns', href: '/campaigns', icon: Briefcase, roles: ['admin', 'campaign_lead'] },
     { name: 'Analytics', href: '/analytics', icon: BarChart3, roles: ['admin', 'campaign_lead'] },
     { name: 'Reports', href: '/reports', icon: FileText, roles: ['admin', 'campaign_lead'] },
@@ -3237,6 +3222,9 @@ function CampaignManagement({ user, api, supabase }) {
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingCampaign, setEditingCampaign] = useState(null)
+  const [actionLoading, setActionLoading] = useState(false)
   const [newCampaign, setNewCampaign] = useState({
     name: '',
     code: '',
@@ -3286,6 +3274,42 @@ function CampaignManagement({ user, api, supabase }) {
       setShowCreateModal(false)
     } catch (error) {
       console.error('Error creating campaign:', error)
+    }
+  }
+
+  const handleEditCampaign = (campaign) => {
+    setEditingCampaign(campaign)
+    setShowEditModal(true)
+  }
+
+  const handleUpdateCampaign = async (e) => {
+    e.preventDefault()
+    try {
+      setActionLoading(true)
+      await api.updateCampaign(editingCampaign.id, editingCampaign)
+      setCampaigns(campaigns.map(c => 
+        c.id === editingCampaign.id ? editingCampaign : c
+      ))
+      setEditingCampaign(null)
+      setShowEditModal(false)
+    } catch (error) {
+      console.error('Error updating campaign:', error)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDeleteCampaign = async (campaignId) => {
+    if (window.confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
+      try {
+        setActionLoading(true)
+        await api.deleteCampaign(campaignId)
+        setCampaigns(campaigns.filter(c => c.id !== campaignId))
+      } catch (error) {
+        console.error('Error deleting campaign:', error)
+      } finally {
+        setActionLoading(false)
+      }
     }
   }
 
@@ -3343,6 +3367,7 @@ function CampaignManagement({ user, api, supabase }) {
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Budget</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Rate</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3354,6 +3379,24 @@ function CampaignManagement({ user, api, supabase }) {
                       <td className="py-3 px-4">{getStatusBadge(campaign.status)}</td>
                       <td className="py-3 px-4">${campaign.budget?.toLocaleString() || 'N/A'}</td>
                       <td className="py-3 px-4">${campaign.hourly_rate || 'N/A'}/hr</td>
+                      <td className="py-3 px-4">
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditCampaign(campaign)}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteCampaign(campaign.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -3465,6 +3508,117 @@ function CampaignManagement({ user, api, supabase }) {
                   </Button>
                   <Button type="submit">
                     Create Campaign
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Campaign Modal */}
+      {showEditModal && editingCampaign && (
+        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Edit Campaign</h3>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleUpdateCampaign} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit_name">Campaign Name</Label>
+                    <Input
+                      id="edit_name"
+                      value={editingCampaign.name}
+                      onChange={(e) => setEditingCampaign({...editingCampaign, name: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit_code">Campaign Code</Label>
+                    <Input
+                      id="edit_code"
+                      value={editingCampaign.code}
+                      onChange={(e) => setEditingCampaign({...editingCampaign, code: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit_client_name">Client Name</Label>
+                    <Input
+                      id="edit_client_name"
+                      value={editingCampaign.client_name}
+                      onChange={(e) => setEditingCampaign({...editingCampaign, client_name: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit_status">Status</Label>
+                    <Select
+                      value={editingCampaign.status}
+                      onChange={(e) => setEditingCampaign({...editingCampaign, status: e.target.value})}
+                    >
+                      <option value="planning">Planning</option>
+                      <option value="active">Active</option>
+                      <option value="paused">Paused</option>
+                      <option value="completed">Completed</option>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit_budget">Budget ($)</Label>
+                    <Input
+                      id="edit_budget"
+                      type="number"
+                      value={editingCampaign.budget}
+                      onChange={(e) => setEditingCampaign({...editingCampaign, budget: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit_hourly_rate">Hourly Rate ($)</Label>
+                    <Input
+                      id="edit_hourly_rate"
+                      type="number"
+                      step="0.01"
+                      value={editingCampaign.hourly_rate}
+                      onChange={(e) => setEditingCampaign({...editingCampaign, hourly_rate: e.target.value})}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit_description">Description</Label>
+                  <Input
+                    id="edit_description"
+                    value={editingCampaign.description || ''}
+                    onChange={(e) => setEditingCampaign({...editingCampaign, description: e.target.value})}
+                    placeholder="Campaign description..."
+                  />
+                </div>
+                
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowEditModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={actionLoading}>
+                    {actionLoading ? 'Updating...' : 'Update Campaign'}
                   </Button>
                 </div>
               </form>
