@@ -21,7 +21,7 @@ import {
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, 
   AreaChart, Area 
 } from 'recharts'
-import { supabase } from './lib/supabase'
+import { supabase } from './supabase_client'
 import './App.css'
 
 // REAL SUPABASE API - REPLACES ALL MOCK DATA
