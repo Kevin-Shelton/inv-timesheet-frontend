@@ -26,7 +26,7 @@ import CampaignManagement from './components/CampaignManagement'
 import { supabase } from './lib/supabase'
 import './App.css'
 
-// Enhanced Mock API with all capabilities including deactivate/activate and campaign management
+// Enhanced Mock API with all capabilities_including deactivate/activate and campaign management
 const api = {
   login: async (email, password) => {
     if (email === 'admin@test.com' && password === 'password123') {
