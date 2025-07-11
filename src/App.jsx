@@ -21,8 +21,6 @@ import {
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, 
   AreaChart, Area 
 } from 'recharts'
-import TaskBasedTimesheetPage from './components/TaskBasedTimesheetPage'
-import CampaignManagement from './components/CampaignManagement'
 import { supabase } from './lib/supabase'
 import './App.css'
 
