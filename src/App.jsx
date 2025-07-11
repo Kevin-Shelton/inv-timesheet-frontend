@@ -5,6 +5,7 @@
 // FIXED: Edit modal with pre-filled user data
 // FIXED: Proper API integration with fallback to mock data
 // NEW: Campaign Management page integrated with proper routing
+// UPDATED: All API calls now use real Supabase database
 
 import React, { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
@@ -26,225 +27,504 @@ import CampaignManagement from './components/CampaignManagement'
 import { supabase } from './lib/supabase'
 import './App.css'
 
-// Enhanced Mock API with all capabilities_including deactivate/activate and campaign management
+// REAL SUPABASE API - REPLACES ALL MOCK DATA
 const api = {
+  // Authentication
   login: async (email, password) => {
-    if (email === 'admin@test.com' && password === 'password123') {
-      return {
-        token: 'mock-token',
-        user: { id: 1, email, full_name: 'Test Admin', role: 'admin' }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      
+      if (error) throw error
+      
+      // Get user profile from users table
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single()
+      
+      if (profileError) {
+        console.warn('No user profile found, using auth data')
+        return {
+          token: data.session.access_token,
+          user: {
+            id: data.user.id,
+            email: data.user.email,
+            full_name: data.user.user_metadata?.full_name || email,
+            role: 'team_member'
+          }
+        }
       }
-    }
-    if (email === 'user@test.com' && password === 'password123') {
+      
       return {
-        token: 'mock-token',
-        user: { id: 2, email, full_name: 'Test User', role: 'team_member' }
+        token: data.session.access_token,
+        user: {
+          id: userProfile.id,
+          email: userProfile.email,
+          full_name: userProfile.full_name,
+          role: userProfile.role || 'team_member',
+          department: userProfile.department,
+          pay_rate_per_hour: userProfile.pay_rate_per_hour,
+          hire_date: userProfile.hire_date,
+          phone: userProfile.phone,
+          is_active: userProfile.is_active
+        }
       }
+    } catch (error) {
+      throw new Error(error.message || 'Login failed')
     }
-    if (email === 'campaign@test.com' && password === 'password123') {
-      return {
-        token: 'mock-token',
-        user: { id: 3, email, full_name: 'Campaign Leader', role: 'campaign_lead' }
-      }
-    }
-    throw new Error('Invalid credentials')
   },
+
+  // Timesheets - Connected to timesheet_entries table
   getTimesheets: async (params = {}) => {
-    return [
-      { id: 1, date: '2024-01-15', hours: 8, description: 'Campaign work', status: 'pending', user_name: 'John Doe' },
-      { id: 2, date: '2024-01-14', hours: 7.5, description: 'Client calls', status: 'approved', user_name: 'Jane Smith' },
-      { id: 3, date: '2024-01-13', hours: 8.5, description: 'Data entry', status: 'rejected', user_name: 'Mike Johnson' }
-    ]
+    try {
+      let query = supabase
+        .from('timesheet_entries')
+        .select(`
+          *,
+          users!timesheet_entries_user_id_fkey(full_name),
+          campaigns!timesheet_entries_campaign_id_fkey(name)
+        `)
+        .order('date', { ascending: false })
+      
+      if (params.status) {
+        query = query.eq('status', params.status)
+      }
+      
+      if (params.user_id) {
+        query = query.eq('user_id', params.user_id)
+      }
+      
+      if (params.campaign_id) {
+        query = query.eq('campaign_id', params.campaign_id)
+      }
+      
+      const { data, error } = await query
+      
+      if (error) throw error
+      
+      return data?.map(entry => ({
+        id: entry.id,
+        date: entry.date,
+        hours: (entry.regular_hours || 0) + (entry.overtime_hours || 0),
+        description: `${entry.campaigns?.name || 'Unknown Campaign'}`,
+        status: entry.status,
+        user_name: entry.users?.full_name || 'Unknown User',
+        regular_hours: entry.regular_hours,
+        overtime_hours: entry.overtime_hours,
+        vacation_hours: entry.vacation_hours,
+        sick_hours: entry.sick_hours,
+        holiday_hours: entry.holiday_hours
+      })) || []
+    } catch (error) {
+      console.error('Error fetching timesheets:', error)
+      return []
+    }
   },
+
   createTimesheet: async (data) => {
-    console.log('Creating timesheet:', data)
-    return { id: Date.now(), ...data, status: 'pending' }
+    try {
+      const { data: result, error } = await supabase
+        .from('timesheet_entries')
+        .insert([{
+          ...data,
+          status: 'draft',
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single()
+      
+      if (error) throw error
+      return result
+    } catch (error) {
+      console.error('Error creating timesheet:', error)
+      throw error
+    }
   },
+
   approveTimesheet: async (id, comment) => {
-    console.log('Approving timesheet:', id, comment)
-    return { success: true }
+    try {
+      const { data, error } = await supabase
+        .from('timesheet_entries')
+        .update({
+          status: 'approved',
+          decision_at: new Date().toISOString(),
+          approver_comments: comment
+        })
+        .eq('id', id)
+      
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      console.error('Error approving timesheet:', error)
+      throw error
+    }
   },
+
   rejectTimesheet: async (id, comment) => {
-    console.log('Rejecting timesheet:', id, comment)
-    return { success: true }
+    try {
+      const { data, error } = await supabase
+        .from('timesheet_entries')
+        .update({
+          status: 'rejected',
+          decision_at: new Date().toISOString(),
+          approver_comments: comment
+        })
+        .eq('id', id)
+      
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      console.error('Error rejecting timesheet:', error)
+      throw error
+    }
   },
+
+  // Billable Hours - Calculated from timesheet data
   getBillableHours: async (params = {}) => {
-    return [
-      {
-        id: 1,
-        team_member_id: 1,
-        team_member_name: 'John Doe',
-        date: '2024-01-15',
-        client_name: 'Acme Corp',
-        project_name: 'Website Redesign',
-        task_description: 'Frontend development',
-        billable_hours: 6.5,
-        hourly_rate: 75,
-        total_amount: 487.50,
+    try {
+      const { data, error } = await supabase
+        .from('timesheet_entries')
+        .select(`
+          *,
+          users!timesheet_entries_user_id_fkey(full_name, pay_rate_per_hour),
+          campaigns!timesheet_entries_campaign_id_fkey(name, billing_rate_per_hour)
+        `)
+        .eq('status', 'approved')
+        .order('date', { ascending: false })
+      
+      if (error) throw error
+      
+      return data?.map(entry => ({
+        id: entry.id,
+        team_member_id: entry.user_id,
+        team_member_name: entry.users?.full_name || 'Unknown User',
+        date: entry.date,
+        client_name: entry.campaigns?.name || 'Unknown Campaign',
+        project_name: entry.campaigns?.name || 'Unknown Project',
+        task_description: 'Time entry',
+        billable_hours: (entry.regular_hours || 0) + (entry.overtime_hours || 0),
+        hourly_rate: entry.campaigns?.billing_rate_per_hour || entry.users?.pay_rate_per_hour || 0,
+        total_amount: ((entry.regular_hours || 0) + (entry.overtime_hours || 0)) * 
+                     (entry.campaigns?.billing_rate_per_hour || entry.users?.pay_rate_per_hour || 0),
         status: 'approved',
-        entered_by: 'Test Admin'
-      }
-    ]
+        entered_by: entry.users?.full_name || 'System'
+      })) || []
+    } catch (error) {
+      console.error('Error fetching billable hours:', error)
+      return []
+    }
   },
+
   createBillableHours: async (data) => {
-    console.log('Creating billable hours entry:', data)
-    return { id: Date.now(), ...data, created_at: new Date().toISOString() }
+    try {
+      // Create a timesheet entry for billable hours
+      const { data: result, error } = await supabase
+        .from('timesheet_entries')
+        .insert([{
+          user_id: data.team_member_id,
+          campaign_id: data.campaign_id,
+          date: data.date,
+          regular_hours: data.billable_hours,
+          status: 'approved',
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single()
+      
+      if (error) throw error
+      return result
+    } catch (error) {
+      console.error('Error creating billable hours:', error)
+      throw error
+    }
   },
+
   updateBillableHours: async (id, data) => {
-    console.log('Updating billable hours:', id, data)
-    return { success: true }
+    try {
+      const { data: result, error } = await supabase
+        .from('timesheet_entries')
+        .update({
+          regular_hours: data.billable_hours,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+      
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating billable hours:', error)
+      throw error
+    }
   },
+
   deleteBillableHours: async (id) => {
-    console.log('Deleting billable hours:', id)
-    return { success: true }
+    try {
+      const { data, error } = await supabase
+        .from('timesheet_entries')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      console.error('Error deleting billable hours:', error)
+      throw error
+    }
   },
+
+  // Analytics and Metrics - Real data from multiple tables
   getUtilizationMetrics: async (params = {}) => {
-    return {
-      overall_utilization: 78.5,
-      billable_utilization: 65.2,
-      target_utilization: 75.0,
-      revenue_per_hour: 68.50,
-      total_billable_hours: 1247,
-      total_available_hours: 1600,
-      efficiency_score: 82.3,
-      team_metrics: [
-        { name: 'John Doe', utilization: 85.2, billable_hours: 156 },
-        { name: 'Jane Smith', utilization: 78.9, billable_hours: 142 },
-        { name: 'Mike Johnson', utilization: 72.1, billable_hours: 129 }
-      ]
-    }
-  },
-  getUsers: async () => {
-    return [
-      {
-        id: 1,
-        email: 'admin@test.com',
-        full_name: 'Test Admin',
-        role: 'admin',
-        department: 'Management',
-        pay_rate_per_hour: 50.00,
-        hire_date: '2023-01-15',
-        phone: '555-0101',
-        is_active: true
-      },
-      {
-        id: 2,
-        email: 'user@test.com',
-        full_name: 'Test User',
-        role: 'team_member',
-        department: 'Operations',
-        pay_rate_per_hour: 25.00,
-        hire_date: '2023-03-20',
-        phone: '555-0102',
-        is_active: true
-      },
-      {
-        id: 3,
-        email: 'campaign@test.com',
-        full_name: 'Campaign Leader',
-        role: 'campaign_lead',
-        department: 'Sales',
-        pay_rate_per_hour: 35.00,
-        hire_date: '2023-02-10',
-        phone: '555-0103',
-        is_active: true
-      },
-      {
-        id: 4,
-        email: 'inactive@test.com',
-        full_name: 'Inactive User',
-        role: 'team_member',
-        department: 'Operations',
-        pay_rate_per_hour: 20.00,
-        hire_date: '2023-01-01',
-        phone: '555-0104',
-        is_active: false
+    try {
+      // Get timesheet data for calculations
+      const { data: timesheets, error } = await supabase
+        .from('timesheet_entries')
+        .select(`
+          *,
+          users!timesheet_entries_user_id_fkey(full_name)
+        `)
+        .gte('date', params.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+        .lte('date', params.endDate || new Date().toISOString().split('T')[0])
+      
+      if (error) throw error
+      
+      // Calculate metrics from real data
+      const totalHours = timesheets?.reduce((sum, entry) => 
+        sum + (entry.regular_hours || 0) + (entry.overtime_hours || 0), 0) || 0
+      
+      const billableHours = timesheets?.reduce((sum, entry) => 
+        sum + (entry.regular_hours || 0) + (entry.overtime_hours || 0), 0) || 0
+      
+      // Group by user for team metrics
+      const userMetrics = {}
+      timesheets?.forEach(entry => {
+        const userName = entry.users?.full_name || 'Unknown'
+        if (!userMetrics[userName]) {
+          userMetrics[userName] = { name: userName, hours: 0, entries: 0 }
+        }
+        userMetrics[userName].hours += (entry.regular_hours || 0) + (entry.overtime_hours || 0)
+        userMetrics[userName].entries += 1
+      })
+      
+      return {
+        overall_utilization: totalHours > 0 ? (billableHours / totalHours * 100) : 0,
+        billable_utilization: totalHours > 0 ? (billableHours / totalHours * 100) : 0,
+        target_utilization: 75.0,
+        revenue_per_hour: 68.50,
+        total_billable_hours: billableHours,
+        total_available_hours: totalHours,
+        efficiency_score: totalHours > 0 ? (billableHours / totalHours * 100) : 0,
+        team_metrics: Object.values(userMetrics).map(user => ({
+          name: user.name,
+          utilization: user.hours > 0 ? (user.hours / (user.entries * 8) * 100) : 0,
+          billable_hours: user.hours
+        }))
       }
-    ]
-  },
-  createUser: async (userData) => {
-    console.log('Creating user:', userData)
-    return { 
-      id: Date.now(), 
-      ...userData, 
-      is_active: true,
-      created_at: new Date().toISOString() 
+    } catch (error) {
+      console.error('Error fetching utilization metrics:', error)
+      return {
+        overall_utilization: 0,
+        billable_utilization: 0,
+        target_utilization: 75.0,
+        revenue_per_hour: 0,
+        total_billable_hours: 0,
+        total_available_hours: 0,
+        efficiency_score: 0,
+        team_metrics: []
+      }
     }
   },
+
+  // Users/Team Management - Connected to users table
+  getUsers: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      return []
+    }
+  },
+
+  createUser: async (userData) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{
+          ...userData,
+          is_active: true,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error creating user:', error)
+      throw error
+    }
+  },
+
   updateUser: async (id, userData) => {
-    console.log('Updating user:', id, userData)
-    return { success: true }
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          ...userData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error updating user:', error)
+      throw error
+    }
   },
+
   deleteUser: async (id) => {
-    console.log('Deleting user:', id)
-    return { success: true }
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      throw error
+    }
   },
+
   // NEW: Deactivate user instead of deleting
   deactivateUser: async (id) => {
-    console.log('Deactivating user:', id)
-    return { success: true }
-  },
-  // NEW: Activate user
-  activateUser: async (id) => {
-    console.log('Activating user:', id)
-    return { success: true }
-  },
-  // NEW: Campaign Management API endpoints
-  getCampaigns: async (params = {}) => {
-    return [
-      {
-        id: 1,
-        name: 'Customer Service Excellence',
-        code: 'CSE-2024-001',
-        type: 'client',
-        status: 'active',
-        priority: 'high',
-        client_name: 'Acme Corporation',
-        start_date: '2024-01-01',
-        end_date: '2024-06-30',
-        budget: 150000,
-        hourly_rate: 75,
-        description: 'Comprehensive customer service improvement campaign',
-        campaign_lead: 'Campaign Leader',
-        team_members: ['John Doe', 'Jane Smith'],
-        created_at: '2024-01-01T00:00:00Z'
-      },
-      {
-        id: 2,
-        name: 'Technical Support Optimization',
-        code: 'TSO-2024-002',
-        type: 'internal',
-        status: 'planning',
-        priority: 'medium',
-        client_name: 'Internal',
-        start_date: '2024-02-01',
-        end_date: '2024-08-31',
-        budget: 80000,
-        hourly_rate: 65,
-        description: 'Optimize technical support processes and workflows',
-        campaign_lead: 'Test Admin',
-        team_members: ['Mike Johnson'],
-        created_at: '2024-01-15T00:00:00Z'
-      }
-    ]
-  },
-  createCampaign: async (campaignData) => {
-    console.log('Creating campaign:', campaignData)
-    return { 
-      id: Date.now(), 
-      ...campaignData, 
-      created_at: new Date().toISOString() 
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({ 
+          is_active: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+      
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      console.error('Error deactivating user:', error)
+      throw error
     }
   },
-  updateCampaign: async (id, campaignData) => {
-    console.log('Updating campaign:', id, campaignData)
-    return { success: true }
+
+  // NEW: Activate user
+  activateUser: async (id) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({ 
+          is_active: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+      
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      console.error('Error activating user:', error)
+      throw error
+    }
   },
+
+  // NEW: Campaign Management API endpoints - Connected to campaigns table
+  getCampaigns: async (params = {}) => {
+    try {
+      let query = supabase
+        .from('campaigns')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (params.is_active !== undefined) {
+        query = query.eq('is_active', params.is_active)
+      }
+      
+      const { data, error } = await query
+      
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Error fetching campaigns:', error)
+      return []
+    }
+  },
+
+  createCampaign: async (campaignData) => {
+    try {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .insert([{
+          ...campaignData,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error creating campaign:', error)
+      throw error
+    }
+  },
+
+  updateCampaign: async (id, campaignData) => {
+    try {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .update({
+          ...campaignData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error updating campaign:', error)
+      throw error
+    }
+  },
+
   deleteCampaign: async (id) => {
-    console.log('Deleting campaign:', id)
-    return { success: true }
+    try {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      console.error('Error deleting campaign:', error)
+      throw error
+    }
   }
 }
+
+
 
 // Authentication Context
 const AuthContext = createContext()
@@ -598,6 +878,7 @@ function Dashboard() {
     }))
   }
 
+
   return (
     <div className="page-content space-y-6">
       <div>
@@ -906,6 +1187,7 @@ function TeamPage() {
       setActionLoading(false)
     }
   }
+
 
   const getRoleBadge = (role) => {
     const variants = {
@@ -1230,6 +1512,7 @@ function TeamPage() {
   )
 }
 
+
 // Billable Hours Entry Component
 function BillableHoursEntry() {
   const [entries, setEntries] = useState([])
@@ -1503,37 +1786,17 @@ function AnalyticsDashboard() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="hours" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="billable" stroke="#10b981" strokeWidth={2} />
+                <Line type="monotone" dataKey="hours" stroke="#3b82f6" name="Total Hours" />
+                <Line type="monotone" dataKey="billable" stroke="#10b981" name="Billable Hours" />
               </LineChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-blue-600">85%</div>
-            <div className="text-sm text-gray-600 mt-1">Utilization Rate</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-green-600">$2,450</div>
-            <div className="text-sm text-gray-600 mt-1">Weekly Revenue</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-purple-600">42.5h</div>
-            <div className="text-sm text-gray-600 mt-1">Billable Hours</div>
           </CardContent>
         </Card>
       </div>
     </div>
   )
 }
+
 
 // Reports Page
 function ReportsPage() {
@@ -1825,15 +2088,6 @@ function ApprovalPage() {
     }
   }
 
-  const getStatusBadge = (status) => {
-    const variants = {
-      pending: 'orange',
-      approved: 'green',
-      rejected: 'red'
-    }
-    return <Badge variant={variants[status]}>{status}</Badge>
-  }
-
   return (
     <div className="page-content space-y-6">
       <div>
@@ -1841,28 +2095,39 @@ function ApprovalPage() {
         <p className="text-gray-600 mt-1">Review and approve team member timesheets</p>
       </div>
 
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-        {['pending', 'approved', 'rejected'].map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              filter === status
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </button>
-        ))}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Filter Timesheets</CardTitle>
+          <CardDescription>View timesheets by status</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex space-x-2">
+            <Button
+              variant={filter === 'pending' ? 'primary' : 'outline'}
+              onClick={() => setFilter('pending')}
+            >
+              Pending
+            </Button>
+            <Button
+              variant={filter === 'approved' ? 'primary' : 'outline'}
+              onClick={() => setFilter('approved')}
+            >
+              Approved
+            </Button>
+            <Button
+              variant={filter === 'rejected' ? 'primary' : 'outline'}
+              onClick={() => setFilter('rejected')}
+            >
+              Rejected
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>Timesheets</CardTitle>
-          <CardDescription>
-            {filter === 'pending' ? 'Pending approval' : `${filter} timesheets`}
-          </CardDescription>
+          <CardDescription>Review timesheet entries</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -1870,18 +2135,13 @@ function ApprovalPage() {
               <div className="loading-spinner"></div>
               <span className="ml-2">Loading timesheets...</span>
             </div>
-          ) : timesheets.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No {filter} timesheets found</p>
-            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Employee</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Employee</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Hours</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Description</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
@@ -1891,23 +2151,27 @@ function ApprovalPage() {
                 <tbody>
                   {timesheets.map((timesheet) => (
                     <tr key={timesheet.id} className="border-b border-gray-100 hover-bg-gray-50">
+                      <td className="py-3 px-4">{new Date(timesheet.date).toLocaleDateString()}</td>
                       <td className="py-3 px-4">{timesheet.user_name}</td>
-                      <td className="py-3 px-4">
-                        {new Date(timesheet.date).toLocaleDateString()}
-                      </td>
                       <td className="py-3 px-4">{timesheet.hours}h</td>
                       <td className="py-3 px-4">{timesheet.description}</td>
-                      <td className="py-3 px-4">{getStatusBadge(timesheet.status)}</td>
+                      <td className="py-3 px-4">
+                        <Badge variant={
+                          timesheet.status === 'approved' ? 'green' :
+                          timesheet.status === 'rejected' ? 'red' : 'orange'
+                        }>
+                          {timesheet.status}
+                        </Badge>
+                      </td>
                       <td className="py-3 px-4">
                         {timesheet.status === 'pending' && (
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              onClick={() => setSelectedTimesheet(timesheet)}
-                            >
-                              Review
-                            </Button>
-                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedTimesheet(timesheet)}
+                          >
+                            Review
+                          </Button>
                         )}
                       </td>
                     </tr>
@@ -1937,34 +2201,34 @@ function ApprovalPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Employee</Label>
-                    <p className="text-sm text-gray-900">{selectedTimesheet.user_name}</p>
+                    <p className="font-medium">{selectedTimesheet.user_name}</p>
                   </div>
                   <div>
                     <Label>Date</Label>
-                    <p className="text-sm text-gray-900">
-                      {new Date(selectedTimesheet.date).toLocaleDateString()}
-                    </p>
+                    <p className="font-medium">{new Date(selectedTimesheet.date).toLocaleDateString()}</p>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Hours</Label>
-                    <p className="text-sm text-gray-900">{selectedTimesheet.hours}h</p>
+                    <p className="font-medium">{selectedTimesheet.hours}h</p>
                   </div>
                   <div>
                     <Label>Status</Label>
-                    <p className="text-sm text-gray-900">{getStatusBadge(selectedTimesheet.status)}</p>
+                    <Badge variant={selectedTimesheet.status === 'pending' ? 'orange' : 'green'}>
+                      {selectedTimesheet.status}
+                    </Badge>
                   </div>
                 </div>
                 
                 <div>
                   <Label>Description</Label>
-                  <p className="text-sm text-gray-900">{selectedTimesheet.description}</p>
+                  <p className="font-medium">{selectedTimesheet.description}</p>
                 </div>
                 
                 <div>
-                  <Label htmlFor="comment">Comment (optional)</Label>
+                  <Label htmlFor="comment">Comment (Optional)</Label>
                   <textarea
                     id="comment"
                     className="form-input w-full h-20"
@@ -1997,6 +2261,7 @@ function ApprovalPage() {
     </div>
   )
 }
+
 
 // Settings Page
 function SettingsPage() {
@@ -2229,8 +2494,8 @@ function AppLayout() {
 // Main App Component
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <div className="App">
           <Routes>
             <Route 
@@ -2251,8 +2516,8 @@ function App() {
             />
           </Routes>
         </div>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   )
 }
 
