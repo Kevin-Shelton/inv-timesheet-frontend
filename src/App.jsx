@@ -2817,7 +2817,7 @@ function TaskBasedTimesheetPage() {
     return (
       <div className="page-content">
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="loading-spinner"></div>
           <span className="ml-3 text-gray-600">Loading timesheet...</span>
         </div>
       </div>
@@ -2825,40 +2825,38 @@ function TaskBasedTimesheetPage() {
   }
 
   return (
-    <div className="page-content space-y-8 bg-gray-50 min-h-screen">
-      {/* Enhanced Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Weekly Timesheet</h1>
-            <p className="text-gray-600">Submit and manage your timesheets</p>
-          </div>
-          
-          {/* Enhanced Timer Section */}
-          <div className="flex items-center space-x-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <div className="flex items-center space-x-3">
+    <div className="page-content">
+      {/* Header with Timer */}
+      <div className="timesheet-container mb-6">
+        <div className="timesheet-header">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="timesheet-title">Weekly Timesheet</h1>
+              <p className="timesheet-subtitle">Submit and manage your timesheets</p>
+            </div>
+            
+            {/* Timer Section */}
+            <div className="timer-section">
               <button
                 onClick={stopTimer}
                 disabled={!isTimerRunning}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors duration-200 disabled:cursor-not-allowed"
+                className="apple-button apple-button-danger"
               >
-                <Square className="w-4 h-4" />
-                <span>Stop</span>
+                <Square className="w-4 h-4 mr-2" />
+                Stop
               </button>
               <button
                 onClick={startTimer}
                 disabled={isTimerRunning}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors duration-200 disabled:cursor-not-allowed"
+                className="apple-button apple-button-success"
               >
-                <Play className="w-4 h-4" />
-                <span>Start new</span>
+                <Play className="w-4 h-4 mr-2" />
+                Start new
               </button>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="text-2xl font-mono font-bold text-green-600 bg-white px-4 py-2 rounded-lg border border-gray-200">
+              <div className="timer-display">
                 {formatTime(currentTimer)}
               </div>
-              <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200">
+              <button className="apple-button apple-button-primary">
                 Save Timer
               </button>
             </div>
@@ -2866,67 +2864,66 @@ function TaskBasedTimesheetPage() {
         </div>
       </div>
 
-      {/* Enhanced Week Navigation */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigateWeek(-1)}
-              className="p-3 hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-gray-200"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-gray-900">
-                This week, {formatDate(weekDates[0])} - {formatDate(weekDates[4])} {weekDates[0].getFullYear()}
-              </div>
-              <div className="text-sm text-gray-500 mt-1">
-                Week {Math.ceil((weekDates[0] - new Date(weekDates[0].getFullYear(), 0, 1)) / (7 * 24 * 60 * 60 * 1000))}
-              </div>
-            </div>
-            <button
-              onClick={() => navigateWeek(1)}
-              className="p-3 hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-gray-200"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
-            </button>
+      {/* Week Navigation */}
+      <div className="week-navigation">
+        <button
+          onClick={() => navigateWeek(-1)}
+          className="nav-button"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        
+        <div className="week-info">
+          <div className="week-title">
+            This week, {formatDate(weekDates[0])} - {formatDate(weekDates[4])} {weekDates[0].getFullYear()}
           </div>
-          <div className="flex items-center space-x-3 bg-blue-50 rounded-lg px-4 py-2 border border-blue-200">
-            <User className="w-5 h-5 text-blue-600" />
-            <span className="font-medium text-blue-900">{user?.full_name} (me)</span>
+          <div className="week-subtitle">
+            Week {Math.ceil((weekDates[0] - new Date(weekDates[0].getFullYear(), 0, 1)) / (7 * 24 * 60 * 60 * 1000))}
           </div>
+        </div>
+        
+        <button
+          onClick={() => navigateWeek(1)}
+          className="nav-button"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+        
+        <div className="user-badge">
+          <User className="w-4 h-4" />
+          <span>{user?.full_name} (me)</span>
         </div>
       </div>
 
-      {/* Enhanced Timesheet Grid */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* Timesheet Grid */}
+      <div className="timesheet-container">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="timesheet-table">
             <thead>
-              <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
-                <th className="text-left py-4 px-6 font-semibold text-gray-900 w-80 border-r border-gray-200">
-                  <div className="flex items-center space-x-2">
-                    <Briefcase className="w-4 h-4 text-gray-600" />
+              <tr>
+                <th style={{ width: '280px' }}>
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" />
                     <span>CAMPAIGN</span>
                   </div>
                 </th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900 w-80 border-r border-gray-200">
-                  <div className="flex items-center space-x-2">
-                    <CheckSquare className="w-4 h-4 text-gray-600" />
+                <th style={{ width: '280px' }}>
+                  <div className="flex items-center gap-2">
+                    <CheckSquare className="w-4 h-4" />
                     <span>Task</span>
                   </div>
                 </th>
                 {weekDays.map((day, index) => (
-                  <th key={day} className="text-center py-4 px-4 font-semibold text-gray-900 w-32 border-r border-gray-200">
-                    <div className="space-y-1">
+                  <th key={day} style={{ width: '120px' }} className="text-center">
+                    <div>
                       <div className="text-sm text-gray-600">{day}, {formatDate(weekDates[index]).split(' ')[1]}</div>
-                      <div className="text-lg font-bold text-gray-900">{formatDate(weekDates[index]).split(' ')[0]}</div>
+                      <div className="text-lg font-bold">{formatDate(weekDates[index]).split(' ')[0]}</div>
                     </div>
                   </th>
                 ))}
-                <th className="text-center py-4 px-4 font-semibold text-gray-900 w-24">
-                  <div className="flex items-center justify-center space-x-1">
-                    <Clock className="w-4 h-4 text-gray-600" />
+                <th style={{ width: '100px' }} className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Clock className="w-4 h-4" />
                     <span>Total</span>
                   </div>
                 </th>
@@ -2934,11 +2931,11 @@ function TaskBasedTimesheetPage() {
             </thead>
             <tbody>
               {timesheetEntries.map((entry, entryIndex) => (
-                <tr key={entry.id} className={`border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200 ${entryIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                  <td className="py-4 px-6 border-r border-gray-100">
+                <tr key={entry.id}>
+                  <td>
                     {entry.is_empty ? (
                       <select
-                        className="w-full p-3 border-2 border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white"
+                        className="apple-select"
                         value={entry.campaign_id}
                         onChange={(e) => {
                           const selectedCampaign = campaigns.find(c => c.id === e.target.value)
@@ -2949,23 +2946,23 @@ function TaskBasedTimesheetPage() {
                           ))
                         }}
                       >
-                        <option value="" className="text-gray-500">Select/create a project...</option>
+                        <option value="">Select/create a project...</option>
                         {campaigns.map(campaign => (
-                          <option key={campaign.id} value={campaign.id} className="text-gray-900">{campaign.name}</option>
+                          <option key={campaign.id} value={campaign.id}>{campaign.name}</option>
                         ))}
                       </select>
                     ) : (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <span className="font-medium text-gray-900">{entry.campaign_name}</span>
+                      <div className="campaign-indicator">
+                        <div className="campaign-dot"></div>
+                        <span className="font-medium">{entry.campaign_name}</span>
                       </div>
                     )}
                   </td>
-                  <td className="py-4 px-6 border-r border-gray-100">
+                  <td>
                     {entry.is_empty ? (
                       <input
                         type="text"
-                        className="w-full p-3 border-2 border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                        className="apple-input"
                         placeholder="Select/create a task..."
                         value={entry.task_description === 'Select/create a task...' ? '' : entry.task_description}
                         onChange={(e) => {
@@ -2977,14 +2974,14 @@ function TaskBasedTimesheetPage() {
                         }}
                       />
                     ) : (
-                      <span className="text-gray-700">{entry.task_description}</span>
+                      <span>{entry.task_description}</span>
                     )}
                   </td>
                   {weekDays.map((day, dayIndex) => (
-                    <td key={day} className="py-4 px-4 text-center border-r border-gray-100">
+                    <td key={day} className="text-center">
                       <input
                         type="text"
-                        className="w-20 p-2 text-center border-2 border-gray-200 rounded-lg text-sm font-mono focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white"
+                        className="time-input"
                         placeholder="0:00"
                         value={entry.daily_hours[dayIndex] ? `${Math.floor(entry.daily_hours[dayIndex])}:${String(Math.round((entry.daily_hours[dayIndex] % 1) * 60)).padStart(2, '0')}` : ''}
                         onChange={(e) => {
@@ -2996,25 +2993,25 @@ function TaskBasedTimesheetPage() {
                       />
                     </td>
                   ))}
-                  <td className="py-4 px-4 text-center">
-                    <div className="font-bold text-lg text-gray-900 bg-gray-100 rounded-lg py-2 px-3">
+                  <td className="text-center">
+                    <div className="total-display">
                       {entry.total_hours > 0 ? `${Math.floor(entry.total_hours)}:${String(Math.round((entry.total_hours % 1) * 60)).padStart(2, '0')}` : '0:00'}
                     </div>
                   </td>
                 </tr>
               ))}
               
-              {/* Enhanced Totals Row */}
-              <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-t-4 border-blue-500">
-                <td className="py-4 px-6 font-bold text-gray-900 border-r border-blue-200" colSpan="2">
-                  <div className="flex items-center space-x-2">
-                    <Calculator className="w-5 h-5 text-blue-600" />
-                    <span>WEEKLY TOTALS</span>
+              {/* Totals Row */}
+              <tr className="totals-row">
+                <td colSpan="2">
+                  <div className="flex items-center gap-2">
+                    <Calculator className="w-5 h-5" />
+                    <span className="font-semibold">WEEKLY TOTALS</span>
                   </div>
                 </td>
                 {weekDays.map((day, dayIndex) => (
-                  <td key={day} className="py-4 px-4 text-center border-r border-blue-200">
-                    <div className="font-bold text-lg text-blue-900 bg-white rounded-lg py-2 px-3 border border-blue-200">
+                  <td key={day} className="text-center">
+                    <div className="total-display">
                       {(() => {
                         const total = calculateDayTotal(dayIndex)
                         return total > 0 ? `${Math.floor(total)}:${String(Math.round((total % 1) * 60)).padStart(2, '0')}` : '0:00'
@@ -3022,8 +3019,8 @@ function TaskBasedTimesheetPage() {
                     </div>
                   </td>
                 ))}
-                <td className="py-4 px-4 text-center">
-                  <div className="font-bold text-xl text-white bg-blue-600 rounded-lg py-3 px-4 shadow-md">
+                <td className="text-center">
+                  <div className="weekly-total">
                     {(() => {
                       const total = calculateWeekTotal()
                       return total > 0 ? `${Math.floor(total)}:${String(Math.round((total % 1) * 60)).padStart(2, '0')}` : '0:00'
@@ -3036,33 +3033,31 @@ function TaskBasedTimesheetPage() {
         </div>
       </div>
 
-      {/* Enhanced Action Buttons */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={addTimesheetRow}
-              className="flex items-center space-x-3 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Add timesheet row</span>
-            </button>
-            <button
-              onClick={copyPreviousWeek}
-              className="flex items-center space-x-3 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <Copy className="w-5 h-5" />
-              <span>Copy previous week</span>
-            </button>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all duration-200">
-              Save Draft
-            </button>
-            <button className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg">
-              Submit Timesheet
-            </button>
-          </div>
+      {/* Action Buttons */}
+      <div className="action-buttons">
+        <div className="action-group">
+          <button
+            onClick={addTimesheetRow}
+            className="apple-button apple-button-primary"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add timesheet row
+          </button>
+          <button
+            onClick={copyPreviousWeek}
+            className="apple-button apple-button-success"
+          >
+            <Copy className="w-4 h-4 mr-2" />
+            Copy previous week
+          </button>
+        </div>
+        <div className="action-group">
+          <button className="apple-button apple-button-secondary">
+            Save Draft
+          </button>
+          <button className="apple-button apple-button-primary">
+            Submit Timesheet
+          </button>
         </div>
       </div>
     </div>
