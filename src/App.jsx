@@ -14,7 +14,7 @@ import {
   Trash2, UserPlus, Shield, TrendingUp, DollarSign, Calendar, FileText,
   Home, Eye, EyeOff, Database, Upload, Target, Activity, Save, Printer,
   RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Bell, Globe, Lock, User,
-  Briefcase, Copy, Square, Play, CheckSquare, Calculator
+  Briefcase, Copy, Square, Play, CheckSquare, Calculator, Edit3
 } from 'lucide-react'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
@@ -2798,13 +2798,123 @@ function TaskBasedTimesheetPage() {
         }
       }
       
-      // Reload data
+      // Reload      
       loadTimesheetData()
     } catch (error) {
       console.error('Error copying previous week:', error)
     }
   }
 
+  const editTimesheetRow = (entryId) => {
+    setTimesheetEntries(prev => prev.map(entry => 
+      entry.id === entryId 
+        ? { ...entry, is_editing: true, original_data: { ...entry } }
+        : entry
+    ))
+  }
+
+  const saveTimesheetRow = async (entryId) => {
+    try {
+      const entry = timesheetEntries.find(e => e.id === entryId)
+      if (!entry) return
+
+      // Validate required fields
+      if (!entry.campaign_id || !entry.task_description || entry.task_description === 'Select/create a task...') {
+        alert('Please select a campaign and enter a task description.')
+        return
+      }
+
+      // Save each day's hours to the database
+      for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
+        const hours = entry.daily_hours[dayIndex]
+        if (hours && hours > 0) {
+          const date = weekDates[dayIndex].toISOString().split('T')[0]
+          
+          await api.createTimesheet({
+            user_id: user?.id,
+            campaign_id: entry.campaign_id,
+            date: date,
+            hours: hours,
+            description: entry.task_description,
+            status: 'pending'
+          })
+        }
+      }
+
+      // Update the entry state
+      setTimesheetEntries(prev => prev.map(e => 
+        e.id === entryId 
+          ? { ...e, is_editing: false, is_empty: false, original_data: undefined }
+          : e
+      ))
+
+      // Reload data to get the latest from database
+      loadTimesheetData()
+    } catch (error) {
+      console.error('Error saving timesheet row:', error)
+      alert('Error saving timesheet row. Please try again.')
+    }
+  }
+
+  const cancelEditTimesheetRow = (entryId) => {
+    setTimesheetEntries(prev => prev.map(entry => {
+      if (entry.id === entryId) {
+        if (entry.original_data) {
+          // Restore original data
+          return { ...entry.original_data, is_editing: false, original_data: undefined }
+        } else {
+          // If it was a new entry, remove it
+          return null
+        }
+      }
+      return entry
+    }).filter(Boolean))
+  }
+
+  const deleteTimesheetRow = async (entryId) => {
+    try {
+      const entry = timesheetEntries.find(e => e.id === entryId)
+      if (!entry) return
+
+      if (entry.is_empty) {
+        // Just remove from state if it's an empty row
+        setTimesheetEntries(prev => prev.filter(e => e.id !== entryId))
+        return
+      }
+
+      if (confirm('Are you sure you want to delete this timesheet row? This will remove all time entries for this task.')) {
+        // Delete from database
+        for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
+          const hours = entry.daily_hours[dayIndex]
+          if (hours && hours > 0) {
+            const date = weekDates[dayIndex].toISOString().split('T')[0]
+            
+            // Find and delete the timesheet entry
+            const timesheets = await api.getTimesheets({ 
+              user_id: user?.id,
+              campaign_id: entry.campaign_id,
+              date: date
+            })
+            
+            for (const timesheet of timesheets) {
+              if (timesheet.description === entry.task_description) {
+                await api.deleteTimesheet(timesheet.id)
+              }
+            }
+          }
+        }
+
+        // Remove from state
+        setTimesheetEntries(prev => prev.filter(e => e.id !== entryId))
+        
+        // Reload data to ensure consistency
+        loadTimesheetData()
+      }
+    } catch (error) {
+      console.error('Error deleting timesheet row:', error)
+      alert('Error deleting timesheet row. Please try again.')
+    }
+  }
   const calculateDayTotal = (dayIndex) => {
     return timesheetEntries.reduce((sum, entry) => sum + (entry.daily_hours[dayIndex] || 0), 0)
   }
@@ -2927,13 +3037,16 @@ function TaskBasedTimesheetPage() {
                     <span>Total</span>
                   </div>
                 </th>
+                <th style={{ width: '120px' }} className="text-center">
+                  <span>Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody>
               {timesheetEntries.map((entry, entryIndex) => (
                 <tr key={entry.id}>
                   <td>
-                    {entry.is_empty ? (
+                    {entry.is_editing || entry.is_empty ? (
                       <select
                         className="apple-select"
                         value={entry.campaign_id}
@@ -2959,7 +3072,7 @@ function TaskBasedTimesheetPage() {
                     )}
                   </td>
                   <td>
-                    {entry.is_empty ? (
+                    {entry.is_editing || entry.is_empty ? (
                       <input
                         type="text"
                         className="apple-input"
@@ -2990,12 +3103,69 @@ function TaskBasedTimesheetPage() {
                           const totalHours = hours + (minutes / 60)
                           updateTimeEntry(entry.id, dayIndex, totalHours)
                         }}
+                        disabled={!entry.is_editing && !entry.is_empty}
                       />
                     </td>
                   ))}
                   <td className="text-center">
                     <div className="total-display">
                       {entry.total_hours > 0 ? `${Math.floor(entry.total_hours)}:${String(Math.round((entry.total_hours % 1) * 60)).padStart(2, '0')}` : '0:00'}
+                    </div>
+                  </td>
+                  <td className="text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      {entry.is_editing ? (
+                        <>
+                          <button
+                            onClick={() => saveTimesheetRow(entry.id)}
+                            className="apple-button apple-button-success btn-sm"
+                            title="Save changes"
+                          >
+                            <CheckSquare className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => cancelEditTimesheetRow(entry.id)}
+                            className="apple-button apple-button-secondary btn-sm"
+                            title="Cancel editing"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </>
+                      ) : entry.is_empty ? (
+                        <>
+                          <button
+                            onClick={() => saveTimesheetRow(entry.id)}
+                            className="apple-button apple-button-success btn-sm"
+                            title="Save new row"
+                          >
+                            <CheckSquare className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => deleteTimesheetRow(entry.id)}
+                            className="apple-button apple-button-danger btn-sm"
+                            title="Delete row"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => editTimesheetRow(entry.id)}
+                            className="apple-button apple-button-secondary btn-sm"
+                            title="Edit row"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => deleteTimesheetRow(entry.id)}
+                            className="apple-button apple-button-danger btn-sm"
+                            title="Delete row"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
