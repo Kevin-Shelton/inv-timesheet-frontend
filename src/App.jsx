@@ -23,6 +23,7 @@ import {
 } from 'recharts'
 import TaskBasedTimesheetPage from './components/TaskBasedTimesheetPage'
 import CampaignManagement from './components/CampaignManagement'
+import { supabase } from './lib/supabase'
 import './App.css'
 
 // Enhanced Mock API with all capabilities including deactivate/activate and campaign management
@@ -2209,7 +2210,7 @@ function AppLayout() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/timesheets" element={<TaskBasedTimesheetPage />} />
             <Route path="/team" element={<TeamPage />} />
-            <Route path="/campaigns" element={<CampaignManagement user={user} api={api} />} /> {/* NEW: Campaign Management Route */}
+            <Route path="/campaigns" element={<CampaignManagement user={user} api={api} supabase={supabase} />} /> {/* NEW: Campaign Management Route */}
             <Route path="/analytics" element={<AnalyticsDashboard />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/data-management" element={<DataManagementPage />} />
