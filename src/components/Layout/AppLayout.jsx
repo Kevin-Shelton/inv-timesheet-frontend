@@ -21,9 +21,60 @@ import {
   Menu,
   X
 } from 'lucide-react'
-import invictusLogo from '../../assets/invictus_logo.png'
 
-// Updated AppLayout with Invictus branding and removed unwanted elements
+// Invictus Logo as inline SVG to avoid import issues
+const InvictusLogo = () => (
+  <svg 
+    width="120" 
+    height="32" 
+    viewBox="0 0 400 100" 
+    style={{ maxWidth: '100%', height: 'auto' }}
+  >
+    {/* Invictus logo recreation */}
+    <defs>
+      <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#8BC34A" />
+        <stop offset="100%" stopColor="#4CAF50" />
+      </linearGradient>
+    </defs>
+    
+    {/* Logo symbol - stylized connection/network design */}
+    <g transform="translate(10, 20)">
+      {/* Main connecting curves */}
+      <path 
+        d="M 5 30 Q 25 10 45 30" 
+        stroke="#6B7280" 
+        strokeWidth="3" 
+        fill="none"
+      />
+      <path 
+        d="M 15 40 Q 35 20 55 40" 
+        stroke="#6B7280" 
+        strokeWidth="3" 
+        fill="none"
+      />
+      
+      {/* Green connection points */}
+      <circle cx="5" cy="30" r="4" fill="url(#greenGradient)" />
+      <circle cx="45" cy="30" r="4" fill="url(#greenGradient)" />
+      <circle cx="55" cy="40" r="4" fill="url(#greenGradient)" />
+    </g>
+    
+    {/* Invictus text */}
+    <text 
+      x="80" 
+      y="55" 
+      fontFamily="Arial, sans-serif" 
+      fontSize="28" 
+      fontWeight="600" 
+      fill="#6B7280"
+    >
+      invictus
+    </text>
+  </svg>
+)
+
+// Updated AppLayout with embedded logo to fix build issues
 export function AppLayout() {
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -117,13 +168,8 @@ export function AppLayout() {
     alignItems: 'center',
     padding: '16px 20px',
     borderBottom: '1px solid #f3f4f6',
-    gap: '12px'
-  }
-
-  const logoImageStyle = {
-    height: '32px',
-    width: 'auto',
-    objectFit: 'contain'
+    gap: '12px',
+    justifyContent: 'center'
   }
 
   const navStyle = {
@@ -269,13 +315,9 @@ export function AppLayout() {
     <div style={layoutStyle}>
       {/* Sidebar */}
       <div style={sidebarStyle}>
-        {/* Invictus Logo - UPDATED */}
+        {/* Invictus Logo - EMBEDDED SVG */}
         <div style={logoStyle}>
-          <img 
-            src={invictusLogo} 
-            alt="Invictus" 
-            style={logoImageStyle}
-          />
+          <InvictusLogo />
         </div>
 
         {/* Navigation */}
