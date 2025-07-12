@@ -877,4 +877,206 @@ body {
   margin-right: 0 !important;
 }
 
+/* ===== DASHBOARD JSON SPECIFICATION OVERRIDE FIX ===== */
+
+/* CRITICAL: Remove conflicting padding from content containers */
+.jibble-content,
+.page-content {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Ensure dashboard wrapper styles are not overridden */
+.dashboard-outer-wrapper {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+  background-color: #F9FAFB !important;
+  margin: 0 !important;
+}
+
+.dashboard-inner-container {
+  width: 100% !important;
+  max-width: 1280px !important;
+  padding: 0 24px !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+}
+
+.dashboard-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)) !important;
+  gap: 24px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Override card styles to match JSON specification exactly */
+.dashboard-card {
+  background-color: #FFFFFF !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+  border: 1px solid #E5E7EB !important;
+  padding: 20px !important;
+  margin-bottom: 24px !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+  transform: none !important;
+}
+
+/* Welcome header full width */
+.dashboard-welcome-header {
+  grid-column: 1 / -1 !important;
+}
+
+/* Typography overrides to match JSON specification */
+.dashboard-heading {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.dashboard-subheading {
+  font-size: 14px !important;
+  color: #6B7280 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.dashboard-caption {
+  font-size: 12px !important;
+  color: #9CA3AF !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Chart color overrides */
+.dashboard-bar-color {
+  background: #9CA3AF !important;
+}
+
+.dashboard-break-color {
+  background: #D1D5DB !important;
+}
+
+.dashboard-overtime-color {
+  background: #FBBF24 !important;
+}
+
+/* Remove any conflicting margins and paddings */
+.dashboard-outer-wrapper * {
+  box-sizing: border-box;
+}
+
+/* Ensure no global styles interfere */
+.dashboard-outer-wrapper h1,
+.dashboard-outer-wrapper h2,
+.dashboard-outer-wrapper h3,
+.dashboard-outer-wrapper p,
+.dashboard-outer-wrapper div {
+  margin: 0;
+  padding: 0;
+}
+
+/* Override any Tailwind or other framework resets */
+.dashboard-outer-wrapper .card {
+  background-color: #FFFFFF !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+  border: 1px solid #E5E7EB !important;
+  padding: 20px !important;
+  margin-bottom: 24px !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+.dashboard-outer-wrapper .card:hover {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+  transform: none !important;
+}
+
+/* Mobile responsiveness for dashboard */
+@media (max-width: 768px) {
+  .dashboard-outer-wrapper {
+    padding: 16px !important;
+  }
+  
+  .dashboard-inner-container {
+    padding: 0 16px !important;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-outer-wrapper {
+    padding: 12px !important;
+  }
+  
+  .dashboard-inner-container {
+    padding: 0 12px !important;
+  }
+}
+
+/* Ensure grid items don't have conflicting styles */
+.dashboard-grid > * {
+  margin: 0 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Override any flex or display conflicts */
+.dashboard-outer-wrapper,
+.dashboard-inner-container,
+.dashboard-grid {
+  display: block;
+}
+
+.dashboard-outer-wrapper {
+  display: flex !important;
+}
+
+.dashboard-grid {
+  display: grid !important;
+}
+
+/* Ensure background colors are correct */
+body {
+  background-color: #f9fafb;
+}
+
+.jibble-main,
+.main-content {
+  background-color: transparent !important;
+}
+
+/* Remove any conflicting max-width constraints */
+.container,
+.max-w-7xl,
+.mx-auto {
+  max-width: none !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+/* Ensure proper spacing for dashboard sections */
+.dashboard-section {
+  margin-bottom: 24px !important;
+}
+
+.dashboard-section:last-child {
+  margin-bottom: 0 !important;
+}
+
 

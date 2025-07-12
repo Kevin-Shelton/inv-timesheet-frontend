@@ -38,7 +38,7 @@ function CurrentTimeDisplay() {
 
   return (
     <div style={{ textAlign: 'center', padding: '20px' }}>
-      <div style={{ 
+      <div className="dashboard-heading" style={{ 
         fontSize: '32px', 
         fontWeight: '700', 
         color: '#111827', 
@@ -46,13 +46,13 @@ function CurrentTimeDisplay() {
       }}>
         {timeString}
       </div>
-      <div style={{ 
+      <div className="dashboard-subheading" style={{ 
         color: '#6B7280', 
         fontSize: '14px' 
       }}>
         {dateString}
       </div>
-      <div style={{ 
+      <div className="dashboard-caption" style={{ 
         fontSize: '12px', 
         color: '#9CA3AF', 
         marginTop: '4px' 
@@ -66,14 +66,14 @@ function CurrentTimeDisplay() {
 // Welcome Header Section
 function WelcomeHeader() {
   return (
-    <div style={{
+    <div className="dashboard-card dashboard-welcome-header" style={{
       backgroundColor: '#FFFFFF',
       borderRadius: '12px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
       border: '1px solid #E5E7EB',
       padding: '20px',
       marginBottom: '24px',
-      gridColumn: '1 / -1' // Span full width
+      gridColumn: '1 / -1'
     }}>
       <div style={{
         display: 'flex',
@@ -81,7 +81,7 @@ function WelcomeHeader() {
         justifyContent: 'space-between'
       }}>
         <div>
-          <h1 style={{ 
+          <h1 className="dashboard-heading" style={{ 
             fontSize: '24px', 
             fontWeight: '700', 
             color: '#111827',
@@ -89,7 +89,7 @@ function WelcomeHeader() {
           }}>
             Hello admin@test.com
           </h1>
-          <p style={{ 
+          <p className="dashboard-subheading" style={{ 
             fontSize: '14px', 
             color: '#6B7280',
             margin: 0
@@ -134,7 +134,7 @@ function WelcomeHeader() {
 // Upcoming Holidays Section
 function UpcomingHolidays() {
   return (
-    <div style={{
+    <div className="dashboard-card dashboard-section" style={{
       backgroundColor: '#FFFFFF',
       borderRadius: '12px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
@@ -161,7 +161,7 @@ function UpcomingHolidays() {
       }}>
         <div style={{ fontSize: '24px' }}>🏖️</div>
         <div style={{ flex: 1 }}>
-          <div style={{ 
+          <div className="dashboard-subheading" style={{ 
             fontSize: '14px', 
             fontWeight: '600', 
             marginBottom: '4px' 
@@ -206,7 +206,7 @@ function TrackedHours() {
   const weekDates = [7, 8, 9, 10, 11, 12, 13]
 
   return (
-    <div style={{
+    <div className="dashboard-card dashboard-section" style={{
       backgroundColor: '#FFFFFF',
       borderRadius: '12px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
@@ -250,10 +250,10 @@ function TrackedHours() {
             borderRadius: '50%', 
             background: '#10b981' 
           }}></div>
-          <span style={{ fontSize: '14px', color: '#374151' }}>WORKED HOURS</span>
+          <span className="dashboard-subheading" style={{ fontSize: '14px', color: '#374151' }}>WORKED HOURS</span>
           <span style={{ fontSize: '14px', fontWeight: '600', marginLeft: 'auto' }}>60h</span>
         </div>
-        <div style={{ fontSize: '12px', color: '#6B7280' }}>0h 0m</div>
+        <div className="dashboard-caption" style={{ fontSize: '12px', color: '#6B7280' }}>0h 0m</div>
 
         <div style={{ 
           display: 'flex', 
@@ -262,13 +262,13 @@ function TrackedHours() {
           marginTop: '8px', 
           marginBottom: '8px' 
         }}>
-          <div style={{ 
+          <div className="dashboard-bar-color" style={{ 
             width: '8px', 
             height: '8px', 
             borderRadius: '50%', 
             background: '#9CA3AF' 
           }}></div>
-          <span style={{ fontSize: '14px', color: '#374151' }}>0h 0m</span>
+          <span className="dashboard-subheading" style={{ fontSize: '14px', color: '#374151' }}>0h 0m</span>
           <span style={{ fontSize: '14px', fontWeight: '600', marginLeft: 'auto' }}>60h</span>
         </div>
 
@@ -278,16 +278,16 @@ function TrackedHours() {
           gap: '8px', 
           marginBottom: '16px' 
         }}>
-          <div style={{ 
+          <div className="dashboard-overtime-color" style={{ 
             width: '8px', 
             height: '8px', 
             borderRadius: '50%', 
             background: '#FBBF24' 
           }}></div>
-          <span style={{ fontSize: '14px', color: '#374151' }}>OVERTIME HOURS</span>
+          <span className="dashboard-subheading" style={{ fontSize: '14px', color: '#374151' }}>OVERTIME HOURS</span>
           <span style={{ fontSize: '14px', fontWeight: '600', marginLeft: 'auto' }}>40h</span>
         </div>
-        <div style={{ fontSize: '12px', color: '#6B7280' }}>0h 0m</div>
+        <div className="dashboard-caption" style={{ fontSize: '12px', color: '#6B7280' }}>0h 0m</div>
       </div>
 
       {/* Week Chart */}
@@ -300,7 +300,7 @@ function TrackedHours() {
         }}>
           {weekDays.map((day, index) => (
             <div key={index} style={{ textAlign: 'center' }}>
-              <div style={{ 
+              <div className="dashboard-caption" style={{ 
                 fontSize: '12px', 
                 color: '#6B7280', 
                 marginBottom: '4px' 
@@ -314,7 +314,7 @@ function TrackedHours() {
               }}>
                 {weekDates[index]}
               </div>
-              <div style={{
+              <div className="dashboard-break-color" style={{
                 height: '60px',
                 background: '#D1D5DB',
                 borderRadius: '4px',
@@ -323,7 +323,7 @@ function TrackedHours() {
               }}>
                 {/* Sample data bars using spec colors */}
                 {index < 5 && (
-                  <div style={{
+                  <div className="dashboard-bar-color" style={{
                     position: 'absolute',
                     bottom: 0,
                     left: 0,
@@ -337,7 +337,7 @@ function TrackedHours() {
             </div>
           ))}
         </div>
-        <div style={{ 
+        <div className="dashboard-caption" style={{ 
           fontSize: '12px', 
           color: '#9CA3AF', 
           textAlign: 'center' 
@@ -352,7 +352,7 @@ function TrackedHours() {
 // Activities Section
 function Activities() {
   return (
-    <div style={{
+    <div className="dashboard-card dashboard-section" style={{
       backgroundColor: '#FFFFFF',
       borderRadius: '12px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
@@ -419,7 +419,7 @@ function Activities() {
             transform: 'translate(-50%, -50%)',
             textAlign: 'center'
           }}>
-            <div style={{ 
+            <div className="dashboard-caption" style={{ 
               fontSize: '12px', 
               color: '#9CA3AF' 
             }}>
@@ -435,14 +435,14 @@ function Activities() {
         </div>
 
         <div style={{ marginBottom: '16px' }}>
-          <div style={{ 
+          <div className="dashboard-subheading" style={{ 
             fontSize: '14px', 
             fontWeight: '600', 
             marginBottom: '4px' 
           }}>
             Top 10 activities
           </div>
-          <div style={{ 
+          <div className="dashboard-caption" style={{ 
             fontSize: '12px', 
             color: '#9CA3AF' 
           }}>
@@ -457,7 +457,7 @@ function Activities() {
 // Who's In/Out Section
 function WhosInOut() {
   return (
-    <div style={{
+    <div className="dashboard-card dashboard-section" style={{
       backgroundColor: '#FFFFFF',
       borderRadius: '12px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
@@ -492,14 +492,14 @@ function WhosInOut() {
           background: '#f9fafb',
           borderRadius: '8px'
         }}>
-          <div style={{ 
+          <div className="dashboard-heading" style={{ 
             fontSize: '24px', 
             fontWeight: '700', 
             color: '#111827' 
           }}>
             0
           </div>
-          <div style={{ 
+          <div className="dashboard-caption" style={{ 
             fontSize: '12px', 
             color: '#9CA3AF', 
             textTransform: 'uppercase', 
@@ -513,14 +513,14 @@ function WhosInOut() {
           background: '#f9fafb',
           borderRadius: '8px'
         }}>
-          <div style={{ 
+          <div className="dashboard-heading" style={{ 
             fontSize: '24px', 
             fontWeight: '700', 
             color: '#111827' 
           }}>
             0
           </div>
-          <div style={{ 
+          <div className="dashboard-caption" style={{ 
             fontSize: '12px', 
             color: '#9CA3AF', 
             textTransform: 'uppercase', 
@@ -534,14 +534,14 @@ function WhosInOut() {
           background: '#f9fafb',
           borderRadius: '8px'
         }}>
-          <div style={{ 
+          <div className="dashboard-heading" style={{ 
             fontSize: '24px', 
             fontWeight: '700', 
             color: '#111827' 
           }}>
             1
           </div>
-          <div style={{ 
+          <div className="dashboard-caption" style={{ 
             fontSize: '12px', 
             color: '#9CA3AF', 
             textTransform: 'uppercase', 
@@ -557,11 +557,11 @@ function WhosInOut() {
   )
 }
 
-// Main Dashboard Component - Following JSON Specification Exactly
+// Main Dashboard Component - With CSS Classes for Override Protection
 export function Dashboard() {
   return (
-    // Outer wrapper - exactly as specified in JSON
-    <div style={{
+    // Outer wrapper with CSS class for override protection
+    <div className="dashboard-outer-wrapper" style={{
       display: 'flex',
       justifyContent: 'center',
       width: '100%',
@@ -569,15 +569,15 @@ export function Dashboard() {
       boxSizing: 'border-box',
       backgroundColor: '#F9FAFB'
     }}>
-      {/* Container - exactly as specified in JSON */}
-      <div style={{
+      {/* Container with CSS class for override protection */}
+      <div className="dashboard-inner-container" style={{
         width: '100%',
         maxWidth: '1280px',
         padding: '0 24px',
         boxSizing: 'border-box'
       }}>
-        {/* Grid - exactly as specified in JSON */}
-        <div style={{
+        {/* Grid with CSS class for override protection */}
+        <div className="dashboard-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
           gap: '24px'
