@@ -5000,7 +5000,319 @@ table tr:last-child td {
 .page-content-corrected::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+/* ===== DESKTOP LAYOUT MODIFICATIONS ===== */
+/* Add these styles to your existing App.css to create a desktop Jibble-style layout */
 
+/* Force desktop layout - Override mobile-first approach */
+@media (min-width: 768px) {
+  /* Sidebar - Force desktop display and wider width */
+  .sidebar {
+    display: flex !important;
+    position: relative !important;
+    transform: translateX(0) !important;
+    width: 280px !important;
+    min-width: 280px !important;
+    height: 100vh !important;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+    border-right: 1px solid #334155 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 
+  /* Sidebar Header - Desktop styling */
+  .sidebar-header {
+    background: linear-gradient(135deg, #1e293b, #0f172a) !important;
+    height: 80px !important;
+    padding: 0 20px !important;
+    border-bottom: 1px solid #334155 !important;
+    border-radius: 0 !important;
+  }
+
+  .sidebar-logo-text {
+    color: white !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+  }
+
+  .sidebar-logo-icon {
+    color: white !important;
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  /* Navigation Items - Desktop styling */
+  .sidebar-nav {
+    padding: 20px 0 !important;
+    background: transparent !important;
+  }
+
+  .nav-item {
+    color: #cbd5e1 !important;
+    margin: 4px 12px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    border-left: 3px solid transparent !important;
+    background: transparent !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .nav-item:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: white !important;
+    border-left-color: #3b82f6 !important;
+    transform: none !important;
+  }
+
+  .nav-item.active {
+    background: rgba(59, 130, 246, 0.1) !important;
+    color: white !important;
+    border-left-color: #3b82f6 !important;
+    box-shadow: none !important;
+  }
+
+  .nav-item:before {
+    display: none !important;
+  }
+
+  .nav-icon {
+    color: inherit !important;
+    width: 18px !important;
+    height: 18px !important;
+    margin-right: 12px !important;
+  }
+
+  /* Sidebar Footer - Desktop styling */
+  .sidebar-footer {
+    background: rgba(0, 0, 0, 0.1) !important;
+    border-top: 1px solid #334155 !important;
+    padding: 16px 20px !important;
+  }
+
+  .user-info {
+    flex: 1 !important;
+  }
+
+  .user-avatar {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    width: 36px !important;
+    height: 36px !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+  }
+
+  .user-name {
+    color: white !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+
+  .user-role {
+    color: #94a3b8 !important;
+    font-size: 11px !important;
+  }
+
+  .logout-button {
+    color: #fca5a5 !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+    border-radius: 6px !important;
+    padding: 8px !important;
+  }
+
+  .logout-button:hover {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #fecaca !important;
+  }
+
+  /* Main Content - Desktop adjustments */
+  .main-content {
+    margin-left: 0 !important;
+    background-color: #f8fafc !important;
+  }
+
+  /* Hide mobile header on desktop */
+  .main-header {
+    display: none !important;
+  }
+
+  /* Main body - Desktop padding */
+  .main-body {
+    padding: 32px !important;
+  }
+
+  /* Page content - Desktop styling */
+  .page-content {
+    max-width: none !important;
+    min-height: calc(100vh - 64px) !important;
+  }
+}
+
+/* Force desktop layout on larger screens */
+@media (min-width: 1024px) {
+  .sidebar {
+    width: 300px !important;
+    min-width: 300px !important;
+  }
+
+  .sidebar-header {
+    height: 88px !important;
+    padding: 0 24px !important;
+  }
+
+  .sidebar-logo-text {
+    font-size: 20px !important;
+  }
+
+  .sidebar-nav {
+    padding: 24px 0 !important;
+  }
+
+  .nav-item {
+    margin: 4px 16px !important;
+    padding: 14px 20px !important;
+    font-size: 14px !important;
+  }
+
+  .nav-icon {
+    width: 20px !important;
+    height: 20px !important;
+    margin-right: 14px !important;
+  }
+
+  .sidebar-footer {
+    padding: 20px 24px !important;
+  }
+
+  .main-body {
+    padding: 40px !important;
+  }
+}
+
+/* Desktop Header - Add a proper desktop header */
+@media (min-width: 768px) {
+  .main-content::before {
+    content: '';
+    display: block;
+    height: 72px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin-bottom: -72px;
+  }
+
+  .main-content::after {
+    content: 'Dashboard';
+    position: sticky;
+    top: 0;
+    z-index: 11;
+    display: block;
+    height: 72px;
+    line-height: 72px;
+    padding: 0 32px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    background: transparent;
+    pointer-events: none;
+  }
+}
+
+/* Ensure sidebar overlay is hidden on desktop */
+@media (min-width: 768px) {
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
+/* Additional desktop enhancements */
+@media (min-width: 768px) {
+  /* App layout - Ensure proper flex behavior */
+  .app-layout {
+    display: flex !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  /* Cards - Desktop spacing */
+  .card {
+    margin-bottom: 24px !important;
+  }
+
+  /* Dashboard specific - Desktop grid */
+  .dashboard-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+    gap: 24px !important;
+  }
+
+  /* Quick actions - Desktop layout */
+  .quick-actions {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+    gap: 20px !important;
+  }
+
+  /* Tables - Desktop styling */
+  .table {
+    font-size: 14px !important;
+  }
+
+  .table th {
+    padding: 16px 20px !important;
+    font-size: 13px !important;
+  }
+
+  .table td {
+    padding: 16px 20px !important;
+  }
+}
+
+/* Mobile close button - Hide on desktop */
+@media (min-width: 768px) {
+  .mobile-close-button {
+    display: none !important;
+  }
+}
+
+/* Scrollbar styling for desktop */
+@media (min-width: 768px) {
+  .main-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .main-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  .main-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+
+  .main-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  .sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .sidebar-nav::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
+
+  .sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
 }
 
