@@ -86,7 +86,8 @@ function TrackedHoursSection() {
       padding: '20px',
       border: '1px solid #e5e7eb',
       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      marginBottom: '20px'
+      marginBottom: '20px',
+      height: 'fit-content'
     }}>
       <div style={{
         display: 'flex',
@@ -191,7 +192,8 @@ function ActivitiesSection() {
       padding: '20px',
       border: '1px solid #e5e7eb',
       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      marginBottom: '20px'
+      marginBottom: '20px',
+      height: 'fit-content'
     }}>
       <div style={{
         display: 'flex',
@@ -270,7 +272,8 @@ function HolidaysSection() {
       padding: '20px',
       border: '1px solid #e5e7eb',
       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      marginBottom: '20px'
+      marginBottom: '20px',
+      height: 'fit-content'
     }}>
       <div style={{
         display: 'flex',
@@ -338,7 +341,8 @@ function WhosInOutSection() {
       padding: '20px',
       border: '1px solid #e5e7eb',
       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      marginBottom: '20px'
+      marginBottom: '20px',
+      height: 'fit-content'
     }}>
       <div style={{
         display: 'flex',
@@ -395,18 +399,23 @@ function WhosInOutSection() {
   )
 }
 
-// Main Dashboard Component with proper export
+// Main Dashboard Component - FULL WIDTH VERSION
 export function Dashboard() {
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Welcome Section */}
+    <div style={{ 
+      width: '100%',
+      padding: '0',
+      margin: '0'
+    }}>
+      {/* Welcome Section - Full Width */}
       <div style={{
         background: 'white',
         borderRadius: '12px',
         padding: '24px',
         marginBottom: '24px',
         border: '1px solid #e5e7eb',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+        width: '100%'
       }}>
         <div style={{
           display: 'flex',
@@ -463,12 +472,12 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - Full Width with Better Spacing */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
         gap: '24px',
-        marginBottom: '24px'
+        width: '100%'
       }}>
         <TrackedHoursSection />
         <ActivitiesSection />

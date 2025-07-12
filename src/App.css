@@ -735,4 +735,146 @@ body {
 .page-content::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+/* ===== FULL WIDTH LAYOUT FIXES ===== */
+
+/* Remove max-width constraints and centering from dashboard content */
+.jibble-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background: #f9fafb;
+  width: 100%;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.page-content {
+  width: 100%;
+  max-width: none !important;
+  margin: 0 !important;
+  min-height: calc(100vh - 64px);
+}
+
+/* Ensure dashboard uses full width */
+.jibble-dashboard,
+.dashboard {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Full width welcome section */
+.jibble-welcome-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* Full width stats grid */
+.jibble-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* Ensure all cards use available space */
+.jibble-stat-card,
+.jibble-who-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  width: 100%;
+  height: fit-content;
+}
+
+/* Remove any container constraints */
+.container,
+.max-w-7xl,
+.mx-auto {
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+}
+
+/* Responsive adjustments for full width */
+@media (max-width: 768px) {
+  .jibble-content,
+  .page-content {
+    padding: 16px;
+  }
+  
+  .jibble-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1200px) {
+  .jibble-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1201px) {
+  .jibble-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  }
+}
+
+/* Ensure main layout uses full viewport */
+.jibble-layout,
+.app-layout {
+  display: flex;
+  height: 100vh;
+  background-color: #f9fafb;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.jibble-main,
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Remove any artificial width constraints */
+* {
+  box-sizing: border-box;
+}
+
+/* Ensure grid items fill available space */
+.jibble-stats-grid > * {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Additional full-width utilities */
+.w-full {
+  width: 100% !important;
+}
+
+.max-w-none {
+  max-width: none !important;
+}
+
+.mx-0 {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
 
