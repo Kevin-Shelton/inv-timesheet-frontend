@@ -3371,7 +3371,9 @@ function CampaignManagement({ user, api, supabase }) {
         alert('Error deleting campaign. Please try again.')
       }
     }
-  }tusBadge = (status) => {
+  }
+
+  const getStatusBadge = (status) => {
     const variants = {
       planning: 'orange',
       active: 'green',
