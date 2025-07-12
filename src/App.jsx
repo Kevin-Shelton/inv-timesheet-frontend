@@ -2603,25 +2603,528 @@ function AppLayout() {
   )
 }
 
-// Task-Based Timesheet Page Component
-// Weekly Timesheet Grid Component - Matches the sophisticated interface shown in the image
+// Jibble-style Timesheet Page Component
 function TaskBasedTimesheetPage() {
   const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState('timesheets')
   const [currentWeek, setCurrentWeek] = useState(new Date())
   const [timesheetEntries, setTimesheetEntries] = useState([])
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
-  const [isTimerRunning, setIsTimerRunning] = useState(false)
-  const [currentTimer, setCurrentTimer] = useState({ hours: 0, minutes: 0, seconds: 0 })
-  const [activeEntry, setActiveEntry] = useState(null)
+  const [showManualEntry, setShowManualEntry] = useState(false)
+  const [entryMode, setEntryMode] = useState('time') // 'time' or 'hour'
+  const [selectedFilters, setSelectedFilters] = useState({
+    payrollHours: 'all',
+    groups: 'all',
+    members: 'all',
+    schedules: 'all'
+  })
+
+  // Manual entry form state
+  const [manualEntry, setManualEntry] = useState({
+    date: new Date().toISOString().split('T')[0],
+    startTime: '',
+    endTime: '',
+    hours: '',
+    activity: '',
+    project: '',
+    note: ''
+  })
 
   // Get week dates
   const getWeekDates = (date) => {
     const week = []
     const startOfWeek = new Date(date)
     const day = startOfWeek.getDay()
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1) // Adjust for Monday start
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1) // Adjust when day is Sunday
     startOfWeek.setDate(diff)
+    
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(startOfWeek)
+      day.setDate(startOfWeek.getDate() + i)
+      week.push(day)
+    }
+    return week
+  }
+
+  const weekDates = getWeekDates(currentWeek)
+
+  // Load data
+  useEffect(() => {
+    loadTimesheetData()
+    loadCampaigns()
+  }, [currentWeek])
+
+  const loadTimesheetData = async () => {
+    try {
+      setLoading(true)
+      const startDate = weekDates[0].toISOString().split('T')[0]
+      const endDate = weekDates[6].toISOString().split('T')[0]
+      
+      const entries = await api.getTimesheets({
+        start_date: startDate,
+        end_date: endDate,
+        user_id: user?.id
+      })
+      
+      setTimesheetEntries(entries)
+    } catch (error) {
+      console.error('Error loading timesheet data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadCampaigns = async () => {
+    try {
+      const campaignData = await api.getCampaigns()
+      setCampaigns(campaignData)
+    } catch (error) {
+      console.error('Error loading campaigns:', error)
+    }
+  }
+
+  const handleManualEntrySubmit = async (e) => {
+    e.preventDefault()
+    try {
+      const entryData = {
+        ...manualEntry,
+        user_id: user?.id,
+        hours_worked: entryMode === 'hour' ? parseFloat(manualEntry.hours) : calculateHoursFromTime(),
+        campaign_id: manualEntry.activity
+      }
+
+      await api.createTimesheet(entryData)
+      setShowManualEntry(false)
+      setManualEntry({
+        date: new Date().toISOString().split('T')[0],
+        startTime: '',
+        endTime: '',
+        hours: '',
+        activity: '',
+        project: '',
+        note: ''
+      })
+      loadTimesheetData()
+    } catch (error) {
+      console.error('Error creating timesheet entry:', error)
+      alert('Error creating entry. Please try again.')
+    }
+  }
+
+  const calculateHoursFromTime = () => {
+    if (!manualEntry.startTime || !manualEntry.endTime) return 0
+    
+    const start = new Date(`${manualEntry.date}T${manualEntry.startTime}`)
+    const end = new Date(`${manualEntry.date}T${manualEntry.endTime}`)
+    
+    if (end <= start) return 0
+    
+    return (end - start) / (1000 * 60 * 60) // Convert to hours
+  }
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+  }
+
+  const formatDateHeader = (date) => {
+    return date.getDate().toString()
+  }
+
+  const getWeekRange = () => {
+    const start = weekDates[0]
+    const end = weekDates[6]
+    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+  }
+
+  const navigateWeek = (direction) => {
+    const newWeek = new Date(currentWeek)
+    newWeek.setDate(newWeek.getDate() + (direction * 7))
+    setCurrentWeek(newWeek)
+  }
+
+  return (
+    <div className="jibble-timesheet">
+      {/* Header */}
+      <div className="timesheet-header">
+        <div className="header-left">
+          <h1 className="page-title">Timesheets</h1>
+          <div className="tab-navigation">
+            <button 
+              className={`tab-button ${activeTab === 'timesheets' ? 'active' : ''}`}
+              onClick={() => setActiveTab('timesheets')}
+            >
+              Timesheets
+            </button>
+            <button 
+              className={`tab-button ${activeTab === 'approvals' ? 'active' : ''}`}
+              onClick={() => setActiveTab('approvals')}
+            >
+              Approvals
+            </button>
+          </div>
+        </div>
+        <div className="header-right">
+          <button className="export-button">
+            <span>📤</span> Export
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'timesheets' && (
+        <>
+          {/* Controls */}
+          <div className="timesheet-controls">
+            <div className="controls-left">
+              <div className="week-selector">
+                <select className="week-dropdown">
+                  <option>Weekly Timesheets</option>
+                </select>
+                <button 
+                  className="nav-button"
+                  onClick={() => navigateWeek(-1)}
+                >
+                  ←
+                </button>
+                <span className="week-range">{getWeekRange()}</span>
+                <button 
+                  className="nav-button"
+                  onClick={() => navigateWeek(1)}
+                >
+                  →
+                </button>
+              </div>
+            </div>
+            <div className="controls-right">
+              <button className="add-manual-entry-btn" onClick={() => setShowManualEntry(true)}>
+                Add Manual Time Entry
+              </button>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="timesheet-filters">
+            <select 
+              className="filter-select"
+              value={selectedFilters.payrollHours}
+              onChange={(e) => setSelectedFilters({...selectedFilters, payrollHours: e.target.value})}
+            >
+              <option value="all">Payroll hours</option>
+              <option value="regular">Regular hours</option>
+              <option value="overtime">Overtime hours</option>
+            </select>
+            
+            <select 
+              className="filter-select"
+              value={selectedFilters.groups}
+              onChange={(e) => setSelectedFilters({...selectedFilters, groups: e.target.value})}
+            >
+              <option value="all">Groups</option>
+            </select>
+            
+            <select 
+              className="filter-select"
+              value={selectedFilters.members}
+              onChange={(e) => setSelectedFilters({...selectedFilters, members: e.target.value})}
+            >
+              <option value="all">Members</option>
+            </select>
+            
+            <select 
+              className="filter-select"
+              value={selectedFilters.schedules}
+              onChange={(e) => setSelectedFilters({...selectedFilters, schedules: e.target.value})}
+            >
+              <option value="all">Schedules</option>
+            </select>
+            
+            <button className="add-filter-btn">+ Add filter</button>
+          </div>
+
+          {/* Search */}
+          <div className="search-container">
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              className="search-input"
+            />
+          </div>
+
+          {/* Timesheet Table */}
+          <div className="timesheet-table-container">
+            {loading ? (
+              <div className="loading-state">Loading timesheets...</div>
+            ) : (
+              <table className="timesheet-table">
+                <thead>
+                  <tr>
+                    <th className="name-column">Name</th>
+                    {weekDates.map((date, index) => (
+                      <th key={index} className="day-column">
+                        <div className="day-header">
+                          <div className="day-name">{formatDate(date).split(' ')[0]}</div>
+                          <div className="day-number">{formatDateHeader(date)}</div>
+                        </div>
+                      </th>
+                    ))}
+                    <th className="total-column">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="user-row">
+                    <td className="name-cell">
+                      <div className="user-info">
+                        <div className="user-avatar">
+                          {user?.full_name?.charAt(0) || 'U'}
+                        </div>
+                        <span className="user-name">{user?.full_name || 'User'}</span>
+                      </div>
+                    </td>
+                    {weekDates.map((date, index) => {
+                      const dayEntries = timesheetEntries.filter(entry => 
+                        new Date(entry.date).toDateString() === date.toDateString()
+                      )
+                      const totalHours = dayEntries.reduce((sum, entry) => sum + (entry.hours_worked || 0), 0)
+                      
+                      return (
+                        <td key={index} className="day-cell">
+                          {totalHours > 0 ? (
+                            <div className="hours-display">
+                              {totalHours.toFixed(1)}h
+                            </div>
+                          ) : (
+                            <div className="empty-cell">-</div>
+                          )}
+                        </td>
+                      )
+                    })}
+                    <td className="total-cell">
+                      {timesheetEntries.reduce((sum, entry) => sum + (entry.hours_worked || 0), 0).toFixed(1)}h
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Create New Entry Button */}
+          {!loading && timesheetEntries.length === 0 && (
+            <div className="empty-state">
+              <button 
+                className="create-entry-btn"
+                onClick={() => setShowManualEntry(true)}
+              >
+                Create a new entry
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'approvals' && (
+        <div className="approvals-tab">
+          <div className="approvals-empty-state">
+            <div className="empty-state-icon">
+              <div className="payroll-icon">💰</div>
+            </div>
+            <h3 className="empty-state-title">No pay periods set up yet</h3>
+            <p className="empty-state-description">
+              Process timesheets for payroll with fixed<br />
+              pay periods and approval workflows.
+            </p>
+            <button className="setup-payperiods-btn">
+              Set up Pay Periods
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Time Entry Sidebar */}
+      {showManualEntry && (
+        <div className="manual-entry-overlay" onClick={() => setShowManualEntry(false)}>
+          <div className="manual-entry-sidebar" onClick={(e) => e.stopPropagation()}>
+            <div className="sidebar-header">
+              <h2 className="sidebar-title">Add Manual Time Entry</h2>
+              <button 
+                className="close-button"
+                onClick={() => setShowManualEntry(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="sidebar-content">
+              <div className="user-info-section">
+                <div className="user-avatar-large">
+                  {user?.full_name?.charAt(0) || 'U'}
+                </div>
+                <div className="user-details">
+                  <div className="user-name">{user?.full_name || 'User'}</div>
+                  <div className="user-meta">Start time: 12:00 am<br />No previous entry</div>
+                </div>
+              </div>
+
+              <form onSubmit={handleManualEntrySubmit} className="entry-form">
+                {/* Entry Mode Tabs */}
+                <div className="entry-mode-tabs">
+                  <button
+                    type="button"
+                    className={`mode-tab ${entryMode === 'time' ? 'active' : ''}`}
+                    onClick={() => setEntryMode('time')}
+                  >
+                    Time entry
+                  </button>
+                  <button
+                    type="button"
+                    className={`mode-tab ${entryMode === 'hour' ? 'active' : ''}`}
+                    onClick={() => setEntryMode('hour')}
+                  >
+                    Hour entry
+                  </button>
+                </div>
+
+                {/* Time Entry Mode */}
+                {entryMode === 'time' && (
+                  <div className="time-entry-section">
+                    <div className="time-inputs">
+                      <div className="time-input-group">
+                        <label>In</label>
+                        <input
+                          type="time"
+                          value={manualEntry.startTime}
+                          onChange={(e) => setManualEntry({...manualEntry, startTime: e.target.value})}
+                          className="time-input"
+                          required
+                        />
+                      </div>
+                      <div className="time-input-group">
+                        <label>Break</label>
+                        <button type="button" className="break-button">Break</button>
+                      </div>
+                      <div className="time-input-group">
+                        <label>Out</label>
+                        <input
+                          type="time"
+                          value={manualEntry.endTime}
+                          onChange={(e) => setManualEntry({...manualEntry, endTime: e.target.value})}
+                          className="time-input"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="calculated-time">
+                      {manualEntry.startTime && manualEntry.endTime && (
+                        <span>{calculateHoursFromTime().toFixed(2)} hours</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Hour Entry Mode */}
+                {entryMode === 'hour' && (
+                  <div className="hour-entry-section">
+                    <div className="hour-input-group">
+                      <label>Hours</label>
+                      <input
+                        type="number"
+                        step="0.25"
+                        value={manualEntry.hours}
+                        onChange={(e) => setManualEntry({...manualEntry, hours: e.target.value})}
+                        className="hour-input"
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Date */}
+                <div className="form-group">
+                  <label>Date</label>
+                  <input
+                    type="date"
+                    value={manualEntry.date}
+                    onChange={(e) => setManualEntry({...manualEntry, date: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                {/* Activity */}
+                <div className="form-group">
+                  <label>Select an activity</label>
+                  <select
+                    value={manualEntry.activity}
+                    onChange={(e) => setManualEntry({...manualEntry, activity: e.target.value})}
+                    className="form-select"
+                    required
+                  >
+                    <option value="">Choose activity...</option>
+                    {campaigns.map(campaign => (
+                      <option key={campaign.id} value={campaign.id}>
+                        {campaign.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Project */}
+                <div className="form-group">
+                  <label>Select a project</label>
+                  <select
+                    value={manualEntry.project}
+                    onChange={(e) => setManualEntry({...manualEntry, project: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="">Choose project...</option>
+                  </select>
+                </div>
+
+                {/* Note */}
+                <div className="form-group">
+                  <label>Add a note</label>
+                  <textarea
+                    value={manualEntry.note}
+                    onChange={(e) => setManualEntry({...manualEntry, note: e.target.value})}
+                    className="form-textarea"
+                    placeholder="Enter note..."
+                    rows="3"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="form-actions">
+                  <button type="button" className="add-new-btn">+ Add new</button>
+                  <button type="button" className="duplicate-btn">🗂 Duplicate</button>
+                </div>
+
+                {/* Submit Buttons */}
+                <div className="submit-actions">
+                  <button 
+                    type="button" 
+                    className="cancel-btn"
+                    onClick={() => setShowManualEntry(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="save-btn">
+                    Save
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CampaignManagement({ user, api, supabase }) {
     
     for (let i = 0; i < 5; i++) { // Monday to Friday
       const day = new Date(startOfWeek)
