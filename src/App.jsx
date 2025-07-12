@@ -840,286 +840,357 @@ function LoginPage() {
 
 
 
-// Dashboard Component - Cards in 2x3 grid, Quick Actions FIXED to single row
+// Dashboard Component - Jibble-style interface
 function Dashboard() {
   const { user } = useAuth()
-  const [stats, setStats] = useState({
-    totalHours: 0,
-    billableHours: 0,
-    utilization: 0,
-    pendingApprovals: 0,
-    teamMembers: 0,
-    revenue: 0
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [trackedHours, setTrackedHours] = useState({
+    worked: 0,
+    break: 0,
+    overtime: 0
   })
-  
-  // Filter states
-  const [filters, setFilters] = useState({
-    payPeriod: 'current',
-    campaign: 'all',
-    individual: 'all'
-  })
-  
-  const [campaigns, setCampaigns] = useState([])
-  const [teamMembers, setTeamMembers] = useState([])
+  const [activities, setActivities] = useState([
+    { name: 'Project Alpha', time: '2h 30m', color: '#4B5563' },
+    { name: 'Client Meeting', time: '1h 15m', color: '#6B7280' },
+    { name: 'Code Review', time: '45m', color: '#9CA3AF' },
+    { name: 'Documentation', time: '1h 00m', color: '#4B5563' },
+    { name: 'Team Standup', time: '30m', color: '#6B7280' }
+  ])
+  const [weeklyData, setWeeklyData] = useState([
+    { day: 'M', hours: 8, overtime: 0 },
+    { day: 'T', hours: 7.5, overtime: 0.5 },
+    { day: 'W', hours: 8, overtime: 1 },
+    { day: 'T', hours: 6, overtime: 0 },
+    { day: 'F', hours: 8, overtime: 0 },
+    { day: 'S', hours: 4, overtime: 0 },
+    { day: 'S', hours: 0, overtime: 0 }
+  ])
 
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Load dashboard data
   useEffect(() => {
     loadDashboardData()
-    loadCampaigns()
-    loadTeamMembers()
-  }, [filters])
+  }, [])
 
   const loadDashboardData = async () => {
     try {
       // Load real metrics from Supabase
       const metrics = await api.getUtilizationMetrics()
-      const timesheets = await api.getTimesheets({ status: 'pending' })
-      const users = await api.getUsers()
+      const timesheets = await api.getTimesheets({ 
+        user_id: user?.id,
+        start_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        end_date: new Date().toISOString().split('T')[0]
+      })
       
-      setStats({
-        totalHours: metrics.total_billable_hours || 0,
-        billableHours: metrics.total_billable_hours || 0,
-        utilization: metrics.overall_utilization || 0,
-        pendingApprovals: timesheets.length || 0,
-        teamMembers: users.filter(u => u.is_active).length || 0,
-        revenue: (metrics.total_billable_hours || 0) * (metrics.revenue_per_hour || 0)
+      // Calculate tracked hours from real data
+      let totalWorked = 0
+      let totalBreak = 0
+      let totalOvertime = 0
+      
+      timesheets.forEach(timesheet => {
+        const hours = timesheet.hours_worked || 0
+        if (hours > 8) {
+          totalWorked += 8
+          totalOvertime += hours - 8
+        } else {
+          totalWorked += hours
+        }
+      })
+      
+      setTrackedHours({
+        worked: totalWorked,
+        break: totalBreak,
+        overtime: totalOvertime
       })
     } catch (error) {
       console.error('Error loading dashboard data:', error)
     }
   }
 
-  const loadCampaigns = async () => {
-    try {
-      const campaignData = await api.getCampaigns()
-      setCampaigns([
-        { id: 'all', name: 'All Campaigns' },
-        ...campaignData.map(c => ({ id: c.id, name: c.name }))
-      ])
-    } catch (error) {
-      console.error('Error loading campaigns:', error)
-      setCampaigns([{ id: 'all', name: 'All Campaigns' }])
-    }
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
   }
 
-  const loadTeamMembers = async () => {
-    try {
-      const userData = await api.getUsers()
-      setTeamMembers([
-        { id: 'all', name: 'All Team Members' },
-        ...userData.filter(u => u.is_active).map(u => ({ id: u.id, name: u.full_name }))
-      ])
-    } catch (error) {
-      console.error('Error loading team members:', error)
-      setTeamMembers([{ id: 'all', name: 'All Team Members' }])
-    }
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    })
   }
 
-  const updateFilter = (filterType, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterType]: value
-    }))
-  }
+  const totalClocked = trackedHours.worked + trackedHours.overtime
+  const clockedPercentage = Math.min((totalClocked / 8) * 100, 100)
 
   return (
-    <div className="page-content space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back, {user?.full_name || user?.name}!
-        </h1>
-        <p className="text-gray-600 mt-1">Here's what's happening with your team today.</p>
+    <div className="jibble-dashboard">
+      {/* Header with time period tabs */}
+      <div className="dashboard-header">
+        <div className="time-period-tabs">
+          <button className="tab-button">Day</button>
+          <button className="tab-button active">Week</button>
+          <button className="tab-button">Month</button>
+        </div>
+        <div className="header-filters">
+          <select className="filter-select">
+            <option>All locations</option>
+          </select>
+          <select className="filter-select">
+            <option>All groups</option>
+          </select>
+          <select className="filter-select">
+            <option>All schedules</option>
+          </select>
+        </div>
       </div>
 
-      {/* Filters Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Filter dashboard data by pay period, campaign, and team member</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex-1 min-w-48">
-              <Label htmlFor="payPeriod" className="block text-sm font-medium text-gray-700 mb-1">Pay Period</Label>
-              <Select
-                id="payPeriod"
-                value={filters.payPeriod}
-                onChange={(e) => updateFilter('payPeriod', e.target.value)}
-                className="w-full"
-              >
-                <option value="current">Current Week</option>
-                <option value="last">Last Week</option>
-                <option value="month">Current Month</option>
-                <option value="quarter">Current Quarter</option>
-                <option value="year">Current Year</option>
-              </Select>
+      <div className="dashboard-content">
+        {/* Left Column */}
+        <div className="dashboard-left">
+          {/* Greeting Section */}
+          <div className="greeting-section">
+            <div className="greeting-content">
+              <h1 className="greeting-title">Hello {user?.full_name?.split(' ')[0] || 'User'}</h1>
+              <p className="greeting-subtitle">Here's what's happening at<br />Eps</p>
             </div>
-            
-            <div className="flex-1 min-w-48">
-              <Label htmlFor="campaign" className="block text-sm font-medium text-gray-700 mb-1">Campaign</Label>
-              <Select
-                id="campaign"
-                value={filters.campaign}
-                onChange={(e) => updateFilter('campaign', e.target.value)}
-                className="w-full"
-              >
-                {campaigns.map(campaign => (
-                  <option key={campaign.id} value={campaign.id}>{campaign.name}</option>
-                ))}
-              </Select>
-            </div>
-            
-            <div className="flex-1 min-w-48">
-              <Label htmlFor="individual" className="block text-sm font-medium text-gray-700 mb-1">Team Member</Label>
-              <Select
-                id="individual"
-                value={filters.individual}
-                onChange={(e) => updateFilter('individual', e.target.value)}
-                className="w-full"
-              >
-                {teamMembers.map(member => (
-                  <option key={member.id} value={member.id}>{member.name}</option>
-                ))}
-              </Select>
+            <div className="greeting-illustration">
+              <div className="illustration-placeholder">
+                <div className="person-icon">👤</div>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Dashboard Cards - 2x3 grid layout */}
-      <div className="grid grid-cols-3 gap-4">
-        {/* Row 1: Total Hours, Billable Hours, Utilization */}
-        <Card className="dashboard-stat-card">
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-blue-600" />
+          {/* Tracked Hours Section */}
+          <div className="tracked-hours-section">
+            <div className="section-header">
+              <h2 className="section-title">TRACKED HOURS</h2>
+              <button 
+                className="section-link"
+                onClick={() => window.location.href = '/timesheets'}
+                onMouseEnter={(e) => e.target.style.color = '#FB923C'}
+                onMouseLeave={(e) => e.target.style.color = '#6B7280'}
+              >
+                Go to timesheets
+              </button>
+            </div>
+            
+            <div className="hours-legend">
+              <div className="legend-item">
+                <div className="legend-dot worked"></div>
+                <span>WORKED HOURS</span>
+                <span className="legend-value">{Math.floor(trackedHours.worked)}h {Math.round((trackedHours.worked % 1) * 60)}m</span>
               </div>
-              <div className="ml-3 flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-500 truncate">Total Hours</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalHours.toLocaleString()}</p>
+              <div className="legend-item">
+                <div className="legend-dot break"></div>
+                <span>BREAK</span>
+                <span className="legend-value">{Math.floor(trackedHours.break)}h {Math.round((trackedHours.break % 1) * 60)}m</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-dot overtime"></div>
+                <span>OVERTIME HOURS</span>
+                <span className="legend-value">{Math.floor(trackedHours.overtime)}h {Math.round((trackedHours.overtime % 1) * 60)}m</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card className="dashboard-stat-card">
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-green-600" />
+            {/* Weekly Chart */}
+            <div className="weekly-chart">
+              <div className="chart-y-axis">
+                <span>60h</span>
+                <span>50h</span>
+                <span>40h</span>
+                <span>30h</span>
+                <span>20h</span>
+                <span>10h</span>
+                <span>0h</span>
               </div>
-              <div className="ml-3 flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-500 truncate">Billable Hours</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.billableHours.toLocaleString()}</p>
-                <p className="text-xs text-green-600 mt-1">Real-time data</p>
+              <div className="chart-bars">
+                {weeklyData.map((day, index) => (
+                  <div 
+                    key={index} 
+                    className="chart-day"
+                    onMouseEnter={(e) => {
+                      const tooltip = document.createElement('div')
+                      tooltip.className = 'chart-tooltip'
+                      tooltip.innerHTML = `${day.day}: ${day.hours}h worked${day.overtime > 0 ? `, ${day.overtime}h overtime` : ''}`
+                      e.currentTarget.appendChild(tooltip)
+                    }}
+                    onMouseLeave={(e) => {
+                      const tooltip = e.currentTarget.querySelector('.chart-tooltip')
+                      if (tooltip) tooltip.remove()
+                    }}
+                  >
+                    <div className="chart-bar-container">
+                      <div 
+                        className="chart-bar worked"
+                        style={{ height: `${(day.hours / 8) * 100}%` }}
+                      ></div>
+                      {day.overtime > 0 && (
+                        <div 
+                          className="chart-bar overtime"
+                          style={{ height: `${(day.overtime / 8) * 100}%` }}
+                        ></div>
+                      )}
+                    </div>
+                    <span className="chart-day-label">{day.day}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          </CardContent>
-        </Card>
+            
+            <p className="chart-note">Does not include manually entered time from Timesheets</p>
+          </div>
 
-        <Card className="dashboard-stat-card">
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Target className="w-5 h-5 text-purple-600" />
+          {/* Activities Section */}
+          <div className="activities-section">
+            <div className="section-header">
+              <h2 className="section-title">ACTIVITIES</h2>
+              <button 
+                className="section-link"
+                onClick={() => window.location.href = '/analytics'}
+                onMouseEnter={(e) => e.target.style.color = '#FB923C'}
+                onMouseLeave={(e) => e.target.style.color = '#6B7280'}
+              >
+                Go to activities
+              </button>
+            </div>
+            
+            <div className="activities-content">
+              <div className="activity-ring">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    fill="none"
+                    stroke="#E5E7EB"
+                    strokeWidth="16"
+                  />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    fill="none"
+                    stroke="#4B5563"
+                    strokeWidth="16"
+                    strokeDasharray={`${clockedPercentage * 3.27} 327`}
+                    strokeDashoffset="0"
+                    transform="rotate(-90 60 60)"
+                    className="activity-progress"
+                  />
+                </svg>
+                <div className="ring-center">
+                  <div className="ring-label">clocked</div>
+                  <div className="ring-time">{Math.floor(totalClocked)}h {Math.round((totalClocked % 1) * 60)}m</div>
+                </div>
               </div>
-              <div className="ml-3 flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-500 truncate">Utilization</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.utilization.toFixed(1)}%</p>
-                <p className="text-xs text-green-600 mt-1">Live calculation</p>
+              
+              <div className="activities-list">
+                <h3 className="activities-list-title">Top 10 activities</h3>
+                <div className="activity-items">
+                  {activities.slice(0, 5).map((activity, index) => (
+                    <div 
+                      key={index} 
+                      className="activity-item"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#F9FAFB'
+                        e.currentTarget.style.transform = 'translateX(4px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent'
+                        e.currentTarget.style.transform = 'translateX(0)'
+                      }}
+                    >
+                      <div className="activity-dot" style={{ backgroundColor: activity.color }}></div>
+                      <span className="activity-name">{activity.name}</span>
+                      <span className="activity-time">{activity.time}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Row 2: Pending Approvals, Team Members, Revenue */}
-        <Card className="dashboard-stat-card">
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-orange-600" />
+        {/* Right Column */}
+        <div className="dashboard-right">
+          {/* Who's In/Out Section */}
+          <div className="whos-inout-section">
+            <h2 className="section-title">Who's In/Out</h2>
+            <div className="inout-stats">
+              <div className="stat-item">
+                <span className="stat-number">0</span>
+                <span className="stat-label">In</span>
               </div>
-              <div className="ml-3 flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-500 truncate">Pending Approvals</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.pendingApprovals}</p>
+              <div className="stat-item">
+                <span className="stat-number">0</span>
+                <span className="stat-label">Out</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">1</span>
+                <span className="stat-label">Break</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="member-count">1 member</div>
+          </div>
 
-        <Card className="dashboard-stat-card">
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="ml-3 flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-500 truncate">Team Members</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.teamMembers}</p>
+          {/* Upcoming Holidays Section */}
+          <div className="holidays-section">
+            <h2 className="section-title">UPCOMING HOLIDAYS AND TIME OFF</h2>
+            <div className="holidays-content">
+              <p className="holidays-text">
+                Add your holiday calendar for<br />
+                reminders and overtime calculations.
+              </p>
+              <div className="holidays-actions">
+                <button 
+                  className="btn-primary"
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#EA580C'
+                    e.target.style.transform = 'translateY(-1px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#FB923C'
+                    e.target.style.transform = 'translateY(0)'
+                  }}
+                >
+                  Set up Holidays
+                </button>
+                <button 
+                  className="btn-secondary"
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#E5E7EB'
+                    e.target.style.transform = 'translateY(-1px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#F3F4F6'
+                    e.target.style.transform = 'translateY(0)'
+                  }}
+                >
+                  No, thanks
+                </button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="dashboard-stat-card">
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-              </div>
-              <div className="ml-3 flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-500 truncate">Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">${stats.revenue.toLocaleString()}</p>
-                <p className="text-xs text-green-600 mt-1">From database</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Current Time */}
+          <div className="current-time">
+            <div className="time-display">{formatTime(currentTime)}</div>
+            <div className="date-display">{formatDate(currentTime)}</div>
+            <div className="timezone">No timezone selected</div>
+          </div>
+        </div>
       </div>
-
-      {/* Quick Actions Section - Single horizontal row */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks and shortcuts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 gap-4">
-            <Link to="/timesheets" className="quick-action-card">
-              <Clock className="quick-action-icon text-blue-600" />
-              <div>
-                <h3 className="quick-action-title">Submit Timesheet</h3>
-                <p className="quick-action-description">Log your daily hours</p>
-              </div>
-            </Link>
-            {user?.role !== 'team_member' && (
-              <>
-                <Link to="/team" className="quick-action-card">
-                  <Users className="quick-action-icon text-green-600" />
-                  <div>
-                    <h3 className="quick-action-title">View Team</h3>
-                    <p className="quick-action-description">Manage team members</p>
-                  </div>
-                </Link>
-                <Link to="/billable-hours" className="quick-action-card">
-                  <DollarSign className="quick-action-icon text-purple-600" />
-                  <div>
-                    <h3 className="quick-action-title">Billable Hours</h3>
-                    <p className="quick-action-description">Track billable time</p>
-                  </div>
-                </Link>
-                <Link to="/analytics" className="quick-action-card">
-                  <BarChart3 className="quick-action-icon text-orange-600" />
-                  <div>
-                    <h3 className="quick-action-title">Analytics</h3>
-                    <p className="quick-action-description">View performance metrics</p>
-                  </div>
-                </Link>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
@@ -1488,14 +1559,6 @@ function TeamPage() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="edit_department">Department</Label>
-                    <Input
-                      id="edit_department"
-                      value={editingUser.department || ''}
-                      onChange={(e) => setEditingUser({...editingUser, department: e.target.value})}
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="edit_hire_date">Hire Date</Label>
                     <Input
                       id="edit_hire_date"
@@ -1504,15 +1567,14 @@ function TeamPage() {
                       onChange={(e) => setEditingUser({...editingUser, hire_date: e.target.value})}
                     />
                   </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit_phone">Phone</Label>
-                  <Input
-                    id="edit_phone"
-                    value={editingUser.phone || ''}
-                    onChange={(e) => setEditingUser({...editingUser, phone: e.target.value})}
-                  />
+                  <div>
+                    <Label htmlFor="edit_phone">Phone</Label>
+                    <Input
+                      id="edit_phone"
+                      value={editingUser.phone || ''}
+                      onChange={(e) => setEditingUser({...editingUser, phone: e.target.value})}
+                    />
+                  </div>
                 </div>
                 
                 <div className="flex justify-end space-x-3 pt-4">
@@ -3224,7 +3286,6 @@ function CampaignManagement({ user, api, supabase }) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState(null)
-  const [actionLoading, setActionLoading] = useState(false)
   const [newCampaign, setNewCampaign] = useState({
     name: '',
     code: '',
@@ -3257,8 +3318,8 @@ function CampaignManagement({ user, api, supabase }) {
   const handleCreateCampaign = async (e) => {
     e.preventDefault()
     try {
-      const campaign = await api.createCampaign(newCampaign)
-      setCampaigns([campaign, ...campaigns])
+      await api.createCampaign(newCampaign)
+      setShowCreateModal(false)
       setNewCampaign({
         name: '',
         code: '',
@@ -3271,49 +3332,46 @@ function CampaignManagement({ user, api, supabase }) {
         hourly_rate: '',
         description: ''
       })
-      setShowCreateModal(false)
+      loadCampaigns()
     } catch (error) {
       console.error('Error creating campaign:', error)
+      alert('Error creating campaign. Please try again.')
     }
   }
 
   const handleEditCampaign = (campaign) => {
-    setEditingCampaign(campaign)
+    setEditingCampaign({
+      ...campaign,
+      budget: campaign.budget || '',
+      hourly_rate: campaign.hourly_rate || ''
+    })
     setShowEditModal(true)
   }
 
   const handleUpdateCampaign = async (e) => {
     e.preventDefault()
     try {
-      setActionLoading(true)
       await api.updateCampaign(editingCampaign.id, editingCampaign)
-      setCampaigns(campaigns.map(c => 
-        c.id === editingCampaign.id ? editingCampaign : c
-      ))
-      setEditingCampaign(null)
       setShowEditModal(false)
+      setEditingCampaign(null)
+      loadCampaigns()
     } catch (error) {
       console.error('Error updating campaign:', error)
-    } finally {
-      setActionLoading(false)
+      alert('Error updating campaign. Please try again.')
     }
   }
 
   const handleDeleteCampaign = async (campaignId) => {
     if (window.confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
       try {
-        setActionLoading(true)
         await api.deleteCampaign(campaignId)
-        setCampaigns(campaigns.filter(c => c.id !== campaignId))
+        loadCampaigns()
       } catch (error) {
         console.error('Error deleting campaign:', error)
-      } finally {
-        setActionLoading(false)
+        alert('Error deleting campaign. Please try again.')
       }
     }
-  }
-
-  const getStatusBadge = (status) => {
+  }tusBadge = (status) => {
     const variants = {
       planning: 'orange',
       active: 'green',
@@ -3367,7 +3425,7 @@ function CampaignManagement({ user, api, supabase }) {
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Budget</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Rate</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
+                    <th className="text-center py-3 px-4 font-medium text-gray-900">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3379,22 +3437,22 @@ function CampaignManagement({ user, api, supabase }) {
                       <td className="py-3 px-4">{getStatusBadge(campaign.status)}</td>
                       <td className="py-3 px-4">${campaign.budget?.toLocaleString() || 'N/A'}</td>
                       <td className="py-3 px-4">${campaign.hourly_rate || 'N/A'}/hr</td>
-                      <td className="py-3 px-4">
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex justify-center space-x-2">
+                          <button
                             onClick={() => handleEditCampaign(campaign)}
+                            className="apple-button apple-button-secondary btn-sm"
+                            title="Edit campaign"
                           >
                             <Edit className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
+                          </button>
+                          <button
                             onClick={() => handleDeleteCampaign(campaign.id)}
+                            className="apple-button apple-button-danger btn-sm"
+                            title="Delete campaign"
                           >
                             <Trash2 className="w-3 h-3" />
-                          </Button>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -3516,7 +3574,6 @@ function CampaignManagement({ user, api, supabase }) {
         </div>
       )}
 
-      {/* Edit Campaign Modal */}
       {showEditModal && editingCampaign && (
         <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -3566,6 +3623,7 @@ function CampaignManagement({ user, api, supabase }) {
                   <div>
                     <Label htmlFor="edit_status">Status</Label>
                     <Select
+                      id="edit_status"
                       value={editingCampaign.status}
                       onChange={(e) => setEditingCampaign({...editingCampaign, status: e.target.value})}
                     >
@@ -3573,6 +3631,7 @@ function CampaignManagement({ user, api, supabase }) {
                       <option value="active">Active</option>
                       <option value="paused">Paused</option>
                       <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
                     </Select>
                   </div>
                 </div>
@@ -3603,7 +3662,7 @@ function CampaignManagement({ user, api, supabase }) {
                   <Label htmlFor="edit_description">Description</Label>
                   <Input
                     id="edit_description"
-                    value={editingCampaign.description || ''}
+                    value={editingCampaign.description}
                     onChange={(e) => setEditingCampaign({...editingCampaign, description: e.target.value})}
                     placeholder="Campaign description..."
                   />
@@ -3617,8 +3676,8 @@ function CampaignManagement({ user, api, supabase }) {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={actionLoading}>
-                    {actionLoading ? 'Updating...' : 'Update Campaign'}
+                  <Button type="submit">
+                    Update Campaign
                   </Button>
                 </div>
               </form>
