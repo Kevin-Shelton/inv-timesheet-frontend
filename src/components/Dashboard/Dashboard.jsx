@@ -37,9 +37,13 @@ function CurrentTimeDisplay() {
   })
 
   return (
-    <div className="jibble-time-display">
-      <div className="jibble-current-time">{timeString}</div>
-      <div className="jibble-current-date">{dateString}</div>
+    <div style={{ textAlign: 'center', padding: '20px' }}>
+      <div style={{ fontSize: '32px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
+        {timeString}
+      </div>
+      <div style={{ color: '#6b7280', fontSize: '14px' }}>
+        {dateString}
+      </div>
       <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
         No previous entry
       </div>
@@ -50,9 +54,22 @@ function CurrentTimeDisplay() {
 // Chart Placeholder Component
 function ChartPlaceholder({ title, type = 'bar' }) {
   return (
-    <div className="jibble-chart-placeholder">
+    <div style={{
+      width: '100%',
+      height: '200px',
+      background: '#f9fafb',
+      border: '2px dashed #d1d5db',
+      borderRadius: '8px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#6b7280',
+      fontSize: '14px',
+      flexDirection: 'column',
+      gap: '8px'
+    }}>
       {type === 'bar' ? <BarChart3 size={32} /> : <PieChart size={32} />}
-      <div style={{ marginLeft: '8px' }}>{title}</div>
+      <div>{title}</div>
     </div>
   )
 }
@@ -63,10 +80,26 @@ function TrackedHoursSection() {
   const weekDates = [7, 8, 9, 10, 11, 12, 13]
 
   return (
-    <div className="jibble-stat-card">
-      <div className="jibble-stat-header">
-        <h3 className="jibble-stat-title">TRACKED HOURS</h3>
-        <a href="#" className="jibble-stat-link">Go to timesheets</a>
+    <div style={{
+      background: 'white',
+      borderRadius: '12px',
+      padding: '20px',
+      border: '1px solid #e5e7eb',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      marginBottom: '20px'
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '16px'
+      }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151' }}>
+          TRACKED HOURS
+        </h3>
+        <a href="#" style={{ color: '#3b82f6', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>
+          Go to timesheets
+        </a>
       </div>
 
       <div style={{ marginBottom: '16px' }}>
@@ -152,10 +185,26 @@ function TrackedHoursSection() {
 // Activities Section
 function ActivitiesSection() {
   return (
-    <div className="jibble-stat-card">
-      <div className="jibble-stat-header">
-        <h3 className="jibble-stat-title">ACTIVITIES</h3>
-        <a href="#" className="jibble-stat-link">Go to activities</a>
+    <div style={{
+      background: 'white',
+      borderRadius: '12px',
+      padding: '20px',
+      border: '1px solid #e5e7eb',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      marginBottom: '20px'
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '16px'
+      }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151' }}>
+          ACTIVITIES
+        </h3>
+        <a href="#" style={{ color: '#3b82f6', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>
+          Go to activities
+        </a>
       </div>
 
       <div style={{ textAlign: 'center', padding: '40px 20px' }}>
@@ -215,9 +264,23 @@ function ActivitiesSection() {
 // Holidays Section
 function HolidaysSection() {
   return (
-    <div className="jibble-stat-card">
-      <div className="jibble-stat-header">
-        <h3 className="jibble-stat-title">UPCOMING HOLIDAYS AND TIME OFF</h3>
+    <div style={{
+      background: 'white',
+      borderRadius: '12px',
+      padding: '20px',
+      border: '1px solid #e5e7eb',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      marginBottom: '20px'
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '16px'
+      }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151' }}>
+          UPCOMING HOLIDAYS AND TIME OFF
+        </h3>
       </div>
 
       <div style={{ 
@@ -266,20 +329,107 @@ function HolidaysSection() {
   )
 }
 
-// Main Dashboard Component
-export function JibbleDashboard() {
+// Who's In/Out Section
+function WhosInOutSection() {
   return (
-    <div className="jibble-dashboard">
+    <div style={{
+      background: 'white',
+      borderRadius: '12px',
+      padding: '20px',
+      border: '1px solid #e5e7eb',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      marginBottom: '20px'
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '16px'
+      }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151' }}>
+          Who's In/Out
+        </h3>
+      </div>
+      
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '16px',
+        textAlign: 'center',
+        marginBottom: '20px'
+      }}>
+        <div style={{
+          padding: '12px',
+          background: '#f9fafb',
+          borderRadius: '8px'
+        }}>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>0</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            IN
+          </div>
+        </div>
+        <div style={{
+          padding: '12px',
+          background: '#f9fafb',
+          borderRadius: '8px'
+        }}>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>0</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            OUT
+          </div>
+        </div>
+        <div style={{
+          padding: '12px',
+          background: '#f9fafb',
+          borderRadius: '8px'
+        }}>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>1</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            BREAK
+          </div>
+        </div>
+      </div>
+
+      <CurrentTimeDisplay />
+    </div>
+  )
+}
+
+// Main Dashboard Component with proper export
+export function Dashboard() {
+  return (
+    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
       {/* Welcome Section */}
-      <div className="jibble-welcome-section">
-        <div className="jibble-welcome-header">
+      <div style={{
+        background: 'white',
+        borderRadius: '12px',
+        padding: '24px',
+        marginBottom: '24px',
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '16px'
+        }}>
           <div>
-            <h1 className="jibble-welcome-title">Hello admin@test.com</h1>
-            <p className="jibble-welcome-subtitle">Here's what's happening at Eps</p>
+            <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
+              Hello admin@test.com
+            </h1>
+            <p style={{ color: '#6b7280', marginBottom: '16px' }}>
+              Here's what's happening at Eps
+            </p>
           </div>
         </div>
         
-        <div className="jibble-welcome-content">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          gap: '24px',
+          alignItems: 'center'
+        }}>
           <div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ 
@@ -298,43 +448,37 @@ export function JibbleDashboard() {
               </div>
             </div>
           </div>
-          <div className="jibble-welcome-illustration">
+          <div style={{
+            width: '120px',
+            height: '80px',
+            background: 'linear-gradient(135deg, #fef3c7, #fed7aa)',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '32px'
+          }}>
             👋
           </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="jibble-stats-grid">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: '24px',
+        marginBottom: '24px'
+      }}>
         <TrackedHoursSection />
         <ActivitiesSection />
         <HolidaysSection />
-        
-        {/* Who's In/Out Section */}
-        <div className="jibble-who-section">
-          <div className="jibble-who-header">
-            <h3 className="jibble-who-title">Who's In/Out</h3>
-          </div>
-          
-          <div className="jibble-who-stats">
-            <div className="jibble-who-stat">
-              <div className="jibble-who-number">0</div>
-              <div className="jibble-who-label">IN</div>
-            </div>
-            <div className="jibble-who-stat">
-              <div className="jibble-who-number">0</div>
-              <div className="jibble-who-label">OUT</div>
-            </div>
-            <div className="jibble-who-stat">
-              <div className="jibble-who-number">1</div>
-              <div className="jibble-who-label">BREAK</div>
-            </div>
-          </div>
-
-          <CurrentTimeDisplay />
-        </div>
+        <WhosInOutSection />
       </div>
     </div>
   )
 }
+
+// Also provide a default export for compatibility
+export default Dashboard
 
