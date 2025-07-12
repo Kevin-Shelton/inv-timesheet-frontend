@@ -9,8 +9,7 @@ import {
   Settings,
   LogOut,
   User,
-  X,
-  Menu
+  X
 } from 'lucide-react'
 
 export function Sidebar({ isOpen, onClose, user }) {
@@ -36,70 +35,72 @@ export function Sidebar({ isOpen, onClose, user }) {
   ]
 
   return (
-    <>
-      {/* Desktop Sidebar */}
-      <div className="sidebar-corrected">
-        {/* Logo Section */}
-        <div className="sidebar-logo-corrected">
-          <div className="logo-container-corrected">
-            <div className="logo-icon-corrected">
-              <Clock size={24} className="logo-clock-corrected" />
-            </div>
-            <div className="logo-text-corrected">
-              <h1>Timesheet</h1>
-              <span>Pro</span>
-            </div>
-          </div>
+    <div className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+      {/* Sidebar Header */}
+      <div className="sidebar-header">
+        <div className="sidebar-logo">
+          <Clock className="sidebar-logo-icon" />
+          <span className="sidebar-logo-text">Timesheet Pro</span>
         </div>
-
-        {/* User Profile Section */}
-        <div className="sidebar-profile-corrected">
-          <div className="profile-container-corrected">
-            <div className="profile-avatar-corrected">
-              <User size={20} />
-            </div>
-            <div className="profile-info-corrected">
-              <div className="profile-name-corrected">{user?.full_name || user?.email || 'User'}</div>
-              <div className="profile-role-corrected">{user?.role || 'Team Member'}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation Menu */}
-        <nav className="sidebar-nav-corrected">
-          <ul className="nav-list-corrected">
-            {menuItems.map((item) => {
-              const Icon = item.icon
-              return (
-                <li key={item.path} className="nav-item-corrected">
-                  <NavLink
-                    to={item.path}
-                    className={({ isActive }) => 
-                      `nav-link-corrected ${isActive ? 'nav-link-active-corrected' : ''}`
-                    }
-                    onClick={() => window.innerWidth < 768 && onClose()}
-                  >
-                    <Icon size={18} className="nav-icon-corrected" />
-                    <span className="nav-label-corrected">{item.label}</span>
-                  </NavLink>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
-
-        {/* Logout Section */}
-        <div className="sidebar-footer-corrected">
-          <button 
-            onClick={handleLogout}
-            className="logout-button-corrected"
-          >
-            <LogOut size={18} className="logout-icon-corrected" />
-            <span className="logout-label-corrected">Logout</span>
-          </button>
-        </div>
+        {/* Close button for mobile */}
+        <button 
+          className="mobile-close-button"
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'white',
+            padding: '8px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            marginLeft: 'auto',
+            display: window.innerWidth < 768 ? 'block' : 'none'
+          }}
+        >
+          <X size={20} />
+        </button>
       </div>
-    </>
+
+      {/* Navigation Menu */}
+      <nav className="sidebar-nav">
+        {menuItems.map((item) => {
+          const Icon = item.icon
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) => 
+                `nav-item ${isActive ? 'active' : ''}`
+              }
+              onClick={() => window.innerWidth < 768 && onClose()}
+            >
+              <Icon className="nav-icon" size={20} />
+              <span>{item.label}</span>
+            </NavLink>
+          )
+        })}
+      </nav>
+
+      {/* Sidebar Footer */}
+      <div className="sidebar-footer">
+        <div className="user-info">
+          <div className="user-avatar">
+            <User size={20} />
+          </div>
+          <div className="user-details">
+            <div className="user-name">{user?.full_name || user?.email || 'User'}</div>
+            <div className="user-role">{user?.role || 'Team Member'}</div>
+          </div>
+        </div>
+        <button 
+          onClick={handleLogout}
+          className="logout-button"
+          title="Logout"
+        >
+          <LogOut size={18} />
+        </button>
+      </div>
+    </div>
   )
 }
 
