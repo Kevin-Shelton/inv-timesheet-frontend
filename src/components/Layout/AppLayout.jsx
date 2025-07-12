@@ -22,9 +22,14 @@ import {
   X
 } from 'lucide-react'
 
-// Jibble-style Sidebar Component
-export function JibbleSidebar({ isOpen, onClose, user }) {
-  const { logout } = useAuth()
+// Fixed AppLayout component with proper export
+export function AppLayout() {
+  const { user, logout } = useAuth()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  if (!user) {
+    return null // This will be handled by ProtectedRoute
+  }
 
   const menuItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -52,8 +57,9 @@ export function JibbleSidebar({ isOpen, onClose, user }) {
   }
 
   return (
-    <>
-      <div className={`jibble-sidebar ${isOpen ? 'jibble-sidebar-open' : ''}`}>
+    <div className="jibble-layout">
+      {/* Sidebar */}
+      <div className={`jibble-sidebar ${sidebarOpen ? 'jibble-sidebar-open' : ''}`}>
         {/* Jibble Logo */}
         <div className="jibble-logo">
           <div className="jibble-logo-icon">
@@ -63,7 +69,7 @@ export function JibbleSidebar({ isOpen, onClose, user }) {
           {/* Mobile close button */}
           <button 
             className="jibble-mobile-close"
-            onClick={onClose}
+            onClick={() => setSidebarOpen(false)}
           >
             <X size={20} />
           </button>
@@ -81,7 +87,7 @@ export function JibbleSidebar({ isOpen, onClose, user }) {
                 onClick={(e) => {
                   e.preventDefault()
                   // Handle navigation here
-                  if (window.innerWidth < 768) onClose()
+                  if (window.innerWidth < 768) setSidebarOpen(false)
                 }}
               >
                 <Icon size={16} className="jibble-nav-icon" />
@@ -105,7 +111,7 @@ export function JibbleSidebar({ isOpen, onClose, user }) {
               <User size={16} />
             </div>
             <div className="jibble-user-details">
-              <div className="jibble-user-name">{user?.full_name || 'Kevin Shelton'}</div>
+              <div className="jibble-user-name">{user?.full_name || user?.email || 'User'}</div>
               <div className="jibble-user-company">Eps</div>
             </div>
             <button 
@@ -120,111 +126,75 @@ export function JibbleSidebar({ isOpen, onClose, user }) {
       </div>
 
       {/* Mobile Overlay */}
-      {isOpen && (
+      {sidebarOpen && (
         <div 
           className="jibble-sidebar-overlay"
-          onClick={onClose}
+          onClick={() => setSidebarOpen(false)}
         />
       )}
-    </>
-  )
-}
-
-// Jibble-style Header Component
-export function JibbleHeader({ user, onMenuClick }) {
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [showProfile, setShowProfile] = useState(false)
-
-  return (
-    <header className="jibble-header">
-      <div className="jibble-header-content">
-        {/* Left - Mobile menu + Title */}
-        <div className="jibble-header-left">
-          <button 
-            className="jibble-mobile-menu"
-            onClick={onMenuClick}
-          >
-            <Menu size={20} />
-          </button>
-          <h1 className="jibble-page-title">Dashboard</h1>
-        </div>
-
-        {/* Center - Tabs */}
-        <div className="jibble-header-center">
-          <div className="jibble-tabs">
-            <button className="jibble-tab jibble-tab-active">Day</button>
-            <button className="jibble-tab">Week</button>
-            <button className="jibble-tab">Month</button>
-          </div>
-        </div>
-
-        {/* Right - Controls */}
-        <div className="jibble-header-right">
-          <div className="jibble-filters">
-            <select className="jibble-filter">
-              <option>All locations</option>
-            </select>
-            <select className="jibble-filter">
-              <option>All groups</option>
-            </select>
-            <select className="jibble-filter">
-              <option>All schedules</option>
-            </select>
-          </div>
-
-          <div className="jibble-header-actions">
-            <button className="jibble-action-btn jibble-onboarding-btn">
-              <span className="jibble-onboarding-text">Onboarding</span>
-              <div className="jibble-progress-bar">
-                <div className="jibble-progress-fill" style={{width: '60%'}}></div>
-              </div>
-              <span className="jibble-progress-text">1 of 7</span>
-            </button>
-
-            <button 
-              className="jibble-notification-btn"
-              onClick={() => setShowNotifications(!showNotifications)}
-            >
-              <Bell size={18} />
-            </button>
-
-            <button 
-              className="jibble-profile-btn"
-              onClick={() => setShowProfile(!showProfile)}
-            >
-              <User size={18} />
-              <ChevronDown size={14} />
-            </button>
-          </div>
-        </div>
-      </div>
-    </header>
-  )
-}
-
-// Main Jibble-style Layout
-export function JibbleLayout() {
-  const { user } = useAuth()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  if (!user) {
-    return null
-  }
-
-  return (
-    <div className="jibble-layout">
-      <JibbleSidebar 
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        user={user}
-      />
       
+      {/* Main Content */}
       <div className="jibble-main">
-        <JibbleHeader 
-          user={user}
-          onMenuClick={() => setSidebarOpen(true)}
-        />
+        {/* Header */}
+        <header className="jibble-header">
+          <div className="jibble-header-content">
+            {/* Left - Mobile menu + Title */}
+            <div className="jibble-header-left">
+              <button 
+                className="jibble-mobile-menu"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu size={20} />
+              </button>
+              <h1 className="jibble-page-title">Dashboard</h1>
+            </div>
+
+            {/* Center - Tabs */}
+            <div className="jibble-header-center">
+              <div className="jibble-tabs">
+                <button className="jibble-tab jibble-tab-active">Day</button>
+                <button className="jibble-tab">Week</button>
+                <button className="jibble-tab">Month</button>
+              </div>
+            </div>
+
+            {/* Right - Controls */}
+            <div className="jibble-header-right">
+              <div className="jibble-filters">
+                <select className="jibble-filter">
+                  <option>All locations</option>
+                </select>
+                <select className="jibble-filter">
+                  <option>All groups</option>
+                </select>
+                <select className="jibble-filter">
+                  <option>All schedules</option>
+                </select>
+              </div>
+
+              <div className="jibble-header-actions">
+                <button className="jibble-action-btn jibble-onboarding-btn">
+                  <span className="jibble-onboarding-text">Onboarding</span>
+                  <div className="jibble-progress-bar">
+                    <div className="jibble-progress-fill" style={{width: '60%'}}></div>
+                  </div>
+                  <span className="jibble-progress-text">1 of 7</span>
+                </button>
+
+                <button className="jibble-notification-btn">
+                  <Bell size={18} />
+                </button>
+
+                <button className="jibble-profile-btn">
+                  <User size={18} />
+                  <ChevronDown size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
         
+        {/* Main Content */}
         <main className="jibble-content">
           <Outlet />
         </main>
@@ -232,4 +202,7 @@ export function JibbleLayout() {
     </div>
   )
 }
+
+// Also provide a default export for compatibility
+export default AppLayout
 

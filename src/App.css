@@ -1,4 +1,4 @@
-/* ===== JIBBLE-STYLE INTERFACE CSS ===== */
+/* ===== COMPLETE JIBBLE-STYLE CSS ===== */
 
 /* Tailwind CSS imports */
 @tailwind base;
@@ -446,209 +446,293 @@ body {
   background: #f9fafb;
 }
 
-/* ===== JIBBLE DASHBOARD COMPONENTS ===== */
+/* ===== LEGACY SUPPORT FOR EXISTING COMPONENTS ===== */
 
-.jibble-dashboard {
-  max-width: 1400px;
-  margin: 0 auto;
+/* Support for existing app-layout class */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  background-color: #f9fafb;
 }
 
-.jibble-welcome-section {
+/* Support for existing sidebar class */
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  height: 100vh;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 30;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 50;
+  }
+  
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+}
+
+/* Support for existing main-content class */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Support for existing main-header class */
+.main-header {
   background: white;
-  border-radius: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  z-index: 20;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (min-width: 768px) {
+  .main-header {
+    display: none;
+  }
+}
+
+/* Support for existing page-content class */
+.page-content {
+  flex: 1;
+  overflow-y: auto;
   padding: 24px;
-  margin-bottom: 24px;
-  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+/* ===== COMPONENT STYLES ===== */
+
+/* Cards */
+.card {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: white;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  margin-bottom: 20px;
 }
 
-.jibble-welcome-header {
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.card-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  padding-bottom: 0;
 }
 
-.jibble-welcome-title {
-  font-size: 24px;
+.card-title {
+  font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  line-height: 1;
+  color: #1e293b;
 }
 
-.jibble-welcome-subtitle {
-  color: #6b7280;
-  margin-bottom: 16px;
+.card-description {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 400;
 }
 
-.jibble-welcome-content {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 24px;
-  align-items: center;
+.card-content {
+  padding: 20px;
 }
 
-.jibble-welcome-illustration {
-  width: 120px;
-  height: 80px;
-  background: linear-gradient(135deg, #fef3c7, #fed7aa);
-  border-radius: 8px;
-  display: flex;
+/* Buttons */
+.btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
-}
-
-.jibble-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
-  margin-bottom: 24px;
-}
-
-.jibble-stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-}
-
-.jibble-stat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.jibble-stat-title {
-  font-size: 16px;
+  padding: 10px 20px;
+  border-radius: 8px;
   font-weight: 600;
-  color: #374151;
-}
-
-.jibble-stat-link {
-  color: #3b82f6;
+  font-size: 14px;
+  line-height: 1;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 8px;
 }
 
-.jibble-stat-link:hover {
-  text-decoration: underline;
+.btn-primary {
+  background: #3b82f6;
+  color: white;
 }
 
-.jibble-chart-placeholder {
+.btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background: #10b981;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+/* Form Elements */
+.form-input {
   width: 100%;
-  height: 200px;
-  background: #f9fafb;
-  border: 2px dashed #d1d5db;
+  padding: 10px 12px;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
+  border: 1px solid #e2e8f0;
+  background: white;
   font-size: 14px;
+  color: #1e293b;
+  transition: all 0.2s ease;
 }
 
-.jibble-time-display {
-  text-align: center;
-  padding: 20px;
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.jibble-current-time {
-  font-size: 32px;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 4px;
+.form-input::placeholder {
+  color: #94a3b8;
 }
 
-.jibble-current-date {
-  color: #6b7280;
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: white;
   font-size: 14px;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.jibble-who-section {
+.form-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Tables */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
   background: white;
   border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
 }
 
-.jibble-who-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+.table thead {
+  background: #f8fafc;
 }
 
-.jibble-who-title {
-  font-size: 16px;
+.table th {
+  padding: 16px 20px;
+  text-align: left;
   font-weight: 600;
+  font-size: 13px;
   color: #374151;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.jibble-who-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  text-align: center;
+.table tbody tr {
+  transition: background-color 0.2s ease;
 }
 
-.jibble-who-stat {
-  padding: 12px;
-  background: #f9fafb;
-  border-radius: 8px;
+.table tbody tr:hover {
+  background: #f8fafc;
 }
 
-.jibble-who-number {
-  font-size: 24px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.jibble-who-label {
-  font-size: 12px;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  font-size: 14px;
+  color: #374151;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .jibble-content {
+  .jibble-content,
+  .page-content {
     padding: 16px;
-  }
-  
-  .jibble-stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .jibble-welcome-content {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-  
-  .jibble-who-stats {
-    grid-template-columns: 1fr;
   }
 }
 
 /* Scrollbar styling */
-.jibble-content::-webkit-scrollbar {
+.jibble-content::-webkit-scrollbar,
+.page-content::-webkit-scrollbar {
   width: 6px;
 }
 
-.jibble-content::-webkit-scrollbar-track {
+.jibble-content::-webkit-scrollbar-track,
+.page-content::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
 
-.jibble-content::-webkit-scrollbar-thumb {
+.jibble-content::-webkit-scrollbar-thumb,
+.page-content::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
 }
 
-.jibble-content::-webkit-scrollbar-thumb:hover {
+.jibble-content::-webkit-scrollbar-thumb:hover,
+.page-content::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
