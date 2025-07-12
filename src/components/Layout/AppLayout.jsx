@@ -21,8 +21,9 @@ import {
   Menu,
   X
 } from 'lucide-react'
+import invictusLogo from '../../assets/invictus_logo.png'
 
-// Fixed AppLayout component that doesn't constrain dashboard layout
+// Updated AppLayout with Invictus branding and removed unwanted elements
 export function AppLayout() {
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -116,25 +117,13 @@ export function AppLayout() {
     alignItems: 'center',
     padding: '16px 20px',
     borderBottom: '1px solid #f3f4f6',
-    gap: '8px'
+    gap: '12px'
   }
 
-  const logoIconStyle = {
-    width: '32px',
+  const logoImageStyle = {
     height: '32px',
-    background: 'linear-gradient(135deg, #f97316, #ea580c)',
-    borderRadius: '6px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white'
-  }
-
-  const logoTextStyle = {
-    fontSize: '20px',
-    fontWeight: '700',
-    color: '#f97316',
-    flex: 1
+    width: 'auto',
+    objectFit: 'contain'
   }
 
   const navStyle = {
@@ -280,12 +269,13 @@ export function AppLayout() {
     <div style={layoutStyle}>
       {/* Sidebar */}
       <div style={sidebarStyle}>
-        {/* Jibble Logo */}
+        {/* Invictus Logo - UPDATED */}
         <div style={logoStyle}>
-          <div style={logoIconStyle}>
-            <Clock size={24} />
-          </div>
-          <span style={logoTextStyle}>Jibble</span>
+          <img 
+            src={invictusLogo} 
+            alt="Invictus" 
+            style={logoImageStyle}
+          />
         </div>
 
         {/* Navigation */}
@@ -317,30 +307,15 @@ export function AppLayout() {
           })}
         </nav>
 
-        {/* Bottom Section */}
+        {/* Bottom Section - TRIAL WARNING REMOVED */}
         <div style={sidebarBottomStyle}>
-          <div style={{
-            background: '#fef3c7',
-            borderRadius: '8px',
-            padding: '12px',
-            marginBottom: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <div style={{ fontSize: '16px' }}>⚠️</div>
-            <div style={{ fontSize: '12px', color: '#92400e' }}>
-              14 days left in trial
-            </div>
-          </div>
-          
           <div style={userInfoStyle}>
             <div style={userAvatarStyle}>
               <User size={16} />
             </div>
             <div style={userDetailsStyle}>
               <div style={userNameStyle}>{user?.full_name || user?.email || 'User'}</div>
-              <div style={userCompanyStyle}>Eps</div>
+              <div style={userCompanyStyle}>Invictus</div>
             </div>
             <button 
               onClick={handleLogout}
@@ -357,7 +332,7 @@ export function AppLayout() {
       
       {/* Main Content */}
       <div style={mainContentStyle}>
-        {/* Header */}
+        {/* Header - ONBOARDING SECTION REMOVED */}
         <header style={headerStyle}>
           {/* Left - Title */}
           <div style={headerLeftStyle}>
@@ -371,7 +346,7 @@ export function AppLayout() {
             <button style={tabStyle}>Month</button>
           </div>
 
-          {/* Right - Controls */}
+          {/* Right - Controls (Onboarding section removed) */}
           <div style={headerRightStyle}>
             <select style={filterStyle}>
               <option>All locations</option>
@@ -382,30 +357,6 @@ export function AppLayout() {
             <select style={filterStyle}>
               <option>All schedules</option>
             </select>
-
-            <button style={{
-              ...actionBtnStyle,
-              background: '#374151',
-              color: 'white',
-              fontSize: '12px',
-              gap: '8px'
-            }}>
-              <span>Onboarding</span>
-              <div style={{
-                width: '40px',
-                height: '3px',
-                background: '#6b7280',
-                borderRadius: '2px',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  height: '100%',
-                  background: '#f97316',
-                  width: '60%'
-                }}></div>
-              </div>
-              <span style={{ fontSize: '10px' }}>1 of 7</span>
-            </button>
 
             <button style={actionBtnStyle}>
               <Bell size={18} />
