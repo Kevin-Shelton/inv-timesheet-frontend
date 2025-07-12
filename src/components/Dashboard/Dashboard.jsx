@@ -1,292 +1,337 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../../hooks/useAuth'
-import { supabaseApi as api } from '../../utils/supabase'
-import { WeeklyChart } from './WeeklyChart'
-import { ActivityRing } from './ActivityRing'
-import { HolidaySection } from './HolidaySection'
-import { CurrentTime } from './CurrentTime'
 import { 
   Clock, 
+  Calendar, 
   Users, 
-  TrendingUp, 
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  Download
+  Activity,
+  TrendingUp,
+  MapPin,
+  Settings,
+  ExternalLink,
+  BarChart3,
+  PieChart
 } from 'lucide-react'
 
-export function Dashboard() {
-  const { user } = useAuth()
+// Time Display Component
+function CurrentTimeDisplay() {
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [selectedPeriod, setSelectedPeriod] = useState('Week')
-  const [weeklyData, setWeeklyData] = useState([])
-  const [metrics, setMetrics] = useState({
-    totalHours: 0,
-    activeUsers: 0,
-    utilization: 0,
-    completedTasks: 0
-  })
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date())
     }, 1000)
 
-    loadDashboardData()
-
     return () => clearInterval(timer)
   }, [])
 
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true)
-      
-      // Get current week dates
-      const now = new Date()
-      const startOfWeek = new Date(now)
-      const day = startOfWeek.getDay()
-      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1)
-      startOfWeek.setDate(diff)
-      startOfWeek.setHours(0, 0, 0, 0)
-      
-      const endOfWeek = new Date(startOfWeek)
-      endOfWeek.setDate(startOfWeek.getDate() + 6)
-      endOfWeek.setHours(23, 59, 59, 999)
+  const timeString = currentTime.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  })
 
-      // Load timesheet data for the week
-      const timesheets = await api.getTimesheets({
-        start_date: startOfWeek.toISOString().split('T')[0],
-        end_date: endOfWeek.toISOString().split('T')[0]
-      })
-
-      // Process weekly data for chart
-      const weekData = []
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(startOfWeek)
-        date.setDate(startOfWeek.getDate() + i)
-        const dateStr = date.toISOString().split('T')[0]
-        
-        const dayEntries = timesheets.filter(entry => entry.date === dateStr)
-        const workedHours = dayEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0)
-        const overtimeHours = Math.max(0, workedHours - 8)
-        const regularHours = Math.min(workedHours, 8)
-        
-        weekData.push({
-          day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-          date: date.getDate(),
-          worked: regularHours,
-          overtime: overtimeHours,
-          break: 1 // Assuming 1 hour break
-        })
-      }
-      
-      setWeeklyData(weekData)
-
-      // Calculate metrics
-      const totalHours = timesheets.reduce((sum, entry) => sum + (entry.hours || 0), 0)
-      const uniqueUsers = new Set(timesheets.map(entry => entry.user_id)).size
-      const utilization = uniqueUsers > 0 ? (totalHours / (uniqueUsers * 40)) * 100 : 0
-
-      setMetrics({
-        totalHours,
-        activeUsers: uniqueUsers,
-        utilization: Math.round(utilization),
-        completedTasks: timesheets.length
-      })
-
-    } catch (error) {
-      console.error('Error loading dashboard data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const formatGreeting = () => {
-    const hour = currentTime.getHours()
-    let greeting = 'Good morning'
-    if (hour >= 12 && hour < 17) greeting = 'Good afternoon'
-    else if (hour >= 17) greeting = 'Good evening'
-    
-    return `${greeting}, ${user?.full_name?.split(' ')[0] || 'there'}`
-  }
-
-  const getCurrentWeekRange = () => {
-    const now = new Date()
-    const startOfWeek = new Date(now)
-    const day = startOfWeek.getDay()
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1)
-    startOfWeek.setDate(diff)
-    
-    const endOfWeek = new Date(startOfWeek)
-    endOfWeek.setDate(startOfWeek.getDate() + 6)
-    
-    const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'short' })
-    const endMonth = endOfWeek.toLocaleDateString('en-US', { month: 'short' })
-    const startDay = startOfWeek.getDate()
-    const endDay = endOfWeek.getDate()
-    
-    if (startMonth === endMonth) {
-      return `${startMonth} ${startDay} - ${endDay}`
-    } else {
-      return `${startMonth} ${startDay} - ${endMonth} ${endDay}`
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="dashboard-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading dashboard...</p>
-      </div>
-    )
-  }
+  const dateString = currentTime.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  })
 
   return (
-    <div className="jibble-dashboard">
-      {/* Header */}
-      <div className="dashboard-header">
-        <div className="header-left">
-          <h1 className="page-title">Dashboard</h1>
-          <div className="period-tabs">
-            {['Day', 'Week', 'Month'].map(period => (
-              <button
-                key={period}
-                className={`period-tab ${selectedPeriod === period ? 'active' : ''}`}
-                onClick={() => setSelectedPeriod(period)}
-              >
-                {period}
-              </button>
-            ))}
+    <div className="jibble-time-display">
+      <div className="jibble-current-time">{timeString}</div>
+      <div className="jibble-current-date">{dateString}</div>
+      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+        No previous entry
+      </div>
+    </div>
+  )
+}
+
+// Chart Placeholder Component
+function ChartPlaceholder({ title, type = 'bar' }) {
+  return (
+    <div className="jibble-chart-placeholder">
+      {type === 'bar' ? <BarChart3 size={32} /> : <PieChart size={32} />}
+      <div style={{ marginLeft: '8px' }}>{title}</div>
+    </div>
+  )
+}
+
+// Tracked Hours Component
+function TrackedHoursSection() {
+  const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+  const weekDates = [7, 8, 9, 10, 11, 12, 13]
+
+  return (
+    <div className="jibble-stat-card">
+      <div className="jibble-stat-header">
+        <h3 className="jibble-stat-title">TRACKED HOURS</h3>
+        <a href="#" className="jibble-stat-link">Go to timesheets</a>
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <div style={{ 
+            width: '8px', 
+            height: '8px', 
+            borderRadius: '50%', 
+            background: '#10b981' 
+          }}></div>
+          <span style={{ fontSize: '14px', color: '#374151' }}>WORKED HOURS</span>
+          <span style={{ fontSize: '14px', fontWeight: '600', marginLeft: 'auto' }}>60h</span>
+        </div>
+        <div style={{ fontSize: '12px', color: '#6b7280' }}>0h 0m</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', marginBottom: '8px' }}>
+          <div style={{ 
+            width: '8px', 
+            height: '8px', 
+            borderRadius: '50%', 
+            background: '#6b7280' 
+          }}></div>
+          <span style={{ fontSize: '14px', color: '#374151' }}>0h 0m</span>
+          <span style={{ fontSize: '14px', fontWeight: '600', marginLeft: 'auto' }}>60h</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <div style={{ 
+            width: '8px', 
+            height: '8px', 
+            borderRadius: '50%', 
+            background: '#f59e0b' 
+          }}></div>
+          <span style={{ fontSize: '14px', color: '#374151' }}>OVERTIME HOURS</span>
+          <span style={{ fontSize: '14px', fontWeight: '600', marginLeft: 'auto' }}>40h</span>
+        </div>
+        <div style={{ fontSize: '12px', color: '#6b7280' }}>0h 0m</div>
+      </div>
+
+      {/* Week Chart */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(7, 1fr)', 
+          gap: '8px',
+          marginBottom: '8px'
+        }}>
+          {weekDays.map((day, index) => (
+            <div key={index} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>{day}</div>
+              <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px' }}>{weekDates[index]}</div>
+              <div style={{
+                height: '60px',
+                background: '#e5e7eb',
+                borderRadius: '4px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                {/* Sample data bars */}
+                {index < 5 && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: `${Math.random() * 80 + 20}%`,
+                    background: '#94a3b8',
+                    borderRadius: '4px 4px 0 0'
+                  }}></div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: '11px', color: '#9ca3af', textAlign: 'center' }}>
+          Does not include manually entered work hours
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Activities Section
+function ActivitiesSection() {
+  return (
+    <div className="jibble-stat-card">
+      <div className="jibble-stat-header">
+        <h3 className="jibble-stat-title">ACTIVITIES</h3>
+        <a href="#" className="jibble-stat-link">Go to activities</a>
+      </div>
+
+      <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+        <div style={{
+          width: '120px',
+          height: '120px',
+          margin: '0 auto 16px',
+          position: 'relative'
+        }}>
+          {/* Donut Chart */}
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle
+              cx="60"
+              cy="60"
+              r="45"
+              fill="none"
+              stroke="#e5e7eb"
+              strokeWidth="20"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r="45"
+              fill="none"
+              stroke="#6b7280"
+              strokeWidth="20"
+              strokeDasharray="283"
+              strokeDashoffset="70"
+              transform="rotate(-90 60 60)"
+            />
+          </svg>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '12px', color: '#6b7280' }}>clocked</div>
+            <div style={{ fontSize: '16px', fontWeight: '600' }}>0h 0m</div>
           </div>
         </div>
-        <div className="header-right">
-          <div className="filter-controls">
-            <select className="filter-select">
-              <option>All locations</option>
-            </select>
-            <select className="filter-select">
-              <option>All groups</option>
-            </select>
-            <select className="filter-select">
-              <option>All schedules</option>
-            </select>
-            <button className="filter-btn">
-              <Filter className="w-4 h-4" />
+
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+            Top 10 activities
+          </div>
+          <div style={{ fontSize: '12px', color: '#6b7280' }}>
+            No activities tracked yet
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Holidays Section
+function HolidaysSection() {
+  return (
+    <div className="jibble-stat-card">
+      <div className="jibble-stat-header">
+        <h3 className="jibble-stat-title">UPCOMING HOLIDAYS AND TIME OFF</h3>
+      </div>
+
+      <div style={{ 
+        background: '#fef3c7', 
+        borderRadius: '8px', 
+        padding: '16px',
+        marginBottom: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px'
+      }}>
+        <div style={{ fontSize: '24px' }}>🏖️</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+            Add your holiday calendar for reminders and overtime calculations.
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button style={{
+              padding: '4px 12px',
+              background: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}>
+              Set up Holidays
+            </button>
+            <button style={{
+              padding: '4px 12px',
+              background: 'none',
+              color: '#f59e0b',
+              border: '1px solid #f59e0b',
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}>
+              No, thanks
             </button>
           </div>
         </div>
       </div>
+    </div>
+  )
+}
 
-      <div className="dashboard-content">
-        <div className="dashboard-main">
-          {/* Greeting Section */}
-          <div className="greeting-section">
-            <div className="greeting-content">
-              <h2 className="greeting-title">Hello {user?.full_name?.split(' ')[0] || 'User'}</h2>
-              <p className="greeting-subtitle">Here's what's happening at Eps</p>
-            </div>
-            <div className="greeting-illustration">
-              <div className="illustration-placeholder">
-                <div className="person-icon">
-                  <div className="person-avatar">
-                    {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
-                  <div className="laptop-icon">💻</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tracked Hours Section */}
-          <div className="tracked-hours-section">
-            <div className="section-header">
-              <h3 className="section-title">TRACKED HOURS</h3>
-              <a href="/timesheets" className="section-link">Go to timesheets</a>
-            </div>
-
-            <div className="hours-chart-container">
-              <div className="chart-legend">
-                <div className="legend-item">
-                  <div className="legend-dot worked"></div>
-                  <span>0h 0m</span>
-                </div>
-                <div className="legend-item">
-                  <div className="legend-dot break"></div>
-                  <span>0h 0m</span>
-                </div>
-                <div className="legend-item">
-                  <div className="legend-dot overtime"></div>
-                  <span>OVERTIME HOURS</span>
-                  <span>0h 0m</span>
-                </div>
-              </div>
-
-              <WeeklyChart data={weeklyData} />
-
-              <div className="chart-footer">
-                <p className="chart-note">
-                  Does not include manually entered work hours
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Activities Section */}
-          <div className="activities-section">
-            <div className="section-header">
-              <h3 className="section-title">ACTIVITIES</h3>
-              <a href="/activities" className="section-link">Go to activities</a>
-            </div>
-
-            <div className="activities-content">
-              <div className="activity-ring-container">
-                <ActivityRing 
-                  percentage={metrics.utilization}
-                  label="clocked"
-                  value="0h 0m"
-                />
-              </div>
-
-              <div className="activity-list">
-                <h4 className="activity-list-title">Top 10 activities</h4>
-                <div className="activity-items">
-                  {/* Activity items would be rendered here */}
-                  <div className="empty-activities">
-                    <p>No activities tracked yet</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+// Main Dashboard Component
+export function JibbleDashboard() {
+  return (
+    <div className="jibble-dashboard">
+      {/* Welcome Section */}
+      <div className="jibble-welcome-section">
+        <div className="jibble-welcome-header">
+          <div>
+            <h1 className="jibble-welcome-title">Hello admin@test.com</h1>
+            <p className="jibble-welcome-subtitle">Here's what's happening at Eps</p>
           </div>
         </div>
-
-        <div className="dashboard-sidebar">
-          {/* Upcoming Holidays */}
-          <HolidaySection />
-
-          {/* Who's In/Out */}
-          <div className="whos-in-section">
-            <h3 className="sidebar-section-title">Who's In/Out</h3>
-            <div className="whos-in-stats">
-              <div className="stat-item">
-                <div className="stat-number">0</div>
-                <div className="stat-label">In</div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-number">0</div>
-                <div className="stat-label">Break</div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-number">1</div>
-                <div className="stat-label">Out</div>
+        
+        <div className="jibble-welcome-content">
+          <div>
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '6px',
+                background: '#dbeafe',
+                color: '#1e40af',
+                padding: '4px 8px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '500'
+              }}>
+                <Activity size={12} />
+                A
               </div>
             </div>
           </div>
+          <div className="jibble-welcome-illustration">
+            👋
+          </div>
+        </div>
+      </div>
 
-          {/* Current Time */}
-          <CurrentTime currentTime={currentTime} />
+      {/* Stats Grid */}
+      <div className="jibble-stats-grid">
+        <TrackedHoursSection />
+        <ActivitiesSection />
+        <HolidaysSection />
+        
+        {/* Who's In/Out Section */}
+        <div className="jibble-who-section">
+          <div className="jibble-who-header">
+            <h3 className="jibble-who-title">Who's In/Out</h3>
+          </div>
+          
+          <div className="jibble-who-stats">
+            <div className="jibble-who-stat">
+              <div className="jibble-who-number">0</div>
+              <div className="jibble-who-label">IN</div>
+            </div>
+            <div className="jibble-who-stat">
+              <div className="jibble-who-number">0</div>
+              <div className="jibble-who-label">OUT</div>
+            </div>
+            <div className="jibble-who-stat">
+              <div className="jibble-who-number">1</div>
+              <div className="jibble-who-label">BREAK</div>
+            </div>
+          </div>
+
+          <CurrentTimeDisplay />
         </div>
       </div>
     </div>
