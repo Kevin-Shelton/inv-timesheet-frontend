@@ -1,4 +1,4 @@
-import { supabaseApi as api } from '../utils/supabase'
+import { supabase } from '../utils/supabase'
 
 export const api = {
   // Users API
