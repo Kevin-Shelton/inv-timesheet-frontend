@@ -58,58 +58,58 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const { login } = useAuth()
+  
+  const auth = useAuth()
   const navigate = useNavigate()
 
+  // Regular form submit
   const handleSubmit = async (e) => {
     e.preventDefault()
+    await performLogin(email, password)
+  }
+
+  // Quick login function
+  const handleQuickLogin = async (testEmail, testPassword) => {
+    setEmail(testEmail)
+    setPassword(testPassword)
+    await performLogin(testEmail, testPassword)
+  }
+
+  // Centralized login logic
+  const performLogin = async (loginEmail, loginPassword) => {
+    console.log('performLogin called with:', { loginEmail, loginPassword })
+    
     setError('')
     setIsLoading(true)
 
     try {
       // Basic validation
-      if (!email || !password) {
+      if (!loginEmail || !loginPassword) {
         throw new Error('Please enter both email and password')
       }
 
-      if (!email.includes('@')) {
+      if (!loginEmail.includes('@')) {
         throw new Error('Please enter a valid email address')
       }
 
-      // Attempt login with proper error handling
-      const result = await login(email, password)
+      // Check if auth.login exists
+      if (!auth || typeof auth.login !== 'function') {
+        console.error('Auth context or login function not available:', auth)
+        throw new Error('Authentication system not available')
+      }
+
+      console.log('Calling auth.login...')
+      const result = await auth.login(loginEmail, loginPassword)
+      console.log('Login result:', result)
       
-      if (result && !result.error) {
-        // Success - navigate to dashboard
+      if (result && result.success) {
+        console.log('Login successful, navigating to dashboard')
         navigate('/', { replace: true })
       } else {
-        // Handle login failure
-        throw new Error(result?.error || 'Login failed. Please check your credentials.')
+        throw new Error('Login failed')
       }
     } catch (err) {
       console.error('Login error:', err)
-      setError(err.message || 'Login failed. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Quick login for testing (can be removed in production)
-  const handleQuickLogin = async (testEmail, testPassword) => {
-    setEmail(testEmail)
-    setPassword(testPassword)
-    setError('')
-    setIsLoading(true)
-
-    try {
-      const result = await login(testEmail, testPassword)
-      if (result && !result.error) {
-        navigate('/', { replace: true })
-      } else {
-        throw new Error(result?.error || 'Login failed')
-      }
-    } catch (err) {
-      console.error('Quick login error:', err)
       setError(err.message || 'Login failed. Please try again.')
     } finally {
       setIsLoading(false)
@@ -182,12 +182,6 @@ export function LoginPage() {
     transition: 'all 0.15s ease',
     boxSizing: 'border-box',
     outline: 'none'
-  }
-
-  const inputFocusStyle = {
-    ...inputStyle,
-    borderColor: '#3B82F6',
-    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
   }
 
   const iconStyle = {
@@ -308,8 +302,6 @@ export function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@test.com"
                 style={inputStyle}
-                onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                onBlur={(e) => Object.assign(e.target.style, inputStyle)}
                 disabled={isLoading}
               />
             </div>
@@ -327,8 +319,6 @@ export function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 style={inputStyle}
-                onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                onBlur={(e) => Object.assign(e.target.style, inputStyle)}
                 disabled={isLoading}
               />
               <button
@@ -347,16 +337,6 @@ export function LoginPage() {
             type="submit"
             style={buttonStyle}
             disabled={isLoading}
-            onMouseEnter={(e) => {
-              if (!isLoading) {
-                e.target.style.transform = 'translateY(-1px)'
-                e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)'
-              e.target.style.boxShadow = 'none'
-            }}
           >
             {isLoading ? (
               <>
@@ -383,12 +363,6 @@ export function LoginPage() {
             onClick={() => handleQuickLogin('admin@test.com', 'password123')}
             style={quickLoginButtonStyle}
             disabled={isLoading}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#E5E7EB'
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#F3F4F6'
-            }}
           >
             Admin Account: admin@test.com / password123
           </button>
@@ -396,12 +370,6 @@ export function LoginPage() {
             onClick={() => handleQuickLogin('user@test.com', 'password123')}
             style={quickLoginButtonStyle}
             disabled={isLoading}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#E5E7EB'
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#F3F4F6'
-            }}
           >
             User Account: user@test.com / password123
           </button>
