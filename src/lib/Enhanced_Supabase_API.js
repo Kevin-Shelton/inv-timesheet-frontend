@@ -1,44 +1,59 @@
-// ENHANCED SUPABASE API - COMPLETE TIMEZONE FIX
-// This version completely eliminates timezone issues by using UTC dates and simple string operations
+// ENHANCED SUPABASE API - OPTIMIZED VERSION
+// Fixes multiple GoTrueClient instances and improves profile lookup
 
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-})
+// SINGLETON PATTERN - Prevents multiple GoTrueClient instances
+let supabaseInstance = null;
 
-// COMPREHENSIVE DATE NORMALIZATION FUNCTION
+const getSupabaseClient = () => {
+  if (!supabaseInstance) {
+    console.log('Creating new Supabase client instance');
+    supabaseInstance = createClient(supabaseUrl || '', supabaseAnonKey || '', {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        // Prevent multiple instances by using a unique storage key
+        storageKey: 'invictus-timesheet-auth'
+      },
+      // Add global configuration to prevent conflicts
+      global: {
+        headers: {
+          'X-Client-Info': 'invictus-timesheet-app'
+        }
+      }
+    });
+  }
+  return supabaseInstance;
+};
+
+// Export the singleton instance
+export const supabase = getSupabaseClient();
+
+// COMPREHENSIVE DATE NORMALIZATION FUNCTION (keeping the working timezone fix)
 const safeDateToString = (date) => {
   if (!date) {
-    // Return today's date in YYYY-MM-DD format
     const today = new Date();
     return today.getFullYear() + '-' + 
            String(today.getMonth() + 1).padStart(2, '0') + '-' + 
            String(today.getDate()).padStart(2, '0');
   }
   
-  // If it's already a simple YYYY-MM-DD string, return as is
   if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return date;
   }
   
-  // If it's a string but not in YYYY-MM-DD format, try to parse it
   if (typeof date === 'string') {
     try {
-      // Remove any timezone information from the string
-      const cleanDateString = date.split('T')[0]; // Take only the date part
+      const cleanDateString = date.split('T')[0];
       if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDateString)) {
         return cleanDateString;
       }
       
-      // If it's not in ISO format, try to parse and convert
       const parsedDate = new Date(date);
       if (!isNaN(parsedDate.getTime())) {
         return parsedDate.getFullYear() + '-' + 
@@ -50,7 +65,6 @@ const safeDateToString = (date) => {
     }
   }
   
-  // If it's a Date object, convert to YYYY-MM-DD
   if (date instanceof Date) {
     if (isNaN(date.getTime())) {
       console.warn('Invalid Date object provided:', date);
@@ -65,7 +79,6 @@ const safeDateToString = (date) => {
            String(date.getDate()).padStart(2, '0');
   }
   
-  // Fallback: return today's date
   console.warn('Unrecognized date format, using today:', date);
   const today = new Date();
   return today.getFullYear() + '-' + 
@@ -73,46 +86,111 @@ const safeDateToString = (date) => {
          String(today.getDate()).padStart(2, '0');
 };
 
+// ENHANCED USER PROFILE MANAGEMENT
+const userProfileCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+const getCachedUserProfile = (userId) => {
+  const cached = userProfileCache.get(userId);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+    return cached.profile;
+  }
+  return null;
+};
+
+const setCachedUserProfile = (userId, profile) => {
+  userProfileCache.set(userId, {
+    profile,
+    timestamp: Date.now()
+  });
+};
+
 export const enhancedSupabaseApi = {
-  // Get current authenticated user
+  // OPTIMIZED USER MANAGEMENT - Prevents multiple lookups and handles missing profiles
   getCurrentUser: async () => {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) throw error;
+      console.log('Getting current user...');
       
-      if (user) {
-        // Try to get user profile from users table
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        if (profileError) {
-          console.warn('Profile not found, using auth user data');
-          return {
-            id: user.id,
-            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-            email: user.email
-          };
-        }
-        
-        return profile;
+      // Get authenticated user from Supabase auth
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Auth error:', error);
+        throw error;
       }
       
-      return null;
+      if (!user) {
+        console.log('No authenticated user found');
+        return null;
+      }
+      
+      console.log('Authenticated user found:', user.id);
+      
+      // Check cache first
+      const cachedProfile = getCachedUserProfile(user.id);
+      if (cachedProfile) {
+        console.log('Using cached user profile');
+        return cachedProfile;
+      }
+      
+      // Try to get user profile from users table
+      console.log('Fetching user profile from database...');
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) {
+        console.log('Profile lookup failed, creating fallback profile:', profileError.message);
+        
+        // Create a comprehensive fallback profile
+        const fallbackProfile = {
+          id: user.id,
+          full_name: user.user_metadata?.full_name || 
+                    user.user_metadata?.name || 
+                    user.email?.split('@')[0] || 
+                    'User',
+          email: user.email,
+          role: 'employee',
+          created_at: user.created_at,
+          // Add additional fields that might be expected
+          pay_rate_per_hour: 0,
+          campaign_id: null,
+          is_active: true
+        };
+        
+        // Cache the fallback profile
+        setCachedUserProfile(user.id, fallbackProfile);
+        
+        console.log('Using fallback profile:', fallbackProfile);
+        return fallbackProfile;
+      }
+      
+      // Cache the real profile
+      setCachedUserProfile(user.id, profile);
+      console.log('User profile found and cached:', profile.full_name);
+      return profile;
+      
     } catch (error) {
       console.error('Error getting current user:', error);
-      // Return fallback user for development
-      return {
-        id: 1,
+      
+      // Return development fallback
+      const devFallback = {
+        id: 'dev-user-1',
         full_name: 'Kevin Shelton',
-        email: 'kevin@example.com'
+        email: 'kevin@example.com',
+        role: 'employee',
+        pay_rate_per_hour: 25,
+        campaign_id: null,
+        is_active: true
       };
+      
+      console.log('Using development fallback user');
+      return devFallback;
     }
   },
 
-  // COMPLETELY TIMEZONE-SAFE TIMESHEET ENTRIES API
+  // OPTIMIZED TIMESHEET ENTRIES API (keeping timezone fixes)
   getTimesheetEntries: async (params = {}) => {
     try {
       console.log('getTimesheetEntries called with params:', params);
@@ -128,25 +206,21 @@ export const enhancedSupabaseApi = {
       if (params.campaign_id) query = query.eq('campaign_id', params.campaign_id)
       if (params.status) query = query.eq('status', params.status)
       
-      // Handle date filters with complete timezone safety
+      // Handle date filters with timezone safety
       if (params.date_from) {
         const safeDateFrom = safeDateToString(params.date_from);
-        console.log('Applying date_from filter:', safeDateFrom);
         query = query.gte('date', safeDateFrom);
       }
       if (params.startDate) {
         const safeStartDate = safeDateToString(params.startDate);
-        console.log('Applying startDate filter:', safeStartDate);
         query = query.gte('date', safeStartDate);
       }
       if (params.date_to) {
         const safeDateTo = safeDateToString(params.date_to);
-        console.log('Applying date_to filter:', safeDateTo);
         query = query.lte('date', safeDateTo);
       }
       if (params.endDate) {
         const safeEndDate = safeDateToString(params.endDate);
-        console.log('Applying endDate filter:', safeEndDate);
         query = query.lte('date', safeEndDate);
       }
       if (params.week_start) {
@@ -154,7 +228,6 @@ export const enhancedSupabaseApi = {
         const weekStartDate = new Date(weekStartSafe + 'T00:00:00');
         weekStartDate.setDate(weekStartDate.getDate() + 6);
         const weekEndSafe = safeDateToString(weekStartDate);
-        console.log('Applying week filter:', weekStartSafe, 'to', weekEndSafe);
         query = query.gte('date', weekStartSafe).lte('date', weekEndSafe);
       }
       
@@ -164,7 +237,7 @@ export const enhancedSupabaseApi = {
         throw error
       }
       
-      console.log('getTimesheetEntries returning data:', data?.length || 0, 'entries');
+      console.log('getTimesheetEntries returning:', data?.length || 0, 'entries');
       return data || []
     } catch (error) {
       console.error('Error fetching timesheet entries:', error)
@@ -172,20 +245,18 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // COMPLETELY TIMEZONE-SAFE DAILY TIMESHEET
+  // OPTIMIZED DAILY TIMESHEET (keeping timezone fixes)
   getDailyTimesheet: async (userId, date) => {
     try {
-      // Convert date to safe string format IMMEDIATELY
       const safeDateString = safeDateToString(date);
       
-      console.log('getDailyTimesheet called with:', { 
+      console.log('getDailyTimesheet called:', { 
         userId, 
         originalDate: date, 
         safeDateString,
         dateType: typeof date
       });
       
-      // Use the safe date string directly in the query
       const { data, error } = await supabase
         .from('timesheet_entries')
         .select('*')
@@ -195,7 +266,6 @@ export const enhancedSupabaseApi = {
       
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching daily timesheet:', error)
-        // Return safe empty structure
         return {
           id: null,
           user_id: userId,
@@ -215,9 +285,8 @@ export const enhancedSupabaseApi = {
         }
       }
       
-      // If data exists, ensure it has the expected structure
       if (data) {
-        console.log('getDailyTimesheet found data:', data);
+        console.log('getDailyTimesheet found data for', safeDateString);
         return {
           ...data,
           summary: data.summary || {
@@ -230,8 +299,7 @@ export const enhancedSupabaseApi = {
         }
       }
       
-      // Return safe empty structure if no data found
-      console.log('getDailyTimesheet no data found, returning empty structure');
+      console.log('getDailyTimesheet no data found for', safeDateString);
       return {
         id: null,
         user_id: userId,
@@ -251,7 +319,6 @@ export const enhancedSupabaseApi = {
       }
     } catch (error) {
       console.error('Error in getDailyTimesheet:', error)
-      // Return safe empty structure
       return {
         id: null,
         user_id: userId,
@@ -272,15 +339,77 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Create timesheet entry with safe date handling
+  // OPTIMIZED PROFILE MANAGEMENT
+  createUserProfile: async (userData) => {
+    try {
+      console.log('Creating user profile:', userData);
+      
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{
+          id: userData.id,
+          full_name: userData.full_name,
+          email: userData.email,
+          role: userData.role || 'employee',
+          pay_rate_per_hour: userData.pay_rate_per_hour || 0,
+          campaign_id: userData.campaign_id || null,
+          is_active: true,
+          created_at: new Date().toISOString()
+        }])
+        .select('*')
+        .single();
+      
+      if (error) {
+        console.error('Error creating user profile:', error);
+        throw error;
+      }
+      
+      // Cache the new profile
+      setCachedUserProfile(userData.id, data);
+      console.log('User profile created and cached');
+      return data;
+    } catch (error) {
+      console.error('Error creating user profile:', error);
+      throw error;
+    }
+  },
+
+  updateUserProfile: async (userId, updateData) => {
+    try {
+      console.log('Updating user profile:', userId, updateData);
+      
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          ...updateData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .select('*')
+        .single();
+      
+      if (error) {
+        console.error('Error updating user profile:', error);
+        throw error;
+      }
+      
+      // Update cache
+      setCachedUserProfile(userId, data);
+      console.log('User profile updated and cached');
+      return data;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  },
+
+  // Keep all existing timesheet functions with timezone fixes
   createTimesheetEntry: async (entryData) => {
     try {
       const safeEntryData = {
         ...entryData,
         date: safeDateToString(entryData.date)
       };
-      
-      console.log('Creating timesheet entry with safe data:', safeEntryData);
       
       const { data, error } = await supabase
         .from('timesheet_entries')
@@ -319,7 +448,6 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Update timesheet entry with safe date handling
   updateTimesheetEntry: async (id, updateData) => {
     try {
       const safeUpdateData = { ...updateData };
@@ -348,15 +476,11 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Clock in/out with safe date handling
   clockIn: async (userId, campaignId = null, metadata = {}) => {
     try {
       const todaySafe = safeDateToString(new Date())
       const now = new Date().toISOString()
       
-      console.log('Clock in for date:', todaySafe);
-      
-      // Check if entry exists for today
       const { data: existing } = await supabase
         .from('timesheet_entries')
         .select('*')
@@ -365,7 +489,6 @@ export const enhancedSupabaseApi = {
         .single()
       
       if (existing) {
-        // Update existing entry
         const { data, error } = await supabase
           .from('timesheet_entries')
           .update({
@@ -379,7 +502,6 @@ export const enhancedSupabaseApi = {
         if (error) throw error
         return data
       } else {
-        // Create new entry
         const { data, error } = await supabase
           .from('timesheet_entries')
           .insert([{
@@ -429,7 +551,7 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Break management with safe date handling
+  // Keep all other existing functions...
   startBreak: async (userId, breakType = 'lunch', metadata = {}) => {
     try {
       const todaySafe = safeDateToString(new Date())
@@ -490,7 +612,6 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Calculate hours for timesheet entry
   calculateHours: async (entryData, rules = null) => {
     const calculations = {
       regular_hours: 0,
@@ -502,13 +623,11 @@ export const enhancedSupabaseApi = {
     }
     
     try {
-      // Calculate work time
       if (entryData.time_in && entryData.time_out) {
         const timeIn = new Date(entryData.time_in)
         const timeOut = new Date(entryData.time_out)
         let totalMinutes = (timeOut - timeIn) / (1000 * 60)
         
-        // Subtract break times
         let breakMinutes = 0
         
         if (entryData.lunch_start && entryData.lunch_end) {
@@ -531,11 +650,9 @@ export const enhancedSupabaseApi = {
         
         calculations.break_hours = Math.round(breakMinutes / 60 * 100) / 100
         
-        // Calculate worked hours
         const workedMinutes = totalMinutes - breakMinutes
         const workedHours = workedMinutes / 60
         
-        // Apply overtime rules (8 hour threshold)
         const overtimeThreshold = 8.0
         if (workedHours <= overtimeThreshold) {
           calculations.regular_hours = Math.round(workedHours * 100) / 100
@@ -547,7 +664,6 @@ export const enhancedSupabaseApi = {
         calculations.total_paid_hours = calculations.regular_hours + calculations.overtime_hours
       }
       
-      // Add vacation/sick/holiday hours
       calculations.total_paid_hours += (entryData.vacation_hours || 0) + 
                                       (entryData.sick_hours || 0) + 
                                       (entryData.holiday_hours || 0)
@@ -560,7 +676,6 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Submit timesheet for approval
   submitTimesheet: async (id, userId) => {
     try {
       const { data, error } = await supabase
@@ -586,7 +701,6 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Approve/reject timesheet
   approveTimesheet: async (id, approverId, comments = '') => {
     try {
       const { data, error } = await supabase
