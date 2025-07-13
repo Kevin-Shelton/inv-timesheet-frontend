@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, NavLink } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { 
   LayoutDashboard, 
@@ -22,15 +22,14 @@ import {
   X
 } from 'lucide-react'
 
-// Invictus Logo as inline SVG to avoid import issues
+// Larger, more prominent Invictus Logo
 const InvictusLogo = () => (
   <svg 
-    width="120" 
-    height="32" 
+    width="180" 
+    height="48" 
     viewBox="0 0 400 100" 
     style={{ maxWidth: '100%', height: 'auto' }}
   >
-    {/* Invictus logo recreation */}
     <defs>
       <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
         <stop offset="0%" stopColor="#8BC34A" />
@@ -38,43 +37,43 @@ const InvictusLogo = () => (
       </linearGradient>
     </defs>
     
-    {/* Logo symbol - stylized connection/network design */}
-    <g transform="translate(10, 20)">
+    {/* Logo symbol - larger and more prominent */}
+    <g transform="translate(15, 25)">
       {/* Main connecting curves */}
       <path 
-        d="M 5 30 Q 25 10 45 30" 
+        d="M 8 30 Q 30 8 52 30" 
         stroke="#6B7280" 
-        strokeWidth="3" 
+        strokeWidth="4" 
         fill="none"
       />
       <path 
-        d="M 15 40 Q 35 20 55 40" 
+        d="M 18 42 Q 40 20 62 42" 
         stroke="#6B7280" 
-        strokeWidth="3" 
+        strokeWidth="4" 
         fill="none"
       />
       
-      {/* Green connection points */}
-      <circle cx="5" cy="30" r="4" fill="url(#greenGradient)" />
-      <circle cx="45" cy="30" r="4" fill="url(#greenGradient)" />
-      <circle cx="55" cy="40" r="4" fill="url(#greenGradient)" />
+      {/* Green connection points - larger */}
+      <circle cx="8" cy="30" r="6" fill="url(#greenGradient)" />
+      <circle cx="52" cy="30" r="6" fill="url(#greenGradient)" />
+      <circle cx="62" cy="42" r="6" fill="url(#greenGradient)" />
     </g>
     
-    {/* Invictus text */}
+    {/* Invictus text - larger and bolder */}
     <text 
-      x="80" 
-      y="55" 
+      x="95" 
+      y="58" 
       fontFamily="Arial, sans-serif" 
-      fontSize="28" 
-      fontWeight="600" 
-      fill="#6B7280"
+      fontSize="32" 
+      fontWeight="700" 
+      fill="#374151"
     >
       invictus
     </text>
   </svg>
 )
 
-// Updated AppLayout with embedded logo to fix build issues
+// Fixed AppLayout with larger logo, proper navigation, and reduced padding
 export function AppLayout() {
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -117,8 +116,8 @@ export function AppLayout() {
   }
 
   const sidebarStyle = {
-    width: '240px',
-    minWidth: '240px',
+    width: '260px',
+    minWidth: '260px',
     height: '100vh',
     background: '#ffffff',
     borderRight: '1px solid #e5e7eb',
@@ -143,20 +142,20 @@ export function AppLayout() {
     borderBottom: '1px solid #e5e7eb',
     boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
     zIndex: 20,
-    padding: '12px 24px',
+    padding: '12px 16px', // Reduced padding
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '16px',
-    flexShrink: 0 // Prevent header from shrinking
+    flexShrink: 0
   }
 
-  // CRITICAL: Content area with NO constraints
+  // CRITICAL: Content area with MINIMAL constraints for full width usage
   const contentStyle = {
     flex: 1,
-    overflow: 'hidden', // Prevent scrollbars on container
-    background: 'transparent', // Let dashboard control background
-    padding: 0, // NO padding - let dashboard control spacing
+    overflow: 'hidden',
+    background: 'transparent',
+    padding: 0, // NO padding
     margin: 0,  // NO margin
     width: '100%',
     height: '100%',
@@ -166,9 +165,8 @@ export function AppLayout() {
   const logoStyle = {
     display: 'flex',
     alignItems: 'center',
-    padding: '16px 20px',
+    padding: '20px 16px', // More padding for larger logo
     borderBottom: '1px solid #f3f4f6',
-    gap: '12px',
     justifyContent: 'center'
   }
 
@@ -182,13 +180,22 @@ export function AppLayout() {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '8px 20px',
+    padding: '10px 20px',
     color: '#6b7280',
     textDecoration: 'none',
     fontSize: '14px',
     fontWeight: '500',
     transition: 'all 0.15s ease',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    borderRadius: '0 25px 25px 0',
+    marginRight: '12px'
+  }
+
+  const activeNavItemStyle = {
+    ...navItemStyle,
+    backgroundColor: '#f3f4f6',
+    color: '#374151',
+    fontWeight: '600'
   }
 
   const sidebarBottomStyle = {
@@ -315,41 +322,41 @@ export function AppLayout() {
     <div style={layoutStyle}>
       {/* Sidebar */}
       <div style={sidebarStyle}>
-        {/* Invictus Logo - EMBEDDED SVG */}
+        {/* Larger Invictus Logo */}
         <div style={logoStyle}>
           <InvictusLogo />
         </div>
 
-        {/* Navigation */}
+        {/* Navigation with proper routing */}
         <nav style={navStyle}>
           {menuItems.map((item) => {
             const Icon = item.icon
             return (
-              <a
+              <NavLink
                 key={item.path}
-                href={item.path}
-                style={navItemStyle}
-                onClick={(e) => {
-                  e.preventDefault()
-                  // Handle navigation here
-                }}
+                to={item.path}
+                style={({ isActive }) => isActive ? activeNavItemStyle : navItemStyle}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#f9fafb'
-                  e.target.style.color = '#374151'
+                  if (!e.target.closest('a').classList.contains('active')) {
+                    e.target.closest('a').style.backgroundColor = '#f9fafb'
+                    e.target.closest('a').style.color = '#374151'
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent'
-                  e.target.style.color = '#6b7280'
+                  if (!e.target.closest('a').classList.contains('active')) {
+                    e.target.closest('a').style.backgroundColor = 'transparent'
+                    e.target.closest('a').style.color = '#6b7280'
+                  }
                 }}
               >
                 <Icon size={16} />
                 <span>{item.label}</span>
-              </a>
+              </NavLink>
             )
           })}
         </nav>
 
-        {/* Bottom Section - TRIAL WARNING REMOVED */}
+        {/* Bottom Section */}
         <div style={sidebarBottomStyle}>
           <div style={userInfoStyle}>
             <div style={userAvatarStyle}>
@@ -374,7 +381,7 @@ export function AppLayout() {
       
       {/* Main Content */}
       <div style={mainContentStyle}>
-        {/* Header - ONBOARDING SECTION REMOVED */}
+        {/* Header */}
         <header style={headerStyle}>
           {/* Left - Title */}
           <div style={headerLeftStyle}>
@@ -388,7 +395,7 @@ export function AppLayout() {
             <button style={tabStyle}>Month</button>
           </div>
 
-          {/* Right - Controls (Onboarding section removed) */}
+          {/* Right - Controls */}
           <div style={headerRightStyle}>
             <select style={filterStyle}>
               <option>All locations</option>
@@ -411,7 +418,7 @@ export function AppLayout() {
           </div>
         </header>
         
-        {/* CRITICAL: Content area with NO constraints */}
+        {/* CRITICAL: Content area with NO constraints for full width */}
         <main style={contentStyle}>
           <Outlet />
         </main>
