@@ -10,7 +10,7 @@ import {
 } from '../../data/TimesheetData';
 import { exportFunctions } from '../../utils/TimesheetExport';
 
-const TimesheetPage = () => {
+const TimesheetsPage = () => {
   // State for filters
   const [weekFilter, setWeekFilter] = useState('current');
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
@@ -939,5 +939,7 @@ const TimesheetPage = () => {
   );
 };
 
-export default TimesheetPage;
+// Export with the name that App.jsx expects
+export { TimesheetsPage };
+export default TimesheetsPage;
 
