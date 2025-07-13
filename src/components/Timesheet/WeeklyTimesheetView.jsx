@@ -129,9 +129,11 @@ const WeeklyTimesheetView = ({
 
   if (loading) {
     return (
-      <div className="loading-state">
-        <div className="loading-spinner"></div>
-        <p>Loading timesheet data...</p>
+      <div className="jibble-timesheet">
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading timesheet data...</p>
+        </div>
       </div>
     );
   }
@@ -149,7 +151,7 @@ const WeeklyTimesheetView = ({
         />
       </div>
 
-      {/* Timesheet Table */}
+      {/* Timesheet Table Container */}
       <div className="timesheet-table-container">
         <table className="timesheet-table">
           <thead>
