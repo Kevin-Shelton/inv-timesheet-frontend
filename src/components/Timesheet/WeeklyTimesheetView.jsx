@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, ChevronLeft, ChevronRight, Clock, Calendar } from 'lucide-react';
-import { TimesheetIndicators, StatusBadge, ProjectBadge } from './TimesheetIndicators';
 import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API';
 
 const WeeklyTimesheetView = ({ 
@@ -59,19 +58,12 @@ const WeeklyTimesheetView = ({
   // Load weekly timesheet data
   useEffect(() => {
     const loadWeeklyData = async () => {
-      if (!userId) return;
-
       setLoading(true);
       try {
-        const startDate = weekDates[0];
-        const endDate = weekDates[6];
-        
         const data = await enhancedSupabaseApi.getTimesheetEntries({
           userId,
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0],
-          includeUserDetails: true,
-          includeCampaignDetails: true
+          startDate: weekDates[0].toISOString().split('T')[0],
+          endDate: weekDates[6].toISOString().split('T')[0]
         });
 
         // Group data by date
@@ -155,54 +147,54 @@ const WeeklyTimesheetView = ({
 
   return (
     <div className="bg-white">
-      {/* Search Bar - Full width spanning the table */}
-      <div className="border-b border-gray-200">
-        <div className="flex items-center">
-          {/* Search section */}
-          <div className="flex-1 px-6 py-4">
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                readOnly
-              />
-            </div>
-          </div>
-          
-          {/* Column headers aligned with table */}
-          <div className="flex">
-            {weekDates.map((date, index) => (
-              <div key={date.toISOString()} className="w-24 text-center py-4 px-2">
-                <div className="flex flex-col items-center">
-                  <span className="text-sm font-medium text-gray-500">{dayLabels[index]}</span>
-                  <span className={`text-lg font-semibold ${isToday(date) ? 'text-orange-500' : 'text-gray-900'}`}>
-                    {date.getDate()}
-                  </span>
-                </div>
-              </div>
-            ))}
-            <div className="w-24 text-center py-4 px-2">
-              <span className="text-sm font-medium text-gray-500">Total</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Weekly Timesheet Table */}
+      {/* Proper Table Structure */}
       <div className="overflow-x-auto">
-        <table className="w-full">
-          {/* Data Row */}
+        <table className="w-full border-collapse">
+          {/* Table Header */}
+          <thead>
+            <tr className="border-b border-gray-200">
+              {/* Search Column */}
+              <th className="text-left py-3 px-4 w-64">
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    readOnly
+                  />
+                </div>
+              </th>
+              
+              {/* Day Headers */}
+              {weekDates.map((date, index) => (
+                <th key={date.toISOString()} className="text-center py-3 px-2 w-24">
+                  <div className="flex flex-col items-center">
+                    <span className="text-sm font-medium text-gray-500 uppercase">{dayLabels[index]}</span>
+                    <span className={`text-lg font-semibold ${isToday(date) ? 'text-orange-500' : 'text-gray-900'}`}>
+                      {date.getDate()}
+                    </span>
+                  </div>
+                </th>
+              ))}
+              
+              {/* Total Header */}
+              <th className="text-center py-3 px-2 w-24">
+                <span className="text-sm font-medium text-gray-500 uppercase">Total</span>
+              </th>
+            </tr>
+          </thead>
+
+          {/* Table Body */}
           <tbody>
             <tr className="border-b border-gray-200 hover:bg-gray-50">
               {/* Employee Name Column */}
-              <td className="py-4 px-6 w-64">
+              <td className="py-4 px-4">
                 <div className="flex items-center space-x-3">
                   <div className="flex-shrink-0">
                     <div className="h-8 w-8 bg-gray-400 rounded-full flex items-center justify-center">
@@ -230,7 +222,7 @@ const WeeklyTimesheetView = ({
                 return (
                   <td 
                     key={dateStr}
-                    className="py-4 px-2 text-center cursor-pointer relative group w-24"
+                    className="py-4 px-2 text-center cursor-pointer relative group"
                     onClick={() => handleCellClick(date)}
                     onMouseEnter={() => setHoveredCell(cellKey)}
                     onMouseLeave={() => setHoveredCell(null)}
@@ -240,7 +232,7 @@ const WeeklyTimesheetView = ({
                         {/* Hours display */}
                         <div className="text-sm">
                           {dayTotals.total > 0 ? (
-                            <div className="text-gray-900">
+                            <div className="text-gray-900 font-medium">
                               {dayTotals.total.toFixed(1)}h
                             </div>
                           ) : (
@@ -268,7 +260,7 @@ const WeeklyTimesheetView = ({
               })}
 
               {/* Total Column */}
-              <td className="py-4 px-2 text-center w-24">
+              <td className="py-4 px-2 text-center">
                 <div className="text-sm">
                   {weeklyTotals.total > 0 ? (
                     <div className="text-gray-900 font-medium">
