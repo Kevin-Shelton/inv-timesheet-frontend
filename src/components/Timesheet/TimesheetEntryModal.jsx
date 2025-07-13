@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { campaignsData, employeesData } from './TimesheetData';
+import { campaignsData, employeesData } from '../../data/TimesheetData';
 
 const TimesheetEntryModal = ({ 
   isOpen, 

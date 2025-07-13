@@ -7,10 +7,10 @@ import {
   departments,
   statusOptions,
   formatDate
-} from './TimesheetData';
-import { exportFunctions } from './TimesheetExport';
+} from '../../data/TimesheetData';
+import { exportFunctions } from '../../utils/TimesheetExport';
 
-const CompleteTimesheetPage = () => {
+const TimesheetPage = () => {
   // State for filters
   const [weekFilter, setWeekFilter] = useState('current');
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
@@ -939,5 +939,5 @@ const CompleteTimesheetPage = () => {
   );
 };
 
-export default CompleteTimesheetPage;
+export default TimesheetPage;
 

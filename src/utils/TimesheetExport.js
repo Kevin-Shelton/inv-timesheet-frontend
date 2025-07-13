@@ -6,7 +6,7 @@ import {
   getCampaignById, 
   timeEntriesData,
   formatDate 
-} from './TimesheetData';
+} from '../data/TimesheetData';
 
 // Export timesheet data to CSV format
 export const exportToCSV = (data, filename = 'timesheets.csv') => {
