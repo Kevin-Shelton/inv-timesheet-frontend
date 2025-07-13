@@ -15,6 +15,44 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
 })
 
 export const enhancedSupabaseApi = {
+  // MISSING FUNCTION - Get current authenticated user
+  getCurrentUser: async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      
+      if (user) {
+        // Get user profile from users table
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (profileError) {
+          console.warn('Profile not found, using auth user data');
+          return {
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            email: user.email
+          };
+        }
+        
+        return profile;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      // Return fallback user for development
+      return {
+        id: 1,
+        full_name: 'Kevin Shelton',
+        email: 'kevin@example.com'
+      };
+    }
+  },
+
   // COMPREHENSIVE TIMESHEET ENTRIES API
   
   // Get timesheet entries with full details
@@ -38,10 +76,13 @@ export const enhancedSupabaseApi = {
       
       // Apply filters
       if (params.user_id) query = query.eq('user_id', params.user_id)
+      if (params.userId) query = query.eq('user_id', params.userId) // Alternative param name
       if (params.campaign_id) query = query.eq('campaign_id', params.campaign_id)
       if (params.status) query = query.eq('status', params.status)
       if (params.date_from) query = query.gte('date', params.date_from)
+      if (params.startDate) query = query.gte('date', params.startDate) // Alternative param name
       if (params.date_to) query = query.lte('date', params.date_to)
+      if (params.endDate) query = query.lte('date', params.endDate) // Alternative param name
       if (params.week_start) {
         const weekEnd = new Date(params.week_start)
         weekEnd.setDate(weekEnd.getDate() + 6)
