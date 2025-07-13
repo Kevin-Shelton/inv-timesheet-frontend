@@ -11,59 +11,42 @@ import {
 import { exportFunctions } from '../../utils/TimesheetExport';
 
 const TimesheetsPage = () => {
-  // State for filters
-  const [weekFilter, setWeekFilter] = useState('current');
-  const [departmentFilter, setDepartmentFilter] = useState('All Departments');
-  const [statusFilter, setStatusFilter] = useState('All Status');
-  const [sortField, setSortField] = useState('employee.name');
-  const [sortDirection, setSortDirection] = useState('asc');
+  // Main tab state
+  const [activeMainTab, setActiveMainTab] = useState('timesheets'); // 'timesheets' or 'approvals'
+  
+  // Selector states
+  const [viewSelector, setViewSelector] = useState('Daily Timesheets');
+  const [campaignSelector, setCampaignSelector] = useState('Campaign');
+  const [managedBySelector, setManagedBySelector] = useState('Managed by me');
+  
+  // Date navigation
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Filter states
+  const [payrollHours, setPayrollHours] = useState('Payroll hours');
+  const [groups, setGroups] = useState('Groups');
+  const [members, setMembers] = useState('Members');
+  const [schedules, setSchedules] = useState('Schedules');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
 
-  // Export dropdown state
-  const [showExportMenu, setShowExportMenu] = useState(false);
-
   // Get current week dates
   const currentWeek = getCurrentWeekDates();
-  const [customStartDate, setCustomStartDate] = useState(currentWeek.start);
-  const [customEndDate, setCustomEndDate] = useState(currentWeek.end);
 
-  // Calculate date range based on filter
+  // Calculate date range for selected date
   const dateRange = useMemo(() => {
-    if (weekFilter === 'current') {
-      return currentWeek;
-    } else if (weekFilter === 'last') {
-      const lastWeekStart = new Date(currentWeek.start);
-      lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-      const lastWeekEnd = new Date(currentWeek.end);
-      lastWeekEnd.setDate(lastWeekEnd.getDate() - 7);
-      return {
-        start: lastWeekStart.toISOString().split('T')[0],
-        end: lastWeekEnd.toISOString().split('T')[0]
-      };
-    } else {
-      return {
-        start: customStartDate,
-        end: customEndDate
-      };
-    }
-  }, [weekFilter, customStartDate, customEndDate, currentWeek]);
+    return {
+      start: selectedDate,
+      end: selectedDate
+    };
+  }, [selectedDate]);
 
-  // Get filtered and sorted timesheet data
+  // Get filtered timesheet data
   const timesheetData = useMemo(() => {
     let data = generateWeeklyTimesheets(dateRange.start, dateRange.end);
-
-    // Apply filters
-    if (departmentFilter !== 'All Departments') {
-      data = data.filter(timesheet => timesheet.employee.department === departmentFilter);
-    }
-
-    if (statusFilter !== 'All Status') {
-      data = data.filter(timesheet => timesheet.status === statusFilter);
-    }
 
     if (searchTerm) {
       data = data.filter(timesheet => 
@@ -75,47 +58,28 @@ const TimesheetsPage = () => {
       );
     }
 
-    // Apply sorting
-    data.sort((a, b) => {
-      let aValue, bValue;
-      
-      if (sortField.includes('.')) {
-        const [obj, prop] = sortField.split('.');
-        aValue = a[obj][prop];
-        bValue = b[obj][prop];
-      } else {
-        aValue = a[sortField];
-        bValue = b[sortField];
-      }
-
-      if (typeof aValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-
-      if (sortDirection === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
-    });
-
     return data;
-  }, [dateRange, departmentFilter, statusFilter, searchTerm, sortField, sortDirection]);
+  }, [dateRange, searchTerm]);
 
-  // Get summary statistics
-  const summary = useMemo(() => {
-    return getTimesheetSummary(dateRange.start, dateRange.end);
-  }, [dateRange]);
-
-  // Handle sorting
-  const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+  // Handle date navigation
+  const handleDateNavigation = (direction) => {
+    const currentDate = new Date(selectedDate);
+    if (direction === 'prev') {
+      currentDate.setDate(currentDate.getDate() - 1);
     } else {
-      setSortField(field);
-      setSortDirection('asc');
+      currentDate.setDate(currentDate.getDate() + 1);
     }
+    setSelectedDate(currentDate.toISOString().split('T')[0]);
+  };
+
+  // Format date for display
+  const formatDisplayDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    });
   };
 
   // Handle modal actions
@@ -130,643 +94,384 @@ const TimesheetsPage = () => {
   };
 
   const handleSaveEntry = async (entryData) => {
-    // In a real app, this would save to a backend
     console.log('Saving timesheet entry:', entryData);
-    // For demo purposes, we'll just close the modal
     setIsModalOpen(false);
     setEditEntry(null);
   };
 
-  // Handle export actions
-  const handleExport = (type) => {
-    setShowExportMenu(false);
-    
-    switch (type) {
-      case 'csv':
-        exportFunctions.timesheets(timesheetData);
-        break;
-      case 'detailed':
-        exportFunctions.detailed(dateRange.start, dateRange.end);
-        break;
-      case 'excel':
-        exportFunctions.excel(timesheetData);
-        break;
-      case 'summary':
-        exportFunctions.summary(dateRange.start, dateRange.end);
-        break;
-      case 'campaigns':
-        exportFunctions.campaigns(dateRange.start, dateRange.end);
-        break;
-      default:
-        break;
-    }
-  };
-
-  // Status badge component
-  const StatusBadge = ({ status }) => {
-    const statusStyles = {
-      'Approved': 'bg-green-100 text-green-800 border-green-200',
-      'Pending': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'Draft': 'bg-gray-100 text-gray-800 border-gray-200'
-    };
-
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[status] || statusStyles.Draft}`}>
-        {status}
-      </span>
-    );
-  };
-
-  // Sort icon component
-  const SortIcon = ({ field }) => {
-    if (sortField !== field) {
-      return (
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-        </svg>
-      );
-    }
-
-    return sortDirection === 'asc' ? (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-      </svg>
-    ) : (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    );
+  // Handle export
+  const handleExport = () => {
+    exportFunctions.timesheets(timesheetData);
   };
 
   return (
-    <div style={{ padding: '24px', backgroundColor: '#F9FAFB', minHeight: '100vh' }}>
-      {/* Header */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'flex-start',
-        marginBottom: '32px' 
+    <div style={{ backgroundColor: '#FFFFFF', minHeight: '100vh' }}>
+      {/* Main Header with Tabs and Selectors */}
+      <div style={{
+        borderBottom: '1px solid #E5E7EB',
+        backgroundColor: '#FFFFFF'
       }}>
-        <div>
-          <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>
-            Timesheets
-          </h1>
-          <p style={{ fontSize: '16px', color: '#6B7280' }}>
-            Manage employee timesheets and track project hours
-          </p>
-        </div>
-        
-        <div style={{ display: 'flex', gap: '12px' }}>
-          {/* Export Dropdown */}
-          <div style={{ position: 'relative' }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '0 32px',
+          height: '60px'
+        }}>
+          {/* Left Side - Main Tabs */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             <button
-              onClick={() => setShowExportMenu(!showExportMenu)}
+              onClick={() => setActiveMainTab('timesheets')}
               style={{
-                padding: '10px 16px',
-                fontSize: '14px',
+                padding: '16px 0',
+                marginRight: '32px',
+                fontSize: '16px',
                 fontWeight: '500',
+                color: activeMainTab === 'timesheets' ? '#F97316' : '#9CA3AF',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderBottom: `3px solid ${activeMainTab === 'timesheets' ? '#F97316' : 'transparent'}`,
+                cursor: 'pointer'
+              }}
+            >
+              Timesheets
+            </button>
+            <button
+              onClick={() => setActiveMainTab('approvals')}
+              style={{
+                padding: '16px 0',
+                fontSize: '16px',
+                fontWeight: '500',
+                color: activeMainTab === 'approvals' ? '#F97316' : '#9CA3AF',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderBottom: `3px solid ${activeMainTab === 'approvals' ? '#F97316' : 'transparent'}`,
+                cursor: 'pointer'
+              }}
+            >
+              Approvals
+            </button>
+          </div>
+
+          {/* Right Side - Selectors */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <select
+              value={campaignSelector}
+              onChange={(e) => setCampaignSelector(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                fontSize: '14px',
+                color: '#F97316',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #F97316',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="Campaign">Campaign</option>
+              <option value="Project Alpha">Project Alpha</option>
+              <option value="Project Beta">Project Beta</option>
+            </select>
+            
+            <select
+              value={managedBySelector}
+              onChange={(e) => setManagedBySelector(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                fontSize: '14px',
+                color: '#6B7280',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #D1D5DB',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="Managed by me">Managed by me</option>
+              <option value="All employees">All employees</option>
+              <option value="My team">My team</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Header with View Selector and Date Navigation */}
+      <div style={{
+        borderBottom: '1px solid #E5E7EB',
+        backgroundColor: '#FFFFFF',
+        padding: '16px 32px'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          {/* Left Side - View Selector and Date Navigation */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <select
+              value={viewSelector}
+              onChange={(e) => setViewSelector(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                fontSize: '14px',
                 color: '#374151',
                 backgroundColor: '#FFFFFF',
                 border: '1px solid #D1D5DB',
                 borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseOver={(e) => {
-                e.target.style.backgroundColor = '#F9FAFB';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.backgroundColor = '#FFFFFF';
+                cursor: 'pointer'
               }}
             >
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Export
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+              <option value="Daily Timesheets">Daily Timesheets</option>
+              <option value="Weekly Timesheets">Weekly Timesheets</option>
+              <option value="Monthly Timesheets">Monthly Timesheets</option>
+            </select>
 
-            {showExportMenu && (
+            {/* Date Navigation */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => handleDateNavigation('prev')}
+                style={{
+                  padding: '6px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  color: '#6B7280'
+                }}
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
               <div style={{
-                position: 'absolute',
-                top: '100%',
-                right: 0,
-                marginTop: '4px',
-                backgroundColor: '#FFFFFF',
-                border: '1px solid #E5E7EB',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 12px',
+                backgroundColor: '#F9FAFB',
                 borderRadius: '6px',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                zIndex: 10,
-                minWidth: '200px'
+                minWidth: '120px'
               }}>
-                <div style={{ padding: '8px' }}>
-                  <button
-                    onClick={() => handleExport('csv')}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      fontSize: '14px',
-                      color: '#374151',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.backgroundColor = '#F3F4F6';
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    Export as CSV
-                  </button>
-                  <button
-                    onClick={() => handleExport('excel')}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      fontSize: '14px',
-                      color: '#374151',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.backgroundColor = '#F3F4F6';
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    Export as Excel
-                  </button>
-                  <button
-                    onClick={() => handleExport('detailed')}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      fontSize: '14px',
-                      color: '#374151',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.backgroundColor = '#F3F4F6';
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    Detailed Report
-                  </button>
-                  <button
-                    onClick={() => handleExport('summary')}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      fontSize: '14px',
-                      color: '#374151',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.backgroundColor = '#F3F4F6';
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    Summary Report
-                  </button>
-                  <button
-                    onClick={() => handleExport('campaigns')}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      fontSize: '14px',
-                      color: '#374151',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.backgroundColor = '#F3F4F6';
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    Campaign Report
-                  </button>
-                </div>
+                <span style={{ fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+                  {formatDisplayDate(selectedDate)}
+                </span>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
               </div>
-            )}
+              
+              <button
+                onClick={() => handleDateNavigation('next')}
+                style={{
+                  padding: '6px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  color: '#6B7280'
+                }}
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          {/* Add Entry Button */}
+          {/* Right Side - Export Button */}
           <button
-            onClick={handleAddEntry}
+            onClick={handleExport}
             style={{
-              padding: '10px 16px',
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#FFFFFF',
-              backgroundColor: '#3B82F6',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '8px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#374151',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #D1D5DB',
+              borderRadius: '6px',
+              cursor: 'pointer'
             }}
-            onMouseOver={(e) => {
-              e.target.style.backgroundColor = '#2563EB';
+          >
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+
+      {/* Filters Section */}
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        padding: '16px 32px',
+        borderBottom: '1px solid #E5E7EB'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          flexWrap: 'wrap'
+        }}>
+          {/* Filter Dropdowns */}
+          <select
+            value={payrollHours}
+            onChange={(e) => setPayrollHours(e.target.value)}
+            style={{
+              padding: '6px 12px',
+              fontSize: '14px',
+              color: '#374151',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #D1D5DB',
+              borderRadius: '6px',
+              cursor: 'pointer'
             }}
-            onMouseOut={(e) => {
-              e.target.style.backgroundColor = '#3B82F6';
+          >
+            <option value="Payroll hours">Payroll hours</option>
+            <option value="All hours">All hours</option>
+            <option value="Regular hours">Regular hours</option>
+            <option value="Overtime hours">Overtime hours</option>
+          </select>
+
+          <select
+            value={groups}
+            onChange={(e) => setGroups(e.target.value)}
+            style={{
+              padding: '6px 12px',
+              fontSize: '14px',
+              color: '#374151',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #D1D5DB',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="Groups">Groups</option>
+            <option value="Development">Development</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Sales">Sales</option>
+          </select>
+
+          <select
+            value={members}
+            onChange={(e) => setMembers(e.target.value)}
+            style={{
+              padding: '6px 12px',
+              fontSize: '14px',
+              color: '#374151',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #D1D5DB',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="Members">Members</option>
+            <option value="Active members">Active members</option>
+            <option value="All members">All members</option>
+          </select>
+
+          <select
+            value={schedules}
+            onChange={(e) => setSchedules(e.target.value)}
+            style={{
+              padding: '6px 12px',
+              fontSize: '14px',
+              color: '#374151',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #D1D5DB',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="Schedules">Schedules</option>
+            <option value="Current schedule">Current schedule</option>
+            <option value="All schedules">All schedules</option>
+          </select>
+
+          {/* Add Filter Button */}
+          <button
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              fontSize: '14px',
+              color: '#374151',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #D1D5DB',
+              borderRadius: '6px',
+              cursor: 'pointer'
             }}
           >
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Add Entry
+            Add filter
           </button>
-        </div>
-      </div>
-
-      {/* Summary Statistics */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: '20px', 
-        marginBottom: '32px' 
-      }}>
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          padding: '20px',
-          borderRadius: '12px',
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '4px' }}>Total Hours</div>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>
-            {summary.totalHours.toFixed(1)}
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          padding: '20px',
-          borderRadius: '12px',
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '4px' }}>Approved Timesheets</div>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#10B981' }}>
-            {summary.approvedCount}
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          padding: '20px',
-          borderRadius: '12px',
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '4px' }}>Pending Approval</div>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#F59E0B' }}>
-            {summary.pendingCount}
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          padding: '20px',
-          borderRadius: '12px',
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '4px' }}>Overtime Hours</div>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#EF4444' }}>
-            {summary.overtimeHours.toFixed(1)}
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div style={{
-        backgroundColor: '#FFFFFF',
-        padding: '24px',
-        borderRadius: '12px',
-        border: '1px solid #E5E7EB',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        marginBottom: '24px'
-      }}>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-          gap: '16px',
-          alignItems: 'end'
-        }}>
-          {/* Week Filter */}
-          <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-              Week Period
-            </label>
-            <select
-              value={weekFilter}
-              onChange={(e) => setWeekFilter(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '1px solid #D1D5DB',
-                borderRadius: '6px',
-                fontSize: '14px',
-                backgroundColor: '#FFFFFF'
-              }}
-            >
-              <option value="current">Current Week</option>
-              <option value="last">Last Week</option>
-              <option value="custom">Custom Range</option>
-            </select>
-          </div>
-
-          {/* Custom Date Range */}
-          {weekFilter === 'custom' && (
-            <>
-              <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #D1D5DB',
-                    borderRadius: '6px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #D1D5DB',
-                    borderRadius: '6px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Department Filter */}
-          <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-              Department
-            </label>
-            <select
-              value={departmentFilter}
-              onChange={(e) => setDepartmentFilter(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '1px solid #D1D5DB',
-                borderRadius: '6px',
-                fontSize: '14px',
-                backgroundColor: '#FFFFFF'
-              }}
-            >
-              {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status Filter */}
-          <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-              Status
-            </label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '1px solid #D1D5DB',
-                borderRadius: '6px',
-                fontSize: '14px',
-                backgroundColor: '#FFFFFF'
-              }}
-            >
-              {statusOptions.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
-          </div>
 
           {/* Search */}
-          <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-              Search
-            </label>
+          <div style={{ marginLeft: 'auto', position: 'relative' }}>
+            <svg 
+              width="16" 
+              height="16" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#9CA3AF'
+              }}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
             <input
               type="text"
-              placeholder="Search employees, positions, campaigns..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
-                width: '100%',
-                padding: '8px 12px',
+                paddingLeft: '36px',
+                paddingRight: '12px',
+                paddingTop: '6px',
+                paddingBottom: '6px',
+                fontSize: '14px',
                 border: '1px solid #D1D5DB',
                 borderRadius: '6px',
-                fontSize: '14px'
+                width: '200px'
               }}
             />
           </div>
         </div>
       </div>
 
-      {/* Timesheet Table */}
-      <div style={{
-        backgroundColor: '#FFFFFF',
-        borderRadius: '12px',
-        border: '1px solid #E5E7EB',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        overflow: 'hidden'
-      }}>
-        <div style={{ overflowX: 'auto' }}>
+      {/* Main Content */}
+      <div style={{ padding: '24px 32px' }}>
+        {/* Table */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '8px',
+          border: '1px solid #E5E7EB',
+          overflow: 'hidden'
+        }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ backgroundColor: '#F9FAFB' }}>
               <tr>
-                <th 
-                  onClick={() => handleSort('employee.name')}
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'left',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    borderBottom: '1px solid #E5E7EB'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    Employee
-                    <SortIcon field="employee.name" />
-                  </div>
-                </th>
-                <th 
-                  onClick={() => handleSort('weekPeriod')}
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'left',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    borderBottom: '1px solid #E5E7EB'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    Week Period
-                    <SortIcon field="weekPeriod" />
-                  </div>
-                </th>
-                <th 
-                  onClick={() => handleSort('totalHours')}
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'right',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    borderBottom: '1px solid #E5E7EB'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-                    Total Hours
-                    <SortIcon field="totalHours" />
-                  </div>
-                </th>
-                <th 
-                  onClick={() => handleSort('regularHours')}
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'right',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    borderBottom: '1px solid #E5E7EB'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-                    Regular Hours
-                    <SortIcon field="regularHours" />
-                  </div>
-                </th>
-                <th 
-                  onClick={() => handleSort('overtimeHours')}
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'right',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    borderBottom: '1px solid #E5E7EB'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-                    Overtime Hours
-                    <SortIcon field="overtimeHours" />
-                  </div>
-                </th>
-                <th 
-                  onClick={() => handleSort('status')}
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'center',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    borderBottom: '1px solid #E5E7EB'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                    Status
-                    <SortIcon field="status" />
-                  </div>
-                </th>
-                <th 
-                  onClick={() => handleSort('submittedAt')}
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'left',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    borderBottom: '1px solid #E5E7EB'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    Submitted
-                    <SortIcon field="submittedAt" />
-                  </div>
+                <th style={{
+                  padding: '12px 16px',
+                  textAlign: 'left',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  Employee
                 </th>
                 <th style={{
                   padding: '12px 16px',
@@ -778,135 +483,137 @@ const TimesheetsPage = () => {
                   letterSpacing: '0.05em',
                   borderBottom: '1px solid #E5E7EB'
                 }}>
-                  Actions
+                  First in
+                </th>
+                <th style={{
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  Last out
+                </th>
+                <th style={{
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  Regular
+                </th>
+                <th style={{
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  Overtime
+                </th>
+                <th style={{
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  Daily Double Overtime
+                </th>
+                <th style={{
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  Tracked
                 </th>
               </tr>
             </thead>
             <tbody>
-              {timesheetData.map((timesheet, index) => (
-                <tr 
-                  key={timesheet.id}
-                  style={{
-                    borderBottom: index < timesheetData.length - 1 ? '1px solid #F3F4F6' : 'none',
-                    backgroundColor: index % 2 === 0 ? '#FFFFFF' : '#FAFAFA'
-                  }}
-                >
-                  <td style={{ padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <img
-                        src={timesheet.employee.avatar}
-                        alt={timesheet.employee.name}
-                        style={{
-                          width: '40px',
-                          height: '40px',
+              {timesheetData.length > 0 ? (
+                timesheetData.map((timesheet, index) => (
+                  <tr 
+                    key={timesheet.id}
+                    style={{
+                      borderBottom: index < timesheetData.length - 1 ? '1px solid #F3F4F6' : 'none'
+                    }}
+                  >
+                    <td style={{ padding: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
                           borderRadius: '50%',
-                          objectFit: 'cover'
-                        }}
-                      />
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
-                          {timesheet.employee.name}
+                          backgroundColor: '#E5E7EB',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#6B7280'
+                        }}>
+                          {timesheet.employee.name.charAt(0)}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#6B7280' }}>
-                          {timesheet.employee.position}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
-                          {timesheet.employee.department}
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                            {timesheet.employee.name}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
-                    {timesheet.weekPeriod}
-                    {timesheet.campaigns.length > 0 && (
-                      <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-                        {timesheet.campaigns.slice(0, 2).join(', ')}
-                        {timesheet.campaigns.length > 2 && ` +${timesheet.campaigns.length - 2} more`}
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: '16px', textAlign: 'right', fontSize: '14px', fontWeight: '500', color: '#111827' }}>
-                    {timesheet.totalHours.toFixed(1)}h
-                  </td>
-                  <td style={{ padding: '16px', textAlign: 'right', fontSize: '14px', color: '#374151' }}>
-                    {timesheet.regularHours.toFixed(1)}h
-                  </td>
-                  <td style={{ padding: '16px', textAlign: 'right', fontSize: '14px', color: timesheet.overtimeHours > 0 ? '#EF4444' : '#374151' }}>
-                    {timesheet.overtimeHours.toFixed(1)}h
-                  </td>
-                  <td style={{ padding: '16px', textAlign: 'center' }}>
-                    <StatusBadge status={timesheet.status} />
-                  </td>
-                  <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
-                    {formatDate(timesheet.submittedAt)}
-                  </td>
-                  <td style={{ padding: '16px', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button
-                        onClick={() => handleEditEntry(timesheet)}
-                        style={{
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          color: '#3B82F6',
-                          backgroundColor: '#EFF6FF',
-                          border: '1px solid #DBEAFE',
-                          borderRadius: '6px',
-                          cursor: 'pointer'
-                        }}
-                        onMouseOver={(e) => {
-                          e.target.style.backgroundColor = '#DBEAFE';
-                        }}
-                        onMouseOut={(e) => {
-                          e.target.style.backgroundColor = '#EFF6FF';
-                        }}
-                      >
-                        View
-                      </button>
-                      {timesheet.status === 'Pending' && (
-                        <button
-                          style={{
-                            padding: '6px 12px',
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            color: '#10B981',
-                            backgroundColor: '#ECFDF5',
-                            border: '1px solid #D1FAE5',
-                            borderRadius: '6px',
-                            cursor: 'pointer'
-                          }}
-                          onMouseOver={(e) => {
-                            e.target.style.backgroundColor = '#D1FAE5';
-                          }}
-                          onMouseOut={(e) => {
-                            e.target.style.backgroundColor = '#ECFDF5';
-                          }}
-                        >
-                          Approve
-                        </button>
-                      )}
-                    </div>
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
+                      -
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
+                      -
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
+                      -
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
+                      -
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
+                      -
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
+                      -
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" style={{
+                    padding: '48px',
+                    textAlign: 'center',
+                    color: '#6B7280',
+                    fontSize: '14px'
+                  }}>
+                    No timesheet data for {formatDisplayDate(selectedDate)}
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
-
-        {timesheetData.length === 0 && (
-          <div style={{
-            padding: '48px',
-            textAlign: 'center',
-            color: '#6B7280'
-          }}>
-            <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>
-              No timesheets found
-            </div>
-            <div style={{ fontSize: '14px' }}>
-              Try adjusting your filters or date range
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Timesheet Entry Modal */}
@@ -918,28 +625,12 @@ const TimesheetsPage = () => {
         }}
         onSave={handleSaveEntry}
         editEntry={editEntry}
-        currentUser={{ id: 1, role: 'admin' }} // Mock current user
+        currentUser={{ id: 1, role: 'admin' }}
       />
-
-      {/* Click outside to close export menu */}
-      {showExportMenu && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 5
-          }}
-          onClick={() => setShowExportMenu(false)}
-        />
-      )}
     </div>
   );
 };
 
-// Export with the name that App.jsx expects
 export { TimesheetsPage };
 export default TimesheetsPage;
 
