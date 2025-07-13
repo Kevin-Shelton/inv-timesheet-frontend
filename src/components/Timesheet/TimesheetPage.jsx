@@ -1,52 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Download, Search, Filter, Plus, Users, Clock, BarChart3 } from 'lucide-react';
-
-// Import components with error handling
-let DailyTimesheetView, Enhanced_DailyTimesheetView, WeeklyTimesheetView, MonthlyTimesheetView, TimesheetEntryModal, TimesheetIndicators, StatusBadge, enhancedSupabaseApi;
-
-try {
-  DailyTimesheetView = require('./DailyTimesheetView').default;
-} catch (e) {
-  console.warn('DailyTimesheetView not found:', e);
-}
-
-try {
-  Enhanced_DailyTimesheetView = require('./Enhanced_DailyTimesheetView').default;
-} catch (e) {
-  console.warn('Enhanced_DailyTimesheetView not found:', e);
-}
-
-try {
-  WeeklyTimesheetView = require('./WeeklyTimesheetView').default;
-} catch (e) {
-  console.warn('WeeklyTimesheetView not found:', e);
-}
-
-try {
-  MonthlyTimesheetView = require('./MonthlyTimesheetView').default;
-} catch (e) {
-  console.warn('MonthlyTimesheetView not found:', e);
-}
-
-try {
-  TimesheetEntryModal = require('./TimesheetEntryModal').default;
-} catch (e) {
-  console.warn('TimesheetEntryModal not found:', e);
-}
-
-try {
-  const indicators = require('./TimesheetIndicators');
-  TimesheetIndicators = indicators.TimesheetIndicators;
-  StatusBadge = indicators.StatusBadge;
-} catch (e) {
-  console.warn('TimesheetIndicators not found:', e);
-}
-
-try {
-  enhancedSupabaseApi = require('../../lib/Enhanced_Supabase_API').default;
-} catch (e) {
-  console.warn('Enhanced_Supabase_API not found:', e);
-}
+import DailyTimesheetView from './DailyTimesheetView';
+import Enhanced_DailyTimesheetView from './Enhanced_DailyTimesheetView';
+import WeeklyTimesheetView from './WeeklyTimesheetView';
+import MonthlyTimesheetView from './MonthlyTimesheetView';
+import TimesheetEntryModal from './TimesheetEntryModal';
+import { TimesheetIndicators, StatusBadge } from './TimesheetIndicators';
+import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API';
 
 const ComprehensiveTimesheetPage = () => {
   // State management
@@ -68,22 +28,12 @@ const ComprehensiveTimesheetPage = () => {
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Debug: Log current view changes
-  useEffect(() => {
-    console.log('Current view changed to:', currentView);
-  }, [currentView]);
-
   // Initialize user data
   useEffect(() => {
     const initializeUser = async () => {
       try {
-        if (enhancedSupabaseApi) {
-          const user = await enhancedSupabaseApi.getCurrentUser();
-          setCurrentUser(user);
-        } else {
-          // Fallback user for testing
-          setCurrentUser({ id: 1, full_name: 'Kevin Shelton' });
-        }
+        const user = await enhancedSupabaseApi.getCurrentUser();
+        setCurrentUser(user);
         setLoading(false);
       } catch (error) {
         console.error('Error initializing user:', error);
@@ -160,26 +110,11 @@ const ComprehensiveTimesheetPage = () => {
     }));
   };
 
-  // Handle view change with debug logging
+  // Handle view change
   const handleViewChange = (newView) => {
     console.log('Changing view from', currentView, 'to', newView);
     setCurrentView(newView);
   };
-
-  // Simple fallback component for missing views
-  const FallbackView = ({ viewName }) => (
-    <div className="p-8 text-center">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">
-        {viewName} View
-      </h2>
-      <p className="text-gray-600 mb-4">
-        Current view: <strong>{currentView}</strong>
-      </p>
-      <p className="text-gray-600">
-        Component not loaded or has errors. Check console for details.
-      </p>
-    </div>
-  );
 
   if (loading) {
     return (
@@ -191,13 +126,6 @@ const ComprehensiveTimesheetPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Debug Info */}
-      <div className="bg-yellow-100 border-b border-yellow-200 px-6 py-2">
-        <div className="text-sm text-yellow-800">
-          <strong>Debug:</strong> Current View = {currentView} | User = {currentUser?.full_name || 'Loading...'}
-        </div>
-      </div>
-
       {/* Main Header with Tabs and Selectors */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-6 py-4">
@@ -376,56 +304,44 @@ const ComprehensiveTimesheetPage = () => {
       {/* Main Content Area */}
       <div className="flex-1">
         {currentView === 'daily' && (
-          Enhanced_DailyTimesheetView ? (
-            <Enhanced_DailyTimesheetView
-              userId={currentUser?.id}
-              selectedDate={selectedDate}
-              onDateChange={setSelectedDate}
-              searchQuery={searchQuery}
-              filters={filters}
-            />
-          ) : (
-            <FallbackView viewName="Daily" />
-          )
+          <Enhanced_DailyTimesheetView
+            userId={currentUser?.id}
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            searchQuery={searchQuery}
+            filters={filters}
+          />
         )}
 
         {currentView === 'weekly' && (
-          WeeklyTimesheetView ? (
-            <WeeklyTimesheetView
-              userId={currentUser?.id}
-              selectedWeek={selectedWeek}
-              onWeekChange={setSelectedWeek}
-              onDayClick={handleDayClick}
-              searchQuery={searchQuery}
-              filters={filters}
-              onCreateEntry={(date) => {
-                setSelectedDate(date);
-                setShowEntryModal(true);
-              }}
-            />
-          ) : (
-            <FallbackView viewName="Weekly" />
-          )
+          <WeeklyTimesheetView
+            userId={currentUser?.id}
+            selectedWeek={selectedWeek}
+            onWeekChange={setSelectedWeek}
+            onDayClick={handleDayClick}
+            searchQuery={searchQuery}
+            filters={filters}
+            onCreateEntry={(date) => {
+              setSelectedDate(date);
+              setShowEntryModal(true);
+            }}
+          />
         )}
 
         {currentView === 'monthly' && (
-          MonthlyTimesheetView ? (
-            <MonthlyTimesheetView
-              userId={currentUser?.id}
-              selectedMonth={selectedMonth}
-              onMonthChange={setSelectedMonth}
-              onDayClick={handleDayClick}
-              searchQuery={searchQuery}
-              filters={filters}
-            />
-          ) : (
-            <FallbackView viewName="Monthly" />
-          )
+          <MonthlyTimesheetView
+            userId={currentUser?.id}
+            selectedMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
+            onDayClick={handleDayClick}
+            searchQuery={searchQuery}
+            filters={filters}
+          />
         )}
       </div>
 
       {/* Add Entry Modal */}
-      {showEntryModal && TimesheetEntryModal && (
+      {showEntryModal && (
         <TimesheetEntryModal
           isOpen={showEntryModal}
           onClose={() => setShowEntryModal(false)}
