@@ -1,444 +1,581 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Calendar, Clock, AlertCircle } from 'lucide-react'
-import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API'
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Calendar, Plus } from 'lucide-react';
+import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API';
 
-const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick }) => {
-  const [monthlyData, setMonthlyData] = useState({})
-  const [userProfile, setUserProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [hoveredDay, setHoveredDay] = useState(null)
-  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 })
+const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick, onCreateEntry }) => {
+  const [monthlyData, setMonthlyData] = useState({});
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [hoveredDay, setHoveredDay] = useState(null);
 
-  // Calculate month calendar
-  const monthCalendar = useMemo(() => {
-    const year = new Date(selectedMonth).getFullYear()
-    const month = new Date(selectedMonth).getMonth()
-    
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const startDate = new Date(firstDay)
-    startDate.setDate(startDate.getDate() - firstDay.getDay()) // Start from Sunday
-    
-    const weeks = []
-    let currentWeek = []
-    
-    for (let i = 0; i < 42; i++) { // 6 weeks max
-      const date = new Date(startDate)
-      date.setDate(startDate.getDate() + i)
-      
-      const dayData = {
-        date: date.toISOString().split('T')[0],
-        dayNumber: date.getDate(),
-        isCurrentMonth: date.getMonth() === month,
-        isToday: date.toDateString() === new Date().toDateString(),
-        isWeekend: date.getDay() === 0 || date.getDay() === 6,
-        dayName: date.toLocaleDateString('en-US', { weekday: 'short' })
+  // Load user data
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const user = await enhancedSupabaseApi.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error loading user:', error);
+        setCurrentUser({ 
+          id: 'default-user',
+          full_name: 'Kevin Shelton',
+          email: 'kevin@example.com'
+        });
       }
-      
-      currentWeek.push(dayData)
-      
-      if (currentWeek.length === 7) {
-        weeks.push(currentWeek)
-        currentWeek = []
-      }
-    }
-    
-    return weeks.filter(week => week.some(day => day.isCurrentMonth))
-  }, [selectedMonth])
+    };
+
+    loadUserData();
+  }, []);
 
   // Load monthly data
   useEffect(() => {
-    loadMonthlyData()
-  }, [userId, selectedMonth])
-
-  const loadMonthlyData = async () => {
-    setLoading(true)
-    try {
-      const year = new Date(selectedMonth).getFullYear()
-      const month = new Date(selectedMonth).getMonth()
-      const firstDay = new Date(year, month, 1).toISOString().split('T')[0]
-      const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0]
+    const loadMonthlyData = async () => {
+      if (!currentUser) return;
       
-      // Get timesheet entries for the month
-      const entries = await enhancedSupabaseApi.getTimesheetEntries({
-        user_id: userId,
-        date_from: firstDay,
-        date_to: lastDay
-      })
-
-      // Group entries by date
-      const groupedData = {}
-      entries.forEach(entry => {
-        groupedData[entry.date] = {
-          ...entry,
-          trackedHours: (entry.regular_hours || 0) + (entry.overtime_hours || 0),
-          payrollHours: entry.total_paid_hours || 0,
-          firstIn: entry.time_in ? formatTime(entry.time_in) : null,
-          lastOut: entry.time_out ? formatTime(entry.time_out) : null,
-          hasOvertime: (entry.overtime_hours || 0) > 0,
-          hasLeave: entry.vacation_type && entry.vacation_type !== 'none',
-          leaveType: entry.vacation_type
-        }
-      })
-
-      setMonthlyData(groupedData)
-      
-      // Get user profile from first entry
-      if (entries.length > 0 && entries[0].users) {
-        setUserProfile(entries[0].users)
+      setLoading(true);
+      try {
+        const year = selectedMonth.getFullYear();
+        const month = selectedMonth.getMonth();
+        const startDate = new Date(year, month, 1);
+        const endDate = new Date(year, month + 1, 0);
+        
+        const entries = await enhancedSupabaseApi.getTimesheetEntries({
+          userId: currentUser.id,
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
+        });
+        
+        // Group entries by date
+        const groupedData = {};
+        entries.forEach(entry => {
+          const date = entry.date;
+          if (!groupedData[date]) {
+            groupedData[date] = {
+              total_hours: 0,
+              regular_hours: 0,
+              overtime_hours: 0,
+              entries: []
+            };
+          }
+          groupedData[date].total_hours += (entry.regular_hours || 0) + (entry.overtime_hours || 0);
+          groupedData[date].regular_hours += (entry.regular_hours || 0);
+          groupedData[date].overtime_hours += (entry.overtime_hours || 0);
+          groupedData[date].entries.push(entry);
+        });
+        
+        setMonthlyData(groupedData);
+      } catch (error) {
+        console.error('Error loading monthly data:', error);
+        setMonthlyData({});
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading monthly data:', error)
-    } finally {
-      setLoading(false)
+    };
+
+    loadMonthlyData();
+  }, [currentUser, selectedMonth]);
+
+  // Navigate months
+  const navigateMonth = (direction) => {
+    const newMonth = new Date(selectedMonth);
+    newMonth.setMonth(selectedMonth.getMonth() + (direction === 'next' ? 1 : -1));
+    onMonthChange(newMonth);
+  };
+
+  // Get calendar days for the month
+  const getCalendarDays = () => {
+    const year = selectedMonth.getFullYear();
+    const month = selectedMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
+    
+    const days = [];
+    const currentDate = new Date(startDate);
+    
+    // Generate 6 weeks (42 days) to fill the calendar grid
+    for (let i = 0; i < 42; i++) {
+      days.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
     }
-  }
+    
+    return days;
+  };
 
-  const formatTime = (timestamp) => {
-    if (!timestamp) return null
-    return new Date(timestamp).toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    })
-  }
+  // Check if date is in current month
+  const isCurrentMonth = (date) => {
+    return date.getMonth() === selectedMonth.getMonth() && 
+           date.getFullYear() === selectedMonth.getFullYear();
+  };
 
-  const formatHours = (hours) => {
-    if (!hours || hours === 0) return '0h'
-    const h = Math.floor(hours)
-    const m = Math.round((hours - h) * 60)
-    return m > 0 ? `${h}h ${m}m` : `${h}h`
-  }
+  // Check if date is today
+  const isToday = (date) => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
 
+  // Get hours for a specific date
+  const getHoursForDate = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return monthlyData[dateStr]?.total_hours || 0;
+  };
+
+  // Handle day click
+  const handleDayClick = (date) => {
+    if (isCurrentMonth(date)) {
+      if (onDayClick) {
+        onDayClick(date);
+      }
+    }
+  };
+
+  // Handle create entry for specific day
+  const handleCreateEntry = (date, event) => {
+    event.stopPropagation();
+    if (onCreateEntry) {
+      onCreateEntry({
+        date: date.toISOString().split('T')[0],
+        userId: currentUser?.id
+      });
+    }
+  };
+
+  // Format month/year for display
   const formatMonthYear = () => {
-    return new Date(selectedMonth).toLocaleDateString('en-US', { 
+    return selectedMonth.toLocaleDateString('en-US', { 
       month: 'long', 
       year: 'numeric' 
-    })
-  }
+    });
+  };
 
-  const navigateMonth = (direction) => {
-    const currentMonth = new Date(selectedMonth)
-    currentMonth.setMonth(currentMonth.getMonth() + direction)
-    onMonthChange(currentMonth.toISOString().split('T')[0])
-  }
+  // Get total hours for the month
+  const getMonthlyTotal = () => {
+    return Object.values(monthlyData).reduce((sum, day) => sum + day.total_hours, 0).toFixed(1);
+  };
 
-  const getMonthlyTotals = () => {
-    return Object.values(monthlyData).reduce((totals, day) => ({
-      trackedHours: totals.trackedHours + day.trackedHours,
-      payrollHours: totals.payrollHours + day.payrollHours,
-      regularHours: totals.regularHours + (day.regular_hours || 0),
-      overtimeHours: totals.overtimeHours + (day.overtime_hours || 0),
-      vacationHours: totals.vacationHours + (day.vacation_hours || 0),
-      sickHours: totals.sickHours + (day.sick_hours || 0),
-      holidayHours: totals.holidayHours + (day.holiday_hours || 0),
-      workingDays: totals.workingDays + (day.trackedHours > 0 ? 1 : 0)
-    }), {
-      trackedHours: 0,
-      payrollHours: 0,
-      regularHours: 0,
-      overtimeHours: 0,
-      vacationHours: 0,
-      sickHours: 0,
-      holidayHours: 0,
-      workingDays: 0
-    })
-  }
-
-  const getWeeklyTotal = (week) => {
-    return week.reduce((total, day) => {
-      const dayData = monthlyData[day.date]
-      return total + (dayData?.trackedHours || 0)
-    }, 0)
-  }
-
-  const getDayStyle = (day, dayData) => {
-    let baseStyle = "relative h-24 p-2 border border-gray-100 cursor-pointer transition-colors "
-    
-    if (!day.isCurrentMonth) {
-      baseStyle += "bg-gray-50 text-gray-400 "
-    } else if (day.isToday) {
-      baseStyle += "bg-orange-50 border-orange-200 "
-    } else if (day.isWeekend) {
-      baseStyle += "bg-gray-50 "
-    } else {
-      baseStyle += "bg-white hover:bg-gray-50 "
-    }
-    
-    if (dayData) {
-      if (dayData.hasLeave) {
-        baseStyle += "bg-blue-50 border-blue-200 "
-      } else if (dayData.hasOvertime) {
-        baseStyle += "bg-orange-50 border-orange-200 "
-      }
-    }
-    
-    return baseStyle
-  }
-
-  const getLeaveTypeLabel = (type) => {
-    const types = {
-      'vacation': 'Annual Leave',
-      'sick': 'Sick Leave', 
-      'holiday': 'Public Holiday',
-      'personal': 'Personal Leave'
-    }
-    return types[type] || type
-  }
-
-  const handleMouseEnter = (day, dayData, event) => {
-    if (dayData && day.isCurrentMonth) {
-      setHoveredDay({ day, dayData })
-      setHoverPosition({ x: event.clientX, y: event.clientY })
-    }
-  }
-
-  const handleMouseLeave = () => {
-    setHoveredDay(null)
-  }
-
-  const monthlyTotals = getMonthlyTotals()
+  const calendarDays = getCalendarDays();
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      <div style={{ 
+        width: '100%', 
+        minHeight: '400px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        backgroundColor: '#F9FAFB'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ 
+            width: '40px', 
+            height: '40px', 
+            border: '4px solid #FB923C', 
+            borderTop: '4px solid transparent', 
+            borderRadius: '50%', 
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }}></div>
+          <p style={{ color: '#6B7280', fontSize: '14px' }}>Loading monthly timesheet...</p>
+        </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="bg-white">
-      {/* Header with Navigation */}
-      <div className="border-b border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => navigateMonth(-1)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {formatMonthYear()}
-              </h2>
-              <p className="text-sm text-gray-500">
-                Monthly Timesheets
-              </p>
+    <div style={{
+      width: '100%',
+      minHeight: '100vh',
+      backgroundColor: '#F9FAFB',
+      fontFamily: "'Inter', sans-serif",
+      position: 'relative'
+    }}>
+      {/* Full Width Container */}
+      <div style={{
+        width: '100%',
+        maxWidth: 'none',
+        margin: '0',
+        padding: '0'
+      }}>
+        
+        {/* Header Section */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          padding: '24px',
+          borderBottom: '1px solid #E5E7EB'
+        }}>
+          {/* Month Navigation */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '24px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px'
+            }}>
+              <button
+                onClick={() => navigateMonth('prev')}
+                style={{
+                  padding: '8px',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '6px',
+                  backgroundColor: '#FFFFFF',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <ChevronLeft style={{ width: '16px', height: '16px', color: '#6B7280' }} />
+              </button>
+              
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                backgroundColor: '#F3F4F6',
+                borderRadius: '6px'
+              }}>
+                <Calendar style={{ width: '16px', height: '16px', color: '#6B7280' }} />
+                <span style={{
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: '#111827'
+                }}>
+                  {formatMonthYear()}
+                </span>
+              </div>
+              
+              <button
+                onClick={() => navigateMonth('next')}
+                style={{
+                  padding: '8px',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '6px',
+                  backgroundColor: '#FFFFFF',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <ChevronRight style={{ width: '16px', height: '16px', color: '#6B7280' }} />
+              </button>
             </div>
-            
-            <button 
-              onClick={() => navigateMonth(1)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
 
-      {/* Calendar Grid */}
-      <div className="p-6">
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          {/* Calendar Header */}
-          <div className="grid grid-cols-8 bg-gray-50">
-            <div className="p-3 text-center text-sm font-medium text-gray-600">Week</div>
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="p-3 text-center text-sm font-medium text-gray-600">
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px'
+            }}>
+              <div style={{
+                fontSize: '14px',
+                color: '#6B7280'
+              }}>
+                Total: <span style={{ fontWeight: '600', color: '#111827' }}>{getMonthlyTotal()}h</span>
+              </div>
+              
+              <button
+                onClick={() => onCreateEntry && onCreateEntry({ 
+                  date: new Date().toISOString().split('T')[0], 
+                  userId: currentUser?.id 
+                })}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 16px',
+                  backgroundColor: '#FB923C',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                <Plus style={{ width: '16px', height: '16px' }} />
+                Add Time Entry
+              </button>
+            </div>
+          </div>
+
+          {/* User Info */}
+          {currentUser && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#FB923C',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: '600',
+                fontSize: '16px'
+              }}>
+                {currentUser.full_name?.charAt(0) || 'U'}
+              </div>
+              <div>
+                <h2 style={{
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: '#111827',
+                  margin: '0 0 2px 0'
+                }}>
+                  {currentUser.full_name || 'User'}
+                </h2>
+                <p style={{
+                  fontSize: '12px',
+                  color: '#6B7280',
+                  margin: '0'
+                }}>
+                  Monthly Timesheet
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Calendar Grid */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          margin: '24px',
+          borderRadius: '8px',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+          overflow: 'hidden'
+        }}>
+          {/* Day Headers */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            backgroundColor: '#F3F4F6',
+            borderBottom: '1px solid #E5E7EB'
+          }}>
+            {dayNames.map(day => (
+              <div 
+                key={day}
+                style={{
+                  padding: '12px',
+                  textAlign: 'center',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#6B7280',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
                 {day}
               </div>
             ))}
           </div>
 
-          {/* Calendar Body */}
-          {monthCalendar.map((week, weekIndex) => {
-            const weekTotal = getWeeklyTotal(week)
-            return (
-              <div key={weekIndex} className="grid grid-cols-8 border-t border-gray-200">
-                {/* Week Total */}
-                <div className="p-3 bg-gray-50 border-r border-gray-200 flex flex-col justify-center items-center">
-                  <div className="text-sm font-medium text-gray-900">
-                    {formatHours(weekTotal)}
+          {/* Calendar Days */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)'
+          }}>
+            {calendarDays.map((date, index) => {
+              const hours = getHoursForDate(date);
+              const isCurrentMonthDay = isCurrentMonth(date);
+              const isTodayDay = isToday(date);
+              const dayKey = date.toISOString().split('T')[0];
+              const isHovered = hoveredDay === dayKey;
+              
+              return (
+                <div
+                  key={index}
+                  style={{
+                    minHeight: '80px',
+                    padding: '8px',
+                    border: '1px solid #F3F4F6',
+                    backgroundColor: isHovered ? '#FEF3C7' : 
+                                   isTodayDay ? '#FFF7ED' : 
+                                   isCurrentMonthDay ? '#FFFFFF' : '#F9FAFB',
+                    cursor: isCurrentMonthDay ? 'pointer' : 'default',
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between'
+                  }}
+                  onMouseEnter={() => isCurrentMonthDay && setHoveredDay(dayKey)}
+                  onMouseLeave={() => setHoveredDay(null)}
+                  onClick={() => handleDayClick(date)}
+                >
+                  {/* Date Number */}
+                  <div style={{
+                    fontSize: '14px',
+                    fontWeight: isTodayDay ? '600' : '500',
+                    color: isTodayDay ? '#FB923C' : 
+                           isCurrentMonthDay ? '#111827' : '#9CA3AF',
+                    textAlign: 'right'
+                  }}>
+                    {date.getDate()}
                   </div>
-                  <div className="text-xs text-gray-500">
-                    Week {weekIndex + 1}
-                  </div>
-                </div>
 
-                {/* Days */}
-                {week.map((day) => {
-                  const dayData = monthlyData[day.date]
-                  return (
-                    <div
-                      key={day.date}
-                      className={getDayStyle(day, dayData)}
-                      onClick={() => day.isCurrentMonth && onDayClick && onDayClick(day.date)}
-                      onMouseEnter={(e) => handleMouseEnter(day, dayData, e)}
-                      onMouseLeave={handleMouseLeave}
-                    >
-                      {/* Day Number */}
-                      <div className={`text-sm font-medium ${day.isToday ? 'text-orange-600' : day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}`}>
-                        {day.dayNumber}
-                      </div>
-
-                      {/* Leave Indicator */}
-                      {dayData?.hasLeave && (
-                        <div className="mt-1">
-                          <div className="text-xs px-1 py-0.5 bg-blue-100 text-blue-800 rounded text-center">
-                            {getLeaveTypeLabel(dayData.leaveType)}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Hours Display */}
-                      {dayData && dayData.trackedHours > 0 && (
-                        <div className="mt-1">
-                          <div className={`text-xs font-medium ${dayData.hasOvertime ? 'text-orange-600' : 'text-gray-900'}`}>
-                            {formatHours(dayData.trackedHours)}
-                          </div>
-                          {dayData.hasOvertime && (
-                            <div className="text-xs text-orange-600">
-                              +{formatHours(dayData.overtime_hours)} OT
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Status Indicators */}
-                      {dayData && (
-                        <div className="absolute bottom-1 right-1 flex space-x-1">
-                          {dayData.status === 'approved' && (
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          )}
-                          {dayData.status === 'submitted' && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          )}
-                          {dayData.status === 'rejected' && (
-                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                          )}
-                          {dayData.validation_errors?.length > 0 && (
-                            <AlertCircle className="w-3 h-3 text-red-500" />
-                          )}
-                        </div>
-                      )}
+                  {/* Hours Display */}
+                  {isCurrentMonthDay && hours > 0 && (
+                    <div style={{
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      color: '#FB923C',
+                      textAlign: 'center',
+                      backgroundColor: '#FFF7ED',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      alignSelf: 'center'
+                    }}>
+                      {hours.toFixed(1)}h
                     </div>
-                  )
-                })}
-              </div>
-            )
-          })}
+                  )}
 
-          {/* Monthly Total Row */}
-          <div className="grid grid-cols-8 border-t-2 border-gray-300 bg-gray-50">
-            <div className="p-3 text-center text-sm font-semibold text-gray-900">
-              Monthly total
-            </div>
-            <div className="col-span-6 p-3 text-center text-lg font-bold text-gray-900">
-              {formatHours(monthlyTotals.trackedHours)}
-            </div>
-            <div className="p-3 text-center text-sm text-gray-600">
-              {monthlyTotals.workingDays} days
-            </div>
+                  {/* Plus Icon on Hover */}
+                  {isCurrentMonthDay && isHovered && (
+                    <div 
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '24px',
+                        height: '24px',
+                        backgroundColor: '#FB923C',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        zIndex: 10,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                      }}
+                      onClick={(e) => handleCreateEntry(date, e)}
+                    >
+                      +
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Monthly Summary */}
-        <div className="mt-8 bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Summary</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {formatHours(monthlyTotals.trackedHours)}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          margin: '0 24px 24px 24px',
+          borderRadius: '8px',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+          padding: '24px'
+        }}>
+          <h3 style={{
+            fontSize: '16px',
+            fontWeight: '600',
+            color: '#111827',
+            margin: '0 0 16px 0'
+          }}>
+            Monthly Summary
+          </h3>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gap: '16px'
+          }}>
+            <div style={{
+              textAlign: 'center',
+              padding: '16px',
+              backgroundColor: '#F9FAFB',
+              borderRadius: '6px'
+            }}>
+              <div style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#111827',
+                marginBottom: '4px'
+              }}>
+                {getMonthlyTotal()}h
               </div>
-              <div className="text-sm text-gray-600">Total Tracked</div>
+              <div style={{
+                fontSize: '12px',
+                color: '#6B7280',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                Total Hours
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {formatHours(monthlyTotals.regularHours)}
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '16px',
+              backgroundColor: '#F9FAFB',
+              borderRadius: '6px'
+            }}>
+              <div style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#111827',
+                marginBottom: '4px'
+              }}>
+                {Object.keys(monthlyData).length}
               </div>
-              <div className="text-sm text-gray-600">Regular Hours</div>
+              <div style={{
+                fontSize: '12px',
+                color: '#6B7280',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                Days Worked
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                {formatHours(monthlyTotals.overtimeHours)}
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '16px',
+              backgroundColor: '#F9FAFB',
+              borderRadius: '6px'
+            }}>
+              <div style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#111827',
+                marginBottom: '4px'
+              }}>
+                {Object.keys(monthlyData).length > 0 ? 
+                  (parseFloat(getMonthlyTotal()) / Object.keys(monthlyData).length).toFixed(1) : 
+                  '0.0'
+                }h
               </div>
-              <div className="text-sm text-gray-600">Overtime</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {formatHours(monthlyTotals.vacationHours + monthlyTotals.sickHours + monthlyTotals.holidayHours)}
+              <div style={{
+                fontSize: '12px',
+                color: '#6B7280',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                Avg Per Day
               </div>
-              <div className="text-sm text-gray-600">Leave Hours</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {monthlyTotals.workingDays}
-              </div>
-              <div className="text-sm text-gray-600">Working Days</div>
             </div>
           </div>
         </div>
-
-        {/* User Profile Info */}
-        {userProfile && (
-          <div className="mt-6 flex items-center space-x-4 p-4 bg-white border border-gray-200 rounded-lg">
-            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-              <span className="text-sm font-semibold text-orange-600">
-                {userProfile.full_name?.charAt(0) || 'U'}
-              </span>
-            </div>
-            <div>
-              <div className="font-medium text-gray-900">{userProfile.full_name}</div>
-              <div className="text-sm text-gray-500">{userProfile.email}</div>
-              {userProfile.pay_rate_per_hour && (
-                <div className="text-sm text-gray-500">
-                  Rate: ${userProfile.pay_rate_per_hour}/hour
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* Hover Tooltip */}
-      {hoveredDay && (
-        <div 
-          className="fixed z-50 bg-gray-900 text-white p-3 rounded-lg shadow-lg pointer-events-none"
-          style={{ 
-            left: hoverPosition.x + 10, 
-            top: hoverPosition.y - 10,
-            transform: 'translateY(-100%)'
-          }}
-        >
-          <div className="text-sm font-medium mb-2">
-            {new Date(hoveredDay.day.date).toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
-          </div>
-          <div className="space-y-1 text-xs">
-            {hoveredDay.dayData.firstIn && (
-              <div>First in: {hoveredDay.dayData.firstIn}</div>
-            )}
-            {hoveredDay.dayData.lastOut && (
-              <div>Last out: {hoveredDay.dayData.lastOut}</div>
-            )}
-            <div>Regular: {formatHours(hoveredDay.dayData.regular_hours || 0)}</div>
-            {hoveredDay.dayData.overtime_hours > 0 && (
-              <div>Overtime: {formatHours(hoveredDay.dayData.overtime_hours)}</div>
-            )}
-            {hoveredDay.dayData.hasLeave && (
-              <div>Leave: {getLeaveTypeLabel(hoveredDay.dayData.leaveType)}</div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
-  )
-}
+  );
+};
 
-export default MonthlyTimesheetView
+export default MonthlyTimesheetView;
 
