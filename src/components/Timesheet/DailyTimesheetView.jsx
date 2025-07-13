@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { Clock, Calendar, User, MapPin, AlertCircle, CheckCircle, Edit3, Plus, ChevronDown, ChevronUp } from 'lucide-react'
-import enhancedSupabaseApi from './Enhanced_Supabase_API'
+import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API'
 
 const DailyTimesheetView = ({ userId, selectedDate, onDateChange }) => {
   const [timesheetData, setTimesheetData] = useState(null)
