@@ -1,97 +1,146 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Clock, User, Plus } from 'lucide-react';
 import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API';
 
-const DailyTimesheetView = ({ userId, selectedDate, onDateChange, onCreateEntry }) => {
+const DailyTimesheetView = ({ userId, selectedDate, onDateChange, onCreateEntry, searchTerm = '' }) => {
+  const [currentUser, setCurrentUser] = useState(null);
   const [dailyData, setDailyData] = useState(null);
   const [timeEntries, setTimeEntries] = useState([]);
-  const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [hoveredRow, setHoveredRow] = useState(null);
 
-  // Update current time every second
+  // Load user data
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
+    const loadUserData = async () => {
+      try {
+        const user = await enhancedSupabaseApi.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error loading user:', error);
+        // Set default user if API fails
+        setCurrentUser({ 
+          id: 'default-user',
+          full_name: 'Kevin Shelton',
+          email: 'kevin@example.com'
+        });
+      }
+    };
+
+    loadUserData();
   }, []);
 
   // Load daily data
   useEffect(() => {
+    const loadDailyData = async () => {
+      if (!currentUser) return;
+      
+      setLoading(true);
+      try {
+        // Get daily timesheet data
+        const data = await enhancedSupabaseApi.getDailyTimesheet(currentUser.id, selectedDate);
+        setDailyData(data);
+        
+        // Get time entries for the day
+        const entries = await enhancedSupabaseApi.getTimesheetEntries({
+          userId: currentUser.id,
+          startDate: selectedDate,
+          endDate: selectedDate
+        });
+        setTimeEntries(entries || []);
+        
+      } catch (error) {
+        console.error('Error loading daily data:', error);
+        setDailyData({
+          summary: { total_hours: 0, regular_hours: 0, overtime_hours: 0, break_hours: 0 },
+          entries: []
+        });
+        setTimeEntries([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadDailyData();
-  }, [userId, selectedDate]);
+  }, [currentUser, selectedDate]);
 
-  const loadDailyData = async () => {
-    setLoading(true);
-    try {
-      // Get user profile
-      const user = await enhancedSupabaseApi.getCurrentUser();
-      setUserProfile(user);
-      
-      // Get daily timesheet data
-      const data = await enhancedSupabaseApi.getDailyTimesheet(userId, selectedDate);
-      setDailyData(data);
-      
-      // Get time entries for the day
-      const entries = await enhancedSupabaseApi.getTimesheetEntries({
-        userId: userId,
-        startDate: selectedDate,
-        endDate: selectedDate
-      });
-      setTimeEntries(entries || []);
-      
-    } catch (error) {
-      console.error('Error loading daily data:', error);
-      setDailyData({
-        summary: { total_hours: 0, regular_hours: 0, overtime_hours: 0, break_hours: 0 },
-        entries: []
-      });
-      setTimeEntries([]);
-    } finally {
-      setLoading(false);
+  // Calculate daily summary from entries
+  const calculateDailySummary = () => {
+    if (!timeEntries || timeEntries.length === 0) {
+      return {
+        firstIn: null,
+        lastOut: null,
+        regularHours: 0,
+        overtimeHours: 0,
+        dailyDoubleOvertime: 0,
+        trackedHours: 0
+      };
     }
-  };
 
-  // Navigate dates
-  const navigateDate = (direction) => {
-    const currentDate = new Date(selectedDate);
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
-    onDateChange(newDate.toISOString().split('T')[0]);
-  };
+    const times = timeEntries.map(entry => ({
+      timeIn: entry.time_in ? new Date(entry.time_in) : null,
+      timeOut: entry.time_out ? new Date(entry.time_out) : null,
+      regularHours: entry.regular_hours || 0,
+      overtimeHours: entry.overtime_hours || 0
+    })).filter(entry => entry.timeIn || entry.timeOut);
 
-  // Format date for display
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
+    const firstIn = times.reduce((earliest, entry) => {
+      if (!entry.timeIn) return earliest;
+      if (!earliest) return entry.timeIn;
+      return entry.timeIn < earliest ? entry.timeIn : earliest;
+    }, null);
+
+    const lastOut = times.reduce((latest, entry) => {
+      if (!entry.timeOut) return latest;
+      if (!latest) return entry.timeOut;
+      return entry.timeOut > latest ? entry.timeOut : latest;
+    }, null);
+
+    const regularHours = timeEntries.reduce((sum, entry) => sum + (entry.regular_hours || 0), 0);
+    const overtimeHours = timeEntries.reduce((sum, entry) => sum + (entry.overtime_hours || 0), 0);
+    const trackedHours = regularHours + overtimeHours;
+
+    return {
+      firstIn,
+      lastOut,
+      regularHours,
+      overtimeHours,
+      dailyDoubleOvertime: 0, // Calculate based on your business rules
+      trackedHours
+    };
   };
 
   // Format time for display
-  const formatTime = (timeStr) => {
-    if (!timeStr) return '--:--';
-    const time = new Date(timeStr);
-    return time.toLocaleTimeString('en-US', { 
+  const formatTime = (date) => {
+    if (!date) return '-';
+    return date.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: false 
     });
   };
 
-  // Get status badge color
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved': return '#10B981';
-      case 'submitted': return '#F59E0B';
-      case 'rejected': return '#EF4444';
-      default: return '#6B7280';
+  // Format hours for display
+  const formatHours = (hours) => {
+    if (!hours || hours === 0) return '-';
+    return `${hours.toFixed(1)}h`;
+  };
+
+  // Get user initials
+  const getUserInitials = (name) => {
+    if (!name) return 'K';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  // Handle row click for creating new entry
+  const handleRowClick = () => {
+    if (onCreateEntry) {
+      onCreateEntry({
+        date: selectedDate,
+        userId: currentUser?.id
+      });
     }
   };
+
+  const summary = calculateDailySummary();
 
   if (loading) {
     return (
@@ -125,7 +174,8 @@ const DailyTimesheetView = ({ userId, selectedDate, onDateChange, onCreateEntry 
       minHeight: '100vh',
       backgroundColor: '#F9FAFB',
       fontFamily: "'Inter', sans-serif",
-      position: 'relative'
+      position: 'relative',
+      overflow: 'hidden'
     }}>
       {/* Full Width Container */}
       <div style={{
@@ -135,424 +185,295 @@ const DailyTimesheetView = ({ userId, selectedDate, onDateChange, onCreateEntry 
         padding: '0'
       }}>
         
-        {/* Header Section */}
+        {/* Search Section */}
         <div style={{
           backgroundColor: '#FFFFFF',
-          padding: '24px',
-          borderBottom: '1px solid #E5E7EB'
+          padding: '16px 24px',
+          borderBottom: '1px solid #E5E7EB',
+          width: '100%'
         }}>
-          {/* Date Navigation */}
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '24px'
+            position: 'relative',
+            maxWidth: '400px'
           }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px'
-            }}>
-              <button
-                onClick={() => navigateDate('prev')}
-                style={{
-                  padding: '8px',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '6px',
-                  backgroundColor: '#FFFFFF',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <ChevronLeft style={{ width: '16px', height: '16px', color: '#6B7280' }} />
-              </button>
-              
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                backgroundColor: '#F3F4F6',
-                borderRadius: '6px'
-              }}>
-                <Calendar style={{ width: '16px', height: '16px', color: '#6B7280' }} />
-                <span style={{
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#111827'
-                }}>
-                  {formatDate(selectedDate)}
-                </span>
-              </div>
-              
-              <button
-                onClick={() => navigateDate('next')}
-                style={{
-                  padding: '8px',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '6px',
-                  backgroundColor: '#FFFFFF',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <ChevronRight style={{ width: '16px', height: '16px', color: '#6B7280' }} />
-              </button>
-            </div>
-
-            <button
-              onClick={() => onCreateEntry && onCreateEntry({ date: selectedDate, userId })}
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              readOnly
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 16px',
-                backgroundColor: '#FB923C',
-                color: '#FFFFFF',
-                border: 'none',
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid #E5E7EB',
                 borderRadius: '6px',
                 fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer'
+                backgroundColor: '#FFFFFF',
+                color: '#374151'
               }}
-            >
-              <Plus style={{ width: '16px', height: '16px' }} />
-              Add Time Entry
-            </button>
-          </div>
-
-          {/* User Info */}
-          {userProfile && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              marginBottom: '24px'
-            }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                backgroundColor: '#FB923C',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: '600',
-                fontSize: '18px'
-              }}>
-                {userProfile.full_name?.charAt(0) || 'U'}
-              </div>
-              <div>
-                <h2 style={{
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: '#111827',
-                  margin: '0 0 4px 0'
-                }}>
-                  {userProfile.full_name || 'User'}
-                </h2>
-                <p style={{
-                  fontSize: '14px',
-                  color: '#6B7280',
-                  margin: '0'
-                }}>
-                  {userProfile.email}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Summary Cards */}
-        <div style={{
-          padding: '24px',
-          backgroundColor: '#F9FAFB'
-        }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '16px',
-            marginBottom: '24px'
-          }}>
-            {/* Total Hours Card */}
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              padding: '20px',
-              borderRadius: '8px',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '8px'
-              }}>
-                <Clock style={{ width: '16px', height: '16px', color: '#FB923C' }} />
-                <span style={{
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  color: '#6B7280',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  Total Hours
-                </span>
-              </div>
-              <div style={{
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#111827'
-              }}>
-                {dailyData?.summary?.total_hours?.toFixed(1) || '0.0'}h
-              </div>
-            </div>
-
-            {/* Regular Hours Card */}
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              padding: '20px',
-              borderRadius: '8px',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '8px'
-              }}>
-                <User style={{ width: '16px', height: '16px', color: '#10B981' }} />
-                <span style={{
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  color: '#6B7280',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  Regular Hours
-                </span>
-              </div>
-              <div style={{
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#111827'
-              }}>
-                {dailyData?.summary?.regular_hours?.toFixed(1) || '0.0'}h
-              </div>
-            </div>
-
-            {/* Overtime Hours Card */}
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              padding: '20px',
-              borderRadius: '8px',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '8px'
-              }}>
-                <Clock style={{ width: '16px', height: '16px', color: '#F59E0B' }} />
-                <span style={{
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  color: '#6B7280',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  Overtime Hours
-                </span>
-              </div>
-              <div style={{
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#111827'
-              }}>
-                {dailyData?.summary?.overtime_hours?.toFixed(1) || '0.0'}h
-              </div>
-            </div>
-
-            {/* Break Hours Card */}
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              padding: '20px',
-              borderRadius: '8px',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '8px'
-              }}>
-                <Clock style={{ width: '16px', height: '16px', color: '#8B5CF6' }} />
-                <span style={{
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  color: '#6B7280',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  Break Hours
-                </span>
-              </div>
-              <div style={{
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#111827'
-              }}>
-                {dailyData?.summary?.break_hours?.toFixed(1) || '0.0'}h
-              </div>
-            </div>
+            />
           </div>
         </div>
 
-        {/* Time Entries Section */}
+        {/* Daily Timesheet Table */}
         <div style={{
           backgroundColor: '#FFFFFF',
-          margin: '0 24px 24px 24px',
-          borderRadius: '8px',
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+          width: '100%',
+          overflowX: 'auto'
         }}>
-          <div style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid #E5E7EB'
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            minWidth: '900px'
           }}>
-            <h3 style={{
-              fontSize: '16px',
-              fontWeight: '600',
-              color: '#111827',
-              margin: '0'
-            }}>
-              Time Entries
-            </h3>
-          </div>
-
-          <div style={{ padding: '0' }}>
-            {timeEntries.length > 0 ? (
-              timeEntries.map((entry, index) => (
-                <div 
-                  key={entry.id || index}
-                  style={{
-                    padding: '20px 24px',
-                    borderBottom: index < timeEntries.length - 1 ? '1px solid #F3F4F6' : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                  }}
-                >
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px'
-                  }}>
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: getStatusColor(entry.status)
-                    }}></div>
-                    
-                    <div>
-                      <div style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#111827',
-                        marginBottom: '4px'
-                      }}>
-                        {formatTime(entry.time_in)} - {formatTime(entry.time_out)}
-                      </div>
-                      <div style={{
-                        fontSize: '12px',
-                        color: '#6B7280'
-                      }}>
-                        {entry.campaign_name || 'No campaign'}
-                      </div>
-                    </div>
-                  </div>
-
+            <thead>
+              <tr style={{ backgroundColor: '#F3F4F6' }}>
+                {/* Employee header */}
+                <th style={{
+                  width: '200px',
+                  padding: '12px 16px',
+                  textAlign: 'left',
+                  fontWeight: '500',
+                  fontSize: '13px',
+                  color: '#6B7280',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  EMPLOYEE
+                </th>
+                
+                {/* First In header */}
+                <th style={{
+                  width: '120px',
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontWeight: '500',
+                  fontSize: '13px',
+                  color: '#6B7280',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  FIRST IN
+                </th>
+                
+                {/* Last Out header */}
+                <th style={{
+                  width: '120px',
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontWeight: '500',
+                  fontSize: '13px',
+                  color: '#6B7280',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  LAST OUT
+                </th>
+                
+                {/* Regular header */}
+                <th style={{
+                  width: '100px',
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontWeight: '500',
+                  fontSize: '13px',
+                  color: '#6B7280',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  REGULAR
+                </th>
+                
+                {/* Overtime header */}
+                <th style={{
+                  width: '100px',
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontWeight: '500',
+                  fontSize: '13px',
+                  color: '#6B7280',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  OVERTIME
+                </th>
+                
+                {/* Daily Double Overtime header */}
+                <th style={{
+                  width: '140px',
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontWeight: '500',
+                  fontSize: '13px',
+                  color: '#6B7280',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  DAILY DOUBLE OVERTIME
+                </th>
+                
+                {/* Tracked header */}
+                <th style={{
+                  width: '100px',
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontWeight: '500',
+                  fontSize: '13px',
+                  color: '#6B7280',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
+                  TRACKED
+                </th>
+              </tr>
+            </thead>
+            
+            <tbody>
+              <tr 
+                style={{
+                  borderBottom: '1px solid #E5E7EB',
+                  backgroundColor: hoveredRow ? '#FEF3C7' : '#FFFFFF',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={() => setHoveredRow(true)}
+                onMouseLeave={() => setHoveredRow(false)}
+                onClick={handleRowClick}
+              >
+                {/* Employee Name Cell */}
+                <td style={{
+                  padding: '16px',
+                  borderBottom: '1px solid #E5E7EB'
+                }}>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px'
                   }}>
                     <div style={{
-                      fontSize: '14px',
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: '#FB923C',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       fontWeight: '500',
-                      color: '#111827'
+                      fontSize: '14px'
                     }}>
-                      {((entry.regular_hours || 0) + (entry.overtime_hours || 0)).toFixed(1)}h
+                      {getUserInitials(currentUser?.full_name)}
                     </div>
-                    
                     <div style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      backgroundColor: entry.status === 'approved' ? '#D1FAE5' : 
-                                     entry.status === 'submitted' ? '#FEF3C7' : 
-                                     entry.status === 'rejected' ? '#FEE2E2' : '#F3F4F6',
-                      color: entry.status === 'approved' ? '#065F46' : 
-                             entry.status === 'submitted' ? '#92400E' : 
-                             entry.status === 'rejected' ? '#991B1B' : '#374151'
+                      fontSize: '14px',
+                      color: '#111827',
+                      fontWeight: '500'
                     }}>
-                      {entry.status || 'draft'}
+                      {currentUser?.full_name || 'Kevin Shelton'}
                     </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              <div style={{
-                padding: '48px 24px',
-                textAlign: 'center'
-              }}>
-                <Clock style={{
-                  width: '48px',
-                  height: '48px',
-                  color: '#D1D5DB',
-                  margin: '0 auto 16px'
-                }} />
-                <p style={{
-                  fontSize: '16px',
-                  color: '#6B7280',
-                  marginBottom: '16px'
+                </td>
+                
+                {/* First In Cell */}
+                <td style={{
+                  padding: '16px',
+                  textAlign: 'center',
+                  borderBottom: '1px solid #E5E7EB',
+                  fontSize: '14px',
+                  color: '#111827'
                 }}>
-                  No time entries for {formatDate(selectedDate)}
-                </p>
-                <button
-                  onClick={() => onCreateEntry && onCreateEntry({ date: selectedDate, userId })}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 16px',
-                    backgroundColor: '#FB923C',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <Plus style={{ width: '16px', height: '16px' }} />
-                  Add Time Entry
-                </button>
-              </div>
-            )}
-          </div>
+                  {formatTime(summary.firstIn)}
+                </td>
+                
+                {/* Last Out Cell */}
+                <td style={{
+                  padding: '16px',
+                  textAlign: 'center',
+                  borderBottom: '1px solid #E5E7EB',
+                  fontSize: '14px',
+                  color: '#111827'
+                }}>
+                  {formatTime(summary.lastOut)}
+                </td>
+                
+                {/* Regular Hours Cell */}
+                <td style={{
+                  padding: '16px',
+                  textAlign: 'center',
+                  borderBottom: '1px solid #E5E7EB',
+                  fontSize: '14px',
+                  color: '#111827'
+                }}>
+                  {formatHours(summary.regularHours)}
+                </td>
+                
+                {/* Overtime Hours Cell */}
+                <td style={{
+                  padding: '16px',
+                  textAlign: 'center',
+                  borderBottom: '1px solid #E5E7EB',
+                  fontSize: '14px',
+                  color: '#111827'
+                }}>
+                  {formatHours(summary.overtimeHours)}
+                </td>
+                
+                {/* Daily Double Overtime Cell */}
+                <td style={{
+                  padding: '16px',
+                  textAlign: 'center',
+                  borderBottom: '1px solid #E5E7EB',
+                  fontSize: '14px',
+                  color: '#111827'
+                }}>
+                  {formatHours(summary.dailyDoubleOvertime)}
+                </td>
+                
+                {/* Tracked Hours Cell */}
+                <td style={{
+                  padding: '16px',
+                  textAlign: 'center',
+                  borderBottom: '1px solid #E5E7EB',
+                  fontSize: '14px',
+                  color: '#111827',
+                  fontWeight: '500'
+                }}>
+                  {formatHours(summary.trackedHours)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+
+        {/* Empty State */}
+        {timeEntries.length === 0 && (
+          <div style={{
+            textAlign: 'center',
+            padding: '48px 24px',
+            backgroundColor: '#FFFFFF'
+          }}>
+            <p style={{
+              color: '#6B7280',
+              fontSize: '14px',
+              marginBottom: '16px'
+            }}>
+              No timesheet data for {new Date(selectedDate).toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+              })}
+            </p>
+            <button 
+              onClick={() => onCreateEntry && onCreateEntry({
+                date: selectedDate,
+                userId: currentUser?.id
+              })}
+              style={{
+                backgroundColor: '#374151',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '10px 16px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              + Add Time Entry
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
