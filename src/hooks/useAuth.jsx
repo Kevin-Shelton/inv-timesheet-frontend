@@ -1,150 +1,110 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { supabaseApi as api } from '../utils/supabase'
 
 const AuthContext = createContext({})
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
 
-  // Initialize authentication state
+  // Initialize auth state
   useEffect(() => {
-    let mounted = true
-    let timeoutId = null
-
     const initializeAuth = async () => {
       try {
-        console.log('🔍 Initializing authentication...')
-        
-        // Set a timeout to prevent infinite loading
-        timeoutId = setTimeout(() => {
-          if (mounted) {
-            console.log('⏰ Auth initialization timeout - proceeding without auth')
-            setLoading(false)
-            setError('Authentication timeout - please try logging in again')
-          }
-        }, 10000) // 10 second timeout
-
-        // Check for existing session in localStorage
-        const authToken = localStorage.getItem('sb-rdsfpijojxtdyungrvsd-auth-token')
-        
-        if (authToken) {
-          console.log('✅ Found existing auth token, attempting to restore session...')
-          
-          try {
-            // Parse the token to get user info
-            const tokenData = JSON.parse(authToken)
-            
-            if (tokenData.access_token && tokenData.user) {
-              console.log('✅ Valid token found, setting user:', tokenData.user.email)
-              
-              // Create user object from token data
-              const userData = {
-                id: tokenData.user.id,
-                email: tokenData.user.email,
-                full_name: tokenData.user.user_metadata?.full_name || tokenData.user.email,
-                role: tokenData.user.user_metadata?.role || 'team_member'
-              }
-              
-              if (mounted) {
-                setUser(userData)
-                setError(null)
-                clearTimeout(timeoutId)
-                setLoading(false)
-                console.log('✅ Authentication restored successfully')
-              }
-              return
-            }
-          } catch (parseError) {
-            console.log('⚠️ Error parsing auth token:', parseError)
-          }
+        // Check for existing session
+        const savedUser = localStorage.getItem('timesheet_user')
+        if (savedUser) {
+          const userData = JSON.parse(savedUser)
+          setUser(userData)
         }
-
-        console.log('ℹ️ No valid session found, user needs to log in')
-        
-        if (mounted) {
-          clearTimeout(timeoutId)
-          setLoading(false)
-        }
-
       } catch (error) {
-        console.error('❌ Auth initialization error:', error)
-        if (mounted) {
-          clearTimeout(timeoutId)
-          setError('Failed to initialize authentication')
-          setLoading(false)
-        }
+        console.error('Error initializing auth:', error)
+        localStorage.removeItem('timesheet_user')
+      } finally {
+        setLoading(false)
       }
     }
 
     initializeAuth()
-
-    // Cleanup function
-    return () => {
-      mounted = false
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-      }
-    }
   }, [])
 
+  // Login function with proper error handling
   const login = async (email, password) => {
     try {
       setLoading(true)
-      setError(null)
-      console.log('🔐 Attempting login for:', email)
 
-      const response = await api.login(email, password)
+      // Simulate API call - replace with actual authentication
+      const response = await simulateLogin(email, password)
       
-      if (response && response.user) {
-        console.log('✅ Login successful:', response.user.email)
-        setUser(response.user)
-        setError(null)
-        return response
+      if (response.success) {
+        const userData = {
+          id: response.user.id,
+          email: response.user.email,
+          name: response.user.name,
+          role: response.user.role,
+          company: 'Invictus',
+          avatar: response.user.avatar,
+          loginTime: new Date().toISOString()
+        }
+
+        // Save user data
+        setUser(userData)
+        localStorage.setItem('timesheet_user', JSON.stringify(userData))
+
+        return { success: true, user: userData }
       } else {
-        throw new Error('Invalid login response')
+        throw new Error(response.error || 'Login failed')
       }
-    } catch (err) {
-      console.error('❌ Login error:', err)
-      const errorMessage = err.message || 'Login failed'
-      setError(errorMessage)
-      throw err
+    } catch (error) {
+      console.error('Login error:', error)
+      return { 
+        success: false, 
+        error: error.message || 'Login failed. Please try again.' 
+      }
     } finally {
       setLoading(false)
     }
   }
 
+  // Logout function
   const logout = async () => {
     try {
-      console.log('🚪 Logging out...')
+      setLoading(true)
       
-      // Clear localStorage
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('sb-')) {
-          localStorage.removeItem(key)
-        }
-      })
-      
-      // Clear state
+      // Clear user data
       setUser(null)
-      setError(null)
+      localStorage.removeItem('timesheet_user')
       
-      console.log('✅ Logout successful')
+      return { success: true }
     } catch (error) {
-      console.error('❌ Logout error:', error)
-      // Still clear local state even if API call fails
-      setUser(null)
-      setError(null)
+      console.error('Logout error:', error)
+      return { success: false, error: error.message }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Update user profile
+  const updateProfile = async (updates) => {
+    try {
+      if (!user) throw new Error('No user logged in')
+
+      const updatedUser = { ...user, ...updates }
+      setUser(updatedUser)
+      localStorage.setItem('timesheet_user', JSON.stringify(updatedUser))
+
+      return { success: true, user: updatedUser }
+    } catch (error) {
+      console.error('Profile update error:', error)
+      return { success: false, error: error.message }
     }
   }
 
   const value = {
     user,
     loading,
-    error,
     login,
     logout,
+    updateProfile,
     isAuthenticated: !!user
   }
 
@@ -155,11 +115,65 @@ export function AuthProvider({ children }) {
   )
 }
 
+// Custom hook to use auth context
 export function useAuth() {
   const context = useContext(AuthContext)
+  
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider')
   }
+  
   return context
 }
+
+// Simulate login API call - replace with actual API
+async function simulateLogin(email, password) {
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 1000))
+
+  // Test credentials
+  const validCredentials = [
+    {
+      email: 'admin@test.com',
+      password: 'password123',
+      user: {
+        id: '1',
+        email: 'admin@test.com',
+        name: 'Admin User',
+        role: 'admin',
+        avatar: null
+      }
+    },
+    {
+      email: 'user@test.com', 
+      password: 'password123',
+      user: {
+        id: '2',
+        email: 'user@test.com',
+        name: 'Test User',
+        role: 'user',
+        avatar: null
+      }
+    }
+  ]
+
+  // Check credentials
+  const credential = validCredentials.find(
+    cred => cred.email === email && cred.password === password
+  )
+
+  if (credential) {
+    return {
+      success: true,
+      user: credential.user
+    }
+  } else {
+    return {
+      success: false,
+      error: 'Invalid email or password'
+    }
+  }
+}
+
+export default useAuth
 
