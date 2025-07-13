@@ -29,6 +29,9 @@ const TimesheetsPage = () => {
   const [schedules, setSchedules] = useState('Schedules');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
@@ -44,10 +47,11 @@ const TimesheetsPage = () => {
     };
   }, [selectedDate]);
 
-  // Get filtered timesheet data
+  // Get filtered and sorted timesheet data
   const timesheetData = useMemo(() => {
     let data = generateWeeklyTimesheets(dateRange.start, dateRange.end);
 
+    // Apply search filter
     if (searchTerm) {
       data = data.filter(timesheet => 
         timesheet.employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,8 +62,91 @@ const TimesheetsPage = () => {
       );
     }
 
+    // Apply sorting
+    if (sortConfig.key) {
+      data.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch (sortConfig.key) {
+          case 'employee':
+            aValue = a.employee.name.toLowerCase();
+            bValue = b.employee.name.toLowerCase();
+            break;
+          case 'firstIn':
+            aValue = a.firstIn || '';
+            bValue = b.firstIn || '';
+            break;
+          case 'lastOut':
+            aValue = a.lastOut || '';
+            bValue = b.lastOut || '';
+            break;
+          case 'regular':
+            aValue = a.regularHours || 0;
+            bValue = b.regularHours || 0;
+            break;
+          case 'overtime':
+            aValue = a.overtimeHours || 0;
+            bValue = b.overtimeHours || 0;
+            break;
+          case 'dailyDouble':
+            aValue = a.dailyDoubleOvertime || 0;
+            bValue = b.dailyDoubleOvertime || 0;
+            break;
+          case 'tracked':
+            aValue = a.totalHours || 0;
+            bValue = b.totalHours || 0;
+            break;
+          default:
+            aValue = '';
+            bValue = '';
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
     return data;
-  }, [dateRange, searchTerm]);
+  }, [dateRange, searchTerm, sortConfig]);
+
+  // Handle sorting
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Get sort icon
+  const getSortIcon = (columnKey) => {
+    if (sortConfig.key !== columnKey) {
+      return (
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ opacity: 0.3 }}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    
+    if (sortConfig.direction === 'asc') {
+      return (
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
+    }
+  };
 
   // Handle date navigation
   const handleDateNavigation = (direction) => {
@@ -410,140 +497,215 @@ const TimesheetsPage = () => {
             </svg>
             Add filter
           </button>
-
-          {/* Search */}
-          <div style={{ marginLeft: 'auto', position: 'relative' }}>
-            <svg 
-              width="16" 
-              height="16" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-              style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#9CA3AF'
-              }}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                paddingLeft: '36px',
-                paddingRight: '12px',
-                paddingTop: '6px',
-                paddingBottom: '6px',
-                fontSize: '14px',
-                border: '1px solid #D1D5DB',
-                borderRadius: '6px',
-                width: '200px'
-              }}
-            />
-          </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div style={{ padding: '24px 32px' }}>
+        {/* Full-Width Search Field */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E5E7EB',
+          borderRadius: '8px 8px 0 0',
+          padding: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <svg 
+            width="20" 
+            height="20" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+            style={{ color: '#9CA3AF', flexShrink: 0 }}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              flex: 1,
+              fontSize: '14px',
+              border: 'none',
+              outline: 'none',
+              color: '#374151',
+              backgroundColor: 'transparent'
+            }}
+          />
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '24px',
+            fontSize: '12px',
+            fontWeight: '600',
+            color: '#374151',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            <span style={{ minWidth: '60px', textAlign: 'center' }}>First in</span>
+            <span style={{ minWidth: '60px', textAlign: 'center' }}>Last out</span>
+            <span style={{ minWidth: '60px', textAlign: 'center' }}>Regular</span>
+            <span style={{ minWidth: '60px', textAlign: 'center' }}>Overtime</span>
+            <span style={{ minWidth: '80px', textAlign: 'center' }}>Daily Double Overtime</span>
+            <span style={{ minWidth: '60px', textAlign: 'center' }}>Tracked</span>
+          </div>
+        </div>
+
         {/* Table */}
         <div style={{
           backgroundColor: '#FFFFFF',
-          borderRadius: '8px',
           border: '1px solid #E5E7EB',
+          borderTop: 'none',
+          borderRadius: '0 0 8px 8px',
           overflow: 'hidden'
         }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ backgroundColor: '#F9FAFB' }}>
               <tr>
-                <th style={{
-                  padding: '12px 16px',
-                  textAlign: 'left',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  borderBottom: '1px solid #E5E7EB'
-                }}>
+                <th 
+                  onClick={() => handleSort('employee')}
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'left',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid #E5E7EB',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
                   Employee
+                  {getSortIcon('employee')}
                 </th>
-                <th style={{
-                  padding: '12px 16px',
-                  textAlign: 'center',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  borderBottom: '1px solid #E5E7EB'
-                }}>
-                  First in
+                <th 
+                  onClick={() => handleSort('firstIn')}
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'center',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid #E5E7EB',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    First in
+                    {getSortIcon('firstIn')}
+                  </div>
                 </th>
-                <th style={{
-                  padding: '12px 16px',
-                  textAlign: 'center',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  borderBottom: '1px solid #E5E7EB'
-                }}>
-                  Last out
+                <th 
+                  onClick={() => handleSort('lastOut')}
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'center',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid #E5E7EB',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Last out
+                    {getSortIcon('lastOut')}
+                  </div>
                 </th>
-                <th style={{
-                  padding: '12px 16px',
-                  textAlign: 'center',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  borderBottom: '1px solid #E5E7EB'
-                }}>
-                  Regular
+                <th 
+                  onClick={() => handleSort('regular')}
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'center',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid #E5E7EB',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Regular
+                    {getSortIcon('regular')}
+                  </div>
                 </th>
-                <th style={{
-                  padding: '12px 16px',
-                  textAlign: 'center',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  borderBottom: '1px solid #E5E7EB'
-                }}>
-                  Overtime
+                <th 
+                  onClick={() => handleSort('overtime')}
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'center',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid #E5E7EB',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Overtime
+                    {getSortIcon('overtime')}
+                  </div>
                 </th>
-                <th style={{
-                  padding: '12px 16px',
-                  textAlign: 'center',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  borderBottom: '1px solid #E5E7EB'
-                }}>
-                  Daily Double Overtime
+                <th 
+                  onClick={() => handleSort('dailyDouble')}
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'center',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid #E5E7EB',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Daily Double Overtime
+                    {getSortIcon('dailyDouble')}
+                  </div>
                 </th>
-                <th style={{
-                  padding: '12px 16px',
-                  textAlign: 'center',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  borderBottom: '1px solid #E5E7EB'
-                }}>
-                  Tracked
+                <th 
+                  onClick={() => handleSort('tracked')}
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'center',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid #E5E7EB',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Tracked
+                    {getSortIcon('tracked')}
+                  </div>
                 </th>
               </tr>
             </thead>
@@ -580,22 +742,22 @@ const TimesheetsPage = () => {
                       </div>
                     </td>
                     <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
-                      -
+                      {timesheet.firstIn || '-'}
                     </td>
                     <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
-                      -
+                      {timesheet.lastOut || '-'}
                     </td>
                     <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
-                      -
+                      {timesheet.regularHours ? `${timesheet.regularHours}h` : '-'}
                     </td>
                     <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
-                      -
+                      {timesheet.overtimeHours ? `${timesheet.overtimeHours}h` : '-'}
                     </td>
                     <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
-                      -
+                      {timesheet.dailyDoubleOvertime ? `${timesheet.dailyDoubleOvertime}h` : '-'}
                     </td>
                     <td style={{ padding: '16px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
-                      -
+                      {timesheet.totalHours ? `${timesheet.totalHours}h` : '-'}
                     </td>
                   </tr>
                 ))
