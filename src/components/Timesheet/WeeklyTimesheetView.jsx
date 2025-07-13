@@ -1,402 +1,381 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Calendar, Clock, User, Download } from 'lucide-react'
-import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API'
+import React, { useState, useEffect } from 'react';
+import { Plus, ChevronLeft, ChevronRight, Clock, Calendar } from 'lucide-react';
+import { TimesheetIndicators, StatusBadge, ProjectBadge } from './TimesheetIndicators';
+import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API';
 
-const WeeklyTimesheetView = ({ userId, selectedWeek, onWeekChange, onDayClick }) => {
-  const [weeklyData, setWeeklyData] = useState([])
-  const [weeklySummary, setWeeklySummary] = useState(null)
-  const [userProfile, setUserProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+const WeeklyTimesheetView = ({ 
+  userId, 
+  selectedWeek, 
+  onWeekChange, 
+  onDayClick, 
+  searchQuery = '', 
+  filters = {},
+  onCreateEntry 
+}) => {
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [hoveredCell, setHoveredCell] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // Calculate week dates
-  const weekDates = useMemo(() => {
-    const startDate = new Date(selectedWeek)
-    const dates = []
-    
+  // Get the start of the week (Monday)
+  const getWeekStart = (date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    return new Date(d.setDate(diff));
+  };
+
+  // Generate week dates
+  const getWeekDates = () => {
+    const weekStart = getWeekStart(selectedWeek);
+    const dates = [];
     for (let i = 0; i < 7; i++) {
-      const date = new Date(startDate)
-      date.setDate(startDate.getDate() + i)
-      dates.push({
-        date: date.toISOString().split('T')[0],
-        dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
-        dayNumber: date.getDate(),
-        isToday: date.toDateString() === new Date().toDateString(),
-        isWeekend: date.getDay() === 0 || date.getDay() === 6
-      })
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + i);
+      dates.push(date);
     }
-    
-    return dates
-  }, [selectedWeek])
+    return dates;
+  };
 
-  // Load weekly data
+  const weekDates = getWeekDates();
+  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  // Load user data
   useEffect(() => {
-    loadWeeklyData()
-  }, [userId, selectedWeek])
-
-  const loadWeeklyData = async () => {
-    setLoading(true)
-    try {
-      // Get timesheet entries for the week
-      const entries = await enhancedSupabaseApi.getTimesheetEntries({
-        user_id: userId,
-        week_start: selectedWeek
-      })
-
-      // Get weekly summary
-      const summary = await enhancedSupabaseApi.getWeeklySummary(userId, selectedWeek)
-      
-      // Group entries by date
-      const groupedData = weekDates.map(({ date }) => {
-        const dayEntries = entries.filter(entry => entry.date === date)
-        const dayEntry = dayEntries[0] // Assuming one entry per day
-        
-        return {
-          date,
-          entry: dayEntry,
-          firstIn: dayEntry?.time_in ? formatTime(dayEntry.time_in) : '-',
-          lastOut: dayEntry?.time_out ? formatTime(dayEntry.time_out) : '-',
-          trackedHours: (dayEntry?.regular_hours || 0) + (dayEntry?.overtime_hours || 0),
-          payrollHours: dayEntry?.total_paid_hours || 0,
-          regularHours: dayEntry?.regular_hours || 0,
-          overtimeHours: dayEntry?.overtime_hours || 0,
-          vacationHours: dayEntry?.vacation_hours || 0,
-          sickHours: dayEntry?.sick_hours || 0,
-          holidayHours: dayEntry?.holiday_hours || 0,
-          status: dayEntry?.status || null,
-          vacationType: dayEntry?.vacation_type,
-          hasEntry: !!dayEntry
-        }
-      })
-
-      setWeeklyData(groupedData)
-      setWeeklySummary(summary)
-      
-      // Get user profile from first entry
-      if (entries.length > 0 && entries[0].users) {
-        setUserProfile(entries[0].users)
+    const loadUserData = async () => {
+      try {
+        const user = await enhancedSupabaseApi.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error loading user:', error);
       }
-    } catch (error) {
-      console.error('Error loading weekly data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+    };
 
-  const formatTime = (timestamp) => {
-    if (!timestamp) return '-'
-    return new Date(timestamp).toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    })
-  }
+    loadUserData();
+  }, []);
 
-  const formatHours = (hours) => {
-    if (!hours || hours === 0) return '-'
-    const h = Math.floor(hours)
-    const m = Math.round((hours - h) * 60)
-    return m > 0 ? `${h}h ${m}m` : `${h}h`
-  }
+  // Load weekly timesheet data
+  useEffect(() => {
+    const loadWeeklyData = async () => {
+      if (!userId) return;
 
-  const formatWeekRange = () => {
-    const startDate = new Date(selectedWeek)
-    const endDate = new Date(startDate)
-    endDate.setDate(startDate.getDate() + 6)
-    
-    return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-  }
+      setLoading(true);
+      try {
+        const startDate = weekDates[0];
+        const endDate = weekDates[6];
+        
+        const data = await enhancedSupabaseApi.getTimesheetEntries({
+          userId,
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+          includeUserDetails: true,
+          includeCampaignDetails: true
+        });
 
-  const navigateWeek = (direction) => {
-    const currentWeek = new Date(selectedWeek)
-    currentWeek.setDate(currentWeek.getDate() + (direction * 7))
-    onWeekChange(currentWeek.toISOString().split('T')[0])
-  }
+        // Group data by date
+        const groupedData = {};
+        weekDates.forEach(date => {
+          const dateStr = date.toISOString().split('T')[0];
+          groupedData[dateStr] = data.filter(entry => 
+            entry.date === dateStr
+          );
+        });
 
+        setWeeklyData(groupedData);
+      } catch (error) {
+        console.error('Error loading weekly data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadWeeklyData();
+  }, [userId, selectedWeek]);
+
+  // Calculate daily totals
+  const getDayTotals = (dateStr) => {
+    const entries = weeklyData[dateStr] || [];
+    if (entries.length === 0) return { regular: 0, overtime: 0, total: 0 };
+
+    const totals = entries.reduce((acc, entry) => {
+      acc.regular += entry.regular_hours || 0;
+      acc.overtime += entry.overtime_hours || 0;
+      return acc;
+    }, { regular: 0, overtime: 0 });
+
+    totals.total = totals.regular + totals.overtime;
+    return totals;
+  };
+
+  // Calculate weekly totals
   const getWeeklyTotals = () => {
-    return weeklyData.reduce((totals, day) => ({
-      trackedHours: totals.trackedHours + day.trackedHours,
-      payrollHours: totals.payrollHours + day.payrollHours,
-      regularHours: totals.regularHours + day.regularHours,
-      overtimeHours: totals.overtimeHours + day.overtimeHours,
-      vacationHours: totals.vacationHours + day.vacationHours,
-      sickHours: totals.sickHours + day.sickHours,
-      holidayHours: totals.holidayHours + day.holidayHours
-    }), {
-      trackedHours: 0,
-      payrollHours: 0,
-      regularHours: 0,
-      overtimeHours: 0,
-      vacationHours: 0,
-      sickHours: 0,
-      holidayHours: 0
-    })
-  }
+    return weekDates.reduce((acc, date) => {
+      const dateStr = date.toISOString().split('T')[0];
+      const dayTotals = getDayTotals(dateStr);
+      acc.regular += dayTotals.regular;
+      acc.overtime += dayTotals.overtime;
+      acc.total += dayTotals.total;
+      return acc;
+    }, { regular: 0, overtime: 0, total: 0 });
+  };
 
-  const getVacationTypeLabel = (type) => {
-    const types = {
-      'vacation': 'Leave (Hour)',
-      'sick': 'Sick Leave',
-      'holiday': 'Public Holiday',
-      'personal': 'Personal Leave'
+  // Get first in and last out times for a day
+  const getDayTimes = (dateStr) => {
+    const entries = weeklyData[dateStr] || [];
+    if (entries.length === 0) return { firstIn: null, lastOut: null };
+
+    const times = entries.reduce((acc, entry) => {
+      if (entry.time_in) {
+        const timeIn = new Date(`${entry.date}T${entry.time_in}`);
+        if (!acc.firstIn || timeIn < acc.firstIn) {
+          acc.firstIn = timeIn;
+        }
+      }
+      if (entry.time_out) {
+        const timeOut = new Date(`${entry.date}T${entry.time_out}`);
+        if (!acc.lastOut || timeOut > acc.lastOut) {
+          acc.lastOut = timeOut;
+        }
+      }
+      return acc;
+    }, { firstIn: null, lastOut: null });
+
+    return {
+      firstIn: times.firstIn ? times.firstIn.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      }) : null,
+      lastOut: times.lastOut ? times.lastOut.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      }) : null
+    };
+  };
+
+  // Handle cell click
+  const handleCellClick = (date) => {
+    if (onDayClick) {
+      onDayClick(date);
     }
-    return types[type] || type
-  }
+  };
 
-  const getVacationTypeColor = (type) => {
-    const colors = {
-      'vacation': 'bg-blue-100 text-blue-800',
-      'sick': 'bg-red-100 text-red-800',
-      'holiday': 'bg-green-100 text-green-800',
-      'personal': 'bg-purple-100 text-purple-800'
+  // Handle create entry
+  const handleCreateEntry = (date, event) => {
+    event.stopPropagation();
+    if (onCreateEntry) {
+      onCreateEntry(date);
     }
-    return colors[type] || 'bg-gray-100 text-gray-800'
-  }
+  };
 
-  const weeklyTotals = getWeeklyTotals()
+  // Check if date is today
+  const isToday = (date) => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  // Check if date is weekend
+  const isWeekend = (date) => {
+    const day = date.getDay();
+    return day === 0 || day === 6; // Sunday or Saturday
+  };
+
+  const weeklyTotals = getWeeklyTotals();
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="bg-white">
-      {/* Header with Navigation */}
-      <div className="border-b border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => navigateWeek(-1)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {formatWeekRange()}
-              </h2>
-              <p className="text-sm text-gray-500">
-                Weekly Timesheets
-              </p>
-            </div>
-            
-            <button 
-              onClick={() => navigateWeek(1)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+      {/* Search Bar */}
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchQuery}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+            readOnly
+          />
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
-          
-          <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-            <Download className="w-4 h-4" />
-            <span>Export</span>
-          </button>
         </div>
       </div>
 
-      {/* Weekly Grid */}
-      <div className="p-6">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-600">Day</th>
-                {weekDates.map(({ dayName, dayNumber, date, isToday, isWeekend }) => (
-                  <th key={date} className="text-center py-3 px-4 min-w-[120px]">
-                    <div className={`${isToday ? 'text-orange-600 font-semibold' : 'text-gray-600'} ${isWeekend ? 'text-gray-400' : ''}`}>
-                      <div className="text-sm font-medium">{dayName}</div>
-                      <div className="text-lg">{dayNumber}</div>
+      {/* Weekly Timesheet Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          {/* Header Row */}
+          <thead>
+            <tr className="border-b border-gray-200">
+              <th className="text-left py-3 px-6 font-medium text-gray-500 w-48">
+                {/* Empty header for name column */}
+              </th>
+              {weekDates.map((date, index) => (
+                <th key={date.toISOString()} className="text-center py-3 px-4 font-medium text-gray-500 min-w-[120px]">
+                  <div className="flex flex-col items-center">
+                    <span className="text-sm">{dayLabels[index]}</span>
+                    <span className={`text-lg font-semibold ${isToday(date) ? 'text-orange-500' : 'text-gray-900'}`}>
+                      {date.getDate()}
+                    </span>
+                  </div>
+                </th>
+              ))}
+              <th className="text-center py-3 px-4 font-medium text-gray-500 min-w-[100px]">
+                Total
+              </th>
+            </tr>
+          </thead>
+
+          {/* Data Row */}
+          <tbody>
+            <tr className="border-b border-gray-200 hover:bg-gray-50">
+              {/* Employee Name Column */}
+              <td className="py-4 px-6">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 bg-orange-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">
+                        {currentUser?.full_name ? currentUser.full_name.charAt(0).toUpperCase() : 'K'}
+                      </span>
                     </div>
-                  </th>
-                ))}
-                <th className="text-center py-3 px-4 font-medium text-gray-600">Total</th>
-              </tr>
-            </thead>
-            
-            <tbody className="divide-y divide-gray-100">
-              {/* Vacation/Leave Indicators */}
-              <tr>
-                <td className="py-3 px-4 text-sm text-gray-600">Leave Type</td>
-                {weeklyData.map(({ date, vacationType, vacationHours, holidayHours, sickHours }) => (
-                  <td key={date} className="text-center py-3 px-4">
-                    {vacationType && vacationType !== 'none' ? (
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getVacationTypeColor(vacationType)}`}>
-                        {getVacationTypeLabel(vacationType)}
-                      </span>
-                    ) : holidayHours > 0 ? (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Public Holiday
-                      </span>
-                    ) : sickHours > 0 ? (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        Sick Leave
-                      </span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {currentUser?.full_name || 'Kevin Shelton'}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              {/* Daily Columns */}
+              {weekDates.map((date) => {
+                const dateStr = date.toISOString().split('T')[0];
+                const dayTotals = getDayTotals(dateStr);
+                const dayTimes = getDayTimes(dateStr);
+                const entries = weeklyData[dateStr] || [];
+                const cellKey = `${dateStr}`;
+                const hasEntries = entries.length > 0;
+
+                return (
+                  <td 
+                    key={dateStr}
+                    className={`py-4 px-4 text-center cursor-pointer relative group ${
+                      isWeekend(date) ? 'bg-gray-50' : ''
+                    } ${isToday(date) ? 'bg-orange-50' : ''}`}
+                    onClick={() => handleCellClick(date)}
+                    onMouseEnter={() => setHoveredCell(cellKey)}
+                    onMouseLeave={() => setHoveredCell(null)}
+                  >
+                    {hasEntries ? (
+                      <div className="space-y-1">
+                        {/* First In / Last Out */}
+                        {(dayTimes.firstIn || dayTimes.lastOut) && (
+                          <div className="text-xs text-gray-600">
+                            {dayTimes.firstIn && (
+                              <div>In: {dayTimes.firstIn}</div>
+                            )}
+                            {dayTimes.lastOut && (
+                              <div>Out: {dayTimes.lastOut}</div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Hours */}
+                        <div className="text-sm">
+                          {dayTotals.regular > 0 && (
+                            <div className="text-gray-900">
+                              {dayTotals.regular.toFixed(1)}h
+                            </div>
+                          )}
+                          {dayTotals.overtime > 0 && (
+                            <div className="text-orange-600">
+                              +{dayTotals.overtime.toFixed(1)}h OT
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Status Indicators */}
+                        {entries.length > 0 && (
+                          <div className="flex justify-center">
+                            <StatusBadge status={entries[0].status} size="sm" />
+                          </div>
+                        )}
+                      </div>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <div className="text-gray-400 text-sm">-</div>
+                    )}
+
+                    {/* Plus Icon on Hover */}
+                    {hoveredCell === cellKey && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90">
+                        <button
+                          onClick={(e) => handleCreateEntry(date, e)}
+                          className="p-2 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors shadow-lg"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
                     )}
                   </td>
-                ))}
-                <td className="text-center py-3 px-4 text-gray-400">-</td>
-              </tr>
+                );
+              })}
 
-              {/* First In */}
-              <tr className="hover:bg-gray-50">
-                <td className="py-3 px-4 text-sm font-medium text-gray-900">First in</td>
-                {weeklyData.map(({ date, firstIn, hasEntry }) => (
-                  <td 
-                    key={date} 
-                    className={`text-center py-3 px-4 text-sm ${hasEntry ? 'cursor-pointer hover:bg-blue-50' : ''}`}
-                    onClick={() => hasEntry && onDayClick && onDayClick(date)}
-                  >
-                    <span className={hasEntry ? 'text-gray-900' : 'text-gray-400'}>
-                      {firstIn}
-                    </span>
-                  </td>
-                ))}
-                <td className="text-center py-3 px-4 text-gray-400">-</td>
-              </tr>
-
-              {/* Last Out */}
-              <tr className="hover:bg-gray-50">
-                <td className="py-3 px-4 text-sm font-medium text-gray-900">Last out</td>
-                {weeklyData.map(({ date, lastOut, hasEntry }) => (
-                  <td 
-                    key={date} 
-                    className={`text-center py-3 px-4 text-sm ${hasEntry ? 'cursor-pointer hover:bg-blue-50' : ''}`}
-                    onClick={() => hasEntry && onDayClick && onDayClick(date)}
-                  >
-                    <span className={hasEntry ? 'text-gray-900' : 'text-gray-400'}>
-                      {lastOut}
-                    </span>
-                  </td>
-                ))}
-                <td className="text-center py-3 px-4 text-gray-400">-</td>
-              </tr>
-
-              {/* Tracked Hours */}
-              <tr className="hover:bg-gray-50 bg-blue-50">
-                <td className="py-3 px-4 text-sm font-medium text-gray-900">Tracked hours</td>
-                {weeklyData.map(({ date, trackedHours, hasEntry, overtimeHours }) => (
-                  <td 
-                    key={date} 
-                    className={`text-center py-3 px-4 text-sm font-medium ${hasEntry ? 'cursor-pointer hover:bg-blue-100' : ''}`}
-                    onClick={() => hasEntry && onDayClick && onDayClick(date)}
-                  >
-                    <div className={hasEntry ? 'text-gray-900' : 'text-gray-400'}>
-                      {formatHours(trackedHours)}
-                      {overtimeHours > 0 && (
-                        <div className="text-xs text-orange-600 mt-1">
-                          +{formatHours(overtimeHours)} OT
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                ))}
-                <td className="text-center py-3 px-4 text-sm font-semibold text-gray-900">
-                  {formatHours(weeklyTotals.trackedHours)}
-                  {weeklyTotals.overtimeHours > 0 && (
-                    <div className="text-xs text-orange-600 mt-1">
-                      +{formatHours(weeklyTotals.overtimeHours)} OT
+              {/* Total Column */}
+              <td className="py-4 px-4 text-center bg-gray-50">
+                <div className="space-y-1">
+                  {weeklyTotals.regular > 0 && (
+                    <div className="text-sm font-medium text-gray-900">
+                      {weeklyTotals.regular.toFixed(1)}h
                     </div>
                   )}
-                </td>
-              </tr>
-
-              {/* Payroll Hours */}
-              <tr className="hover:bg-gray-50">
-                <td className="py-3 px-4 text-sm font-medium text-gray-900">Payroll hours</td>
-                {weeklyData.map(({ date, payrollHours, hasEntry, vacationHours, sickHours, holidayHours }) => (
-                  <td 
-                    key={date} 
-                    className={`text-center py-3 px-4 text-sm font-medium ${hasEntry ? 'cursor-pointer hover:bg-blue-50' : ''}`}
-                    onClick={() => hasEntry && onDayClick && onDayClick(date)}
-                  >
-                    <div className={hasEntry ? 'text-gray-900' : 'text-gray-400'}>
-                      {formatHours(payrollHours)}
-                      {(vacationHours > 0 || sickHours > 0 || holidayHours > 0) && (
-                        <div className="text-xs text-blue-600 mt-1">
-                          {vacationHours > 0 && `V:${formatHours(vacationHours)} `}
-                          {sickHours > 0 && `S:${formatHours(sickHours)} `}
-                          {holidayHours > 0 && `H:${formatHours(holidayHours)}`}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                ))}
-                <td className="text-center py-3 px-4 text-sm font-semibold text-gray-900">
-                  {formatHours(weeklyTotals.payrollHours)}
-                  {(weeklyTotals.vacationHours > 0 || weeklyTotals.sickHours > 0 || weeklyTotals.holidayHours > 0) && (
-                    <div className="text-xs text-blue-600 mt-1">
-                      {weeklyTotals.vacationHours > 0 && `V:${formatHours(weeklyTotals.vacationHours)} `}
-                      {weeklyTotals.sickHours > 0 && `S:${formatHours(weeklyTotals.sickHours)} `}
-                      {weeklyTotals.holidayHours > 0 && `H:${formatHours(weeklyTotals.holidayHours)}`}
+                  {weeklyTotals.overtime > 0 && (
+                    <div className="text-sm font-medium text-orange-600">
+                      +{weeklyTotals.overtime.toFixed(1)}h OT
                     </div>
                   )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                  {weeklyTotals.total > 0 && (
+                    <div className="text-xs text-gray-500 border-t pt-1">
+                      Total: {weeklyTotals.total.toFixed(1)}h
+                    </div>
+                  )}
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        {/* Weekly Summary */}
-        <div className="mt-8 bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Summary</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {formatHours(weeklyTotals.trackedHours)}
+      {/* Weekly Summary */}
+      {weeklyTotals.total > 0 && (
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Week Total:</span>
+            <div className="text-right">
+              <div className="text-lg font-semibold text-gray-900">
+                {weeklyTotals.total.toFixed(1)} hours
               </div>
-              <div className="text-sm text-gray-600">Total Tracked</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {formatHours(weeklyTotals.regularHours)}
-              </div>
-              <div className="text-sm text-gray-600">Regular Hours</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                {formatHours(weeklyTotals.overtimeHours)}
-              </div>
-              <div className="text-sm text-gray-600">Overtime</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {formatHours(weeklyTotals.payrollHours)}
-              </div>
-              <div className="text-sm text-gray-600">Total Payroll</div>
-            </div>
-          </div>
-        </div>
-
-        {/* User Profile Info */}
-        {userProfile && (
-          <div className="mt-6 flex items-center space-x-4 p-4 bg-white border border-gray-200 rounded-lg">
-            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-              <span className="text-sm font-semibold text-orange-600">
-                {userProfile.full_name?.charAt(0) || 'U'}
-              </span>
-            </div>
-            <div>
-              <div className="font-medium text-gray-900">{userProfile.full_name}</div>
-              <div className="text-sm text-gray-500">{userProfile.email}</div>
-              {userProfile.pay_rate_per_hour && (
-                <div className="text-sm text-gray-500">
-                  Rate: ${userProfile.pay_rate_per_hour}/hour
+              {weeklyTotals.overtime > 0 && (
+                <div className="text-sm text-orange-600">
+                  Including {weeklyTotals.overtime.toFixed(1)}h overtime
                 </div>
               )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
 
-export default WeeklyTimesheetView
+export default WeeklyTimesheetView;
 
