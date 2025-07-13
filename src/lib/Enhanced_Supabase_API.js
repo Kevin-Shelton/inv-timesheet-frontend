@@ -1,5 +1,5 @@
-// ENHANCED SUPABASE API - COMPREHENSIVE TIMESHEET FUNCTIONALITY
-// Updated to use full database schema with all timesheet features
+// ENHANCED SUPABASE API - SIMPLIFIED AND WORKING VERSION
+// Fixed to work with actual database structure without complex joins
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -15,14 +15,14 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
 })
 
 export const enhancedSupabaseApi = {
-  // MISSING FUNCTION - Get current authenticated user
+  // Get current authenticated user
   getCurrentUser: async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       
       if (user) {
-        // Get user profile from users table
+        // Try to get user profile from users table
         const { data: profile, error: profileError } = await supabase
           .from('users')
           .select('*')
@@ -53,25 +53,12 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // COMPREHENSIVE TIMESHEET ENTRIES API
-  
-  // Get timesheet entries with full details
+  // SIMPLIFIED TIMESHEET ENTRIES API - NO COMPLEX JOINS
   getTimesheetEntries: async (params = {}) => {
     try {
       let query = supabase
         .from('timesheet_entries')
-        .select(`
-          *,
-          users!timesheet_entries_user_id_fkey(
-            id, email, full_name, role, pay_rate_per_hour, campaign_id
-          ),
-          campaigns!timesheet_entries_campaign_id_fkey(
-            id, name, billing_rate_per_hour, client_name, is_billable
-          ),
-          approver:users!timesheet_entries_approver_id_fkey(
-            full_name, email
-          )
-        `)
+        .select('*')
         .order('date', { ascending: false })
       
       // Apply filters
@@ -90,41 +77,33 @@ export const enhancedSupabaseApi = {
       }
       
       const { data, error } = await query
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
       
       return data || []
     } catch (error) {
       console.error('Error fetching timesheet entries:', error)
+      // Return empty array instead of throwing to prevent UI crashes
       return []
     }
   },
 
-  // Get daily timesheet with detailed breakdown
+  // Get daily timesheet - simplified
   getDailyTimesheet: async (userId, date) => {
     try {
       const { data, error } = await supabase
         .from('timesheet_entries')
-        .select(`
-          *,
-          users!timesheet_entries_user_id_fkey(
-            full_name, email, pay_rate_per_hour
-          ),
-          campaigns!timesheet_entries_campaign_id_fkey(
-            name, billing_rate_per_hour, client_name
-          ),
-          task_time_entries:task_timesheets!inner(
-            id, custom_task_name, task_description,
-            task_time_entries(
-              entry_date, duration_hours, duration_minutes, 
-              is_completed, notes
-            )
-          )
-        `)
+        .select('*')
         .eq('user_id', userId)
         .eq('date', date)
         .single()
       
-      if (error && error.code !== 'PGRST116') throw error
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching daily timesheet:', error)
+        return null
+      }
       return data
     } catch (error) {
       console.error('Error fetching daily timesheet:', error)
@@ -132,40 +111,39 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Create comprehensive timesheet entry
+  // Create timesheet entry - simplified
   createTimesheetEntry: async (entryData) => {
     try {
       const { data, error } = await supabase
         .from('timesheet_entries')
         .insert([{
           user_id: entryData.user_id,
-          campaign_id: entryData.campaign_id,
+          campaign_id: entryData.campaign_id || null,
           date: entryData.date,
-          time_in: entryData.time_in,
-          time_out: entryData.time_out,
-          lunch_start: entryData.lunch_start,
-          lunch_end: entryData.lunch_end,
-          break1_start: entryData.break1_start,
-          break1_end: entryData.break1_end,
-          break2_start: entryData.break2_start,
-          break2_end: entryData.break2_end,
+          time_in: entryData.time_in || null,
+          time_out: entryData.time_out || null,
+          lunch_start: entryData.lunch_start || null,
+          lunch_end: entryData.lunch_end || null,
+          break1_start: entryData.break1_start || null,
+          break1_end: entryData.break1_end || null,
+          break2_start: entryData.break2_start || null,
+          break2_end: entryData.break2_end || null,
           vacation_type: entryData.vacation_type || 'none',
           vacation_hours: entryData.vacation_hours || 0,
           sick_hours: entryData.sick_hours || 0,
           holiday_hours: entryData.holiday_hours || 0,
+          regular_hours: entryData.regular_hours || 0,
+          overtime_hours: entryData.overtime_hours || 0,
           status: 'draft',
-          calculation_metadata: entryData.calculation_metadata || {},
-          created_from_schedule: entryData.created_from_schedule || false,
-          schedule_event_id: entryData.schedule_event_id
+          created_at: new Date().toISOString()
         }])
-        .select(`
-          *,
-          users!timesheet_entries_user_id_fkey(full_name),
-          campaigns!timesheet_entries_campaign_id_fkey(name)
-        `)
+        .select('*')
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Error creating timesheet entry:', error)
+        throw error
+      }
       return data
     } catch (error) {
       console.error('Error creating timesheet entry:', error)
@@ -173,7 +151,7 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Update timesheet entry with calculations
+  // Update timesheet entry
   updateTimesheetEntry: async (id, updateData) => {
     try {
       const { data, error } = await supabase
@@ -183,14 +161,13 @@ export const enhancedSupabaseApi = {
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .select(`
-          *,
-          users!timesheet_entries_user_id_fkey(full_name),
-          campaigns!timesheet_entries_campaign_id_fkey(name)
-        `)
+        .select('*')
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Error updating timesheet entry:', error)
+        throw error
+      }
       return data
     } catch (error) {
       console.error('Error updating timesheet entry:', error)
@@ -198,8 +175,8 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Clock in/out functionality
-  clockIn: async (userId, campaignId, metadata = {}) => {
+  // Clock in/out functionality - simplified
+  clockIn: async (userId, campaignId = null, metadata = {}) => {
     try {
       const today = new Date().toISOString().split('T')[0]
       const now = new Date().toISOString()
@@ -207,30 +184,28 @@ export const enhancedSupabaseApi = {
       // Check if entry exists for today
       const { data: existing } = await supabase
         .from('timesheet_entries')
-        .select('id, time_in, time_out')
+        .select('*')
         .eq('user_id', userId)
         .eq('date', today)
         .single()
       
       if (existing) {
         // Update existing entry
-        return await supabase
+        const { data, error } = await supabase
           .from('timesheet_entries')
           .update({
             time_in: existing.time_in || now,
-            calculation_metadata: {
-              ...existing.calculation_metadata,
-              ...metadata,
-              last_clock_action: 'clock_in',
-              last_clock_time: now
-            }
+            updated_at: new Date().toISOString()
           })
           .eq('id', existing.id)
-          .select()
+          .select('*')
           .single()
+        
+        if (error) throw error
+        return data
       } else {
         // Create new entry
-        return await supabase
+        const { data, error } = await supabase
           .from('timesheet_entries')
           .insert([{
             user_id: userId,
@@ -238,16 +213,13 @@ export const enhancedSupabaseApi = {
             date: today,
             time_in: now,
             status: 'draft',
-            calculation_metadata: {
-              ...metadata,
-              clock_in_device: metadata.device || 'web_app',
-              clock_in_method: metadata.method || 'manual',
-              last_clock_action: 'clock_in',
-              last_clock_time: now
-            }
+            created_at: new Date().toISOString()
           }])
-          .select()
+          .select('*')
           .single()
+        
+        if (error) throw error
+        return data
       }
     } catch (error) {
       console.error('Error clocking in:', error)
@@ -264,19 +236,17 @@ export const enhancedSupabaseApi = {
         .from('timesheet_entries')
         .update({
           time_out: now,
-          calculation_metadata: {
-            clock_out_device: metadata.device || 'web_app',
-            clock_out_method: metadata.method || 'manual',
-            last_clock_action: 'clock_out',
-            last_clock_time: now
-          }
+          updated_at: new Date().toISOString()
         })
         .eq('user_id', userId)
         .eq('date', today)
-        .select()
+        .select('*')
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Error clocking out:', error)
+        throw error
+      }
       return data
     } catch (error) {
       console.error('Error clocking out:', error)
@@ -284,7 +254,7 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Break management
+  // Break management - simplified
   startBreak: async (userId, breakType = 'lunch', metadata = {}) => {
     try {
       const today = new Date().toISOString().split('T')[0]
@@ -297,18 +267,17 @@ export const enhancedSupabaseApi = {
         .from('timesheet_entries')
         .update({
           [updateField]: now,
-          calculation_metadata: {
-            [`${breakType}_start_device`]: metadata.device || 'web_app',
-            last_break_action: `${breakType}_start`,
-            last_break_time: now
-          }
+          updated_at: new Date().toISOString()
         })
         .eq('user_id', userId)
         .eq('date', today)
-        .select()
+        .select('*')
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Error starting break:', error)
+        throw error
+      }
       return data
     } catch (error) {
       console.error('Error starting break:', error)
@@ -328,18 +297,17 @@ export const enhancedSupabaseApi = {
         .from('timesheet_entries')
         .update({
           [updateField]: now,
-          calculation_metadata: {
-            [`${breakType}_end_device`]: metadata.device || 'web_app',
-            last_break_action: `${breakType}_end`,
-            last_break_time: now
-          }
+          updated_at: new Date().toISOString()
         })
         .eq('user_id', userId)
         .eq('date', today)
-        .select()
+        .select('*')
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Error ending break:', error)
+        throw error
+      }
       return data
     } catch (error) {
       console.error('Error ending break:', error)
@@ -347,60 +315,13 @@ export const enhancedSupabaseApi = {
     }
   },
 
-  // Get weekly summary
-  getWeeklySummary: async (userId, weekStart) => {
-    try {
-      const { data, error } = await supabase
-        .from('weekly_user_summary')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('week_start_date', weekStart)
-        .single()
-      
-      if (error && error.code !== 'PGRST116') throw error
-      return data
-    } catch (error) {
-      console.error('Error fetching weekly summary:', error)
-      return null
-    }
-  },
-
-  // Get time calculation rules
-  getTimeCalculationRules: async (jurisdiction = 'US') => {
-    try {
-      const { data, error } = await supabase
-        .from('time_calculation_rules')
-        .select('*')
-        .eq('jurisdiction', jurisdiction)
-        .eq('is_active', true)
-        .single()
-      
-      if (error) throw error
-      return data
-    } catch (error) {
-      console.error('Error fetching time calculation rules:', error)
-      return {
-        max_daily_hours: 16,
-        overtime_threshold: 8.0,
-        max_break_duration: 2.0,
-        required_break_6h: 0.5,
-        required_break_8h: 1.0
-      }
-    }
-  },
-
-  // Calculate hours for timesheet entry
+  // Calculate hours for timesheet entry - simplified
   calculateHours: async (entryData, rules = null) => {
-    if (!rules) {
-      rules = await enhancedSupabaseApi.getTimeCalculationRules()
-    }
-    
     const calculations = {
       regular_hours: 0,
       overtime_hours: 0,
       break_hours: 0,
       total_paid_hours: 0,
-      total_unpaid_breaks: 0,
       validation_errors: [],
       validation_warnings: []
     }
@@ -439,28 +360,16 @@ export const enhancedSupabaseApi = {
         const workedMinutes = totalMinutes - breakMinutes
         const workedHours = workedMinutes / 60
         
-        // Apply overtime rules
-        if (workedHours <= rules.overtime_threshold) {
+        // Apply overtime rules (8 hour threshold)
+        const overtimeThreshold = 8.0
+        if (workedHours <= overtimeThreshold) {
           calculations.regular_hours = Math.round(workedHours * 100) / 100
         } else {
-          calculations.regular_hours = rules.overtime_threshold
-          calculations.overtime_hours = Math.round((workedHours - rules.overtime_threshold) * 100) / 100
+          calculations.regular_hours = overtimeThreshold
+          calculations.overtime_hours = Math.round((workedHours - overtimeThreshold) * 100) / 100
         }
         
         calculations.total_paid_hours = calculations.regular_hours + calculations.overtime_hours
-        
-        // Validation checks
-        if (workedHours > rules.max_daily_hours) {
-          calculations.validation_errors.push(`Worked hours (${workedHours.toFixed(2)}) exceed maximum daily hours (${rules.max_daily_hours})`)
-        }
-        
-        if (workedHours >= 6 && calculations.break_hours < rules.required_break_6h) {
-          calculations.validation_warnings.push(`Break time may be insufficient for ${workedHours.toFixed(2)} hour shift`)
-        }
-        
-        if (calculations.break_hours > rules.max_break_duration) {
-          calculations.validation_warnings.push(`Break time (${calculations.break_hours.toFixed(2)}h) exceeds maximum allowed (${rules.max_break_duration}h)`)
-        }
       }
       
       // Add vacation/sick/holiday hours
@@ -483,14 +392,18 @@ export const enhancedSupabaseApi = {
         .from('timesheet_entries')
         .update({
           status: 'submitted',
-          submitted_at: new Date().toISOString()
+          submitted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .eq('id', id)
         .eq('user_id', userId)
-        .select()
+        .select('*')
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Error submitting timesheet:', error)
+        throw error
+      }
       return data
     } catch (error) {
       console.error('Error submitting timesheet:', error)
@@ -507,13 +420,17 @@ export const enhancedSupabaseApi = {
           status: 'approved',
           decision_at: new Date().toISOString(),
           approver_id: approverId,
-          approver_comments: comments
+          approver_comments: comments,
+          updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .select()
+        .select('*')
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Error approving timesheet:', error)
+        throw error
+      }
       return data
     } catch (error) {
       console.error('Error approving timesheet:', error)
@@ -529,53 +446,21 @@ export const enhancedSupabaseApi = {
           status: 'rejected',
           decision_at: new Date().toISOString(),
           approver_id: approverId,
-          approver_comments: comments
+          approver_comments: comments,
+          updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .select()
+        .select('*')
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Error rejecting timesheet:', error)
+        throw error
+      }
       return data
     } catch (error) {
       console.error('Error rejecting timesheet:', error)
       throw error
-    }
-  },
-
-  // Get user schedules
-  getUserSchedule: async (campaignId) => {
-    try {
-      const { data, error } = await supabase
-        .from('schedules')
-        .select('*')
-        .eq('campaign_id', campaignId)
-        .single()
-      
-      if (error && error.code !== 'PGRST116') throw error
-      return data
-    } catch (error) {
-      console.error('Error fetching user schedule:', error)
-      return null
-    }
-  },
-
-  // Get calendar events
-  getCalendarEvents: async (campaignId, dateFrom, dateTo) => {
-    try {
-      const { data, error } = await supabase
-        .from('campaign_calendar_events')
-        .select('*')
-        .eq('campaign_id', campaignId)
-        .gte('start_time', dateFrom)
-        .lte('end_time', dateTo)
-        .order('start_time')
-      
-      if (error) throw error
-      return data || []
-    } catch (error) {
-      console.error('Error fetching calendar events:', error)
-      return []
     }
   }
 }
