@@ -46,30 +46,45 @@ const Dashboard = () => {
 
   const maxHours = 10; // Maximum hours for chart scaling
 
+  // Sample members data for Who's in/out section
+  const membersData = [
+    { name: 'John Doe', status: 'out', time: '5:30 PM' },
+    { name: 'Jane Smith', status: 'in', time: '9:00 AM' },
+    { name: 'Mike Johnson', status: 'break', time: '2:15 PM' },
+    { name: 'Sarah Wilson', status: 'out', time: '6:00 PM' },
+    { name: 'David Brown', status: 'in', time: '8:45 AM' },
+    { name: 'Lisa Davis', status: 'out', time: '5:45 PM' },
+    { name: 'Tom Anderson', status: 'break', time: '1:30 PM' },
+    { name: 'Emily Taylor', status: 'in', time: '9:15 AM' }
+  ];
+
   return (
     <div className="dashboard-reference-layout">
       {/* Header Section - Two Columns */}
       <div className="dashboard-header-section">
         {/* Hello Kevin Section */}
-        <div className="hello-section">
-          <div className="hello-content">
-            <h1 className="hello-title">Hello Kevin</h1>
-            <p className="hello-subtitle">Here's what's happening at<br />Egis</p>
+        <div className="hello-section-improved">
+          <div className="hello-text-content">
+            <h1 className="hello-main-title">Hello Kevin</h1>
+            <p className="hello-company-subtitle">
+              Here's what's happening at<br />
+              <span className="company-name">Egis</span>
+            </p>
+            <div className="jibble-logo-container">
+              <div className="jibble-logo-orange">
+                <span className="jibble-sigma">Σ</span>
+              </div>
+            </div>
           </div>
-          <div className="hello-illustration">
-            <div className="illustration-container">
-              <div className="jibble-logo">
-                <span className="logo-text">Σ</span>
-              </div>
-              <div className="person-illustration">
-                <div className="person-figure"></div>
-              </div>
+          <div className="hello-illustration-area">
+            <div className="person-illustration-container">
+              <div className="person-figure-blue"></div>
             </div>
           </div>
         </div>
 
         {/* Upcoming Holidays Section */}
-        <div className="holidays-section">
+        <div className="holidays-section-improved">
           <div className="holidays-header">
             <h2 className="holidays-title">UPCOMING HOLIDAYS AND TIME OFF</h2>
             <button className="holidays-link">Go to holidays</button>
@@ -263,44 +278,61 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="dashboard-right-sidebar">
-          {/* Who's in/out Section */}
-          <div className="whos-inout-section">
+        {/* Right Sidebar - Wider with Scroll */}
+        <div className="dashboard-right-sidebar-wide">
+          {/* Who's in/out Section - Expanded */}
+          <div className="whos-inout-section-expanded">
             <div className="section-header">
-              <h3 className="section-title">Who's in/out</h3>
+              <h3 className="section-title">WHO'S IN/OUT</h3>
               <span className="member-count">1 member</span>
             </div>
             
-            <div className="inout-stats">
-              <div className="stat-item">
-                <span className="stat-number in">0</span>
-                <span className="stat-label">IN</span>
+            <div className="inout-stats-large">
+              <div className="stat-item-large">
+                <span className="stat-number-large in">0</span>
+                <span className="stat-label-large">IN</span>
               </div>
-              <div className="stat-item">
-                <span className="stat-number break">0</span>
-                <span className="stat-label">BREAK</span>
+              <div className="stat-item-large">
+                <span className="stat-number-large break">0</span>
+                <span className="stat-label-large">BREAK</span>
               </div>
-              <div className="stat-item">
-                <span className="stat-number out">1</span>
-                <span className="stat-label">OUT</span>
+              <div className="stat-item-large">
+                <span className="stat-number-large out">1</span>
+                <span className="stat-label-large">OUT</span>
               </div>
             </div>
 
-            <div className="search-members">
+            <div className="search-members-wide">
               <input 
                 type="text" 
                 placeholder="Search members..." 
-                className="member-search-input"
+                className="member-search-input-wide"
               />
+            </div>
+
+            {/* Members List with Scroll */}
+            <div className="members-list-container">
+              <div className="members-list-scrollable">
+                {membersData.map((member, index) => (
+                  <div key={index} className="member-item">
+                    <div className="member-info">
+                      <span className="member-name">{member.name}</span>
+                      <span className={`member-status ${member.status}`}>
+                        {member.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <span className="member-time">{member.time}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Time Section */}
-          <div className="current-time-section">
-            <div className="time-display">{formatTime(currentTime)}</div>
-            <div className="date-display">{formatDate(currentTime)}</div>
-            <div className="timezone">No members clocked in now</div>
+          <div className="current-time-section-compact">
+            <div className="time-display-large">{formatTime(currentTime)}</div>
+            <div className="date-display-large">{formatDate(currentTime)}</div>
+            <div className="timezone-large">No members clocked in now</div>
           </div>
         </div>
       </div>
