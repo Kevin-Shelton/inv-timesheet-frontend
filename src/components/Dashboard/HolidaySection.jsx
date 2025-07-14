@@ -1,26 +1,22 @@
 // src/components/Dashboard/HolidaySection.jsx
 
-export function HolidaySection() {
+export default function HolidaySection() {
   return (
-    <div className="holiday-section">
-      <h3 className="sidebar-section-title">UPCOMING HOLIDAYS AND TIME OFF</h3>
-      <div className="holiday-content">
-        <div className="holiday-illustration">
-          <div className="calendar-icon">📅</div>
-        </div>
-        <div className="holiday-text">
-          <p className="holiday-message">
-            Add your holiday calendar for<br />
-            reminders and overtime calculations.
-          </p>
-        </div>
-        <div className="holiday-actions">
-          <button className="setup-holidays-btn">Set up Holidays</button>
-          <button className="no-thanks-btn">No, thanks</button>
-        </div>
+    <div className="dashboard-page holiday-section p-6 bg-white shadow rounded-xl w-full md:w-1/2">
+      <h2 className="text-base font-semibold text-gray-900 uppercase tracking-wide mb-2">
+        Upcoming Holidays and Time Off
+      </h2>
+      <p className="text-sm text-gray-600 mb-4">
+        Add your holiday calendar for reminders and overtime calculations.
+      </p>
+      <div className="flex gap-2">
+        <button className="text-sm font-medium text-blue-600 hover:underline">
+          Set up Holidays
+        </button>
+        <button className="text-sm text-gray-500 hover:underline">
+          No, thanks
+        </button>
       </div>
     </div>
   );
 }
-
-export default HolidaySection;
