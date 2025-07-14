@@ -1,79 +1,63 @@
 import React from 'react';
-import './DashboardNamespaced.css';
-import CurrentTime from './CurrentTime';
-import HolidaySection from './HolidaySection';
-import WeeklyChart from './WeeklyChart';
-import ActivityRing from './ActivityRing';
+import { ActivityRing } from './ActivityRing';
+import { WeeklyChart } from './WeeklyChart';
+import { HolidaySection } from './HolidaySection';
+import { CurrentTime } from './CurrentTime';
 
-export default function Dashboard() {
+export function Dashboard() {
   return (
-    <div className="dashboard-page dashboard-reference-layout">
-      <div className="dashboard-page dashboard-header-section">
-        <div>
-          <h2 className="dashboard-page hello-main-title">Dashboard</h2>
-          <p className="dashboard-page hello-company-subtitle">Welcome back</p>
+    <div className="dashboard-wrapper">
+      <div className="dashboard-header">
+        <div className="dashboard-controls">
+          <div className="toggle-buttons">
+            <button className="active">Day</button>
+            <button>Week</button>
+            <button>Month</button>
+          </div>
+          <div className="filters">
+            <select><option>All Locations</option></select>
+            <select><option>All Groups</option></select>
+            <select><option>All Schedules</option></select>
+          </div>
         </div>
-        <div className="dashboard-page jibble-logo-orange">
-          <span className="dashboard-page jibble-sigma">Σ</span>
-        </div>
-      </div>
 
-      <div className="dashboard-page filter-bar">
-        <div className="dashboard-page filter-group">
-          <button>Day</button>
-          <button>Week</button>
-          <button>Month</button>
-        </div>
-        <div className="dashboard-page filter-group">
-          <select><option>All Locations</option></select>
-          <select><option>All Groups</option></select>
-          <select><option>All Schedules</option></select>
-        </div>
-        <div className="dashboard-page filter-group">
+        <div className="filters-secondary">
           <select><option>Campaign</option></select>
           <select><option>Managed by Me</option></select>
           <select><option>Personal</option></select>
         </div>
       </div>
 
-      <div className="dashboard-page dashboard-main-content">
-        <div className="dashboard-page dashboard-left-content">
-          <div className="dashboard-page card">
-            <h3 className="dashboard-page holidays-title">Hello, Team</h3>
-            <p className="dashboard-page no-holidays-text">You're doing great!</p>
+      <div className="dashboard-grid">
+        {/* Left Column */}
+        <div className="left-column">
+          <div className="greeting-card">
+            <h2>Hello Kevin</h2>
+            <p>Here's what's happening at Egis</p>
           </div>
-
-          <div className="dashboard-page card">
-            <HolidaySection />
-          </div>
-
-          <div className="dashboard-page card">
+          <HolidaySection />
+          <div className="weekly-chart-card">
             <WeeklyChart />
+          </div>
+          <div className="activity-ring-card">
+            <ActivityRing />
           </div>
         </div>
 
-        <div className="dashboard-page dashboard-right-sidebar-wide">
-          <div className="dashboard-page whos-inout-section-expanded">
-            <h3 className="dashboard-page section-title">Who's In/Out</h3>
-            <div className="dashboard-page members-list-scrollable">
-              <div className="dashboard-page member-item">
-                John Doe <span className="dashboard-page member-status in">In</span>
-              </div>
-              <div className="dashboard-page member-item">
-                Jane Smith <span className="dashboard-page member-status out">Out</span>
-              </div>
-            </div>
+        {/* Right Sidebar */}
+        <div className="sidebar">
+          <div className="in-out-widget">
+            <h4>Who's in/out</h4>
+            <ul>
+              <li>John Doe <span className="status in">In</span></li>
+              <li>Jane Smith <span className="status out">Out</span></li>
+            </ul>
           </div>
-
-          <div className="dashboard-page current-time-section-compact">
-            <CurrentTime />
-          </div>
-
-          <div className="dashboard-page card">
-            <ActivityRing />
-          </div>
+          <CurrentTime />
         </div>
       </div>
     </div>
   );
 }
+
+export default Dashboard;
