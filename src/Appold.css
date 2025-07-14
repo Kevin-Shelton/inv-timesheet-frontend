@@ -337,6 +337,9 @@ body {
 }
 
 /* Dashboard specific styles - Enhanced */
+.dashboard-stat-card .card-content {
+  padding: 20px;
+}
 
 .quick-action-card {
   display: flex;
@@ -1382,8 +1385,25 @@ table tr:last-child td {
 }
 
 /* Enhanced Dashboard Stats Cards */
+.dashboard-stat-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  overflow: hidden;
+}
 
+.dashboard-stat-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
 
+.dashboard-stat-card .card-content {
+  padding: 20px;
+}
 
 .stat-icon {
   width: 48px;
@@ -1727,6 +1747,9 @@ table tr:last-child td {
     border-radius: 12px;
   }
   
+  .dashboard-stat-card .card-content {
+    padding: 16px;
+  }
   
   .stat-value {
     font-size: 24px;
@@ -1834,6 +1857,14 @@ table tr:last-child td {
 }
 
 /* Dashboard Header */
+.dashboard-header {
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
 .time-period-tabs {
   display: flex;
@@ -1884,8 +1915,26 @@ table tr:last-child td {
 }
 
 /* Dashboard Content */
+.dashboard-content {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
 
+.dashboard-left {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
 
+.dashboard-right {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
 
 /* Greeting Section */
 .greeting-section {
@@ -1967,6 +2016,12 @@ table tr:last-child td {
 }
 
 /* Tracked Hours Section */
+.tracked-hours-section {
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+}
 
 .hours-legend {
   display: flex;
@@ -2110,6 +2165,12 @@ table tr:last-child td {
 }
 
 /* Activities Section */
+.activities-section {
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+}
 
 .activities-content {
   display: flex;
@@ -2191,6 +2252,12 @@ table tr:last-child td {
 }
 
 /* Right Column Sections */
+.whos-inout-section {
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+}
 
 .inout-stats {
   display: flex;
@@ -2224,6 +2291,12 @@ table tr:last-child td {
 }
 
 /* Holidays Section */
+.holidays-section {
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+}
 
 .holidays-content {
   margin-top: 16px;
@@ -2295,7 +2368,15 @@ table tr:last-child td {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
+  .dashboard-content {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
   
+  .dashboard-right {
+    order: -1;
+  }
   
   .activities-content {
     flex-direction: column;
@@ -2315,6 +2396,11 @@ table tr:last-child td {
 }
 
 @media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
   
   .time-period-tabs {
     justify-content: center;
@@ -3729,3 +3815,4 @@ table tr:last-child td {
     font-size: 14px;
   }
 }
+

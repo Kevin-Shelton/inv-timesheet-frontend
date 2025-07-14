@@ -11,6 +11,11 @@ body {
   max-width: 1600px;
   margin: 0 auto;
   padding: 24px;
+  background-color: #f8f9fb;
+  min-height: 100vh;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px;
 }
 
 .dashboard-header-section {
@@ -286,4 +291,13 @@ body {
 
 .member-status.break {
   color: #F59E0B;
+}
+
+
+/* Wrapper for Dashboard Page */
+.dashboard-page {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8f9fb;
+  padding: 24px;
+  min-height: 100vh;
 }
