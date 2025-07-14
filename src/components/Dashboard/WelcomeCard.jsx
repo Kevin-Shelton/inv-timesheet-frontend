@@ -1,5 +1,5 @@
 // src/components/Dashboard/WelcomeCard.jsx
-export function WelcomeCard() {
+export default function WelcomeCard() {
   return (
     <div className="dashboard-page welcome-card p-4 bg-white shadow rounded-xl w-full md:w-1/2">
       <h2 className="text-lg font-semibold">Welcome Back, Kevin</h2>
