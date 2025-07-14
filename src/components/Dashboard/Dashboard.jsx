@@ -1,12 +1,3 @@
-// Confirmed by user: existing Dashboard.jsx has over 200 lines
-// This version contains fewer than 100 lines
-// This suggests that essential components or layout blocks are likely missing
-
-// Let's re-evaluate and issue a proper full-length JSX replacement that:
-// - Preserves all original imports and logic
-// - Adds the missing layout sections (filters, sidebar fixes, header spacing)
-// - Matches the visual reference exactly while retaining existing app logic
-
 import React from 'react';
 import './DashboardNamespaced.css';
 import CurrentTime from './CurrentTime';
@@ -14,7 +5,7 @@ import HolidaySection from './HolidaySection';
 import WeeklyChart from './WeeklyChart';
 import ActivityRing from './ActivityRing';
 
-export default function Dashboard() {
+function Dashboard() {
   return (
     <div className="dashboard-page dashboard-reference-layout">
       <div className="dashboard-page dashboard-header-section">
@@ -86,3 +77,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+export default Dashboard;
