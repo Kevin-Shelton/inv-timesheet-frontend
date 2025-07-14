@@ -11,11 +11,6 @@ body {
   max-width: 1600px;
   margin: 0 auto;
   padding: 24px;
-  background-color: #f8f9fb;
-  min-height: 100vh;
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 24px;
 }
 
 .dashboard-header-section {
@@ -294,10 +289,109 @@ body {
 }
 
 
-/* Wrapper for Dashboard Page */
-.dashboard-page {
-  font-family: 'Inter', sans-serif;
-  background-color: #f8f9fb;
-  padding: 24px;
-  min-height: 100vh;
+
+/* === VISUAL DEBUGGING STYLES FOR EACH SECTION === */
+.hello-section-improved {
+  background-color: #e6f7ff;
+  border: 1px dashed #1890ff;
+  position: relative;
+}
+.hello-section-improved::before {
+  content: "HELLO SECTION";
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 10px;
+  color: #1890ff;
+  font-weight: bold;
+}
+
+.holidays-section-improved {
+  background-color: #fff7e6;
+  border: 1px dashed #faad14;
+  position: relative;
+}
+.holidays-section-improved::before {
+  content: "HOLIDAYS SECTION";
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 10px;
+  color: #fa8c16;
+  font-weight: bold;
+}
+
+.tracked-hours-section {
+  background-color: #f6ffed;
+  border: 1px dashed #52c41a;
+  position: relative;
+}
+.tracked-hours-section::before {
+  content: "TRACKED HOURS SECTION";
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 10px;
+  color: #389e0d;
+  font-weight: bold;
+}
+
+.activities-section {
+  background-color: #fff0f6;
+  border: 1px dashed #eb2f96;
+  position: relative;
+}
+.activities-section::before {
+  content: "ACTIVITIES SECTION";
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 10px;
+  color: #c41d7f;
+  font-weight: bold;
+}
+
+.projects-section {
+  background-color: #f9f0ff;
+  border: 1px dashed #9254de;
+  position: relative;
+}
+.projects-section::before {
+  content: "PROJECTS SECTION";
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 10px;
+  color: #722ed1;
+  font-weight: bold;
+}
+
+.dashboard-right-sidebar-wide {
+  background-color: #e6fffb;
+  border: 1px dashed #13c2c2;
+  position: relative;
+}
+.dashboard-right-sidebar-wide::before {
+  content: "RIGHT SIDEBAR";
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 10px;
+  color: #08979c;
+  font-weight: bold;
+}
+
+.current-time-section-compact {
+  background-color: #f0f5ff;
+  border: 1px dashed #2f54eb;
+  position: relative;
+}
+.current-time-section-compact::before {
+  content: "TIME SECTION";
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 10px;
+  color: #1d39c4;
+  font-weight: bold;
 }
