@@ -12,7 +12,29 @@ const Dashboard = () => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);
-    return () => clearInterval(timer);
+    return (
+    <div className="dashboard-page.filters-section card" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+  <div>
+    <div style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Time View</div>
+    <select>
+      <option>Day</option>
+      <option>Week</option>
+      <option>Month</option>
+    </select>
+  </div>
+  <div>
+    <div style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Filters</div>
+    <select><option>All Locations</option></select>
+    <select><option>All Groups</option></select>
+    <select><option>All Schedules</option></select>
+  </div>
+  <div>
+    <div style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>View</div>
+    <select><option>Campaign</option></select>
+    <select><option>Managed by Me</option></select>
+    <select><option>Personal</option></select>
+  </div>
+</div>) => clearInterval(timer);
   }, []);
 
   const formatTime = (date) => date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -42,6 +64,28 @@ const Dashboard = () => {
   ];
 
   return (
+    <div className="dashboard-page.filters-section card" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+  <div>
+    <div style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Time View</div>
+    <select>
+      <option>Day</option>
+      <option>Week</option>
+      <option>Month</option>
+    </select>
+  </div>
+  <div>
+    <div style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Filters</div>
+    <select><option>All Locations</option></select>
+    <select><option>All Groups</option></select>
+    <select><option>All Schedules</option></select>
+  </div>
+  <div>
+    <div style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>View</div>
+    <select><option>Campaign</option></select>
+    <select><option>Managed by Me</option></select>
+    <select><option>Personal</option></select>
+  </div>
+</div>
     <div className="dashboard-page dashboard-reference-layout max-w-[1600px] mx-auto px-6 py-4 bg-[#f8f9fb]">
       <header className="flex items-center justify-between h-[60px] mb-4">
         <h1 className="text-[18px] font-semibold">Dashboard</h1>
