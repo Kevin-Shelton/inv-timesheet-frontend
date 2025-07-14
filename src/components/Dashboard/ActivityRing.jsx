@@ -1,43 +1,33 @@
-export function ActivityRing({ percentage, label, value }) {
-  const circumference = 2 * Math.PI * 45 // radius = 45
-  const strokeDasharray = circumference
-  const strokeDashoffset = circumference - (percentage / 100) * circumference
+import React from 'react';
+import './DashboardNamespaced.css';
 
+export default function ActivityRing() {
   return (
-    <div className="dashboard-page"><div className="activity-ring">
-      <div className="ring-container">
-        <svg width="120" height="120" className="ring-svg">
-          {/* Background ring */}
-          <circle
-            cx="60"
-            cy="60"
-            r="45"
-            fill="none"
-            stroke="#E5E7EB"
-            strokeWidth="16"
-          />
-          {/* Progress ring */}
-          <circle
-            cx="60"
-            cy="60"
-            r="45"
-            fill="none"
-            stroke="#4B5563"
-            strokeWidth="16"
-            strokeLinecap="round"
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={strokeDashoffset}
-            transform="rotate(-90 60 60)"
-            className="progress-ring"
-          />
-        </svg>
-        
-        <div className="ring-content">
-          <div className="ring-label">{label}</div>
-          <div className="ring-value">{value}</div>
-        </div>
-      </div>
-    </div>
-  )
-}
+    <div className="dashboard-page activity-ring-section">
+      <h3 className="dashboard-page section-title">Activity Summary</h3>
 
+      <div className="dashboard-page ring-container">
+        <svg viewBox="0 0 36 36" className="dashboard-page ring">
+          <path
+            className="dashboard-page ring-bg"
+            d="M18 2.0845
+               a 15.9155 15.9155 0 0 1 0 31.831
+               a 15.9155 15.9155 0 0 1 0 -31.831"
+          />
+          <path
+            className="dashboard-page ring-progress"
+            strokeDasharray="70, 100"
+            d="M18 2.0845
+               a 15.9155 15.9155 0 0 1 0 31.831
+               a 15.9155 15.9155 0 0 1 0 -31.831"
+          />
+          <text x="18" y="20.35" className="dashboard-page ring-text">70%</text>
+        </svg>
+      </div>
+
+      <p className="dashboard-page ring-description">
+        You've completed 70% of your weekly goals.
+      </p>
+    </div>
+  );
+}

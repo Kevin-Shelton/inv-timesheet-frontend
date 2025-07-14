@@ -1,54 +1,40 @@
-export function WeeklyChart({ data }) {
-  const maxHours = 10 // Maximum hours for chart scaling
+import React from 'react';
+import './DashboardNamespaced.css';
 
+export default function WeeklyChart() {
   return (
-    <div className="dashboard-page"><div className="weekly-chart">
-      <div className="chart-bars">
-        {data.map((day, index) => {
-          const totalHours = day.worked + day.overtime
-          const workedHeight = (day.worked / maxHours) * 100
-          const overtimeHeight = (day.overtime / maxHours) * 100
-          const breakHeight = (day.break / maxHours) * 100
+    <div className="dashboard-page weekly-chart-wrapper">
+      <h3 className="dashboard-page section-title">Weekly Hours Chart</h3>
+      <div className="dashboard-page weekly-chart">
+        {/* Sample bar chart - replace with actual data later */}
+        <div className="chart-bar-group">
+          <div className="chart-bar" style={{ height: '30%' }} />
+          <div className="chart-bar" style={{ height: '60%' }} />
+          <div className="chart-bar" style={{ height: '50%' }} />
+          <div className="chart-bar" style={{ height: '80%' }} />
+          <div className="chart-bar" style={{ height: '20%' }} />
+          <div className="chart-bar" style={{ height: '40%' }} />
+          <div className="chart-bar" style={{ height: '70%' }} />
+        </div>
 
-          return (
-            <div className="dashboard-page"><div key={index} className="chart-day">
-              <div className="chart-bar-container">
-                <div 
-                  className="chart-bar worked"
-                  style={{ height: `${workedHeight}%` }}
-                  title={`Worked: ${day.worked}h`}
-                />
-                {day.overtime > 0 && (
-                  <div 
-                    className="chart-bar overtime"
-                    style={{ height: `${overtimeHeight}%` }}
-                    title={`Overtime: ${day.overtime}h`}
-                  />
-                )}
-                <div 
-                  className="chart-bar break"
-                  style={{ height: `${breakHeight}%` }}
-                  title={`Break: ${day.break}h`}
-                />
-              </div>
-              <div className="chart-day-label">
-                <div className="day-name">{day.day}</div>
-                <div className="day-date">{day.date}</div>
-              </div>
+        {/* Y-axis labels */}
+        <div className="chart-y-axis">
+          {[0, 2, 4, 6, 8, 10].map((hour) => (
+            <div key={hour} className="y-label">
+              {hour}h
             </div>
-          )
-        })}
-      </div>
-      
-      {/* Y-axis labels */}
-      <div className="chart-y-axis">
-        {[0, 2, 4, 6, 8, 10].map(hour => (
-          <div key={hour} className="y-axis-label">
-            {hour}h
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {/* X-axis labels */}
+        <div className="chart-x-axis">
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+            <div key={day} className="x-label">
+              {day}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
-  )
+  );
 }
-
