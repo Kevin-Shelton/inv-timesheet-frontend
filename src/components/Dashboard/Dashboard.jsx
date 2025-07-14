@@ -1,311 +1,312 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 
-// Dashboard component with FULL WIDTH usage - no constraints
-export function Dashboard() {
-  const [currentTime, setCurrentTime] = useState(new Date())
+const Dashboard = () => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [trackedHours, setTrackedHours] = useState({
+    worked: '0h 0m',
+    breaks: '0h 0m',
+    overtime: '0h 0m'
+  });
 
+  // Update time every minute
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 1000)
+      setCurrentTime(new Date());
+    }, 60000);
 
-    return () => clearInterval(timer)
-  }, [])
+    return () => clearInterval(timer);
+  }, []);
 
-  // FULL WIDTH STYLES - NO CONSTRAINTS
-  const outerWrapperStyle = {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#F9FAFB',
-    padding: 0, // NO padding
-    margin: 0,  // NO margin
-    overflow: 'auto'
-  }
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
 
-  const containerStyle = {
-    width: '100%',
-    padding: '24px', // Only internal padding
-    boxSizing: 'border-box',
-    minHeight: '100%'
-  }
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
-  const gridStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-    gap: '24px',
-    width: '100%'
-  }
+  // Sample data for the chart (7 days)
+  const weeklyData = [
+    { day: 'M', worked: 8, overtime: 0 },
+    { day: 'T', worked: 7.5, overtime: 0.5 },
+    { day: 'W', worked: 8, overtime: 1 },
+    { day: 'T', worked: 8, overtime: 0 },
+    { day: 'F', worked: 7, overtime: 0 },
+    { day: 'S', worked: 6, overtime: 0 },
+    { day: 'S', worked: 0, overtime: 0 }
+  ];
 
-  const cardStyle = {
-    backgroundColor: '#FFFFFF',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #E5E7EB',
-    padding: '20px',
-    marginBottom: '24px'
-  }
-
-  const headingStyle = {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#111827',
-    margin: '0 0 8px 0'
-  }
-
-  const subheadingStyle = {
-    fontSize: '14px',
-    color: '#6B7280',
-    margin: '0 0 16px 0'
-  }
-
-  const captionStyle = {
-    fontSize: '12px',
-    color: '#9CA3AF'
-  }
-
-  // Welcome Header - Full Width
-  const WelcomeHeader = () => (
-    <div style={{
-      ...cardStyle,
-      gridColumn: '1 / -1', // Full width
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
-    }}>
-      <div>
-        <h1 style={headingStyle}>Hello admin@test.com</h1>
-        <p style={subheadingStyle}>Here's what's happening at Eps</p>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-          <div style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            backgroundColor: '#3B82F6'
-          }}></div>
-          <div style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            backgroundColor: '#10B981'
-          }}></div>
-        </div>
-      </div>
-      <div style={{
-        width: '120px',
-        height: '80px',
-        backgroundColor: '#FEF3C7',
-        borderRadius: '12px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '32px'
-      }}>
-        👋
-      </div>
-    </div>
-  )
-
-  // Upcoming Holidays
-  const UpcomingHolidays = () => (
-    <div style={cardStyle}>
-      <h3 style={headingStyle}>UPCOMING HOLIDAYS AND TIME OFF</h3>
-      <div style={{
-        backgroundColor: '#FEF3C7',
-        borderRadius: '8px',
-        padding: '16px',
-        marginTop: '16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px'
-      }}>
-        <div style={{ fontSize: '24px' }}>🏖️</div>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: '14px', color: '#92400E' }}>
-            Add your holiday calendar for reminders and overtime calculations.
-          </p>
-          <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-            <button style={{
-              backgroundColor: '#F59E0B',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              padding: '6px 12px',
-              fontSize: '12px',
-              cursor: 'pointer'
-            }}>
-              Set up Holidays
-            </button>
-            <button style={{
-              backgroundColor: 'transparent',
-              color: '#F59E0B',
-              border: '1px solid #F59E0B',
-              borderRadius: '6px',
-              padding: '6px 12px',
-              fontSize: '12px',
-              cursor: 'pointer'
-            }}>
-              No, thanks
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-
-  // Tracked Hours
-  const TrackedHours = () => (
-    <div style={cardStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={headingStyle}>TRACKED HOURS</h3>
-        <a href="#" style={{ color: '#3B82F6', fontSize: '14px', textDecoration: 'none' }}>
-          Go to timesheets
-        </a>
-      </div>
-      
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981' }}></div>
-          <span style={{ fontSize: '12px', color: '#6B7280' }}>WORKED HOURS</span>
-          <span style={{ fontSize: '12px', color: '#111827', marginLeft: 'auto' }}>60h</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#6B7280' }}></div>
-          <span style={{ fontSize: '12px', color: '#6B7280' }}>0h 0m</span>
-          <span style={{ fontSize: '12px', color: '#111827', marginLeft: 'auto' }}>60h</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#FBBF24' }}></div>
-          <span style={{ fontSize: '12px', color: '#6B7280' }}>OVERTIME HOURS</span>
-          <span style={{ fontSize: '12px', color: '#111827', marginLeft: 'auto' }}>40h</span>
-        </div>
-      </div>
-
-      {/* Weekly Chart */}
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
-            <div key={day} style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>{day}</div>
-              <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
-                {7 + index}
-              </div>
-              <div style={{
-                height: '60px',
-                backgroundColor: index < 5 ? '#9CA3AF' : '#D1D5DB',
-                borderRadius: '4px',
-                margin: '0 2px'
-              }}></div>
-            </div>
-          ))}
-        </div>
-        <p style={captionStyle}>Does not include manually entered work hours</p>
-      </div>
-    </div>
-  )
-
-  // Activities
-  const Activities = () => (
-    <div style={cardStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={headingStyle}>ACTIVITIES</h3>
-        <a href="#" style={{ color: '#3B82F6', fontSize: '14px', textDecoration: 'none' }}>
-          Go to activities
-        </a>
-      </div>
-
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: '16px'
-      }}>
-        <div style={{
-          width: '120px',
-          height: '120px',
-          borderRadius: '50%',
-          background: 'conic-gradient(#9CA3AF 0deg 270deg, #E5E7EB 270deg 360deg)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative'
-        }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            backgroundColor: 'white',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <div style={{ fontSize: '12px', color: '#6B7280' }}>clocked</div>
-            <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>0h 0m</div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: '0 0 4px 0' }}>
-          Top 10 activities
-        </p>
-        <p style={captionStyle}>No activities tracked yet</p>
-      </div>
-    </div>
-  )
-
-  // Who's In/Out
-  const WhosInOut = () => (
-    <div style={cardStyle}>
-      <h3 style={headingStyle}>Who's In/Out</h3>
-      
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-around',
-        marginBottom: '24px',
-        textAlign: 'center'
-      }}>
-        <div>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>0</div>
-          <div style={captionStyle}>IN</div>
-        </div>
-        <div>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>0</div>
-          <div style={captionStyle}>OUT</div>
-        </div>
-        <div>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>1</div>
-          <div style={captionStyle}>BREAK</div>
-        </div>
-      </div>
-
-      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-        <div style={{ fontSize: '28px', fontWeight: '700', color: '#111827' }}>
-          {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </div>
-        <div style={captionStyle}>
-          {currentTime.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
-        </div>
-        <div style={captionStyle}>No previous entry</div>
-      </div>
-    </div>
-  )
+  const maxHours = 10; // Maximum hours for chart scaling
 
   return (
-    <div style={outerWrapperStyle}>
-      <div style={containerStyle}>
-        <div style={gridStyle}>
-          <WelcomeHeader />
-          <UpcomingHolidays />
-          <TrackedHours />
-          <Activities />
-          <WhosInOut />
+    <div className="dashboard-reference-layout">
+      {/* Header Section - Two Columns */}
+      <div className="dashboard-header-section">
+        {/* Hello Kevin Section */}
+        <div className="hello-section">
+          <div className="hello-content">
+            <h1 className="hello-title">Hello Kevin</h1>
+            <p className="hello-subtitle">Here's what's happening at<br />Egis</p>
+          </div>
+          <div className="hello-illustration">
+            <div className="illustration-container">
+              <div className="jibble-logo">
+                <span className="logo-text">Σ</span>
+              </div>
+              <div className="person-illustration">
+                <div className="person-figure"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Upcoming Holidays Section */}
+        <div className="holidays-section">
+          <div className="holidays-header">
+            <h2 className="holidays-title">UPCOMING HOLIDAYS AND TIME OFF</h2>
+            <button className="holidays-link">Go to holidays</button>
+          </div>
+          <div className="holidays-content">
+            <p className="no-holidays-text">No upcoming holidays</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content - Three Columns + Right Sidebar */}
+      <div className="dashboard-main-content">
+        {/* Left Content Area - Three Columns */}
+        <div className="dashboard-left-content">
+          {/* Tracked Hours Section */}
+          <div className="tracked-hours-section">
+            <div className="section-header">
+              <h3 className="section-title">TRACKED HOURS</h3>
+              <button className="section-link">Go to timesheets</button>
+            </div>
+            
+            <div className="hours-legend">
+              <div className="legend-item">
+                <div className="legend-dot worked"></div>
+                <span className="legend-label">WORKED HOURS</span>
+                <span className="legend-value">{trackedHours.worked}</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-dot break"></div>
+                <span className="legend-label">BREAKS</span>
+                <span className="legend-value">{trackedHours.breaks}</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-dot overtime"></div>
+                <span className="legend-label">OVERTIME HOURS</span>
+                <span className="legend-value">{trackedHours.overtime}</span>
+              </div>
+            </div>
+
+            <div className="weekly-chart">
+              <div className="chart-y-axis">
+                <span>600h</span>
+                <span>500h</span>
+                <span>400h</span>
+                <span>300h</span>
+                <span>200h</span>
+                <span>100h</span>
+                <span>0h</span>
+              </div>
+              <div className="chart-bars">
+                {weeklyData.map((data, index) => (
+                  <div key={index} className="chart-day">
+                    <div className="chart-bar-container">
+                      {data.worked > 0 && (
+                        <div 
+                          className="chart-bar worked"
+                          style={{ height: `${(data.worked / maxHours) * 100}%` }}
+                        ></div>
+                      )}
+                      {data.overtime > 0 && (
+                        <div 
+                          className="chart-bar overtime"
+                          style={{ height: `${(data.overtime / maxHours) * 100}%` }}
+                        ></div>
+                      )}
+                    </div>
+                    <span className="chart-day-label">{data.day}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="chart-note">Does not include manually added time entries</p>
+          </div>
+
+          {/* Activities Section */}
+          <div className="activities-section">
+            <div className="section-header">
+              <h3 className="section-title">ACTIVITIES</h3>
+              <button className="section-link">View all</button>
+            </div>
+            
+            <div className="activities-content">
+              <div className="activity-ring">
+                <svg width="80" height="80" viewBox="0 0 80 80">
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="35"
+                    fill="none"
+                    stroke="#E5E7EB"
+                    strokeWidth="8"
+                  />
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="35"
+                    fill="none"
+                    stroke="#FB923C"
+                    strokeWidth="8"
+                    strokeDasharray={`${2 * Math.PI * 35 * 0.3} ${2 * Math.PI * 35}`}
+                    strokeDashoffset={`${2 * Math.PI * 35 * 0.25}`}
+                    className="activity-progress"
+                  />
+                </svg>
+                <div className="ring-center">
+                  <div className="ring-label">TODAY</div>
+                  <div className="ring-time">0h 0m</div>
+                </div>
+              </div>
+              
+              <div className="activities-list">
+                <h4 className="activities-list-title">Most tracked activities</h4>
+                <div className="activity-items">
+                  <div className="activity-item">
+                    <div className="activity-dot" style={{ backgroundColor: '#FB923C' }}></div>
+                    <span className="activity-name">General</span>
+                    <span className="activity-time">0h 0m</span>
+                  </div>
+                  <div className="activity-item">
+                    <div className="activity-dot" style={{ backgroundColor: '#3B82F6' }}></div>
+                    <span className="activity-name">Development</span>
+                    <span className="activity-time">0h 0m</span>
+                  </div>
+                  <div className="activity-item">
+                    <div className="activity-dot" style={{ backgroundColor: '#10B981' }}></div>
+                    <span className="activity-name">Meetings</span>
+                    <span className="activity-time">0h 0m</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Projects Section */}
+          <div className="projects-section">
+            <div className="section-header">
+              <h3 className="section-title">PROJECTS</h3>
+              <button className="section-link">View all</button>
+            </div>
+            
+            <div className="projects-content">
+              <div className="project-ring">
+                <svg width="80" height="80" viewBox="0 0 80 80">
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="35"
+                    fill="none"
+                    stroke="#E5E7EB"
+                    strokeWidth="8"
+                  />
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="35"
+                    fill="none"
+                    stroke="#8B5CF6"
+                    strokeWidth="8"
+                    strokeDasharray={`${2 * Math.PI * 35 * 0.2} ${2 * Math.PI * 35}`}
+                    strokeDashoffset={`${2 * Math.PI * 35 * 0.25}`}
+                    className="project-progress"
+                  />
+                </svg>
+                <div className="ring-center">
+                  <div className="ring-label">TODAY</div>
+                  <div className="ring-time">0h 0m</div>
+                </div>
+              </div>
+              
+              <div className="projects-list">
+                <h4 className="projects-list-title">Most tracked projects</h4>
+                <div className="project-items">
+                  <div className="project-item">
+                    <div className="project-dot" style={{ backgroundColor: '#8B5CF6' }}></div>
+                    <span className="project-name">Website Redesign</span>
+                    <span className="project-time">0h 0m</span>
+                  </div>
+                  <div className="project-item">
+                    <div className="project-dot" style={{ backgroundColor: '#F59E0B' }}></div>
+                    <span className="project-name">Mobile App</span>
+                    <span className="project-time">0h 0m</span>
+                  </div>
+                  <div className="project-item">
+                    <div className="project-dot" style={{ backgroundColor: '#EF4444' }}></div>
+                    <span className="project-name">API Integration</span>
+                    <span className="project-time">0h 0m</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Sidebar */}
+        <div className="dashboard-right-sidebar">
+          {/* Who's in/out Section */}
+          <div className="whos-inout-section">
+            <div className="section-header">
+              <h3 className="section-title">Who's in/out</h3>
+              <span className="member-count">1 member</span>
+            </div>
+            
+            <div className="inout-stats">
+              <div className="stat-item">
+                <span className="stat-number in">0</span>
+                <span className="stat-label">IN</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number break">0</span>
+                <span className="stat-label">BREAK</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number out">1</span>
+                <span className="stat-label">OUT</span>
+              </div>
+            </div>
+
+            <div className="search-members">
+              <input 
+                type="text" 
+                placeholder="Search members..." 
+                className="member-search-input"
+              />
+            </div>
+          </div>
+
+          {/* Time Section */}
+          <div className="current-time-section">
+            <div className="time-display">{formatTime(currentTime)}</div>
+            <div className="date-display">{formatDate(currentTime)}</div>
+            <div className="timezone">No members clocked in now</div>
+          </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;
 
