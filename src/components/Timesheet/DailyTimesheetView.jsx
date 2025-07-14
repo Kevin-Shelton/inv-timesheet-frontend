@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabaseApi } from '/src/supabase.js';
+import { createClient } from '@supabase/supabase-js';
 
 const DailyTimesheetView = ({ selectedDate, userId, onDateChange }) => {
   const [timesheetData, setTimesheetData] = useState([]);
@@ -12,6 +12,19 @@ const DailyTimesheetView = ({ selectedDate, userId, onDateChange }) => {
     members: 'all',
     schedules: 'all'
   });
+
+  // Initialize Supabase client directly in component
+  const supabase = createClient(
+    import.meta.env.VITE_SUPABASE_URL || '',
+    import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      }
+    }
+  );
 
   // Format date for display
   const formatDisplayDate = (date) => {
@@ -42,31 +55,43 @@ const DailyTimesheetView = ({ selectedDate, userId, onDateChange }) => {
     return parseFloat(hours).toFixed(2);
   };
 
-  // Load timesheet data
+  // Load timesheet data using Supabase client directly
   const loadTimesheetData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Use the existing supabaseApi to get timesheet data
-      const entries = await supabaseApi.getTimesheets({
-        user_id: userId,
-        // Add date filtering if needed
-      });
-
-      // Filter entries for the selected date
+      // Get the selected date or use today
       const dateString = selectedDate || new Date().toISOString().split('T')[0];
-      const filteredEntries = entries.filter(entry => {
-        const entryDate = new Date(entry.date).toISOString().split('T')[0];
-        return entryDate === dateString;
-      });
+
+      // Query timesheet_entries table directly
+      let query = supabase
+        .from('timesheet_entries')
+        .select(`
+          *,
+          users!timesheet_entries_user_id_fkey(full_name),
+          campaigns!timesheet_entries_campaign_id_fkey(name)
+        `)
+        .eq('date', dateString)
+        .order('created_at', { ascending: false });
+
+      // Add user filter if provided
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: entries, error: queryError } = await query;
+
+      if (queryError) {
+        throw queryError;
+      }
 
       // Transform data for display
-      const transformedData = filteredEntries.map(entry => ({
+      const transformedData = (entries || []).map(entry => ({
         id: entry.id,
-        employee: entry.user_name || 'Unknown Employee',
-        firstIn: entry.time_in || entry.created_at, // Use created_at as fallback
-        lastOut: entry.time_out || entry.updated_at, // Use updated_at as fallback
+        employee: entry.users?.full_name || 'Unknown Employee',
+        firstIn: entry.time_in || entry.created_at,
+        lastOut: entry.time_out || entry.updated_at,
         regular: entry.regular_hours || 0,
         overtime: entry.overtime_hours || 0,
         dailyDoubleOvertime: entry.daily_double_overtime || 0,
@@ -91,7 +116,7 @@ const DailyTimesheetView = ({ selectedDate, userId, onDateChange }) => {
   // Filter data based on search and filters
   const filteredData = timesheetData.filter(entry => {
     const matchesSearch = entry.employee.toLowerCase().includes(searchTerm.toLowerCase());
-    // Add more filter logic here as needed based on your existing system
+    // Add more filter logic here as needed
     return matchesSearch;
   });
 
