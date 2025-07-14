@@ -16,7 +16,7 @@ export function CurrentTime({ currentTime }) {
   }
 
   return (
-    <div className="current-time-section">
+    <div className="dashboard-page"><div className="current-time-section">
       <div className="time-display">
         <div className="current-time">
           {formatTime(currentTime)}

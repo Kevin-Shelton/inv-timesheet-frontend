@@ -1,6 +1,6 @@
 export function HolidaySection() {
   return (
-    <div className="holiday-section">
+    <div className="dashboard-page"><div className="holiday-section">
       <h3 className="sidebar-section-title">UPCOMING HOLIDAYS AND TIME OFF</h3>
       
       <div className="holiday-content">

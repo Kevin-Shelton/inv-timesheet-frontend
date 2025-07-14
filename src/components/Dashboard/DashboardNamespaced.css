@@ -1,0 +1,223 @@
+/* === Dashboard CSS — Styled to Match Reference Design === */
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #F9FAFB;
+  color: #111827;
+  margin: 0;
+}
+
+/* === Layout === */
+ .dashboard-page.dashboard-reference-layout {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px;
+} .dashboard-page.dashboard-header-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+} .dashboard-page.dashboard-main-content {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+} .dashboard-page.dashboard-left-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+} .dashboard-page.dashboard-right-sidebar-wide {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* === Card Component === */
+ .dashboard-page.card {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+}
+
+/* === Hello Section === */
+ .dashboard-page.hello-main-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 4px;
+} .dashboard-page.hello-company-subtitle {
+  font-size: 14px;
+  color: #6B7280;
+} .dashboard-page.jibble-logo-orange {
+  width: 36px;
+  height: 36px;
+  background: #FB923C;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+} .dashboard-page.jibble-sigma {
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* === Holidays Section === */
+ .dashboard-page.holidays-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0 0 8px 0;
+} .dashboard-page.holidays-link {
+  font-size: 12px;
+  color: #6B7280;
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+} .dashboard-page.no-holidays-text {
+  font-size: 14px;
+  color: #9CA3AF;
+}
+
+/* === Section Header === */
+ .dashboard-page.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+} .dashboard-page.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #111827;
+} .dashboard-page.section-link {
+  font-size: 12px;
+  color: #6B7280;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* === Legend === */
+ .dashboard-page.hours-legend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+} .dashboard-page.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6B7280;
+} .dashboard-page.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+} .dashboard-page.legend-dot.worked {
+  background-color: #9CA3AF;
+} .dashboard-page.legend-dot.break {
+  background-color: #D1D5DB;
+} .dashboard-page.legend-dot.overtime {
+  background-color: #FBBF24;
+} .dashboard-page.legend-value {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* === Weekly Chart === */
+ .dashboard-page.weekly-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 180px;
+} .dashboard-page.chart-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 40px;
+} .dashboard-page.chart-bar-container {
+  width: 100%;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+} .dashboard-page.chart-bar {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+} .dashboard-page.chart-bar.worked {
+  background-color: #9CA3AF;
+} .dashboard-page.chart-bar.overtime {
+  background-color: #FBBF24;
+} .dashboard-page.chart-day-label {
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 4px;
+} .dashboard-page.chart-note {
+  font-size: 11px;
+  color: #6B7280;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* === Sidebar === */
+ .dashboard-page.whos-inout-section-expanded, .dashboard-page.current-time-section-compact {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+} .dashboard-page.member-count {
+  font-size: 12px;
+  color: #6B7280;
+  margin-bottom: 8px;
+} .dashboard-page.member-search-input-wide {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 12px;
+} .dashboard-page.members-list-scrollable {
+  max-height: 160px;
+  overflow-y: auto;
+  margin-top: 8px;
+} .dashboard-page.member-item {
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+} .dashboard-page.member-status.in { color: #10B981; } .dashboard-page.member-status.out { color: #EF4444; } .dashboard-page.member-status.break { color: #F59E0B; } .dashboard-page.time-display-large {
+  font-size: 22px;
+  font-weight: 600;
+} .dashboard-page.date-display-large {
+  font-size: 14px;
+  color: #6B7280;
+} .dashboard-page.timezone-large {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+/* === General Inputs === */
+select {
+  padding: 6px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #FFF;
+  color: #374151;
+}
+
+select:focus {
+  border-color: #FB923C;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.3);
+}
+
+/* === Responsive === */
+@media (max-width: 1024px) {
+ .dashboard-page.dashboard-main-content {
+    grid-template-columns: 1fr;
+  } .dashboard-page.dashboard-right-sidebar-wide {
+    order: -1;
+  }
+}

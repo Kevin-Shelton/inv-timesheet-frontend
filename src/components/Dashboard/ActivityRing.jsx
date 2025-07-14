@@ -4,7 +4,7 @@ export function ActivityRing({ percentage, label, value }) {
   const strokeDashoffset = circumference - (percentage / 100) * circumference
 
   return (
-    <div className="activity-ring">
+    <div className="dashboard-page"><div className="activity-ring">
       <div className="ring-container">
         <svg width="120" height="120" className="ring-svg">
           {/* Background ring */}

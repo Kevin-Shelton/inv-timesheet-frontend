@@ -2,7 +2,7 @@ export function WeeklyChart({ data }) {
   const maxHours = 10 // Maximum hours for chart scaling
 
   return (
-    <div className="weekly-chart">
+    <div className="dashboard-page"><div className="weekly-chart">
       <div className="chart-bars">
         {data.map((day, index) => {
           const totalHours = day.worked + day.overtime
@@ -11,7 +11,7 @@ export function WeeklyChart({ data }) {
           const breakHeight = (day.break / maxHours) * 100
 
           return (
-            <div key={index} className="chart-day">
+            <div className="dashboard-page"><div key={index} className="chart-day">
               <div className="chart-bar-container">
                 <div 
                   className="chart-bar worked"
