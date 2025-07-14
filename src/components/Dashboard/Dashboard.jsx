@@ -1,5 +1,3 @@
-// src/components/Dashboard/Dashboard.jsx
-
 import React from 'react';
 import './DashboardNamespaced.css';
 import CurrentTime from './CurrentTime';
@@ -7,7 +5,7 @@ import HolidaySection from './HolidaySection';
 import WeeklyChart from './WeeklyChart';
 import ActivityRing from './ActivityRing';
 
-function Dashboard() {
+export default function Dashboard() {
   return (
     <div className="dashboard-page dashboard-reference-layout">
       <div className="dashboard-page dashboard-header-section">
@@ -79,5 +77,3 @@ function Dashboard() {
     </div>
   );
 }
-
-export default Dashboard;

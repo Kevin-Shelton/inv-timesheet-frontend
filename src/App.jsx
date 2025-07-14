@@ -4,7 +4,7 @@ import { AppLayout } from './components/Layout/AppLayout'
 import { LoginPage } from './components/Auth/LoginPage'
 import { ProtectedRoute } from './components/Auth/ProtectedRoute'
 import { PublicRoute } from './components/Auth/PublicRoute'
-import { Dashboard } from './components/Dashboard/Dashboard'
+import Dashboard from './components/Dashboard/Dashboard'
 import { TimesheetsPage } from './components/Timesheet/TimesheetPage'
 
 // Import all the page components
@@ -140,4 +140,3 @@ function App() {
 }
 
 export default App
-
