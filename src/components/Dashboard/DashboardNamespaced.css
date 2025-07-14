@@ -52,3 +52,19 @@
   color: #333;
   padding-left: 40px;
 }
+.dashboard-top-row {
+  display: flex;
+  gap: 24px;
+}
+
+.dashboard-top-row > * {
+  flex: 1;
+}
+
+.dashboard-middle-row {
+  margin-top: 24px;
+}
+
+.dashboard-middle-row .tracked-hours-section {
+  width: 100%;
+}
