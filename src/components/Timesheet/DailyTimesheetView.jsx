@@ -134,156 +134,171 @@ const DailyTimesheetView = ({ selectedDate, userId, onDateChange }) => {
 
   return (
     <div className="daily-timesheet-container">
-      {/* Header Section */}
-      <div className="daily-timesheet-header">
-        <div className="header-left">
-          <div className="view-selector">
-            <select className="view-dropdown" defaultValue="daily">
-              <option value="daily">Daily Timesheets</option>
-              <option value="weekly">Weekly Timesheets</option>
-              <option value="monthly">Monthly Timesheets</option>
+      {/* Main Header Section */}
+      <div className="timesheet-main-header">
+        <div className="header-top-row">
+          <div className="header-left-section">
+            <div className="view-selector-container">
+              <select className="timesheet-view-dropdown" defaultValue="daily">
+                <option value="daily">Daily Timesheets</option>
+                <option value="weekly">Weekly Timesheets</option>
+                <option value="monthly">Monthly Timesheets</option>
+              </select>
+            </div>
+            
+            <div className="date-navigation-container">
+              <button 
+                className="date-nav-button"
+                onClick={() => navigateDate(-1)}
+                aria-label="Previous day"
+              >
+                ‹
+              </button>
+              <span className="current-date-display">
+                {formatDisplayDate(selectedDate)}
+              </span>
+              <button 
+                className="date-nav-button"
+                onClick={() => navigateDate(1)}
+                aria-label="Next day"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+
+          <div className="header-right-section">
+            <div className="search-and-export">
+              <div className="search-container-main">
+                <input
+                  type="text"
+                  placeholder="Search employees..."
+                  className="main-search-input"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <div className="search-icon-container">
+                  <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                  </svg>
+                </div>
+              </div>
+              
+              <button className="export-button-main">
+                <svg className="export-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7,10 12,15 17,10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Export
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters Row */}
+        <div className="filters-row">
+          <div className="filter-controls-container">
+            <select 
+              className="timesheet-filter-dropdown"
+              value={filters.payrollHours}
+              onChange={(e) => setFilters({...filters, payrollHours: e.target.value})}
+            >
+              <option value="all">Payroll hours</option>
+              <option value="regular">Regular hours</option>
+              <option value="overtime">Overtime hours</option>
             </select>
-          </div>
-          
-          <div className="date-navigation">
-            <button 
-              className="nav-button"
-              onClick={() => navigateDate(-1)}
-              aria-label="Previous day"
+
+            <select 
+              className="timesheet-filter-dropdown"
+              value={filters.groups}
+              onChange={(e) => setFilters({...filters, groups: e.target.value})}
             >
-              ‹
-            </button>
-            <span className="current-date">
-              {formatDisplayDate(selectedDate)}
-            </span>
-            <button 
-              className="nav-button"
-              onClick={() => navigateDate(1)}
-              aria-label="Next day"
+              <option value="all">Groups</option>
+              <option value="group1">Group 1</option>
+              <option value="group2">Group 2</option>
+            </select>
+
+            <select 
+              className="timesheet-filter-dropdown"
+              value={filters.members}
+              onChange={(e) => setFilters({...filters, members: e.target.value})}
             >
-              ›
+              <option value="all">Members</option>
+              <option value="active">Active members</option>
+              <option value="inactive">Inactive members</option>
+            </select>
+
+            <select 
+              className="timesheet-filter-dropdown"
+              value={filters.schedules}
+              onChange={(e) => setFilters({...filters, schedules: e.target.value})}
+            >
+              <option value="all">Schedules</option>
+              <option value="morning">Morning shift</option>
+              <option value="evening">Evening shift</option>
+            </select>
+
+            <button className="add-filter-button-main">
+              <svg className="plus-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add filter
             </button>
           </div>
-        </div>
-
-        <div className="header-right">
-          <button className="export-button">
-            📊 Export
-          </button>
-        </div>
-      </div>
-
-      {/* Filters Section */}
-      <div className="daily-timesheet-filters">
-        <div className="filter-controls">
-          <select 
-            className="filter-dropdown"
-            value={filters.payrollHours}
-            onChange={(e) => setFilters({...filters, payrollHours: e.target.value})}
-          >
-            <option value="all">Payroll hours</option>
-            <option value="regular">Regular hours</option>
-            <option value="overtime">Overtime hours</option>
-          </select>
-
-          <select 
-            className="filter-dropdown"
-            value={filters.groups}
-            onChange={(e) => setFilters({...filters, groups: e.target.value})}
-          >
-            <option value="all">Groups</option>
-            <option value="group1">Group 1</option>
-            <option value="group2">Group 2</option>
-          </select>
-
-          <select 
-            className="filter-dropdown"
-            value={filters.members}
-            onChange={(e) => setFilters({...filters, members: e.target.value})}
-          >
-            <option value="all">Members</option>
-            <option value="active">Active members</option>
-            <option value="inactive">Inactive members</option>
-          </select>
-
-          <select 
-            className="filter-dropdown"
-            value={filters.schedules}
-            onChange={(e) => setFilters({...filters, schedules: e.target.value})}
-          >
-            <option value="all">Schedules</option>
-            <option value="morning">Morning shift</option>
-            <option value="evening">Evening shift</option>
-          </select>
-
-          <button className="add-filter-button">
-            + Add filter
-          </button>
-        </div>
-      </div>
-
-      {/* Search Section */}
-      <div className="daily-timesheet-search">
-        <div className="search-container">
-          <input
-            type="text"
-            placeholder="Search"
-            className="search-input"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <span className="search-icon">🔍</span>
         </div>
       </div>
 
       {/* Table Section */}
-      <div className="daily-timesheet-table-section">
+      <div className="timesheet-table-section">
         {loading ? (
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <p>Loading timesheet data...</p>
+          <div className="loading-state-container">
+            <div className="loading-spinner-main"></div>
+            <p className="loading-text">Loading timesheet data...</p>
           </div>
         ) : error ? (
-          <div className="error-state">
-            <p>Error loading timesheet data: {error}</p>
-            <button onClick={loadTimesheetData} className="retry-button">
+          <div className="error-state-container">
+            <p className="error-text">Error loading timesheet data: {error}</p>
+            <button onClick={loadTimesheetData} className="retry-button-main">
               Retry
             </button>
           </div>
         ) : (
-          <div className="table-container">
-            <table className="daily-timesheet-table">
+          <div className="table-container-main">
+            <table className="timesheet-table-main">
               <thead>
-                <tr>
-                  <th className="col-employee">EMPLOYEE</th>
-                  <th className="col-time">FIRST IN</th>
-                  <th className="col-time">LAST OUT</th>
-                  <th className="col-hours">REGULAR</th>
-                  <th className="col-hours">OVERTIME</th>
-                  <th className="col-hours">DAILY DOUBLE OVERTIME</th>
-                  <th className="col-hours">TRACKED</th>
+                <tr className="table-header-row">
+                  <th className="table-header employee-col">EMPLOYEE</th>
+                  <th className="table-header time-col">FIRST IN</th>
+                  <th className="table-header time-col">LAST OUT</th>
+                  <th className="table-header hours-col">REGULAR</th>
+                  <th className="table-header hours-col">OVERTIME</th>
+                  <th className="table-header hours-col">DAILY DOUBLE OVERTIME</th>
+                  <th className="table-header hours-col">TRACKED</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredData.length > 0 ? (
                   filteredData.map((entry) => (
-                    <tr key={entry.id} className="table-row">
-                      <td className="col-employee">
-                        <div className="employee-info">
-                          <span className="employee-name">{entry.employee}</span>
+                    <tr key={entry.id} className="table-data-row">
+                      <td className="table-cell employee-col">
+                        <div className="employee-info-container">
+                          <span className="employee-name-text">{entry.employee}</span>
                         </div>
                       </td>
-                      <td className="col-time">{formatTime(entry.firstIn)}</td>
-                      <td className="col-time">{formatTime(entry.lastOut)}</td>
-                      <td className="col-hours">{formatHours(entry.regular)}</td>
-                      <td className="col-hours">{formatHours(entry.overtime)}</td>
-                      <td className="col-hours">{formatHours(entry.dailyDoubleOvertime)}</td>
-                      <td className="col-hours">{formatHours(entry.tracked)}</td>
+                      <td className="table-cell time-col">{formatTime(entry.firstIn)}</td>
+                      <td className="table-cell time-col">{formatTime(entry.lastOut)}</td>
+                      <td className="table-cell hours-col">{formatHours(entry.regular)}</td>
+                      <td className="table-cell hours-col">{formatHours(entry.overtime)}</td>
+                      <td className="table-cell hours-col">{formatHours(entry.dailyDoubleOvertime)}</td>
+                      <td className="table-cell hours-col">{formatHours(entry.tracked)}</td>
                     </tr>
                   ))
                 ) : (
-                  <tr className="empty-row">
-                    <td colSpan="7" className="empty-message">
+                  <tr className="empty-data-row">
+                    <td colSpan="7" className="empty-message-cell">
                       No timesheet data for {formatDisplayDate(selectedDate)}
                     </td>
                   </tr>
