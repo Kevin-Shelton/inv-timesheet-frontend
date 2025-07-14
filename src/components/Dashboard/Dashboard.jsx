@@ -1,45 +1,30 @@
-// Final Dashboard.jsx update
-import { ActivityRing } from './ActivityRing';
-import { WeeklyChart } from './WeeklyChart';
-import { HolidaySection } from './HolidaySection';
-import { CurrentTime } from './CurrentTime';
-import './Dashboard.css';
+import React from 'react';
+import WelcomeCard from './WelcomeCard';
+import HolidaySection from './HolidaySection';
+import WeeklyChart from './WeeklyChart';
+import ActivityRing from './ActivityRing';
+import CurrentTime from './CurrentTime';
 
-export function Dashboard() {
+export default function Dashboard() {
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <p className="welcome-text">Welcome back</p>
-      </div>
-
-      <div className="dashboard-top-row">
-        <div className="hello-section card">
-          <h3 className="sidebar-section-title">Hello, Team</h3>
-          <p className="subtext">You're doing great!</p>
-        </div>
-
+    <div className="dashboard-page p-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mb-4">
+        <WelcomeCard />
         <HolidaySection />
       </div>
 
-      <div className="dashboard-main">
-        <div className="weekly-chart card">
-          <WeeklyChart />
-        </div>
+      <div className="mb-6">
+        <CurrentTime />
+      </div>
 
-        <div className="activity-section">
-          <div className="time-widget card">
-            <CurrentTime />
-          </div>
+      <div className="mb-6">
+        <WeeklyChart />
+      </div>
 
-          <div className="activity-ring card">
-            <h4 className="sidebar-section-title">Activity Summary</h4>
-            <ActivityRing />
-            <p className="activity-subtext">You've completed 70% of your weekly goals.</p>
-          </div>
-        </div>
+      <div>
+        <ActivityRing />
       </div>
     </div>
   );
 }
 
-export default Dashboard;
