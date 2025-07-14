@@ -1,11 +1,13 @@
-import './DashboardNamespaced.css'
+// src/components/Dashboard/WeeklyChart.jsx
+import './DashboardNamespaced.css';
+
 export default function WeeklyChart() {
   return (
-    <div className="dashboard-page weekly-chart-wrapper">
-      <h3 className="dashboard-page section-title">Weekly Hours Chart</h3>
-      <div className="dashboard-page weekly-chart">
+    <div className="dashboard-page tracked-hours-section">
+      <h3 className="section-title">Tracked Hours</h3>
+      <div className="weekly-chart">
         <div className="chart-bar-group">
-          {/* Static sample data */}
+          {/* Sample static data */}
           <div className="chart-bar" style={{ height: '30%' }} />
           <div className="chart-bar" style={{ height: '60%' }} />
           <div className="chart-bar" style={{ height: '50%' }} />
@@ -32,5 +34,5 @@ export default function WeeklyChart() {
         </div>
       </div>
     </div>
-  )
+  );
 }
