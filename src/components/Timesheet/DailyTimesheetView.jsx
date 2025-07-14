@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabaseApi } from '../../supabase';
+import { supabaseApi } from '../../supabase.js';
 
 const DailyTimesheetView = ({ selectedDate, userId, onDateChange }) => {
   const [timesheetData, setTimesheetData] = useState([]);
