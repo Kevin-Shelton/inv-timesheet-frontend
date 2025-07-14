@@ -14,7 +14,7 @@ function Dashboard() {
           <p className="dashboard-page hello-company-subtitle">Welcome back</p>
         </div>
         <div className="dashboard-page jibble-logo-orange">
-          <span className="dashboard-page jibble-sigma">Σ</span>
+          <span className="dashboard-page jibble-sigma">&#x3A3;</span>
         </div>
       </div>
 
