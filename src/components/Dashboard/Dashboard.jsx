@@ -1,59 +1,41 @@
-import React from 'react';
+// Final Dashboard.jsx update
 import { ActivityRing } from './ActivityRing';
 import { WeeklyChart } from './WeeklyChart';
 import { HolidaySection } from './HolidaySection';
 import { CurrentTime } from './CurrentTime';
+import './Dashboard.css';
 
 export function Dashboard() {
   return (
-    <div className="dashboard-wrapper">
+    <div className="dashboard-container">
       <div className="dashboard-header">
-        <div className="dashboard-controls">
-          <div className="toggle-buttons">
-            <button className="active">Day</button>
-            <button>Week</button>
-            <button>Month</button>
-          </div>
-          <div className="filters">
-            <select><option>All Locations</option></select>
-            <select><option>All Groups</option></select>
-            <select><option>All Schedules</option></select>
-          </div>
-        </div>
-
-        <div className="filters-secondary">
-          <select><option>Campaign</option></select>
-          <select><option>Managed by Me</option></select>
-          <select><option>Personal</option></select>
-        </div>
+        <p className="welcome-text">Welcome back</p>
       </div>
 
-      <div className="dashboard-grid">
-        {/* Left Column */}
-        <div className="left-column">
-          <div className="greeting-card">
-            <h2>Hello Kevin</h2>
-            <p>Here's what's happening at Egis</p>
-          </div>
-          <HolidaySection />
-          <div className="weekly-chart-card">
-            <WeeklyChart />
-          </div>
-          <div className="activity-ring-card">
-            <ActivityRing />
-          </div>
+      <div className="dashboard-top-row">
+        <div className="hello-section card">
+          <h3 className="sidebar-section-title">Hello, Team</h3>
+          <p className="subtext">You're doing great!</p>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="sidebar">
-          <div className="in-out-widget">
-            <h4>Who's in/out</h4>
-            <ul>
-              <li>John Doe <span className="status in">In</span></li>
-              <li>Jane Smith <span className="status out">Out</span></li>
-            </ul>
+        <HolidaySection />
+      </div>
+
+      <div className="dashboard-main">
+        <div className="weekly-chart card">
+          <WeeklyChart />
+        </div>
+
+        <div className="activity-section">
+          <div className="time-widget card">
+            <CurrentTime />
           </div>
-          <CurrentTime />
+
+          <div className="activity-ring card">
+            <h4 className="sidebar-section-title">Activity Summary</h4>
+            <ActivityRing />
+            <p className="activity-subtext">You've completed 70% of your weekly goals.</p>
+          </div>
         </div>
       </div>
     </div>
