@@ -56,23 +56,6 @@ const Dashboard = () => {
       <div className="grid grid-cols-[1fr_280px] gap-6 dashboard-main-content">
         <div className="dashboard-left-content space-y-6">
           <div className="dashboard-header-section flex gap-6 h-[120px]">
-        <div className="dashboard-page.dashboard-filters-section">
-          <div className="dashboard-page.view-toggle">
-            <button>Day</button>
-            <button>Week</button>
-            <button>Month</button>
-          </div>
-          <div className="dashboard-page.dropdown-filters">
-            <select><option>All Locations</option></select>
-            <select><option>All Groups</option></select>
-            <select><option>All Schedules</option></select>
-          </div>
-          <div className="dashboard-page.campaign-filters">
-            <select><option>Campaign</option></select>
-            <select><option>Managed by Me</option></select>
-            <select><option>Personal</option></select>
-          </div>
-        </div>
             <div className="hello-section-improved flex-[0_0_60%]">
               <div className="hello-text-content">
                 <h1 className="hello-main-title">Hello Kevin</h1>
