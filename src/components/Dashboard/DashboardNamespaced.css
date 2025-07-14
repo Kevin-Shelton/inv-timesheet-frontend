@@ -222,36 +222,31 @@ select:focus {
   }
 }
 
-/* === Filters Section === */
-.dashboard-page.filters-section {
+/* === Filter Section (New) === */
+.dashboard-page.dashboard-filters-section {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 24px;
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-.dashboard-page.filters-section > div {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.dashboard-page.view-toggle button {
+  padding: 6px 12px;
+  background: #E5E7EB;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
 }
 
-.dashboard-page.filters-section select {
+.dashboard-page.dropdown-filters select,
+.dashboard-page.campaign-filters select {
   padding: 6px 10px;
   font-size: 12px;
-  border-radius: 6px;
   border: 1px solid #D1D5DB;
-  background-color: #FFF;
-  color: #111827;
-}
-
-.dashboard-page.filters-section select:focus {
-  border-color: #FB923C;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.3);
+  border-radius: 6px;
+  background: white;
+  color: #374151;
+  margin-right: 6px;
 }
