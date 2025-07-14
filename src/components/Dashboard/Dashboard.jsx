@@ -1,30 +1,31 @@
-import React from 'react';
-import WelcomeCard from './WelcomeCard';
-import HolidaySection from './HolidaySection';
-import WeeklyChart from './WeeklyChart';
-import ActivityRing from './ActivityRing';
-import CurrentTime from './CurrentTime';
+// Dashboard.jsx
+import { ActivityRing } from './ActivityRing'
+import { WeeklyChart } from './WeeklyChart'
+import { HolidaySection } from './HolidaySection'
+import { CurrentTime } from './CurrentTime'
+import { WelcomeCard } from './WelcomeCard'
 
 export default function Dashboard() {
   return (
-    <div className="dashboard-page p-4">
-      <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mb-4">
-        <WelcomeCard />
-        <HolidaySection />
-      </div>
-
-      <div className="mb-6">
+    <div className="dashboard-page">
+      <div className="dashboard-header">
         <CurrentTime />
       </div>
 
-      <div className="mb-6">
-        <WeeklyChart />
-      </div>
+      <div className="dashboard-main-content">
+        <div className="dashboard-top-row">
+          <WelcomeCard />
+          <HolidaySection />
+        </div>
 
-      <div>
-        <ActivityRing />
+        <div className="dashboard-middle-row">
+          <WeeklyChart />
+        </div>
+
+        <div className="dashboard-bottom-row">
+          <ActivityRing />
+        </div>
       </div>
     </div>
-  );
+  )
 }
-
