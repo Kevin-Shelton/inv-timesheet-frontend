@@ -1,38 +1,33 @@
-export function CurrentTime({ currentTime }) {
-  const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    })
-  }
+import React, { useState, useEffect } from 'react';
 
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
+export default function CurrentTime() {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const timeString = currentTime.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  const dateString = currentTime.toLocaleDateString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 
   return (
-    <div className="dashboard-page"><div className="current-time-section">
-      <div className="time-display">
-        <div className="current-time">
-          {formatTime(currentTime)}
-        </div>
-        <div className="current-date">
-          {formatDate(currentTime)}
-        </div>
-        <div className="timezone">
-          GMT+4
-        </div>
-      </div>
-      
-      <div className="time-note">
-        No previous entry
-      </div>
+    <div className="dashboard-page current-time-wrapper">
+      <div className="dashboard-page current-time-time">{timeString}</div>
+      <div className="dashboard-page current-time-date">{dateString}</div>
     </div>
-  )
+  );
 }
-
