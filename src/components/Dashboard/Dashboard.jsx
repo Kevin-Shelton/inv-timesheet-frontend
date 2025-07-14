@@ -1,9 +1,9 @@
 // Dashboard.jsx
-import { ActivityRing } from './ActivityRing'
-import { WeeklyChart } from './WeeklyChart'
-import { HolidaySection } from './HolidaySection'
+import ActivityRing from './ActivityRing'
+import WeeklyChart  from './WeeklyChart'
+import HolidaySection  from './HolidaySection'
 import CurrentTime from './CurrentTime'
-import { WelcomeCard } from './WelcomeCard'
+import WelcomeCard  from './WelcomeCard'
 
 export default function Dashboard() {
   return (
