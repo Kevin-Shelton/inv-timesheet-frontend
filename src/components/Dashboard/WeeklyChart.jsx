@@ -1,7 +1,7 @@
 import React from 'react';
 import './DashboardNamespaced.css';
 
-export function WeeklyChart() {
+function WeeklyChart() {
   return (
     <div className="dashboard-page weekly-chart-wrapper">
       <h3 className="dashboard-page section-title">Weekly Hours Chart</h3>
@@ -36,3 +36,5 @@ export function WeeklyChart() {
     </div>
   );
 }
+
+export default WeeklyChart;
