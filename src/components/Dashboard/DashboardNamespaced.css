@@ -1,144 +1,243 @@
-/* === DashboardNamespaced.css – Updated === */
+/* === DashboardNamespaced.css — Updated Layout === */
 
 body {
   font-family: 'Inter', sans-serif;
   background-color: #F9FAFB;
   color: #111827;
   margin: 0;
-  overflow-x: hidden;
 }
 
-.dashboard-container {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.sidebar {
-  width: 220px;
-  background-color: #fff;
-  border-right: 1px solid #E5E7EB;
-  overflow-y: auto;
-}
-
-.main-content {
-  flex: 1;
+.dashboard-reference-layout {
+  max-width: 1600px;
+  margin: 0 auto;
   padding: 24px;
-  overflow-y: auto;
 }
 
-.dashboard-header {
-  margin-bottom: 24px;
+.dashboard-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.filter-tabs button {
+  background: #E5E7EB;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  margin-left: 8px;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.filter-tabs button.active {
+  background: #FB923C;
+  color: white;
 }
 
 .filter-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.filter-tabs button {
-  background: none;
-  border: none;
-  font-weight: 600;
-  padding: 8px 12px;
-  color: #6B7280;
-  cursor: pointer;
-}
-
-.filter-tabs .active {
-  color: #FB923C;
-  border-bottom: 2px solid #FB923C;
+  margin-bottom: 24px;
+  gap: 16px;
 }
 
 .filter-dropdowns select {
-  padding: 6px 12px;
+  padding: 6px 10px;
   border: 1px solid #D1D5DB;
   border-radius: 6px;
-  font-size: 14px;
-  background-color: #FFF;
+  background: white;
+  font-size: 12px;
   color: #374151;
+  margin-right: 8px;
 }
 
-.dashboard-row {
-  display: flex;
+.dashboard-main-content {
+  display: grid;
+  grid-template-columns: 1fr 280px;
   gap: 24px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
 }
 
-.dashboard-card {
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  padding: 24px;
-  flex: 1;
-  min-width: 320px;
-  max-width: 480px;
-}
-
-.who-in-out {
-  max-width: 300px;
-  min-height: 400px;
+.dashboard-left-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 24px;
 }
 
-.status-bar {
+.dashboard-right-sidebar-wide {
   display: flex;
-  justify-content: space-around;
-  font-size: 14px;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.hello-section-improved {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hello-main-title {
+  font-size: 22px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
-.status-list {
-  list-style: none;
-  padding: 0;
+.hello-company-subtitle {
   font-size: 14px;
-  color: #374151;
-  max-height: 200px;
-  overflow-y: auto;
+  color: #6B7280;
 }
 
-.clock-display {
-  font-size: 16px;
-  text-align: center;
-  color: #9CA3AF;
+.jibble-logo-container {
+  width: 36px;
+  height: 36px;
+  background: #FB923C;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
 }
 
-.clock-display .muted {
-  font-size: 13px;
+.person-illustration-container {
+  margin-left: 12px;
+}
+
+.person-figure-blue {
+  width: 30px;
+  height: 30px;
+  background: #3B82F6;
+  border-radius: 50%;
+}
+
+.holidays-section-improved {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.holidays-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.holidays-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.holidays-link {
+  font-size: 12px;
+  color: #6B7280;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.no-holidays-text {
+  font-size: 14px;
   color: #9CA3AF;
+  margin-top: 12px;
+}
+
+.tracked-hours-section,
+.activities-section,
+.projects-section {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  min-height: 180px;
 }
 
 .placeholder {
-  text-align: center;
-  color: #9CA3AF;
-  padding: 32px;
   font-size: 14px;
+  color: #9CA3AF;
 }
 
-.dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-right: 6px;
+.current-time-section-compact {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-.dot.worked {
-  background-color: #9CA3AF;
+.time-display-large {
+  font-size: 22px;
+  font-weight: 600;
 }
 
-.dot.break {
-  background-color: #D1D5DB;
+.date-display-large {
+  font-size: 14px;
+  color: #6B7280;
 }
 
-.dot.overtime {
-  background-color: #FBBF24;
+.timezone-large {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+.whos-inout-section-expanded {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.member-count {
+  font-size: 12px;
+  color: #6B7280;
+  margin-bottom: 8px;
+}
+
+.member-search-input-wide {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.members-list-scrollable {
+  max-height: 160px;
+  overflow-y: auto;
+  margin-top: 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.member-item {
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.member-status.in { color: #10B981; }
+.member-status.out { color: #EF4444; }
+.member-status.break { color: #F59E0B; }
+
+@media (max-width: 1024px) {
+  .dashboard-main-content {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-right-sidebar-wide {
+    order: -1;
+  }
 }
