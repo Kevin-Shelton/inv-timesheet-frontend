@@ -1,16 +1,24 @@
-/* === Dashboard Layout === */
-.dashboard-reference-layout {
-  background-color: #F9FAFB;
-  min-height: 100vh;
-  padding: 24px;
+/* === Dashboard CSS — Styled to Match Reference Design === */
+
+body {
   font-family: 'Inter', sans-serif;
+  background-color: #F9FAFB;
+  color: #111827;
+  margin: 0;
+}
+
+/* === Layout === */
+.dashboard-reference-layout {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px;
 }
 
 .dashboard-header-section {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
 .dashboard-main-content {
@@ -31,21 +39,19 @@
   gap: 24px;
 }
 
-/* === Hello Section === */
-.hello-section-improved {
-  background: #FFFFFF;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+/* === Card Component === */
+.card {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   padding: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
+/* === Hello Section === */
 .hello-main-title {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 600;
-  margin: 0;
+  margin-bottom: 4px;
 }
 
 .hello-company-subtitle {
@@ -53,18 +59,9 @@
   color: #6B7280;
 }
 
-.company-name {
-  font-weight: 600;
-  color: #111827;
-}
-
-.jibble-logo-container {
-  margin-top: 12px;
-}
-
 .jibble-logo-orange {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: #FB923C;
   border-radius: 6px;
   display: flex;
@@ -73,29 +70,15 @@
 }
 
 .jibble-sigma {
-  color: #FFFFFF;
+  color: white;
   font-size: 18px;
-  font-weight: bold;
-}
-
-.person-figure-blue {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3B82F6, #1E40AF);
+  font-weight: 700;
 }
 
 /* === Holidays Section === */
-.holidays-section-improved {
-  background: #FFFFFF;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-}
-
 .holidays-title {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   margin: 0 0 8px 0;
 }
@@ -104,9 +87,10 @@
   font-size: 12px;
   color: #6B7280;
   text-decoration: underline;
+  cursor: pointer;
   background: none;
   border: none;
-  cursor: pointer;
+  padding: 0;
 }
 
 .no-holidays-text {
@@ -114,14 +98,7 @@
   color: #9CA3AF;
 }
 
-/* === Tracked Hours Section === */
-.tracked-hours-section {
-  background: #FFFFFF;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-}
-
+/* === Section Header === */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -133,6 +110,7 @@
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
+  color: #111827;
 }
 
 .section-link {
@@ -144,16 +122,19 @@
   cursor: pointer;
 }
 
+/* === Legend === */
 .hours-legend {
   display: flex;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 12px;
+  color: #6B7280;
 }
 
 .legend-dot {
@@ -174,61 +155,37 @@
   background-color: #FBBF24;
 }
 
-.legend-label {
-  font-size: 12px;
-  color: #6B7280;
-}
-
 .legend-value {
-  font-weight: 500;
-  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
 }
 
 /* === Weekly Chart === */
 .weekly-chart {
   display: flex;
-  gap: 8px;
-  align-items: end;
-  height: 200px;
-}
-
-.chart-y-axis {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px;
   height: 180px;
-  font-size: 10px;
-  color: #6B7280;
-  padding-right: 8px;
-  min-width: 30px;
-}
-
-.chart-bars {
-  display: flex;
-  flex: 1;
-  gap: 8px;
 }
 
 .chart-day {
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex: 1;
-  max-width: 50px;
+  width: 40px;
 }
 
 .chart-bar-container {
+  width: 100%;
+  height: 140px;
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 160px;
   justify-content: flex-end;
 }
 
 .chart-bar {
   width: 100%;
   border-radius: 2px 2px 0 0;
-  min-height: 4px;
 }
 
 .chart-bar.worked {
@@ -241,65 +198,44 @@
 
 .chart-day-label {
   font-size: 12px;
-  margin-top: 4px;
   color: #6B7280;
+  margin-top: 4px;
 }
 
 .chart-note {
-  font-size: 10px;
-  text-align: center;
+  font-size: 11px;
   color: #6B7280;
+  text-align: center;
   margin-top: 8px;
 }
 
-/* === Who's In/Out Sidebar === */
-.whos-inout-section-expanded {
-  background: #FFFFFF;
-  border-radius: 8px;
+/* === Sidebar === */
+.whos-inout-section-expanded,
+.current-time-section-compact {
+  background-color: #FFFFFF;
+  border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .member-count {
   font-size: 12px;
   color: #6B7280;
-}
-
-.inout-stats-large {
-  display: flex;
-  justify-content: space-between;
-  margin: 12px 0;
-}
-
-.stat-item-large {
-  text-align: center;
-}
-
-.stat-number-large {
-  font-size: 20px;
-  font-weight: bold;
-  display: block;
-}
-
-.stat-label-large {
-  font-size: 10px;
-  text-transform: uppercase;
-  color: #6B7280;
+  margin-bottom: 8px;
 }
 
 .member-search-input-wide {
   width: 100%;
-  padding: 4px 8px;
-  font-size: 12px;
+  padding: 6px 10px;
   border: 1px solid #D1D5DB;
-  border-radius: 4px;
-  margin-top: 8px;
+  border-radius: 6px;
+  font-size: 12px;
 }
 
 .members-list-scrollable {
-  margin-top: 12px;
-  max-height: 180px;
+  max-height: 160px;
   overflow-y: auto;
+  margin-top: 8px;
 }
 
 .member-item {
@@ -309,36 +245,13 @@
   padding: 4px 0;
 }
 
-.member-status.in {
-  color: #10B981;
-}
-
-.member-status.out {
-  color: #EF4444;
-}
-
-.member-status.break {
-  color: #F59E0B;
-}
-
-.member-time {
-  font-size: 12px;
-  color: #6B7280;
-}
-
-/* === Clock Section === */
-.current-time-section-compact {
-  background: #FFFFFF;
-  border-radius: 8px;
-  padding: 16px;
-  text-align: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
+.member-status.in { color: #10B981; }
+.member-status.out { color: #EF4444; }
+.member-status.break { color: #F59E0B; }
 
 .time-display-large {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 600;
-  color: #111827;
 }
 
 .date-display-large {
@@ -349,4 +262,31 @@
 .timezone-large {
   font-size: 12px;
   color: #9CA3AF;
+}
+
+/* === General Inputs === */
+select {
+  padding: 6px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #FFF;
+  color: #374151;
+}
+
+select:focus {
+  border-color: #FB923C;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.3);
+}
+
+/* === Responsive === */
+@media (max-width: 1024px) {
+  .dashboard-main-content {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-right-sidebar-wide {
+    order: -1;
+  }
 }
