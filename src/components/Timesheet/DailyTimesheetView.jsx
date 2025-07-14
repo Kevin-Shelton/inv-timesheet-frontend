@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { enhancedSupabaseApi } from '../lib/Enhanced_Supabase_API';
+import { supabaseApi } from '../../supabase';
 
 const DailyTimesheetView = ({ selectedDate, userId, onDateChange }) => {
   const [timesheetData, setTimesheetData] = useState([]);
@@ -48,30 +48,25 @@ const DailyTimesheetView = ({ selectedDate, userId, onDateChange }) => {
       setLoading(true);
       setError(null);
 
-      // Get current user if userId not provided
-      let currentUserId = userId;
-      if (!currentUserId) {
-        const user = await enhancedSupabaseApi.getCurrentUser();
-        currentUserId = user?.id;
-      }
+      // Use the existing supabaseApi to get timesheet data
+      const entries = await supabaseApi.getTimesheets({
+        user_id: userId,
+        // Add date filtering if needed
+      });
 
-      if (!currentUserId) {
-        throw new Error('No user ID available');
-      }
-
-      // Get timesheet entries for the selected date
-      const entries = await enhancedSupabaseApi.getTimesheetEntries({
-        userId: currentUserId,
-        startDate: selectedDate,
-        endDate: selectedDate
+      // Filter entries for the selected date
+      const dateString = selectedDate || new Date().toISOString().split('T')[0];
+      const filteredEntries = entries.filter(entry => {
+        const entryDate = new Date(entry.date).toISOString().split('T')[0];
+        return entryDate === dateString;
       });
 
       // Transform data for display
-      const transformedData = entries.map(entry => ({
+      const transformedData = filteredEntries.map(entry => ({
         id: entry.id,
-        employee: entry.user?.full_name || entry.user?.name || 'Unknown Employee',
-        firstIn: entry.time_in,
-        lastOut: entry.time_out,
+        employee: entry.user_name || 'Unknown Employee',
+        firstIn: entry.time_in || entry.created_at, // Use created_at as fallback
+        lastOut: entry.time_out || entry.updated_at, // Use updated_at as fallback
         regular: entry.regular_hours || 0,
         overtime: entry.overtime_hours || 0,
         dailyDoubleOvertime: entry.daily_double_overtime || 0,
