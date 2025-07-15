@@ -94,3 +94,13 @@
 .chart-bar:hover::after {
   opacity: 1;
 }
+.dashboard-page .chart-tooltip {
+  position: fixed;
+  background-color: #fff;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1000;
+}
