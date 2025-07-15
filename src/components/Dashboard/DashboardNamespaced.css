@@ -107,3 +107,106 @@
   white-space: nowrap;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
+.activity-summary-section {
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activity-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
+}
+
+.activity-ring {
+  width: 160px;
+  height: 160px;
+}
+
+.circular-chart {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circular-chart .bg {
+  fill: none;
+  stroke: #e6e6e6;
+  stroke-width: 3.8;
+}
+
+.circular-chart .progress {
+  fill: none;
+  stroke: #3b5fc5;
+  stroke-width: 3.8;
+  stroke-dasharray: 0, 100; /* adjust for real progress */
+  stroke-linecap: round;
+}
+
+.ring-label,
+.ring-value {
+  fill: #333;
+  font-size: 3px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  transform: rotate(90deg);
+}
+
+.ring-label {
+  font-weight: bold;
+  font-size: 4px;
+}
+
+.ring-value {
+  fill: #888;
+  font-size: 3.5px;
+}
+
+.activity-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.activity-legend h4 {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #6c7a89;
+}
+
+.legend-columns {
+  display: flex;
+  gap: 16px;
+}
+
+.legend-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-item .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-item .legend-line {
+  flex: 1;
+  height: 6px;
+  background: #eee;
+  border-radius: 4px;
+}

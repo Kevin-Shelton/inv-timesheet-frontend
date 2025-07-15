@@ -1,33 +1,52 @@
+// src/components/Dashboard/ActivityRing.jsx
 import React from 'react';
 import './DashboardNamespaced.css';
 
+const dummyActivities = [
+  { name: 'Admin', color: '#3b5fc5' },
+  { name: 'Support', color: '#56698f' },
+  { name: 'Dev', color: '#8b95a5' },
+  { name: 'QA', color: '#cfd3db' },
+  { name: 'Meetings', color: '#e3e5e9' }
+];
+
 export default function ActivityRing() {
   return (
-    <div className="dashboard-page activity-ring-section">
-      <h3 className="dashboard-page section-title">Activity Summary</h3>
+    <div className="dashboard-page activity-summary-section">
+      <h3 className="section-title">Activities</h3>
 
-      <div className="dashboard-page ring-container">
-        <svg viewBox="0 0 36 36" className="dashboard-page ring">
-          <path
-            className="dashboard-page ring-bg"
-            d="M18 2.0845
-               a 15.9155 15.9155 0 0 1 0 31.831
-               a 15.9155 15.9155 0 0 1 0 -31.831"
-          />
-          <path
-            className="dashboard-page ring-progress"
-            strokeDasharray="70, 100"
-            d="M18 2.0845
-               a 15.9155 15.9155 0 0 1 0 31.831
-               a 15.9155 15.9155 0 0 1 0 -31.831"
-          />
-          <text x="18" y="20.35" className="dashboard-page ring-text">70%</text>
-        </svg>
+      <div className="activity-content">
+        <div className="activity-ring">
+          <svg viewBox="0 0 36 36" className="circular-chart">
+            <circle className="bg" cx="18" cy="18" r="15.9155" />
+            <circle className="progress" cx="18" cy="18" r="15.9155" />
+            <text x="18" y="20.35" className="ring-label">clocked</text>
+            <text x="18" y="26.35" className="ring-value">0h 0m</text>
+          </svg>
+        </div>
+
+        <div className="activity-legend">
+          <h4>Top 10 activities</h4>
+          <div className="legend-columns">
+            <div className="legend-col">
+              {dummyActivities.map((act, idx) => (
+                <div key={idx} className="legend-item">
+                  <span className="dot" style={{ backgroundColor: act.color }}></span>
+                  <div className="legend-line"></div>
+                </div>
+              ))}
+            </div>
+            <div className="legend-col">
+              {dummyActivities.map((act, idx) => (
+                <div key={`r-${idx}`} className="legend-item">
+                  <span className="dot" style={{ backgroundColor: act.color }}></span>
+                  <div className="legend-line"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
-
-      <p className="dashboard-page ring-description">
-        You've completed 70% of your weekly goals.
-      </p>
     </div>
   );
 }
