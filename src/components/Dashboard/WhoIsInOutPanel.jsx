@@ -1,5 +1,4 @@
 import React from "react";
-import HelloPanel from "./HelloPanel";
 import UpcomingHolidays from "./UpcomingHolidays";
 import TrackedHours from "./TrackedHours";
 import Activities from "./Activities";
