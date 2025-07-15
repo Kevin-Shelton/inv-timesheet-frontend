@@ -1,29 +1,27 @@
-// src/components/Dashboard/WhosInOutPanel.jsx
-import React from 'react';
-import './DashboardNamespaced.css';
+import React from "react";
+import HelloPanel from "./HelloPanel";
+import UpcomingHolidays from "./UpcomingHolidays";
+import TrackedHours from "./TrackedHours";
+import Activities from "./Activities";
+import WhoIsInOutPanel from "./WhoIsInOutPanel";
 
-export default function WhosInOutPanel() {
+export default function Dashboard() {
   return (
-    <div className="dashboard-page whos-inout">
-      <div className="header">Who's in/out</div>
-      <div className="subtext">1 member</div>
-
-      <div className="tabs">
-        <div className="tab active">0<br /><span>IN</span></div>
-        <div className="tab">0<br /><span>BREAK</span></div>
-        <div className="tab">1<br /><span>OUT</span></div>
+    <div className="flex flex-col gap-4 px-4 py-6">
+      {/* Row 1: Greeting and Holidays */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <HelloPanel />
+        <UpcomingHolidays />
       </div>
 
-      <input
-        type="text"
-        className="search-input"
-        placeholder="Search members..."
-        disabled
-      />
+      {/* Row 2: Tracked Hours */}
+      <TrackedHours />
 
-      <div className="clock">2:23 pm</div>
-      <div className="date">Tue, Jul 15</div>
-      <div className="status-msg">No members clocked in now</div>
+      {/* Row 3: Activities and Who's In/Out */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Activities />
+        <WhoIsInOutPanel />
+      </div>
     </div>
   );
 }
