@@ -1,47 +1,24 @@
-// src/components/Dashboard/ActivityRing.jsx
 import React, { useState, useEffect } from 'react';
 import './DashboardNamespaced.css';
 
 const dummyActivities = [
-  { name: 'Admin', color: '#3b5fc5', percent: 20 },
-  { name: 'Support', color: '#56698f', percent: 15 },
-  { name: 'Dev', color: '#8b95a5', percent: 30 },
-  { name: 'QA', color: '#cfd3db', percent: 20 },
-  { name: 'Meetings', color: '#e3e5e9', percent: 15 }
+  { name: 'Admin', color: '#3b5fc5' },
+  { name: 'Support', color: '#56698f' },
+  { name: 'Dev', color: '#8b95a5' },
+  { name: 'QA', color: '#cfd3db' },
+  { name: 'Meetings', color: '#e3e5e9' }
 ];
 
 export default function ActivityRing() {
   const [tooltip, setTooltip] = useState({ show: false, label: '', x: 0, y: 0 });
-  const [progress, setProgress] = useState([]);
+  const [rotation, setRotation] = useState(0);
 
   useEffect(() => {
-    // Animate the donut slice drawing
-    const animate = dummyActivities.map((act) => ({
-      ...act,
-      offset: 0
-    }));
-
-    let total = 0;
-    dummyActivities.forEach((act, idx) => {
-      animate[idx].offset = total;
-      total += act.percent;
-    });
-
-    setTimeout(() => setProgress(animate), 100); // trigger animation after mount
+    const interval = setInterval(() => {
+      setRotation((prev) => (prev + 1) % 360);
+    }, 20);
+    return () => clearInterval(interval);
   }, []);
-
-  const handleMouseEnter = (e, label) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setTooltip({
-      show: true,
-      label,
-      x: rect.left + rect.width / 2,
-      y: rect.top - 10
-    });
-  };
-
-  const CIRCLE_RADIUS = 15.9155;
-  const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 
   return (
     <div className="dashboard-page activity-summary-section">
@@ -50,22 +27,14 @@ export default function ActivityRing() {
       <div className="activity-content">
         <div className="activity-ring">
           <svg viewBox="0 0 36 36" className="circular-chart">
-            <circle className="bg" cx="18" cy="18" r={CIRCLE_RADIUS} />
-            {progress.map((act, i) => (
-              <circle
-                key={i}
-                className="progress"
-                cx="18"
-                cy="18"
-                r={CIRCLE_RADIUS}
-                stroke={act.color}
-                strokeWidth="2"
-                fill="none"
-                strokeDasharray={`${(act.percent / 100) * CIRCUMFERENCE} ${CIRCUMFERENCE}`}
-                strokeDashoffset={`-${(act.offset / 100) * CIRCUMFERENCE}`}
-                style={{ transition: 'stroke-dasharray 1s ease, stroke-dashoffset 1s ease' }}
-              />
-            ))}
+            <circle className="bg" cx="18" cy="18" r="15.9155" />
+            <circle
+              className="progress"
+              cx="18"
+              cy="18"
+              r="15.9155"
+              style={{ transform: `rotate(${rotation}deg)` }}
+            />
             <text x="18" y="20.35" className="ring-label">clocked</text>
             <text x="18" y="26.35" className="ring-value">0h 0m</text>
           </svg>
@@ -74,32 +43,29 @@ export default function ActivityRing() {
         <div className="activity-legend">
           <h4>Top 10 activities</h4>
           <div className="legend-columns">
-            <div className="legend-col">
-              {dummyActivities.map((act, idx) => (
-                <div
-                  key={`col1-${idx}`}
-                  className="legend-item"
-                  onMouseEnter={(e) => handleMouseEnter(e, act.name)}
-                  onMouseLeave={() => setTooltip({ show: false })}
-                >
-                  <span className="dot" style={{ backgroundColor: act.color }}></span>
-                  <div className="legend-line"></div>
-                </div>
-              ))}
-            </div>
-            <div className="legend-col">
-              {dummyActivities.map((act, idx) => (
-                <div
-                  key={`col2-${idx}`}
-                  className="legend-item"
-                  onMouseEnter={(e) => handleMouseEnter(e, act.name)}
-                  onMouseLeave={() => setTooltip({ show: false })}
-                >
-                  <span className="dot" style={{ backgroundColor: act.color }}></span>
-                  <div className="legend-line"></div>
-                </div>
-              ))}
-            </div>
+            {[0, 1].map((col) => (
+              <div key={col} className="legend-col">
+                {dummyActivities.map((act, idx) => (
+                  <div
+                    key={idx + col * 10}
+                    className="legend-item"
+                    onMouseEnter={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setTooltip({
+                        show: true,
+                        label: act.name,
+                        x: rect.left + rect.width / 2,
+                        y: rect.top - 10
+                      });
+                    }}
+                    onMouseLeave={() => setTooltip({ show: false })}
+                  >
+                    <span className="dot" style={{ backgroundColor: act.color }}></span>
+                    <div className="legend-line"></div>
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -109,7 +75,15 @@ export default function ActivityRing() {
           className="chart-tooltip"
           style={{
             left: `${tooltip.x}px`,
-            top: `${tooltip.y}px`
+            top: `${tooltip.y}px`,
+            backgroundColor: '#000',
+            color: '#fff',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            position: 'fixed',
+            zIndex: 1000,
+            pointerEvents: 'none'
           }}
         >
           {tooltip.label}
