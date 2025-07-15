@@ -1,5 +1,5 @@
 // src/components/Dashboard/ActivityRing.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import './DashboardNamespaced.css';
 
 const dummyActivities = [
@@ -11,6 +11,18 @@ const dummyActivities = [
 ];
 
 export default function ActivityRing() {
+  const [tooltip, setTooltip] = useState({ show: false, label: '', x: 0, y: 0 });
+
+  const handleMouseEnter = (e, label) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltip({
+      show: true,
+      label,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 10
+    });
+  };
+
   return (
     <div className="dashboard-page activity-summary-section">
       <h3 className="section-title">Activities</h3>
@@ -30,7 +42,12 @@ export default function ActivityRing() {
           <div className="legend-columns">
             <div className="legend-col">
               {dummyActivities.map((act, idx) => (
-                <div key={idx} className="legend-item">
+                <div
+                  key={`col1-${idx}`}
+                  className="legend-item"
+                  onMouseEnter={(e) => handleMouseEnter(e, act.name)}
+                  onMouseLeave={() => setTooltip({ show: false })}
+                >
                   <span className="dot" style={{ backgroundColor: act.color }}></span>
                   <div className="legend-line"></div>
                 </div>
@@ -38,7 +55,12 @@ export default function ActivityRing() {
             </div>
             <div className="legend-col">
               {dummyActivities.map((act, idx) => (
-                <div key={`r-${idx}`} className="legend-item">
+                <div
+                  key={`col2-${idx}`}
+                  className="legend-item"
+                  onMouseEnter={(e) => handleMouseEnter(e, act.name)}
+                  onMouseLeave={() => setTooltip({ show: false })}
+                >
                   <span className="dot" style={{ backgroundColor: act.color }}></span>
                   <div className="legend-line"></div>
                 </div>
@@ -47,6 +69,18 @@ export default function ActivityRing() {
           </div>
         </div>
       </div>
+
+      {tooltip.show && (
+        <div
+          className="chart-tooltip"
+          style={{
+            left: `${tooltip.x}px`,
+            top: `${tooltip.y}px`
+          }}
+        >
+          {tooltip.label}
+        </div>
+      )}
     </div>
   );
 }
