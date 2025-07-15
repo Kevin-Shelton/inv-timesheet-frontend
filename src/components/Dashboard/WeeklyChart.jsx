@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import './DashboardNamespaced.css';
 
-const heights = [30, 60, 50, 80, 20, 40, 70]; // same as original bars
+const heights = [30, 60, 50, 80, 20, 40, 70]; // Example data
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function WeeklyChart() {
@@ -26,7 +26,7 @@ export default function WeeklyChart() {
                   day: days[i],
                   value: `${(height / 10).toFixed(1)}h`,
                   x: rect.left + rect.width / 2,
-                  y: rect.top - 10
+                  y: rect.top - 30
                 });
               }}
               onMouseLeave={() => setTooltip({ show: false })}
@@ -54,7 +54,18 @@ export default function WeeklyChart() {
       {tooltip.show && (
         <div
           className="chart-tooltip"
-          style={{ left: `${tooltip.x}px`, top: `${tooltip.y}px` }}
+          style={{
+            position: 'fixed',
+            left: `${tooltip.x}px`,
+            top: `${tooltip.y}px`,
+            backgroundColor: '#fff',
+            padding: '4px 8px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            fontSize: '12px',
+            pointerEvents: 'none',
+            zIndex: 1000
+          }}
         >
           {tooltip.day}: {tooltip.value}
         </div>
