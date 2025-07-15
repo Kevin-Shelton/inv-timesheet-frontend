@@ -96,16 +96,17 @@
 /* Tooltip Styles */
 .dashboard-page .chart-tooltip {
   position: fixed;
-  background-color: #fff;
-  padding: 4px 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  background-color: #1a1a1a; /* darker background */
+  color: #fff;               /* white text for contrast */
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
   font-size: 12px;
+  font-weight: 500;
   pointer-events: none;
   z-index: 1000;
-  transform: translateX(-50%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 .activity-summary-section {
   background: #fff;
