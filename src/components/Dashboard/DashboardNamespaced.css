@@ -223,3 +223,76 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   color: #333;
 }
+.whos-inout {
+  padding: 16px;
+  text-align: center;
+  color: #333;
+  font-family: sans-serif;
+}
+
+.whos-inout .header {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.whos-inout .subtext {
+  font-size: 12px;
+  color: #999;
+}
+
+.whos-inout .tabs {
+  display: flex;
+  justify-content: space-around;
+  margin: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.whos-inout .tab {
+  font-size: 12px;
+  color: #999;
+  padding-bottom: 4px;
+  position: relative;
+}
+
+.whos-inout .tab.active {
+  color: #ff6a00;
+  font-weight: bold;
+}
+
+.whos-inout .tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #ff6a00;
+}
+
+.whos-inout .search-input {
+  width: 100%;
+  margin: 12px 0;
+  padding: 6px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #999;
+}
+
+.whos-inout .clock {
+  margin-top: 48px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #999;
+}
+
+.whos-inout .date {
+  font-size: 14px;
+  color: #bbb;
+}
+
+.whos-inout .status-msg {
+  font-size: 12px;
+  color: #bbb;
+  margin-top: 4px;
+}
