@@ -1,6 +1,4 @@
 import React from "react";
-import UpcomingHolidays from "./UpcomingHolidays";
-import TrackedHours from "./TrackedHours";
 import Activities from "./Activities";
 import WhoIsInOutPanel from "./WhoIsInOutPanel";
 
