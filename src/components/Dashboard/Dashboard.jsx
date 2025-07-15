@@ -1,41 +1,50 @@
 import React from 'react';
 import WelcomeCard from './WelcomeCard';
-import ActivityRing from './ActivityRing';
 import HolidaySection from './HolidaySection';
-import WeeklyChart from './WeeklyChart';
 import CurrentTime from './CurrentTime';
-import WhosInOutPanel from './WhosInOutPanel';
+import ActivityRing from './ActivityRing';
+import WeeklyChart from './WeeklyChart';
+import WhoIsInOutPanel from './WhoIsInOutPanel';
 import './Dashboard.css';
 
-export default function Dashboard() {
+const Dashboard = () => {
   return (
-    <div className="dashboard-page">
-      <div className="dashboard-content">
-        <div className="dashboard-left">
-          <div className="dashboard-top-row">
-            <WelcomeCard />
-            <HolidaySection />
-          </div>
-
-          <div className="dashboard-middle-row">
-            <div className="tracked-hours-section">
-              <WeeklyChart />
-            </div>
-            <div className="activity-summary-section">
-              <ActivityRing />
-            </div>
-          </div>
-
-          <div className="dashboard-bottom-row">
-            {/* Future components */}
-          </div>
+    <div className="dashboard-container">
+      <div className="dashboard-row">
+        <div className="dashboard-col welcome">
+          <WelcomeCard />
         </div>
+        <div className="dashboard-col holidays">
+          <HolidaySection />
+        </div>
+      </div>
 
-        <div className="dashboard-right">
+      <div className="dashboard-row">
+        <div className="dashboard-col wide">
+          <WeeklyChart />
+        </div>
+      </div>
+
+      <div className="dashboard-row">
+        <div className="dashboard-col activity">
+          <ActivityRing />
+        </div>
+      </div>
+
+      <div className="dashboard-row">
+        <div className="dashboard-col time">
           <CurrentTime />
-          <WhosInOutPanel />
+        </div>
+      </div>
+
+      <div className="dashboard-row">
+        <div className="dashboard-col whoisinout-panel">
+          <WhoIsInOutPanel />
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default Dashboard;
+
