@@ -16,7 +16,7 @@ export default function Dashboard() {
       {/* Row 2: Tracked Hours */}
       <TrackedHours />
 
-      {/* Row 3: Activities and Who's In/Out */}
+      {/* Row 3: Activities & Who's In/Out */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Activities />
         <WhoIsInOutPanel />
