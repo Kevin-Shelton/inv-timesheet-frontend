@@ -547,3 +547,38 @@
 .dismiss-btn {
   color: #888;
 }
+.dashboard-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.dashboard-col {
+  flex: 1;
+  min-width: 300px;
+}
+
+/* Specific columns */
+.dashboard-col.welcome {
+  flex: 1.5;
+}
+
+.dashboard-col.holidays {
+  flex: 1;
+}
+
+.dashboard-col.wide {
+  flex: 1 1 100%;
+}
+
+.dashboard-col.activity {
+  flex: 1;
+}
+
+/* Optional for spacing inside cards */
+.dashboard-col > * {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
