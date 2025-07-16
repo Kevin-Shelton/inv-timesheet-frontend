@@ -31,6 +31,7 @@ const Dashboard = () => {
             <ActivityRing />
           </div>
         </div>
+      </div> {/* ✅ This was missing */}
 
       <div className="dashboard-sidebar">
         <WhoIsInOutPanel />
