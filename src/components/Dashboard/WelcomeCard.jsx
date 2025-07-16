@@ -50,7 +50,7 @@ const WelcomeCard = () => {
     }
   }, []);
 
-  // FIXED: Authentication check without infinite loops
+  // Authentication check without infinite loops
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -126,7 +126,7 @@ const WelcomeCard = () => {
 
     checkAuth();
 
-    // FIXED: Listen for auth state changes WITHOUT automatic redirects
+    // Listen for auth state changes WITHOUT automatic redirects
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email || 'no user');
@@ -136,12 +136,12 @@ const WelcomeCard = () => {
           setUser(null);
           setUserProfile(null);
           setAuthState('guest');
-          // REMOVED: Automatic redirect that was causing loops
         } else if (event === 'SIGNED_IN' && session?.user) {
           console.log('User signed in:', session.user.email);
           setUser(session.user);
           setAuthState('authenticated');
-          // REMOVED: window.location.reload() that was causing loops
+          // Refresh user profile
+          window.location.reload();
         }
       }
     );
@@ -191,11 +191,32 @@ const WelcomeCard = () => {
     }
   };
 
+  // FIXED: Proper login navigation to your LoginPage component
   const handleLogin = () => {
-    // SAFE: Manual login trigger without automatic redirects
-    console.log('Manual login requested');
-    alert('Please implement your login flow here - no automatic redirects');
-    // window.location.href = '/login'; // Only when user clicks
+    console.log('Navigating to login page...');
+    
+    // Option 1: If you're using React Router (recommended)
+    // Uncomment and use this if you have React Router set up:
+    // import { useNavigate } from 'react-router-dom';
+    // const navigate = useNavigate();
+    // navigate('/login');
+    
+    // Option 2: Direct navigation (works with most setups)
+    // Try these routes in order of likelihood:
+    
+    try {
+      // Most common route for Auth/LoginPage.jsx
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Navigation error:', error);
+      
+      // Fallback routes if /login doesn't work:
+      // window.location.href = '/auth/login';
+      // window.location.href = '/auth';
+      // window.location.href = '/signin';
+      
+      alert('Login navigation error. Please check your routing configuration.');
+    }
   };
 
   // Loading state
@@ -225,7 +246,7 @@ const WelcomeCard = () => {
     );
   }
 
-  // FIXED: Guest state without automatic redirects
+  // Guest state - show login option
   if (authState === 'guest') {
     return (
       <div className="welcome-card guest">
@@ -253,6 +274,12 @@ const WelcomeCard = () => {
               >
                 Retry
               </button>
+            </div>
+            
+            <div className="login-help">
+              <p className="help-text">
+                Having trouble? Check that your login page is accessible at <code>/login</code>
+              </p>
             </div>
           </div>
 
