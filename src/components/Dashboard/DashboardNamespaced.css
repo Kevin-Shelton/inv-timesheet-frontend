@@ -508,8 +508,8 @@
   margin-bottom: 24px;
 }
 
-.welcome-card,
-.holiday-card {
+.dashboard-col welcome 
+.dashboard-col holidays{
   background: #fff;
   border-radius: 12px;
   padding: 20px;
