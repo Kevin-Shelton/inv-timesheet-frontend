@@ -1,377 +1,292 @@
-import React, { useEffect, useState } from 'react';
-import { supabase, authHelpers } from "../../supabaseClient.js";
-
-// Auto-import all images from assets directory
-const importImages = () => {
-  try {
-    const images = import.meta.glob('../../assets/*.{png,jpg,jpeg,gif,svg,webp}', { 
-      eager: true,
-      as: 'url'
-    });
-    return Object.values(images);
-  } catch (error) {
-    console.log('No images found in assets directory');
-    return [];
-  }
-};
-
-// Get a random image for this session
-const getSessionImage = (images) => {
-  if (images.length === 0) return null;
-  if (images.length === 1) return images[0];
-  
-  // Use a combination of timestamp and random for session-based selection
-  const sessionSeed = Date.now() + Math.random();
-  const index = Math.floor(sessionSeed % images.length);
-  return images[index];
-};
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from "../../supabaseClient_TrueSingleton.js";
 
 const WelcomeCard = () => {
   const [user, setUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [authState, setAuthState] = useState('checking'); // 'checking', 'authenticated', 'guest'
+  const [authState, setAuthState] = useState('loading'); // 'loading', 'authenticated', 'unauthenticated'
   const [images, setImages] = useState([]);
-  const [sessionImage, setSessionImage] = useState(null);
-  const [authError, setAuthError] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [error, setError] = useState(null);
+  
+  const navigate = useNavigate();
 
-  // Load images and select one for this session
+  // Load images from assets directory
   useEffect(() => {
-    const loadedImages = importImages();
-    console.log('Loaded images:', loadedImages);
-    setImages(loadedImages);
-    
-    // Select a random image for this session
-    const selectedImage = getSessionImage(loadedImages);
-    setSessionImage(selectedImage);
-    
-    if (selectedImage) {
-      console.log('Selected image for this session:', selectedImage);
-    }
+    const loadImages = async () => {
+      try {
+        // Use Vite's glob import to get all images from assets
+        const imageModules = import.meta.glob('../../assets/*.{png,jpg,jpeg,gif,svg,webp}', { eager: true });
+        const imageList = Object.keys(imageModules).map(path => imageModules[path].default || imageModules[path]);
+        
+        console.log('Loaded images:', imageList);
+        setImages(imageList);
+        
+        // Select a random image for this session
+        if (imageList.length > 0) {
+          const sessionImage = getSessionImage(imageList);
+          setSelectedImage(sessionImage);
+          console.log('Selected image for this session:', sessionImage);
+        }
+      } catch (error) {
+        console.error('Error loading images:', error);
+        setImages([]);
+      }
+    };
+
+    loadImages();
   }, []);
 
-  // Authentication check without infinite loops
+  // Session-based image selection (changes only on refresh/new session)
+  const getSessionImage = (imageList) => {
+    if (imageList.length === 0) return null;
+    if (imageList.length === 1) return imageList[0];
+    
+    // Use a combination of timestamp and random for session-based selection
+    const sessionSeed = Date.now() + Math.random();
+    const index = Math.floor(sessionSeed % imageList.length);
+    return imageList[index];
+  };
+
+  // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
+      console.log('🔍 WELCOME CARD: Checking authentication...');
+      
       try {
-        setLoading(true);
-        setAuthError(null);
-        
-        console.log('Checking authentication...');
-        
-        // Check if there's a valid session
+        // Get current session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.log('Session error:', sessionError.message);
-          setAuthError(`Session error: ${sessionError.message}`);
-          setAuthState('guest');
-          setLoading(false);
+          console.error('❌ WELCOME CARD: Session error:', sessionError);
+          setAuthState('unauthenticated');
+          setError('Session error: ' + sessionError.message);
           return;
         }
 
         if (!session || !session.user) {
-          console.log('No active session found');
-          setAuthState('guest');
-          setLoading(false);
+          console.log('❌ WELCOME CARD: No active session found');
+          setAuthState('unauthenticated');
           return;
         }
 
-        // Valid session found
-        console.log('Valid session found for user:', session.user.email);
-        const authUser = session.user;
-        setUser(authUser);
-        setAuthState('authenticated');
+        console.log('✅ WELCOME CARD: Valid session found for user:', session.user.email);
+        
+        // Get user profile from database
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
 
-        // Try to get user profile from database
-        try {
-          const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', authUser.id)
-            .single();
-
-          if (profile) {
-            console.log('User profile loaded:', profile.full_name);
-            setUserProfile(profile);
-          } else {
-            console.log('No profile found, creating fallback');
-            // Create fallback profile from auth data
-            const fallbackProfile = {
-              id: authUser.id,
-              full_name: authUser.user_metadata?.full_name || 
-                        authUser.user_metadata?.name || 
-                        authUser.email?.split('@')[0] || 
-                        'Employee',
-              email: authUser.email,
-              employee_type: 'Standard',
-              organization_name: 'Company'
-            };
-            setUserProfile(fallbackProfile);
-          }
-        } catch (profileErr) {
-          console.log('Profile fetch error:', profileErr);
-          setAuthError(`Profile error: ${profileErr.message}`);
-          // Continue with basic auth user data
+        if (profileError) {
+          console.warn('⚠️ WELCOME CARD: Profile fetch error:', profileError);
+          // Use basic user info from session if profile not found
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            full_name: session.user.user_metadata?.full_name || session.user.email,
+            role: 'Standard'
+          });
+        } else {
+          console.log('✅ WELCOME CARD: Profile loaded:', profile);
+          setUser(profile);
         }
-
-      } catch (err) {
-        console.error('Authentication check failed:', err);
-        setAuthError(`Auth check failed: ${err.message}`);
-        setAuthState('guest');
-      } finally {
-        setLoading(false);
+        
+        setAuthState('authenticated');
+        
+      } catch (error) {
+        console.error('❌ WELCOME CARD: Auth check error:', error);
+        setAuthState('unauthenticated');
+        setError('Authentication check failed: ' + error.message);
       }
     };
 
     checkAuth();
 
-    // Listen for auth state changes WITHOUT automatic redirects
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email || 'no user');
-        
-        if (event === 'SIGNED_OUT' || !session) {
-          console.log('User signed out');
-          setUser(null);
-          setUserProfile(null);
-          setAuthState('guest');
-        } else if (event === 'SIGNED_IN' && session?.user) {
-          console.log('User signed in:', session.user.email);
-          setUser(session.user);
-          setAuthState('authenticated');
-          // Refresh user profile
-          window.location.reload();
-        }
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔄 WELCOME CARD: Auth state changed:', event, session?.user?.email || 'no user');
+      
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null);
+        setAuthState('unauthenticated');
+      } else if (event === 'SIGNED_IN' && session) {
+        // Refresh the component when user signs in
+        checkAuth();
       }
-    );
+    });
 
     return () => {
       subscription?.unsubscribe();
     };
   }, []);
 
-  const getFirstName = () => {
-    if (userProfile?.full_name) {
-      return userProfile.full_name.split(' ')[0];
-    }
-    if (user?.user_metadata?.name) {
-      return user.user_metadata.name.split(' ')[0];
-    }
-    if (user?.email) {
-      return user.email.split('@')[0];
-    }
-    return 'Employee';
-  };
-
-  const getOrganization = () => {
-    return userProfile?.organization_name || 
-           userProfile?.campaign_id || 
-           'Company Portal';
-  };
-
-  const isExemptEmployee = () => {
-    return userProfile?.employee_type === 'Exempt' || 
-           userProfile?.employee_type === 'Salaried';
-  };
-
-  const handleViewTimesheet = () => {
-    // Navigate to timesheet page
-    console.log('Navigate to timesheet');
-    // window.location.href = '/timesheet';
-    alert('Timesheet navigation - implement your routing here');
-  };
-
-  const handleQuickClockIn = async () => {
-    try {
-      console.log('Quick clock in for user:', user?.id);
-      alert('Clock in functionality - implement your logic here');
-    } catch (error) {
-      console.error('Clock in error:', error);
-    }
-  };
-
-  // FIXED: Proper login navigation to your LoginPage component
+  // Handle login navigation
   const handleLogin = () => {
-    console.log('Navigating to login page...');
-    
-    // Option 1: If you're using React Router (recommended)
-    // Uncomment and use this if you have React Router set up:
-    // import { useNavigate } from 'react-router-dom';
-    // const navigate = useNavigate();
-    // navigate('/login');
-    
-    // Option 2: Direct navigation (works with most setups)
-    // Try these routes in order of likelihood:
+    console.log('🔗 WELCOME CARD: Navigating to login page...');
     
     try {
-      // Most common route for Auth/LoginPage.jsx
-      window.location.href = '/login';
+      // Use React Router navigation
+      navigate('/login');
+      console.log('✅ WELCOME CARD: Navigation to /login attempted');
     } catch (error) {
-      console.error('Navigation error:', error);
+      console.error('❌ WELCOME CARD: Navigation error:', error);
       
-      // Fallback routes if /login doesn't work:
-      // window.location.href = '/auth/login';
-      // window.location.href = '/auth';
-      // window.location.href = '/signin';
-      
-      alert('Login navigation error. Please check your routing configuration.');
+      // Fallback to direct navigation
+      try {
+        window.location.href = '/login';
+        console.log('✅ WELCOME CARD: Fallback navigation attempted');
+      } catch (fallbackError) {
+        console.error('❌ WELCOME CARD: Fallback navigation failed:', fallbackError);
+        setError('Navigation to login page failed. Please refresh and try again.');
+      }
+    }
+  };
+
+  // Handle timesheet navigation
+  const handleViewTimesheet = () => {
+    console.log('📊 WELCOME CARD: Navigating to timesheet...');
+    try {
+      navigate('/timesheet');
+    } catch (error) {
+      console.error('❌ WELCOME CARD: Timesheet navigation error:', error);
+      window.location.href = '/timesheet';
+    }
+  };
+
+  // Handle quick clock in
+  const handleQuickClockIn = async () => {
+    console.log('⏰ WELCOME CARD: Quick clock in...');
+    try {
+      // Implement your clock in logic here
+      // For now, just show a message
+      alert('Clock in functionality - implement with your timesheet API');
+    } catch (error) {
+      console.error('❌ WELCOME CARD: Clock in error:', error);
     }
   };
 
   // Loading state
-  if (loading) {
+  if (authState === 'loading') {
     return (
       <div className="welcome-card">
-        <div className="welcome-content">
-          <div className="welcome-text">
-            <div className="loading-spinner">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p>Loading dashboard...</p>
-            </div>
+        <div className="welcome-card-content">
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Verifying access...</p>
           </div>
-          {sessionImage && (
-            <div className="welcome-image">
-              <div className="session-image">
-                <img 
-                  src={sessionImage} 
-                  alt="Company illustration" 
-                  className="employee-award-image"
-                />
-              </div>
-            </div>
-          )}
         </div>
       </div>
     );
   }
 
-  // Guest state - show login option
-  if (authState === 'guest') {
+  // Unauthenticated state - This should NOT happen if ProtectedRoute is working
+  // But we'll handle it gracefully just in case
+  if (authState === 'unauthenticated') {
     return (
-      <div className="welcome-card guest">
-        <div className="welcome-content">
-          <div className="welcome-text">
-            <h2>Authentication Required</h2>
-            <p>Please log in to access the company portal</p>
+      <div className="welcome-card">
+        <div className="welcome-card-content">
+          <div className="auth-required">
+            <div className="auth-icon">🔒</div>
+            <h3>Authentication Required</h3>
+            <p>This is an internal company portal. Please sign in to continue.</p>
             
-            {authError && (
-              <div className="error-details">
-                <p><strong>Debug Info:</strong> {authError}</p>
+            {error && (
+              <div className="error-message">
+                <span>⚠️ {error}</span>
               </div>
             )}
             
             <div className="auth-actions">
               <button 
-                className="setup-btn primary"
                 onClick={handleLogin}
+                className="login-button"
               >
                 Go to Login
               </button>
               <button 
-                className="dismiss-btn secondary"
                 onClick={() => window.location.reload()}
+                className="retry-button"
               >
                 Retry
               </button>
             </div>
             
-            <div className="login-help">
-              <p className="help-text">
-                Having trouble? Check that your login page is accessible at <code>/login</code>
-              </p>
+            <div className="help-text">
+              <p>If you continue to see this message, please contact your administrator.</p>
             </div>
           </div>
-
-          {sessionImage && (
-            <div className="welcome-image">
-              <div className="session-image">
-                <img 
-                  src={sessionImage} 
-                  alt="Company illustration" 
-                  className="employee-award-image"
-                  style={{ opacity: 0.7 }}
-                />
-              </div>
-            </div>
-          )}
         </div>
       </div>
     );
   }
 
-  // Authenticated state - normal welcome card
+  // Authenticated state - Show welcome message
   return (
-    <div className="welcome-card authenticated">
-      <div className="welcome-content">
-        <div className="welcome-text">
-          <h2>Hello {getFirstName()}</h2>
-          <p>Welcome to {getOrganization()}</p>
-          
-          {isExemptEmployee() && (
-            <div className="user-badge">
-              <span className="badge exempt">Management</span>
-            </div>
-          )}
+    <div className="welcome-card">
+      <div className="welcome-card-content">
+        {/* Image Section */}
+        {selectedImage && (
+          <div className="welcome-image-container">
+            <img 
+              src={selectedImage} 
+              alt="Company Portal" 
+              className="welcome-image"
+              title={`Company portal image (${images.length} available - refresh for different image)`}
+            />
+            {images.length > 1 && (
+              <div className="image-hint">
+                Refresh for different image ({images.length} available)
+              </div>
+            )}
+          </div>
+        )}
 
-          <div className="employee-info">
-            <div className="info-item">
-              <span className="info-label">Email:</span>
-              <span className="info-value">{user?.email}</span>
+        {/* Welcome Content */}
+        <div className="welcome-content">
+          <div className="welcome-header">
+            <h2>Hello, {user?.full_name || user?.email || 'Team Member'}! 👋</h2>
+            <p className="welcome-subtitle">Welcome to the Invictus Internal Portal</p>
+          </div>
+
+          {/* User Info */}
+          <div className="user-info">
+            <div className="user-detail">
+              <span className="label">📧 Email:</span>
+              <span className="value">{user?.email}</span>
             </div>
-            {userProfile?.employee_type && (
-              <div className="info-item">
-                <span className="info-label">Role:</span>
-                <span className="info-value">{userProfile.employee_type}</span>
+            <div className="user-detail">
+              <span className="label">👔 Role:</span>
+              <span className="value">{user?.role || 'Standard'}</span>
+              {user?.employee_type === 'Exempt' && (
+                <span className="management-badge">Management</span>
+              )}
+            </div>
+            {user?.campaign_id && (
+              <div className="user-detail">
+                <span className="label">🎯 Campaign:</span>
+                <span className="value">Campaign {user.campaign_id}</span>
               </div>
             )}
           </div>
 
-          <div className="welcome-actions">
+          {/* Quick Actions */}
+          <div className="quick-actions">
             <button 
-              className="setup-btn primary"
               onClick={handleViewTimesheet}
+              className="action-button primary"
             >
-              View Timesheet
+              📊 View Timesheet
             </button>
             <button 
-              className="dismiss-btn secondary"
               onClick={handleQuickClockIn}
+              className="action-button secondary"
             >
-              Quick Clock In
+              ⏰ Quick Clock In
             </button>
           </div>
         </div>
-
-        {sessionImage ? (
-          <div className="welcome-image">
-            <div className="session-image">
-              <img 
-                src={sessionImage} 
-                alt="Company illustration"
-                className="employee-award-image"
-                onError={(e) => {
-                  console.error('Image failed to load:', sessionImage);
-                  e.target.style.display = 'none';
-                }}
-              />
-              {images.length > 1 && (
-                <div className="image-info">
-                  <span className="image-note">
-                    Refresh for different image ({images.length} available)
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="welcome-image">
-            <div className="no-images-placeholder">
-              <div className="placeholder-icon">🏢</div>
-              <p>Company Portal</p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
