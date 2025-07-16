@@ -1,65 +1,87 @@
 import React, { useEffect, useState } from "react";
-import { createClient } from '@supabase/supabase-js';
+import { supabase, authHelpers } from "./supabaseClient.js";
+import bestEmployeeImage from "../assets/20-BestWorker.png"; // Import from assets
 import "./DashboardNamespaced.css";
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function WelcomeCard() {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Get current user session
+    let mounted = true;
+
+    // Get current user session and profile
     const getCurrentUser = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        setLoading(true);
+        setError(null);
+
+        // Get current session
+        const { session, error: sessionError } = await authHelpers.getCurrentSession();
         
-        if (error) {
-          console.error('Error getting session:', error);
-          setLoading(false);
+        if (sessionError) {
+          console.warn('Session error:', sessionError.message);
+          if (mounted) {
+            setError('Unable to get user session');
+            setLoading(false);
+          }
           return;
         }
 
-        if (session?.user) {
-          setUser(session.user);
-          
-          // Get user profile from users table
-          const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('full_name, employee_type, campaign_id, campaigns(name)')
-            .eq('email', session.user.email)
-            .single();
+        if (!session?.user) {
+          if (mounted) {
+            setUser(null);
+            setUserProfile(null);
+            setLoading(false);
+          }
+          return;
+        }
 
+        if (mounted) {
+          setUser(session.user);
+        }
+
+        // Try to get user profile from database
+        const { profile, error: profileError } = await authHelpers.getUserProfile(session.user.email);
+
+        if (mounted) {
           if (profileError) {
-            console.warn('Could not fetch user profile:', profileError);
-            // Use email as fallback
-            setUserProfile({ 
-              full_name: session.user.email.split('@')[0],
-              employee_type: 'Standard'
-            });
+            console.warn('Profile fetch error:', profileError.message);
+            // Create fallback profile from auth user
+            const fallbackProfile = authHelpers.createFallbackProfile(session.user);
+            setUserProfile(fallbackProfile);
+            setError(null); // Don't show error for missing profile, use fallback
           } else {
             setUserProfile(profile);
+            setError(null);
           }
+          setLoading(false);
         }
       } catch (err) {
         console.error('Error in getCurrentUser:', err);
-      } finally {
-        setLoading(false);
+        if (mounted) {
+          setError('Failed to load user information');
+          setLoading(false);
+        }
       }
     };
 
     getCurrentUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = authHelpers.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+
+        console.log('Auth state changed:', event);
+        
         if (event === 'SIGNED_IN' && session?.user) {
           setUser(session.user);
-          getCurrentUser();
+          // Refetch profile for new user
+          const { profile } = await authHelpers.getUserProfile(session.user.email);
+          setUserProfile(profile || authHelpers.createFallbackProfile(session.user));
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setUserProfile(null);
@@ -67,19 +89,25 @@ export default function WelcomeCard() {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Get display name
+  // Get display name (first name only)
   const getDisplayName = () => {
     if (userProfile?.full_name) {
-      return userProfile.full_name.split(' ')[0]; // First name only
+      const firstName = userProfile.full_name.split(' ')[0];
+      return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
     }
     if (user?.user_metadata?.full_name) {
-      return user.user_metadata.full_name.split(' ')[0];
+      const firstName = user.user_metadata.full_name.split(' ')[0];
+      return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
     }
     if (user?.email) {
-      return user.email.split('@')[0];
+      const emailName = user.email.split('@')[0];
+      return emailName.charAt(0).toUpperCase() + emailName.slice(1).toLowerCase();
     }
     return 'User';
   };
@@ -92,12 +120,67 @@ export default function WelcomeCard() {
     return 'Your Organization';
   };
 
+  // Get user role display
+  const getUserRole = () => {
+    if (userProfile?.employee_type === 'Exempt') {
+      return 'Management';
+    }
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="welcome-card">
         <div className="welcome-content">
-          <h2>Loading...</h2>
-          <p>Getting your information...</p>
+          <div className="welcome-text">
+            <h2>Loading...</h2>
+            <p>Getting your information...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="welcome-card">
+        <div className="welcome-content">
+          <div className="welcome-text">
+            <h2>Welcome</h2>
+            <p>{error}</p>
+            <div className="welcome-actions">
+              <button 
+                className="setup-btn primary"
+                onClick={() => window.location.reload()}
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="welcome-card">
+        <div className="welcome-content">
+          <div className="welcome-text">
+            <h2>Welcome</h2>
+            <p>Please sign in to access your dashboard</p>
+            <div className="welcome-actions">
+              <button 
+                className="setup-btn primary"
+                onClick={() => {
+                  // Redirect to login or trigger auth flow
+                  console.log('Redirect to login');
+                }}
+              >
+                Sign In
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -110,9 +193,9 @@ export default function WelcomeCard() {
           <h2>Hello {getDisplayName()}</h2>
           <p>Here's what's happening at {getOrganization()}</p>
           
-          {userProfile?.employee_type === 'Exempt' && (
+          {getUserRole() && (
             <div className="user-badge">
-              <span className="badge exempt">Management</span>
+              <span className="badge exempt">{getUserRole()}</span>
             </div>
           )}
           
@@ -128,9 +211,17 @@ export default function WelcomeCard() {
         
         <div className="welcome-image">
           <img 
-            src="/best-employee.png" 
+            src={bestEmployeeImage} 
             alt="Best Employee Award" 
             className="employee-award-image"
+            onError={(e) => {
+              // Hide image if it fails to load
+              console.warn('Failed to load best employee image');
+              e.target.style.display = 'none';
+            }}
+            onLoad={() => {
+              console.log('Best employee image loaded successfully');
+            }}
           />
         </div>
       </div>
