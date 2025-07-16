@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { supabase, authHelpers } from "./supabaseClient.js";
+import { supabase, authHelpers } from "../../supabaseClient.js";
 import bestEmployeeImage from "../assets/20-BestWorker.png"; // Import from assets
 import "./DashboardNamespaced.css";
 
