@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from "../../supabaseClient.js";
 
 const WelcomeCard = () => {
   const [user, setUser] = useState(null);
-  const [authState, setAuthState] = useState('loading'); // 'loading', 'authenticated', 'unauthenticated'
+  const [authState, setAuthState] = useState('loading'); // 'loading', 'authenticated'
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [error, setError] = useState(null);
-  
-  const navigate = useNavigate();
 
   // Load images from assets directory
   useEffect(() => {
@@ -59,14 +56,15 @@ const WelcomeCard = () => {
         
         if (sessionError) {
           console.error('❌ WELCOME CARD: Session error:', sessionError);
-          setAuthState('unauthenticated');
           setError('Session error: ' + sessionError.message);
+          // Don't set auth state here - let ProtectedRoute handle redirects
           return;
         }
 
         if (!session || !session.user) {
           console.log('❌ WELCOME CARD: No active session found');
-          setAuthState('unauthenticated');
+          // Don't set auth state here - let ProtectedRoute handle redirects
+          // If we're here, ProtectedRoute should redirect us
           return;
         }
 
@@ -97,7 +95,6 @@ const WelcomeCard = () => {
         
       } catch (error) {
         console.error('❌ WELCOME CARD: Auth check error:', error);
-        setAuthState('unauthenticated');
         setError('Authentication check failed: ' + error.message);
       }
     };
@@ -110,7 +107,7 @@ const WelcomeCard = () => {
       
       if (event === 'SIGNED_OUT' || !session) {
         setUser(null);
-        setAuthState('unauthenticated');
+        setAuthState('loading'); // Let ProtectedRoute handle the redirect
       } else if (event === 'SIGNED_IN' && session) {
         // Refresh the component when user signs in
         checkAuth();
@@ -122,36 +119,14 @@ const WelcomeCard = () => {
     };
   }, []);
 
-  // Handle login navigation
-  const handleLogin = () => {
-    console.log('🔗 WELCOME CARD: Navigating to login page...');
-    
-    try {
-      // Use React Router navigation
-      navigate('/login');
-      console.log('✅ WELCOME CARD: Navigation to /login attempted');
-    } catch (error) {
-      console.error('❌ WELCOME CARD: Navigation error:', error);
-      
-      // Fallback to direct navigation
-      try {
-        window.location.href = '/login';
-        console.log('✅ WELCOME CARD: Fallback navigation attempted');
-      } catch (fallbackError) {
-        console.error('❌ WELCOME CARD: Fallback navigation failed:', fallbackError);
-        setError('Navigation to login page failed. Please refresh and try again.');
-      }
-    }
-  };
-
   // Handle timesheet navigation
   const handleViewTimesheet = () => {
     console.log('📊 WELCOME CARD: Navigating to timesheet...');
     try {
-      navigate('/timesheet');
+      // Use window.location for now - update with your actual timesheet route
+      window.location.href = '/timesheet';
     } catch (error) {
       console.error('❌ WELCOME CARD: Timesheet navigation error:', error);
-      window.location.href = '/timesheet';
     }
   };
 
@@ -167,55 +142,35 @@ const WelcomeCard = () => {
     }
   };
 
-  // Loading state
+  // Loading state - show while checking auth
   if (authState === 'loading') {
     return (
       <div className="welcome-card">
         <div className="welcome-card-content">
           <div className="loading-state">
             <div className="loading-spinner"></div>
-            <p>Verifying access...</p>
+            <p>Loading your dashboard...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Unauthenticated state - This should NOT happen if ProtectedRoute is working
-  // But we'll handle it gracefully just in case
-  if (authState === 'unauthenticated') {
+  // If we reach here and authState is not 'authenticated', 
+  // it means ProtectedRoute should have redirected but didn't
+  // Show a minimal loading state and let ProtectedRoute handle it
+  if (authState !== 'authenticated' || !user) {
     return (
       <div className="welcome-card">
         <div className="welcome-card-content">
-          <div className="auth-required">
-            <div className="auth-icon">🔒</div>
-            <h3>Authentication Required</h3>
-            <p>This is an internal company portal. Please sign in to continue.</p>
-            
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Verifying access...</p>
             {error && (
               <div className="error-message">
                 <span>⚠️ {error}</span>
               </div>
             )}
-            
-            <div className="auth-actions">
-              <button 
-                onClick={handleLogin}
-                className="login-button"
-              >
-                Go to Login
-              </button>
-              <button 
-                onClick={() => window.location.reload()}
-                className="retry-button"
-              >
-                Retry
-              </button>
-            </div>
-            
-            <div className="help-text">
-              <p>If you continue to see this message, please contact your administrator.</p>
-            </div>
           </div>
         </div>
       </div>
@@ -229,17 +184,31 @@ const WelcomeCard = () => {
         {/* Image Section */}
         {selectedImage && (
           <div className="welcome-image-container">
-            <img 
-              src={selectedImage} 
-              alt="Company Portal" 
-              className="welcome-image"
-              title={`Company portal image (${images.length} available - refresh for different image)`}
-            />
-            {images.length > 1 && (
-              <div className="image-hint">
-                Refresh for different image ({images.length} available)
-              </div>
-            )}
+            <div className="session-image">
+              <img 
+                src={selectedImage} 
+                alt="Company Portal" 
+                className="employee-award-image"
+                title={`Company portal image (${images.length} available - refresh for different image)`}
+              />
+              {images.length > 1 && (
+                <div className="image-info">
+                  <div className="image-note">
+                    Refresh for different image ({images.length} available)
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* No images fallback */}
+        {!selectedImage && (
+          <div className="welcome-image-container">
+            <div className="no-images-placeholder">
+              <div className="placeholder-icon">🏢</div>
+              <p>Company Portal<br />Add images to assets folder</p>
+            </div>
           </div>
         )}
 
