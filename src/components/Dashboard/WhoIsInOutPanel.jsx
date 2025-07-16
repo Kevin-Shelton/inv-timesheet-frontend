@@ -35,11 +35,15 @@ export default function WhoIsInOutPanel() {
           .eq('is_active', true)
           .order('name');
 
-        if (error) throw error;
-        setCampaigns(data || []);
+        if (error) {
+          console.warn('Campaigns table not found or empty:', error);
+          setCampaigns([]);
+        } else {
+          setCampaigns(data || []);
+        }
       } catch (err) {
-        console.error('Error fetching campaigns:', err);
-        setError('Failed to load campaigns');
+        console.warn('Error fetching campaigns:', err);
+        setCampaigns([]);
       }
     };
 
@@ -51,46 +55,76 @@ export default function WhoIsInOutPanel() {
     const fetchUserStatuses = async () => {
       try {
         setLoading(true);
+        setError(null);
         
-        // Get current user statuses with user details and campaign info
-        const { data, error } = await supabase
-          .from('current_user_status')
+        // Try the simple approach first - get latest status for each user
+        const { data: statusData, error: statusError } = await supabase
+          .from('user_status')
           .select(`
             user_id,
-            full_name,
             status,
             timestamp,
             location,
             users!inner(
+              id,
+              full_name,
               campaign_id,
               pay_rate_per_hour,
               employee_type,
-              is_active,
-              campaigns(name)
+              is_active
             )
           `)
-          .eq('users.is_active', true);
+          .eq('users.is_active', true)
+          .order('timestamp', { ascending: false });
 
-        if (error) throw error;
+        if (statusError) {
+          throw statusError;
+        }
+
+        // Get the latest status for each user
+        const latestStatuses = {};
+        (statusData || []).forEach(item => {
+          const userId = item.user_id;
+          if (!latestStatuses[userId] || 
+              new Date(item.timestamp) > new Date(latestStatuses[userId].timestamp)) {
+            latestStatuses[userId] = item;
+          }
+        });
+
+        // Get campaign names if campaigns exist
+        let campaignNames = {};
+        if (campaigns.length > 0) {
+          const { data: campaignData } = await supabase
+            .from('campaigns')
+            .select('id, name');
+          
+          if (campaignData) {
+            campaignNames = campaignData.reduce((acc, camp) => {
+              acc[camp.id] = camp.name;
+              return acc;
+            }, {});
+          }
+        }
 
         // Transform the data for easier use
-        const transformedData = (data || []).map(item => ({
+        const transformedData = Object.values(latestStatuses).map(item => ({
           user_id: item.user_id,
-          full_name: item.full_name,
+          full_name: item.users?.full_name || 'Unknown User',
           status: item.status,
           timestamp: item.timestamp,
           location: item.location,
           campaign_id: item.users?.campaign_id,
-          campaign_name: item.users?.campaigns?.name || 'No Campaign',
+          campaign_name: campaignNames[item.users?.campaign_id] || 'No Campaign',
           pay_rate: item.users?.pay_rate_per_hour,
           employee_type: item.users?.employee_type
         }));
 
         setUserStatuses(transformedData);
-        setError(null);
+        console.log('Fetched user statuses:', transformedData);
+        
       } catch (err) {
         console.error('Error fetching user statuses:', err);
-        setError('Failed to load user statuses');
+        setError(`Failed to load user statuses: ${err.message}`);
         setUserStatuses([]);
       } finally {
         setLoading(false);
@@ -108,7 +142,8 @@ export default function WhoIsInOutPanel() {
           schema: 'public', 
           table: 'user_status' 
         }, 
-        () => {
+        (payload) => {
+          console.log('Status change detected:', payload);
           // Refetch data when user status changes
           fetchUserStatuses();
         }
@@ -122,7 +157,7 @@ export default function WhoIsInOutPanel() {
       subscription.unsubscribe();
       clearInterval(refreshInterval);
     };
-  }, []);
+  }, [campaigns]);
 
   // Filter users based on campaign and search term
   const filteredUsers = userStatuses.filter(user => {
@@ -222,22 +257,24 @@ export default function WhoIsInOutPanel() {
         </div>
       </div>
 
-      {/* Campaign Filter */}
-      <div className="campaign-filter">
-        <Filter size={16} className="filter-icon" />
-        <select 
-          value={selectedCampaign} 
-          onChange={(e) => setSelectedCampaign(e.target.value)}
-          className="campaign-select"
-        >
-          <option value="all">All Campaigns</option>
-          {campaigns.map(campaign => (
-            <option key={campaign.id} value={campaign.id}>
-              {campaign.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Campaign Filter - Only show if campaigns exist */}
+      {campaigns.length > 0 && (
+        <div className="campaign-filter">
+          <Filter size={16} className="filter-icon" />
+          <select 
+            value={selectedCampaign} 
+            onChange={(e) => setSelectedCampaign(e.target.value)}
+            className="campaign-select"
+          >
+            <option value="all">All Campaigns</option>
+            {campaigns.map(campaign => (
+              <option key={campaign.id} value={campaign.id}>
+                {campaign.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Search */}
       <div className="whoisinout-search">
@@ -256,6 +293,21 @@ export default function WhoIsInOutPanel() {
         {error && (
           <div className="error-message">
             <p>{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              style={{
+                marginTop: '8px',
+                padding: '4px 8px',
+                fontSize: '12px',
+                background: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Retry
+            </button>
           </div>
         )}
         
