@@ -1,131 +1,135 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import { supabase, authHelpers } from "../../supabaseClient.js";
-import bestEmployeeImage from "../../assets/20-BestWorker.png";; // Import from assets
-import "./DashboardNamespaced.css";
 
-export default function WelcomeCard() {
+// Auto-import all images from assets directory
+// This uses Vite's glob import feature to dynamically load all images
+const importImages = () => {
+  const images = import.meta.glob('../../assets/*.{png,jpg,jpeg,gif,svg,webp}', { 
+    eager: true,
+    as: 'url'
+  });
+  
+  return Object.values(images);
+};
+
+const WelcomeCard = () => {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [images, setImages] = useState([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  // Load images on component mount
   useEffect(() => {
-    let mounted = true;
+    try {
+      const loadedImages = importImages();
+      console.log('Loaded images:', loadedImages);
+      setImages(loadedImages);
+    } catch (err) {
+      console.error('Error loading images:', err);
+      setImages([]); // Fallback to empty array
+    }
+  }, []);
 
-    // Get current user session and profile
-    const getCurrentUser = async () => {
+  // Auto-rotate images every 4 seconds
+  useEffect(() => {
+    if (images.length <= 1) return; // Don't rotate if only one or no images
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => 
+        (prevIndex + 1) % images.length
+      );
+    }, 4000); // Change image every 4 seconds
+
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Get current session
-        const { session, error: sessionError } = await authHelpers.getCurrentSession();
+        // Get current user from Supabase Auth
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
         
-        if (sessionError) {
-          console.warn('Session error:', sessionError.message);
-          if (mounted) {
-            setError('Unable to get user session');
-            setLoading(false);
-          }
+        if (authError) {
+          console.error('Auth error:', authError);
+          setError('Authentication failed');
           return;
         }
 
-        if (!session?.user) {
-          if (mounted) {
-            setUser(null);
-            setUserProfile(null);
-            setLoading(false);
-          }
+        if (!authUser) {
+          setError('No user logged in');
           return;
         }
 
-        if (mounted) {
-          setUser(session.user);
-        }
+        setUser(authUser);
 
         // Try to get user profile from database
-        const { profile, error: profileError } = await authHelpers.getUserProfile(session.user.email);
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authUser.id)
+          .single();
 
-        if (mounted) {
-          if (profileError) {
-            console.warn('Profile fetch error:', profileError.message);
-            // Create fallback profile from auth user
-            const fallbackProfile = authHelpers.createFallbackProfile(session.user);
-            setUserProfile(fallbackProfile);
-            setError(null); // Don't show error for missing profile, use fallback
-          } else {
-            setUserProfile(profile);
-            setError(null);
-          }
-          setLoading(false);
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Profile fetch error:', profileError);
+          // Continue with auth user data as fallback
         }
+
+        if (profile) {
+          setUserProfile(profile);
+        } else {
+          // Create fallback profile from auth data
+          const fallbackProfile = {
+            id: authUser.id,
+            full_name: authUser.user_metadata?.full_name || 
+                      authUser.user_metadata?.name || 
+                      authUser.email?.split('@')[0] || 
+                      'User',
+            email: authUser.email,
+            employee_type: 'Standard',
+            organization_name: 'Your Organization'
+          };
+          setUserProfile(fallbackProfile);
+        }
+
       } catch (err) {
-        console.error('Error in getCurrentUser:', err);
-        if (mounted) {
-          setError('Failed to load user information');
-          setLoading(false);
-        }
+        console.error('Error fetching user data:', err);
+        setError('Failed to load user data');
+      } finally {
+        setLoading(false);
       }
     };
 
-    getCurrentUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = authHelpers.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-
-        console.log('Auth state changed:', event);
-        
-        if (event === 'SIGNED_IN' && session?.user) {
-          setUser(session.user);
-          // Refetch profile for new user
-          const { profile } = await authHelpers.getUserProfile(session.user.email);
-          setUserProfile(profile || authHelpers.createFallbackProfile(session.user));
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setUserProfile(null);
-        }
-      }
-    );
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    fetchUserData();
   }, []);
 
-  // Get display name (first name only)
-  const getDisplayName = () => {
+  const getFirstName = () => {
     if (userProfile?.full_name) {
-      const firstName = userProfile.full_name.split(' ')[0];
-      return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+      return userProfile.full_name.split(' ')[0];
     }
-    if (user?.user_metadata?.full_name) {
-      const firstName = user.user_metadata.full_name.split(' ')[0];
-      return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name.split(' ')[0];
     }
     if (user?.email) {
-      const emailName = user.email.split('@')[0];
-      return emailName.charAt(0).toUpperCase() + emailName.slice(1).toLowerCase();
+      return user.email.split('@')[0];
     }
     return 'User';
   };
 
-  // Get organization name
   const getOrganization = () => {
-    if (userProfile?.campaigns?.name) {
-      return userProfile.campaigns.name;
-    }
-    return 'Your Organization';
+    return userProfile?.organization_name || 
+           userProfile?.campaign_id || 
+           'Your Organization';
   };
 
-  // Get user role display
-  const getUserRole = () => {
-    if (userProfile?.employee_type === 'Exempt') {
-      return 'Management';
-    }
-    return null;
+  const isExemptEmployee = () => {
+    return userProfile?.employee_type === 'Exempt' || 
+           userProfile?.employee_type === 'Salaried';
   };
 
   if (loading) {
@@ -133,8 +137,10 @@ export default function WelcomeCard() {
       <div className="welcome-card">
         <div className="welcome-content">
           <div className="welcome-text">
-            <h2>Loading...</h2>
-            <p>Getting your information...</p>
+            <div className="loading-spinner">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p>Loading your profile...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -146,41 +152,44 @@ export default function WelcomeCard() {
       <div className="welcome-card">
         <div className="welcome-content">
           <div className="welcome-text">
-            <h2>Welcome</h2>
-            <p>{error}</p>
-            <div className="welcome-actions">
+            <h2>Hello!</h2>
+            <p>Welcome to your timesheet dashboard</p>
+            <div className="error-message">
+              <p>⚠️ {error}</p>
               <button 
+                onClick={() => window.location.reload()} 
                 className="setup-btn primary"
-                onClick={() => window.location.reload()}
               >
                 Retry
               </button>
             </div>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="welcome-card">
-        <div className="welcome-content">
-          <div className="welcome-text">
-            <h2>Welcome</h2>
-            <p>Please sign in to access your dashboard</p>
-            <div className="welcome-actions">
-              <button 
-                className="setup-btn primary"
-                onClick={() => {
-                  // Redirect to login or trigger auth flow
-                  console.log('Redirect to login');
-                }}
-              >
-                Sign In
-              </button>
+          {images.length > 0 && (
+            <div className="welcome-image">
+              <div className="image-carousel">
+                <img 
+                  src={images[currentImageIndex]} 
+                  alt="Welcome illustration" 
+                  className="employee-award-image"
+                  onError={(e) => {
+                    console.error('Image failed to load:', images[currentImageIndex]);
+                    e.target.style.display = 'none';
+                  }}
+                />
+                {images.length > 1 && (
+                  <div className="image-indicators">
+                    {images.map((_, index) => (
+                      <div 
+                        key={index}
+                        className={`indicator ${index === currentImageIndex ? 'active' : ''}`}
+                        onClick={() => setCurrentImageIndex(index)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     );
@@ -190,42 +199,67 @@ export default function WelcomeCard() {
     <div className="welcome-card">
       <div className="welcome-content">
         <div className="welcome-text">
-          <h2>Hello {getDisplayName()}</h2>
+          <h2>Hello {getFirstName()}</h2>
           <p>Here's what's happening at {getOrganization()}</p>
           
-          {getUserRole() && (
+          {isExemptEmployee() && (
             <div className="user-badge">
-              <span className="badge exempt">{getUserRole()}</span>
+              <span className="badge exempt">Management</span>
             </div>
           )}
-          
+
           <div className="welcome-actions">
             <button className="setup-btn primary">
-              View Dashboard
+              View Timesheet
             </button>
             <button className="dismiss-btn secondary">
-              Quick Actions
+              Quick Clock In
             </button>
           </div>
         </div>
-        
-        <div className="welcome-image">
-          <img 
-            src={bestEmployeeImage} 
-            alt="Best Employee Award" 
-            className="employee-award-image"
-            onError={(e) => {
-              // Hide image if it fails to load
-              console.warn('Failed to load best employee image');
-              e.target.style.display = 'none';
-            }}
-            onLoad={() => {
-              console.log('Best employee image loaded successfully');
-            }}
-          />
-        </div>
+
+        {images.length > 0 && (
+          <div className="welcome-image">
+            <div className="image-carousel">
+              <img 
+                src={images[currentImageIndex]} 
+                alt={`Welcome illustration ${currentImageIndex + 1}`}
+                className="employee-award-image"
+                onError={(e) => {
+                  console.error('Image failed to load:', images[currentImageIndex]);
+                  e.target.style.display = 'none';
+                }}
+              />
+              {images.length > 1 && (
+                <div className="image-indicators">
+                  {images.map((_, index) => (
+                    <div 
+                      key={index}
+                      className={`indicator ${index === currentImageIndex ? 'active' : ''}`}
+                      onClick={() => setCurrentImageIndex(index)}
+                    />
+                  ))}
+                </div>
+              )}
+              <div className="image-counter">
+                {currentImageIndex + 1} / {images.length}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {images.length === 0 && (
+          <div className="welcome-image">
+            <div className="no-images-placeholder">
+              <div className="placeholder-icon">🎨</div>
+              <p>Add images to src/assets/ to see them here!</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
-}
+};
+
+export default WelcomeCard;
 
