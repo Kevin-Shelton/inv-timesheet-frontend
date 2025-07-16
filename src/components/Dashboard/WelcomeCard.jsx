@@ -30,10 +30,10 @@ const WelcomeCard = () => {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [authState, setAuthState] = useState('checking'); // 'checking', 'authenticated', 'unauthorized'
+  const [authState, setAuthState] = useState('checking'); // 'checking', 'authenticated', 'guest'
   const [images, setImages] = useState([]);
   const [sessionImage, setSessionImage] = useState(null);
-  const [redirecting, setRedirecting] = useState(false);
+  const [authError, setAuthError] = useState(null);
 
   // Load images and select one for this session
   useEffect(() => {
@@ -50,38 +50,40 @@ const WelcomeCard = () => {
     }
   }, []);
 
-  // Authentication guard - redirect unauthorized users
+  // FIXED: Authentication check without infinite loops
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
+    const checkAuth = async () => {
       try {
         setLoading(true);
+        setAuthError(null);
+        
+        console.log('Checking authentication...');
         
         // Check if there's a valid session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (sessionError || !session || !session.user) {
-          console.log('No valid session found - redirecting to login');
-          setAuthState('unauthorized');
-          
-          // Redirect to login page after a brief delay
-          setTimeout(() => {
-            setRedirecting(true);
-            // Replace with your actual login page URL
-            window.location.href = '/login';
-            // Alternative: If you're using React Router
-            // navigate('/login');
-          }, 2000);
-          
+        if (sessionError) {
+          console.log('Session error:', sessionError.message);
+          setAuthError(`Session error: ${sessionError.message}`);
+          setAuthState('guest');
+          setLoading(false);
+          return;
+        }
+
+        if (!session || !session.user) {
+          console.log('No active session found');
+          setAuthState('guest');
           setLoading(false);
           return;
         }
 
         // Valid session found
+        console.log('Valid session found for user:', session.user.email);
         const authUser = session.user;
         setUser(authUser);
         setAuthState('authenticated');
 
-        // Get user profile from database
+        // Try to get user profile from database
         try {
           const { data: profile, error: profileError } = await supabase
             .from('users')
@@ -90,8 +92,10 @@ const WelcomeCard = () => {
             .single();
 
           if (profile) {
+            console.log('User profile loaded:', profile.full_name);
             setUserProfile(profile);
           } else {
+            console.log('No profile found, creating fallback');
             // Create fallback profile from auth data
             const fallbackProfile = {
               id: authUser.id,
@@ -107,43 +111,37 @@ const WelcomeCard = () => {
           }
         } catch (profileErr) {
           console.log('Profile fetch error:', profileErr);
+          setAuthError(`Profile error: ${profileErr.message}`);
           // Continue with basic auth user data
         }
 
       } catch (err) {
         console.error('Authentication check failed:', err);
-        setAuthState('unauthorized');
-        
-        // Redirect on error
-        setTimeout(() => {
-          setRedirecting(true);
-          window.location.href = '/login';
-        }, 2000);
+        setAuthError(`Auth check failed: ${err.message}`);
+        setAuthState('guest');
       } finally {
         setLoading(false);
       }
     };
 
-    checkAuthAndRedirect();
+    checkAuth();
 
-    // Listen for auth state changes
+    // FIXED: Listen for auth state changes WITHOUT automatic redirects
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
+        console.log('Auth state changed:', event, session?.user?.email || 'no user');
         
         if (event === 'SIGNED_OUT' || !session) {
-          console.log('User signed out - redirecting to login');
+          console.log('User signed out');
           setUser(null);
           setUserProfile(null);
-          setAuthState('unauthorized');
-          
-          // Immediate redirect on sign out
-          window.location.href = '/login';
+          setAuthState('guest');
+          // REMOVED: Automatic redirect that was causing loops
         } else if (event === 'SIGNED_IN' && session?.user) {
+          console.log('User signed in:', session.user.email);
           setUser(session.user);
           setAuthState('authenticated');
-          // Refresh to load user profile and get new session image
-          window.location.reload();
+          // REMOVED: window.location.reload() that was causing loops
         }
       }
     );
@@ -179,30 +177,25 @@ const WelcomeCard = () => {
 
   const handleViewTimesheet = () => {
     // Navigate to timesheet page
-    // Replace with your actual timesheet route
     console.log('Navigate to timesheet');
     // window.location.href = '/timesheet';
-    // Or if using React Router: navigate('/timesheet');
+    alert('Timesheet navigation - implement your routing here');
   };
 
   const handleQuickClockIn = async () => {
     try {
-      // Implement quick clock in functionality
       console.log('Quick clock in for user:', user?.id);
-      
-      // Example API call to clock in
-      // const { data, error } = await supabase
-      //   .from('timesheet_entries')
-      //   .insert({
-      //     user_id: user.id,
-      //     clock_in_time: new Date().toISOString(),
-      //     date: new Date().toISOString().split('T')[0]
-      //   });
-      
       alert('Clock in functionality - implement your logic here');
     } catch (error) {
       console.error('Clock in error:', error);
     }
+  };
+
+  const handleLogin = () => {
+    // SAFE: Manual login trigger without automatic redirects
+    console.log('Manual login requested');
+    alert('Please implement your login flow here - no automatic redirects');
+    // window.location.href = '/login'; // Only when user clicks
   };
 
   // Loading state
@@ -213,7 +206,7 @@ const WelcomeCard = () => {
           <div className="welcome-text">
             <div className="loading-spinner">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p>Verifying access...</p>
+              <p>Loading dashboard...</p>
             </div>
           </div>
           {sessionImage && (
@@ -232,32 +225,37 @@ const WelcomeCard = () => {
     );
   }
 
-  // Unauthorized state - show access denied and redirect
-  if (authState === 'unauthorized') {
+  // FIXED: Guest state without automatic redirects
+  if (authState === 'guest') {
     return (
-      <div className="welcome-card unauthorized">
+      <div className="welcome-card guest">
         <div className="welcome-content">
           <div className="welcome-text">
-            <div className="access-denied">
-              <div className="access-denied-icon">🔒</div>
-              <h2>Access Restricted</h2>
-              <p>This is an internal company portal. Please log in to continue.</p>
-              
-              {redirecting ? (
-                <div className="redirecting-message">
-                  <div className="loading-spinner">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                    <p>Redirecting to login...</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="redirect-countdown">
-                  <p>Redirecting to login page...</p>
-                </div>
-              )}
+            <h2>Authentication Required</h2>
+            <p>Please log in to access the company portal</p>
+            
+            {authError && (
+              <div className="error-details">
+                <p><strong>Debug Info:</strong> {authError}</p>
+              </div>
+            )}
+            
+            <div className="auth-actions">
+              <button 
+                className="setup-btn primary"
+                onClick={handleLogin}
+              >
+                Go to Login
+              </button>
+              <button 
+                className="dismiss-btn secondary"
+                onClick={() => window.location.reload()}
+              >
+                Retry
+              </button>
             </div>
           </div>
-          
+
           {sessionImage && (
             <div className="welcome-image">
               <div className="session-image">
@@ -265,7 +263,7 @@ const WelcomeCard = () => {
                   src={sessionImage} 
                   alt="Company illustration" 
                   className="employee-award-image"
-                  style={{ opacity: 0.5 }}
+                  style={{ opacity: 0.7 }}
                 />
               </div>
             </div>
