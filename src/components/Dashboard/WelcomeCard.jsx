@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from "../../supabaseClient_TrueSingleton.js";
+import { supabase } from "../../supabaseClient.js";
 
 const WelcomeCard = () => {
   const [user, setUser] = useState(null);
