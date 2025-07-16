@@ -502,3 +502,48 @@
 .dot.overtime {
   background-color: #e9eaee;
 }
+.top-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.welcome-card,
+.holiday-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.welcome-card {
+  flex: 1.5;
+}
+
+.holiday-card {
+  flex: 1;
+}
+
+.setup-btn,
+.dismiss-btn {
+  font-size: 12px;
+  margin-top: 12px;
+  margin-right: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+
+.setup-btn {
+  color: #0077cc;
+  border-color: #0077cc;
+}
+
+.dismiss-btn {
+  color: #888;
+}
