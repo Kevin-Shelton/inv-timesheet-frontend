@@ -455,3 +455,50 @@
   color: #ccc;
   margin-top: 0.3rem;
 }
+.chart-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.chart-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  min-width: 160px;
+  font-size: 12px;
+  color: #333;
+}
+
+.label-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label-text {
+  font-weight: 600;
+  flex: 1;
+  color: #333;
+}
+
+.value {
+  color: #000;
+  font-weight: 500;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot.worked {
+  background-color: #888d9e;
+}
+.dot.breaks {
+  background-color: #c9ccd6;
+}
+.dot.overtime {
+  background-color: #e9eaee;
+}
