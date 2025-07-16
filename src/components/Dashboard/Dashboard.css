@@ -327,7 +327,7 @@ body {
   position: relative;
 }
 .tracked-hours-section::before {
-  content: "TRACKED HOURS SECTION";
+  content: "";
   position: absolute;
   top: 4px;
   left: 6px;
