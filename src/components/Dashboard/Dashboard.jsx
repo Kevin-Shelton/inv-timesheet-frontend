@@ -11,7 +11,8 @@ const Dashboard = () => {
   return (
     <div className="dashboard-page with-sidebar">
       <div className="dashboard-main">
-        <div className="dashboard-row">
+        {/* Top row: Welcome and Holiday cards side-by-side, equal width/height */}
+        <div className="dashboard-row dashboard-top-row">
           <div className="dashboard-col welcome">
             <WelcomeCard />
           </div>
@@ -20,19 +21,22 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Middle row: Weekly Chart */}
         <div className="dashboard-row">
           <div className="dashboard-col wide">
             <WeeklyChart />
           </div>
         </div>
 
+        {/* Bottom row: Activity Ring */}
         <div className="dashboard-row">
           <div className="dashboard-col activity">
             <ActivityRing />
           </div>
         </div>
-      </div> {/* ✅ This was missing */}
+      </div>
 
+      {/* Sidebar: Who's In/Out Panel */}
       <div className="dashboard-sidebar">
         <WhoIsInOutPanel />
       </div>

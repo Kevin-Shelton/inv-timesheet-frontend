@@ -74,6 +74,8 @@
 .dashboard-top-row {
   display: flex;
   gap: 24px;
+  align-items: stretch;
+  width: 100%;
 }
 
 .dashboard-top-row > * {
@@ -511,12 +513,10 @@
 .dashboard-col welcome 
 .dashboard-col holidays{
   background: #fff;
-  border-radius: 12px;
   padding: 20px;
+  border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  height: 100%;
 }
 
 .dashboard-col welcome {
@@ -549,13 +549,16 @@
 }
 .dashboard-row {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: stretch; /* Ensure equal height */
   gap: 24px;
+  width: 100%;
 }
 
 .dashboard-col {
   flex: 1;
-  min-width: 300px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Specific columns */
@@ -567,8 +570,14 @@
   flex: 1;
 }
 
-.dashboard-col.wide {
-  flex: 1 1 100%;
+.dashboard-col.wide 
+.dashboard-col.activity{
+  width: 100%;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-top: 24px;
 }
 
 .dashboard-col.activity {
