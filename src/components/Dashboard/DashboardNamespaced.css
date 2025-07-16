@@ -2311,5 +2311,240 @@
     background-position: 20px 20px, 20px 30px, 30px 10px, 10px 20px;
   }
 }
+/* Session-Based Image Display Styles */
+
+/* Session Image Container */
+.session-image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.employee-award-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+  transition: all 0.3s ease;
+}
+
+.employee-award-image:hover {
+  transform: scale(1.02);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
+}
+
+/* Image Information */
+.image-info {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.image-note {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.session-image:hover .image-note {
+  opacity: 1;
+}
+
+/* Welcome Image Container */
+.welcome-image {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 180px;
+  height: 180px;
+  position: relative;
+}
+
+/* Enhanced No Images Placeholder */
+.no-images-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  color: #6c757d;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 12px;
+  border: 2px dashed #dee2e6;
+}
+
+.placeholder-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  opacity: 0.7;
+}
+
+.no-images-placeholder p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #495057;
+}
+
+/* Session-based image loading animation */
+.session-image .employee-award-image {
+  animation: sessionImageLoad 0.8s ease-out;
+}
+
+@keyframes sessionImageLoad {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Subtle hover effect for session image */
+.session-image::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    rgba(0, 123, 255, 0.05) 0%, 
+    rgba(0, 86, 179, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.session-image:hover::before {
+  opacity: 1;
+}
+
+/* Professional styling for internal portal */
+.welcome-card.authenticated .session-image {
+  border: 2px solid rgba(40, 167, 69, 0.1);
+}
+
+.welcome-card.unauthorized .session-image {
+  border: 2px solid rgba(220, 53, 69, 0.1);
+}
+
+/* Loading state image styling */
+.welcome-card .loading-spinner + .welcome-image .session-image {
+  opacity: 0.7;
+}
+
+/* Responsive design for session images */
+@media (max-width: 768px) {
+  .welcome-image {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .image-note {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  
+  .placeholder-icon {
+    font-size: 24px;
+  }
+  
+  .no-images-placeholder p {
+    font-size: 11px;
+  }
+}
+
+/* Image quality and performance optimizations */
+.employee-award-image {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Subtle glow effect for authenticated state */
+.welcome-card.authenticated .session-image {
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(40, 167, 69, 0.1);
+}
+
+.welcome-card.authenticated .session-image:hover {
+  box-shadow: 
+    0 6px 16px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(40, 167, 69, 0.2);
+}
+
+/* Image loading state */
+.employee-award-image[src=""] {
+  background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+              linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+              linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+              linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  animation: loading-stripes 1s linear infinite;
+}
+
+@keyframes loading-stripes {
+  0% {
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  }
+  100% {
+    background-position: 20px 20px, 20px 30px, 30px 10px, 10px 20px;
+  }
+}
+
+/* Clean, professional appearance */
+.session-image {
+  background: 
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), transparent 50%),
+    linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+
+/* Accessibility improvements */
+.employee-award-image {
+  outline: none;
+}
+
+.employee-award-image:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .session-image {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .image-note {
+    display: none;
+  }
+}
 }
 

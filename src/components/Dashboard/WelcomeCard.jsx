@@ -2,110 +2,155 @@ import React, { useEffect, useState } from 'react';
 import { supabase, authHelpers } from "../../supabaseClient.js";
 
 // Auto-import all images from assets directory
-// This uses Vite's glob import feature to dynamically load all images
 const importImages = () => {
-  const images = import.meta.glob('../../assets/*.{png,jpg,jpeg,gif,svg,webp}', { 
-    eager: true,
-    as: 'url'
-  });
+  try {
+    const images = import.meta.glob('../../assets/*.{png,jpg,jpeg,gif,svg,webp}', { 
+      eager: true,
+      as: 'url'
+    });
+    return Object.values(images);
+  } catch (error) {
+    console.log('No images found in assets directory');
+    return [];
+  }
+};
+
+// Get a random image for this session
+const getSessionImage = (images) => {
+  if (images.length === 0) return null;
+  if (images.length === 1) return images[0];
   
-  return Object.values(images);
+  // Use a combination of timestamp and random for session-based selection
+  const sessionSeed = Date.now() + Math.random();
+  const index = Math.floor(sessionSeed % images.length);
+  return images[index];
 };
 
 const WelcomeCard = () => {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [authState, setAuthState] = useState('checking'); // 'checking', 'authenticated', 'unauthorized'
   const [images, setImages] = useState([]);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [sessionImage, setSessionImage] = useState(null);
+  const [redirecting, setRedirecting] = useState(false);
 
-  // Load images on component mount
+  // Load images and select one for this session
   useEffect(() => {
-    try {
-      const loadedImages = importImages();
-      console.log('Loaded images:', loadedImages);
-      setImages(loadedImages);
-    } catch (err) {
-      console.error('Error loading images:', err);
-      setImages([]); // Fallback to empty array
+    const loadedImages = importImages();
+    console.log('Loaded images:', loadedImages);
+    setImages(loadedImages);
+    
+    // Select a random image for this session
+    const selectedImage = getSessionImage(loadedImages);
+    setSessionImage(selectedImage);
+    
+    if (selectedImage) {
+      console.log('Selected image for this session:', selectedImage);
     }
   }, []);
 
-  // Auto-rotate images every 4 seconds
+  // Authentication guard - redirect unauthorized users
   useEffect(() => {
-    if (images.length <= 1) return; // Don't rotate if only one or no images
-
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => 
-        (prevIndex + 1) % images.length
-      );
-    }, 4000); // Change image every 4 seconds
-
-    return () => clearInterval(interval);
-  }, [images.length]);
-
-  // Fetch user data
-  useEffect(() => {
-    const fetchUserData = async () => {
+    const checkAuthAndRedirect = async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        // Get current user from Supabase Auth
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
         
-        if (authError) {
-          console.error('Auth error:', authError);
-          setError('Authentication failed');
+        // Check if there's a valid session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session || !session.user) {
+          console.log('No valid session found - redirecting to login');
+          setAuthState('unauthorized');
+          
+          // Redirect to login page after a brief delay
+          setTimeout(() => {
+            setRedirecting(true);
+            // Replace with your actual login page URL
+            window.location.href = '/login';
+            // Alternative: If you're using React Router
+            // navigate('/login');
+          }, 2000);
+          
+          setLoading(false);
           return;
         }
 
-        if (!authUser) {
-          setError('No user logged in');
-          return;
-        }
-
+        // Valid session found
+        const authUser = session.user;
         setUser(authUser);
+        setAuthState('authenticated');
 
-        // Try to get user profile from database
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', authUser.id)
-          .single();
+        // Get user profile from database
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', authUser.id)
+            .single();
 
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('Profile fetch error:', profileError);
-          // Continue with auth user data as fallback
-        }
-
-        if (profile) {
-          setUserProfile(profile);
-        } else {
-          // Create fallback profile from auth data
-          const fallbackProfile = {
-            id: authUser.id,
-            full_name: authUser.user_metadata?.full_name || 
-                      authUser.user_metadata?.name || 
-                      authUser.email?.split('@')[0] || 
-                      'User',
-            email: authUser.email,
-            employee_type: 'Standard',
-            organization_name: 'Your Organization'
-          };
-          setUserProfile(fallbackProfile);
+          if (profile) {
+            setUserProfile(profile);
+          } else {
+            // Create fallback profile from auth data
+            const fallbackProfile = {
+              id: authUser.id,
+              full_name: authUser.user_metadata?.full_name || 
+                        authUser.user_metadata?.name || 
+                        authUser.email?.split('@')[0] || 
+                        'Employee',
+              email: authUser.email,
+              employee_type: 'Standard',
+              organization_name: 'Company'
+            };
+            setUserProfile(fallbackProfile);
+          }
+        } catch (profileErr) {
+          console.log('Profile fetch error:', profileErr);
+          // Continue with basic auth user data
         }
 
       } catch (err) {
-        console.error('Error fetching user data:', err);
-        setError('Failed to load user data');
+        console.error('Authentication check failed:', err);
+        setAuthState('unauthorized');
+        
+        // Redirect on error
+        setTimeout(() => {
+          setRedirecting(true);
+          window.location.href = '/login';
+        }, 2000);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserData();
+    checkAuthAndRedirect();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event);
+        
+        if (event === 'SIGNED_OUT' || !session) {
+          console.log('User signed out - redirecting to login');
+          setUser(null);
+          setUserProfile(null);
+          setAuthState('unauthorized');
+          
+          // Immediate redirect on sign out
+          window.location.href = '/login';
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          setUser(session.user);
+          setAuthState('authenticated');
+          // Refresh to load user profile and get new session image
+          window.location.reload();
+        }
+      }
+    );
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const getFirstName = () => {
@@ -118,13 +163,13 @@ const WelcomeCard = () => {
     if (user?.email) {
       return user.email.split('@')[0];
     }
-    return 'User';
+    return 'Employee';
   };
 
   const getOrganization = () => {
     return userProfile?.organization_name || 
            userProfile?.campaign_id || 
-           'Your Organization';
+           'Company Portal';
   };
 
   const isExemptEmployee = () => {
@@ -132,6 +177,35 @@ const WelcomeCard = () => {
            userProfile?.employee_type === 'Salaried';
   };
 
+  const handleViewTimesheet = () => {
+    // Navigate to timesheet page
+    // Replace with your actual timesheet route
+    console.log('Navigate to timesheet');
+    // window.location.href = '/timesheet';
+    // Or if using React Router: navigate('/timesheet');
+  };
+
+  const handleQuickClockIn = async () => {
+    try {
+      // Implement quick clock in functionality
+      console.log('Quick clock in for user:', user?.id);
+      
+      // Example API call to clock in
+      // const { data, error } = await supabase
+      //   .from('timesheet_entries')
+      //   .insert({
+      //     user_id: user.id,
+      //     clock_in_time: new Date().toISOString(),
+      //     date: new Date().toISOString().split('T')[0]
+      //   });
+      
+      alert('Clock in functionality - implement your logic here');
+    } catch (error) {
+      console.error('Clock in error:', error);
+    }
+  };
+
+  // Loading state
   if (loading) {
     return (
       <div className="welcome-card">
@@ -139,54 +213,17 @@ const WelcomeCard = () => {
           <div className="welcome-text">
             <div className="loading-spinner">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p>Loading your profile...</p>
+              <p>Verifying access...</p>
             </div>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="welcome-card">
-        <div className="welcome-content">
-          <div className="welcome-text">
-            <h2>Hello!</h2>
-            <p>Welcome to your timesheet dashboard</p>
-            <div className="error-message">
-              <p>⚠️ {error}</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="setup-btn primary"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-          {images.length > 0 && (
+          {sessionImage && (
             <div className="welcome-image">
-              <div className="image-carousel">
+              <div className="session-image">
                 <img 
-                  src={images[currentImageIndex]} 
-                  alt="Welcome illustration" 
+                  src={sessionImage} 
+                  alt="Company illustration" 
                   className="employee-award-image"
-                  onError={(e) => {
-                    console.error('Image failed to load:', images[currentImageIndex]);
-                    e.target.style.display = 'none';
-                  }}
                 />
-                {images.length > 1 && (
-                  <div className="image-indicators">
-                    {images.map((_, index) => (
-                      <div 
-                        key={index}
-                        className={`indicator ${index === currentImageIndex ? 'active' : ''}`}
-                        onClick={() => setCurrentImageIndex(index)}
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -195,12 +232,56 @@ const WelcomeCard = () => {
     );
   }
 
+  // Unauthorized state - show access denied and redirect
+  if (authState === 'unauthorized') {
+    return (
+      <div className="welcome-card unauthorized">
+        <div className="welcome-content">
+          <div className="welcome-text">
+            <div className="access-denied">
+              <div className="access-denied-icon">🔒</div>
+              <h2>Access Restricted</h2>
+              <p>This is an internal company portal. Please log in to continue.</p>
+              
+              {redirecting ? (
+                <div className="redirecting-message">
+                  <div className="loading-spinner">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <p>Redirecting to login...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="redirect-countdown">
+                  <p>Redirecting to login page...</p>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {sessionImage && (
+            <div className="welcome-image">
+              <div className="session-image">
+                <img 
+                  src={sessionImage} 
+                  alt="Company illustration" 
+                  className="employee-award-image"
+                  style={{ opacity: 0.5 }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated state - normal welcome card
   return (
-    <div className="welcome-card">
+    <div className="welcome-card authenticated">
       <div className="welcome-content">
         <div className="welcome-text">
           <h2>Hello {getFirstName()}</h2>
-          <p>Here's what's happening at {getOrganization()}</p>
+          <p>Welcome to {getOrganization()}</p>
           
           {isExemptEmployee() && (
             <div className="user-badge">
@@ -208,51 +289,61 @@ const WelcomeCard = () => {
             </div>
           )}
 
+          <div className="employee-info">
+            <div className="info-item">
+              <span className="info-label">Email:</span>
+              <span className="info-value">{user?.email}</span>
+            </div>
+            {userProfile?.employee_type && (
+              <div className="info-item">
+                <span className="info-label">Role:</span>
+                <span className="info-value">{userProfile.employee_type}</span>
+              </div>
+            )}
+          </div>
+
           <div className="welcome-actions">
-            <button className="setup-btn primary">
+            <button 
+              className="setup-btn primary"
+              onClick={handleViewTimesheet}
+            >
               View Timesheet
             </button>
-            <button className="dismiss-btn secondary">
+            <button 
+              className="dismiss-btn secondary"
+              onClick={handleQuickClockIn}
+            >
               Quick Clock In
             </button>
           </div>
         </div>
 
-        {images.length > 0 && (
+        {sessionImage ? (
           <div className="welcome-image">
-            <div className="image-carousel">
+            <div className="session-image">
               <img 
-                src={images[currentImageIndex]} 
-                alt={`Welcome illustration ${currentImageIndex + 1}`}
+                src={sessionImage} 
+                alt="Company illustration"
                 className="employee-award-image"
                 onError={(e) => {
-                  console.error('Image failed to load:', images[currentImageIndex]);
+                  console.error('Image failed to load:', sessionImage);
                   e.target.style.display = 'none';
                 }}
               />
               {images.length > 1 && (
-                <div className="image-indicators">
-                  {images.map((_, index) => (
-                    <div 
-                      key={index}
-                      className={`indicator ${index === currentImageIndex ? 'active' : ''}`}
-                      onClick={() => setCurrentImageIndex(index)}
-                    />
-                  ))}
+                <div className="image-info">
+                  <span className="image-note">
+                    Refresh for different image ({images.length} available)
+                  </span>
                 </div>
               )}
-              <div className="image-counter">
-                {currentImageIndex + 1} / {images.length}
-              </div>
             </div>
           </div>
-        )}
-
-        {images.length === 0 && (
+        ) : (
           <div className="welcome-image">
             <div className="no-images-placeholder">
-              <div className="placeholder-icon">🎨</div>
-              <p>Add images to src/assets/ to see them here!</p>
+              <div className="placeholder-icon">🏢</div>
+              <p>Company Portal</p>
             </div>
           </div>
         )}
