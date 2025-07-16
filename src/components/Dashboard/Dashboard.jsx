@@ -1,7 +1,6 @@
 import React from 'react';
 import WelcomeCard from './WelcomeCard';
 import HolidaySection from './HolidaySection';
-import CurrentTime from './CurrentTime';
 import ActivityRing from './ActivityRing';
 import WeeklyChart from './WeeklyChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
@@ -32,13 +31,6 @@ const Dashboard = () => {
             <ActivityRing />
           </div>
         </div>
-
-        <div className="dashboard-row">
-          <div className="dashboard-col time">
-            <CurrentTime />
-          </div>
-        </div>
-      </div>
 
       <div className="dashboard-sidebar">
         <WhoIsInOutPanel />
