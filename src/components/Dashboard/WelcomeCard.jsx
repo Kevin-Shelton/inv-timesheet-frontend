@@ -3,10 +3,11 @@ import { supabase } from "../../supabaseClient.js";
 
 const WelcomeCard = () => {
   const [user, setUser] = useState(null);
-  const [authState, setAuthState] = useState('loading'); // 'loading', 'authenticated'
+  const [authState, setAuthState] = useState('loading'); // 'loading', 'authenticated', 'error'
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [error, setError] = useState(null);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Load images from assets directory
   useEffect(() => {
@@ -45,10 +46,23 @@ const WelcomeCard = () => {
     return imageList[index];
   };
 
+  // Set a timeout for loading state to prevent infinite spinning
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (authState === 'loading') {
+        console.warn('⚠️ WELCOME CARD: Loading timeout reached, showing error state');
+        setLoadingTimeout(true);
+        setError('Authentication check is taking longer than expected. This may be due to multiple Supabase client instances.');
+      }
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [authState]);
+
   // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
-      console.log('🔍 WELCOME CARD: Checking authentication...');
+      console.log('🔍 WELCOME CARD: Checking authentication with existing client...');
       
       try {
         // Get current session
@@ -57,14 +71,14 @@ const WelcomeCard = () => {
         if (sessionError) {
           console.error('❌ WELCOME CARD: Session error:', sessionError);
           setError('Session error: ' + sessionError.message);
-          // Don't set auth state here - let ProtectedRoute handle redirects
+          setAuthState('error');
           return;
         }
 
         if (!session || !session.user) {
           console.log('❌ WELCOME CARD: No active session found');
-          // Don't set auth state here - let ProtectedRoute handle redirects
-          // If we're here, ProtectedRoute should redirect us
+          // In a ProtectedRoute environment, this should trigger a redirect
+          // But we'll show an error state after timeout to prevent infinite loading
           return;
         }
 
@@ -96,6 +110,7 @@ const WelcomeCard = () => {
       } catch (error) {
         console.error('❌ WELCOME CARD: Auth check error:', error);
         setError('Authentication check failed: ' + error.message);
+        setAuthState('error');
       }
     };
 
@@ -107,7 +122,7 @@ const WelcomeCard = () => {
       
       if (event === 'SIGNED_OUT' || !session) {
         setUser(null);
-        setAuthState('loading'); // Let ProtectedRoute handle the redirect
+        setAuthState('loading');
       } else if (event === 'SIGNED_IN' && session) {
         // Refresh the component when user signs in
         checkAuth();
@@ -119,11 +134,26 @@ const WelcomeCard = () => {
     };
   }, []);
 
+  // Handle manual login navigation (fallback)
+  const handleManualLogin = () => {
+    console.log('🔗 WELCOME CARD: Manual login navigation...');
+    try {
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('❌ WELCOME CARD: Manual navigation failed:', error);
+    }
+  };
+
+  // Handle refresh
+  const handleRefresh = () => {
+    console.log('🔄 WELCOME CARD: Refreshing page...');
+    window.location.reload();
+  };
+
   // Handle timesheet navigation
   const handleViewTimesheet = () => {
     console.log('📊 WELCOME CARD: Navigating to timesheet...');
     try {
-      // Use window.location for now - update with your actual timesheet route
       window.location.href = '/timesheet';
     } catch (error) {
       console.error('❌ WELCOME CARD: Timesheet navigation error:', error);
@@ -135,42 +165,66 @@ const WelcomeCard = () => {
     console.log('⏰ WELCOME CARD: Quick clock in...');
     try {
       // Implement your clock in logic here
-      // For now, just show a message
       alert('Clock in functionality - implement with your timesheet API');
     } catch (error) {
       console.error('❌ WELCOME CARD: Clock in error:', error);
     }
   };
 
-  // Loading state - show while checking auth
-  if (authState === 'loading') {
+  // Loading state with timeout handling
+  if (authState === 'loading' && !loadingTimeout) {
     return (
       <div className="welcome-card">
         <div className="welcome-card-content">
           <div className="loading-state">
             <div className="loading-spinner"></div>
             <p>Loading your dashboard...</p>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '8px' }}>
+              If this takes too long, there may be multiple Supabase client instances
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // If we reach here and authState is not 'authenticated', 
-  // it means ProtectedRoute should have redirected but didn't
-  // Show a minimal loading state and let ProtectedRoute handle it
-  if (authState !== 'authenticated' || !user) {
+  // Error state or loading timeout
+  if (authState === 'error' || loadingTimeout) {
     return (
       <div className="welcome-card">
         <div className="welcome-card-content">
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <p>Verifying access...</p>
+          <div className="auth-required">
+            <div className="auth-icon">⚠️</div>
+            <h3>Authentication Issue</h3>
+            <p>Unable to verify your authentication status.</p>
+            
             {error && (
               <div className="error-message">
-                <span>⚠️ {error}</span>
+                <span>{error}</span>
               </div>
             )}
+            
+            <div className="auth-actions">
+              <button 
+                onClick={handleRefresh}
+                className="retry-button"
+              >
+                🔄 Refresh Page
+              </button>
+              <button 
+                onClick={handleManualLogin}
+                className="login-button"
+              >
+                🔗 Go to Login
+              </button>
+            </div>
+            
+            <div className="help-text">
+              <p>Try refreshing the page or clearing your browser cache.</p>
+              <p style={{ fontSize: '11px', marginTop: '8px' }}>
+                Debug: Check console for "Multiple GoTrueClient instances" warnings
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -254,6 +308,16 @@ const WelcomeCard = () => {
             >
               ⏰ Quick Clock In
             </button>
+          </div>
+
+          {/* Debug Info */}
+          <div style={{ 
+            fontSize: '10px', 
+            color: 'rgba(255,255,255,0.5)', 
+            marginTop: '12px',
+            textAlign: 'center'
+          }}>
+            Auth Status: {authState} | Client: Standard
           </div>
         </div>
       </div>
