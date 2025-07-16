@@ -519,11 +519,11 @@
   justify-content: center;
 }
 
-.welcome-card {
+.dashboard-col welcome {
   flex: 1.5;
 }
 
-.holiday-card {
+.dashboard-col holidays {
   flex: 1;
 }
 
