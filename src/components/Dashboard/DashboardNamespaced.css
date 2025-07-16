@@ -591,3 +591,37 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
+/* == Dashboard Row and Column Layout Fix == */
+.dashboard-row {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.dashboard-col {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.dashboard-col.wide {
+  flex: 1 1 100%;
+}
+
+.dashboard-col.activity {
+  flex: 1;
+}
+
+.dashboard-col.welcome,
+.dashboard-col.holidays {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
