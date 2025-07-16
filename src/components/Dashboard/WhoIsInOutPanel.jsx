@@ -41,7 +41,7 @@ export default function WhoIsInOutPanel() {
         <Search size={16} className="search-icon" />
         <input
           type="text"
-          placeholder="Search members..."
+          placeholder="      Search members..."
           className="search-input"
         />
       </div>
