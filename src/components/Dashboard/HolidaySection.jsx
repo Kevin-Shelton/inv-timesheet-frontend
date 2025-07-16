@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
-import { supabase } from "./supabaseClient.js";
+import { supabase, authHelpers } from "../../supabaseClient.js";
 import "./DashboardNamespaced.css";
 
 export default function HolidayCard({ onNavigateToHolidays }) {
