@@ -58,26 +58,30 @@ export default function WeeklyChart() {
             ))}
           </div>
 
-          <div className="chart-bar-group">
-            {workedHeights.map((height, i) => (
-              <div
-                key={i}
-                className="chart-bar animated-bar"
-                style={{ height: `${height}%` }}
-                onMouseEnter={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setTooltip({
-                    show: true,
-                    day: days[i],
-                    value: `${(height / 10).toFixed(1)}h`,
-                    x: rect.left + rect.width / 2,
-                    y: rect.top - 30
-                  });
-                }}
-                onMouseLeave={() => setTooltip({ show: false })}
-              />
-            ))}
-          </div>
+<div className="chart-bar-group">
+  {workedHeights.map((worked, i) => {
+    const breakH = breakHeights[i];
+    const overtime = overtimeHeights[i];
+
+    return (
+      <div key={i} className="stacked-bar">
+        <div
+          className="bar-segment worked"
+          style={{ height: `${worked}%` }}
+        />
+        <div
+          className="bar-segment breaks"
+          style={{ height: `${breakH}%` }}
+        />
+        <div
+          className="bar-segment overtime"
+          style={{ height: `${overtime}%` }}
+        />
+      </div>
+    );
+  })}
+</div>
+
 
           <div className="chart-x-axis">
             {days.map((day) => (
