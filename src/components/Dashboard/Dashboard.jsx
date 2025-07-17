@@ -1,85 +1,71 @@
 import React from 'react';
-import DashboardHeader from "./DashboardHeader";
-import TrackedHoursChart from './WeeklyChart';
-import HolidaysViewer from './HolidaySection';
-import ActivityRing from "./ActivityRing";
+import DashboardHeader from './DashboardHeader';
+import WeeklyChart from './WeeklyChart';
+import HolidaySection from './HolidaySection';
+import ActivityRing from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
 import WelcomeCard from './WelcomeCard';
-import WhosInOutPanel from './WhoIsInOutPanel';
+import WhoIsInOutPanel from './WhoIsInOutPanel';
+import CurrentTime from './CurrentTime';
+import './Dashboard.css';
 
-const DashboardPage = () => {
+const Dashboard = () => {
   return (
     <div className="dashboard-container">
-      {/* Header with Dropdowns */}
+      {/* Header with horizontal dropdowns - no duplicate title */}
       <DashboardHeader />
       
-      {/* Main Content Area */}
+      {/* Main dashboard content with scrolling */}
       <div className="dashboard-content">
-        {/* Main Content with Vertical Scrolling (RED RECTANGLE AREA) */}
+        {/* Left side - main content with vertical scroll */}
         <div className="dashboard-main">
-          {/* First Row - Welcome Card and Holidays */}
-          <div className="dashboard-row">
-            <div className="dashboard-col welcome">
+          <div className="dashboard-main-content">
+            {/* Welcome Card */}
+            <div className="dashboard-section">
               <WelcomeCard />
             </div>
-            <div className="dashboard-col holidays">
-              <HolidaysViewer />
-            </div>
-          </div>
 
-          {/* Second Row - Tracked Hours Chart */}
-          <div className="dashboard-row">
-            <div className="dashboard-col wide">
-              <TrackedHoursChart />
-            </div>
-          </div>
-
-          {/* Third Row - Activities and Projects Charts */}
-          <div className="dashboard-row">
-            <div className="dashboard-col">
-              <ActivityRing />
-            </div>
-            <div className="dashboard-col">
-              <ProjectsChart />
-            </div>
-          </div>
-
-          {/* Add more rows as needed for additional charts */}
-          {/* Fourth Row - Example for more charts */}
-          <div className="dashboard-row">
-            <div className="dashboard-col">
-              <div className="chart-placeholder">
-                <h3>Additional Chart 1</h3>
-                <p>This area can contain more charts or widgets</p>
+            {/* Charts Section */}
+            <div className="dashboard-charts">
+              {/* Tracked Hours Chart */}
+              <div className="chart-section">
+                <WeeklyChart />
               </div>
-            </div>
-            <div className="dashboard-col">
-              <div className="chart-placeholder">
-                <h3>Additional Chart 2</h3>
-                <p>This area can contain more charts or widgets</p>
-              </div>
-            </div>
-          </div>
 
-          {/* Fifth Row - Example for wide chart */}
-          <div className="dashboard-row">
-            <div className="dashboard-col wide">
-              <div className="chart-placeholder">
-                <h3>Wide Chart Example</h3>
-                <p>This demonstrates how the vertical scrolling works with multiple rows of content</p>
+              {/* Activity Ring Chart */}
+              <div className="chart-section">
+                <ActivityRing />
+              </div>
+
+              {/* Projects Chart */}
+              <div className="chart-section">
+                <ProjectsChart />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Sidebar - Who's In/Out Panel */}
+        {/* Right side - sidebar with independent scroll */}
         <div className="dashboard-sidebar">
-          <WhosInOutPanel />
+          {/* Holiday Section */}
+          <div className="sidebar-section">
+            <HolidaySection />
+          </div>
+
+          {/* Who's In/Out Panel */}
+          <div className="sidebar-section">
+            <WhoIsInOutPanel />
+          </div>
+
+          {/* Current Time */}
+          <div className="sidebar-section">
+            <CurrentTime />
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default DashboardPage;
+export default Dashboard;
 

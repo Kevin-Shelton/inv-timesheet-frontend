@@ -1,397 +1,474 @@
-/* === Updated Dashboard CSS (Fully Aligned to All JSX Files) === */
+/* =====================================================
+   DASHBOARD LAYOUT WITH VERTICAL SCROLLING & DROPDOWNS
+   ===================================================== */
 
-body {
-  font-family: 'Inter', sans-serif;
-  background-color: #F9FAFB;
-  color: #111827;
-  margin: 0;
-}
-
-.dashboard-reference-layout {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 24px;
-}
-
-.dashboard-header-section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.dashboard-main-content {
-  display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: 24px;
-}
-
-.dashboard-left-content {
+/* Main Dashboard Container */
+.dashboard-container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-}
-
-.dashboard-right-sidebar-wide {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* === Hello Section === */
-.hello-section-improved {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  min-height: 160px;
-}
-
-.hello-text-content {
-  flex: 1;
-}
-
-.hello-main-title {
-  font-size: 22px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.hello-company-subtitle {
-  font-size: 14px;
-  color: #6B7280;
-}
-
-.hello-illustration-area {
-  flex-shrink: 0;
-  margin-left: 24px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.jibble-logo-container {
-  width: 36px;
-  height: 36px;
-  background: #FB923C;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.jibble-sigma {
-  color: white;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.person-illustration-container {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, #3B82F6, #1E40AF);
-  border-radius: 50%;
-  position: relative;
+  height: 100vh;
+  background: #f8f9fa;
   overflow: hidden;
 }
 
-.person-figure-blue {
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 50px;
-  background: #FB923C;
-  border-radius: 20px 20px 0 0;
+/* Dashboard Header */
+.dashboard-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e9ecef;
+  padding: 0;
+  flex-shrink: 0;
+  z-index: 100;
 }
 
-.person-figure-blue::before {
-  content: '';
-  position: absolute;
-  top: -15px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 20px;
-  background: #FB923C;
-  border-radius: 50%;
-}
-
-/* === Holiday Section === */
-.holidays-section-improved {
-  background: #FFFFFF;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-  min-height: 160px;
-}
-
-.holidays-header {
+/* Top Navigation */
+.dashboard-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f3f4;
 }
 
-.holidays-title {
-  font-size: 12px;
+.nav-left .dashboard-title {
+  font-size: 24px;
   font-weight: 600;
-  text-transform: uppercase;
-  color: #111827;
+  color: #1a202c;
+  margin: 0;
 }
 
-.holidays-link {
-  background: none;
-  border: none;
-  font-size: 12px;
-  color: #6B7280;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.holidays-link:hover {
-  color: #FB923C;
-}
-
-.no-holidays-text {
-  font-size: 14px;
-  color: #9CA3AF;
-  text-align: center;
-}
-
-/* === Legend === */
-.hours-legend {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.legend-item {
+.nav-right .organization-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  color: #6B7280;
-}
-
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.legend-dot.worked {
-  background-color: #9CA3AF;
-}
-
-.legend-dot.break {
-  background-color: #D1D5DB;
-}
-
-.legend-dot.overtime {
-  background-color: #FBBF24;
-}
-
-.legend-label {
-  flex: 1;
-  font-weight: 500;
-  font-size: 12px;
-  color: #374151;
-}
-
-.legend-value {
-  font-weight: 600;
-  color: #111827;
-  font-size: 12px;
-}
-
-/* === Time Display === */
-.current-time-section-compact {
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  padding: 24px;
-  text-align: center;
-}
-
-.time-display-large {
-  font-size: 28px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.date-display-large {
-  font-size: 14px;
-  color: #6B7280;
-  margin-bottom: 4px;
-}
-
-.timezone-large {
-  font-size: 12px;
-  color: #9CA3AF;
-}
-
-/* === Who’s In/Out Section === */
-.whos-inout-section-expanded {
-  background: #FFFFFF;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-}
-
-.member-count {
-  font-size: 12px;
-  color: #6B7280;
-  margin-bottom: 12px;
-}
-
-.member-search-input-wide {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #D1D5DB;
+  padding: 8px 16px;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
+  color: #4a5568;
   font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.member-search-input-wide:focus {
-  outline: none;
-  border-color: #FB923C;
-  box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.2);
+.organization-button:hover {
+  background: #edf2f7;
+  border-color: #cbd5e0;
 }
 
-.members-list-scrollable {
-  max-height: 180px;
-  overflow-y: auto;
-  margin-top: 16px;
-}
-
-.member-item {
+/* Filter Controls */
+.dashboard-filters {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
-  padding: 6px 0;
+  align-items: center;
+  padding: 16px 24px;
+  background: #fafbfc;
 }
 
-.member-status.in {
-  color: #10B981;
+.filters-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.member-status.out {
-  color: #EF4444;
+.filters-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.member-status.break {
-  color: #F59E0B;
+/* Timeframe Group */
+.timeframe-group {
+  display: flex;
+  gap: 4px;
 }
 
+/* Filter Group */
+.filter-group {
+  display: flex;
+  gap: 12px;
+}
 
-
-/* === VISUAL DEBUGGING STYLES FOR EACH SECTION === */
-.hello-section-improved {
-  background-color: #e6f7ff;
-  border: 1px dashed #1890ff;
+/* Dropdown Container */
+.dropdown-container {
   position: relative;
-}
-.hello-section-improved::before {
-  content: "HELLO SECTION";
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  font-size: 10px;
-  color: #1890ff;
-  font-weight: bold;
+  display: inline-block;
 }
 
-.holidays-section-improved {
-  background-color: #fff7e6;
-  border: 1px dashed #faad14;
-  position: relative;
-}
-.holidays-section-improved::before {
-  content: "HOLIDAYS SECTION";
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  font-size: 10px;
-  color: #fa8c16;
-  font-weight: bold;
-}
-
-.tracked-hours-section {
-  background-color: #f6ffed;
-  border: 1px dashed #52c41a;
-  position: relative;
-}
-.tracked-hours-section::before {
-  content: "";
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  font-size: 10px;
-  color: #389e0d;
-  font-weight: bold;
+/* Dropdown Buttons */
+.dropdown-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #4a5568;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  justify-content: space-between;
 }
 
-.activities-section {
-  background-color: #fff0f6;
-  border: 1px dashed #eb2f96;
-  position: relative;
-}
-.activities-section::before {
-  content: "ACTIVITIES SECTION";
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  font-size: 10px;
-  color: #c41d7f;
-  font-weight: bold;
+.dropdown-button.primary {
+  background: #ff6b35;
+  color: #ffffff;
+  border-color: #ff6b35;
 }
 
-.projects-section {
-  background-color: #f9f0ff;
-  border: 1px dashed #9254de;
-  position: relative;
-}
-.projects-section::before {
-  content: "PROJECTS SECTION";
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  font-size: 10px;
-  color: #722ed1;
-  font-weight: bold;
+.dropdown-button.primary:hover {
+  background: #e55a2b;
+  border-color: #e55a2b;
 }
 
-.dashboard-right-sidebar-wide {
-  background-color: #e6fffb;
-  border: 1px dashed #13c2c2;
-  position: relative;
-}
-.dashboard-right-sidebar-wide::before {
-  content: "RIGHT SIDEBAR";
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  font-size: 10px;
-  color: #08979c;
-  font-weight: bold;
+.dropdown-button.secondary:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
 }
 
-.current-time-section-compact {
-  background-color: #f0f5ff;
-  border: 1px dashed #2f54eb;
-  position: relative;
+.dropdown-button.active {
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
 }
-.current-time-section-compact::before {
-  content: "TIME SECTION";
+
+/* Dropdown Arrow */
+.dropdown-arrow {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.dropdown-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
   position: absolute;
-  top: 4px;
-  left: 6px;
-  font-size: 10px;
-  color: #1d39c4;
-  font-weight: bold;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
 }
+
+/* Dropdown Options */
+.dropdown-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  color: #4a5568;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-option:hover {
+  background: #f7fafc;
+}
+
+.dropdown-option.selected {
+  background: #ebf8ff;
+  color: #2b6cb0;
+  font-weight: 500;
+}
+
+.dropdown-option .check-icon {
+  width: 16px;
+  height: 16px;
+  color: #4299e1;
+}
+
+/* Dashboard Content Area */
+.dashboard-content {
+  display: flex;
+  flex: 1;
+  gap: 24px;
+  padding: 24px;
+  overflow: hidden;
+  min-height: 0; /* Important for flex child to shrink */
+}
+
+/* Main Content Area with Scroll */
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+  /* THIS IS THE KEY - VERTICAL SCROLLING IN RED RECTANGLE AREA */
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+}
+
+/* Dashboard Sidebar (Who's In/Out Panel) */
+.dashboard-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 0;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+/* Dashboard Rows */
+.dashboard-row {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+
+/* Dashboard Columns */
+.dashboard-col {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.dashboard-col.wide {
+  flex: 1 1 100%;
+  min-height: 400px;
+}
+
+.dashboard-col.welcome {
+  flex: 1.5;
+  min-height: 250px;
+}
+
+.dashboard-col.holidays {
+  flex: 1;
+  min-height: 250px;
+}
+
+/* Custom Scrollbar for Main Content */
+.dashboard-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-main::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dashboard-main::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.dashboard-main::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Custom Scrollbar for Sidebar */
+.dashboard-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 3px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+  background: #dee2e6;
+  border-radius: 3px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
+
+/* Dropdown Menu Scrollbar */
+.dropdown-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: #f8f9fa;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: #dee2e6;
+  border-radius: 2px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboard-content {
+    flex-direction: column;
+    padding: 16px;
+  }
+  
+  .dashboard-main {
+    max-height: none;
+    overflow-y: visible;
+  }
+  
+  .dashboard-sidebar {
+    width: 100%;
+    max-height: 400px;
+  }
+  
+  .dashboard-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .dashboard-filters {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .filters-left,
+  .filters-right {
+    justify-content: center;
+  }
+  
+  .filter-group {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-nav {
+    padding: 12px 16px;
+  }
+  
+  .dashboard-filters {
+    padding: 12px 16px;
+  }
+  
+  .dashboard-content {
+    padding: 12px;
+    gap: 16px;
+  }
+  
+  .dropdown-button {
+    min-width: 100px;
+    font-size: 13px;
+    padding: 6px 12px;
+  }
+  
+  .nav-left .dashboard-title {
+    font-size: 20px;
+  }
+}
+
+/* =====================================================
+   LAYOUT UTILITIES
+   ===================================================== */
+
+/* Smooth scrolling behavior */
+.dashboard-main,
+.dashboard-sidebar,
+.dropdown-menu {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent content overflow */
+.dashboard-col > * {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Focus styles for accessibility */
+.dropdown-button:focus,
+.dropdown-option:focus {
+  outline: 2px solid #4299e1;
+  outline-offset: 2px;
+}
+
+/* Loading and error states */
+.chart-loading,
+.chart-error,
+.chart-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* =====================================================
+   ANIMATION IMPROVEMENTS
+   ===================================================== */
+
+/* Dropdown animations */
+.dropdown-menu {
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Button hover animations */
+.dropdown-button,
+.organization-button {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.dropdown-button:hover,
+.organization-button:hover {
+  transform: translateY(-1px);
+}
+
+/* =====================================================
+   PRINT STYLES
+   ===================================================== */
+
+@media print {
+  .dashboard-container {
+    height: auto;
+    overflow: visible;
+  }
+  
+  .dashboard-main,
+  .dashboard-sidebar {
+    overflow: visible;
+    max-height: none;
+  }
+  
+  .dropdown-menu {
+    display: none;
+  }
+  
+  .dashboard-filters {
+    display: none;
+  }
+}
+
