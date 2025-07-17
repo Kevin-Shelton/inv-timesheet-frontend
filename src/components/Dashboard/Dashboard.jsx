@@ -1,5 +1,5 @@
 import React from 'react';
-import DashboardHeader from './DashboardHeader_WithDropdowns';
+import DashboardHeader from "./DashboardHeader";
 import TrackedHoursChart from './TrackedHoursChart_Enhanced_Fixed';
 import HolidaysViewer from './HolidaysViewer_Enhanced_Fixed';
 import ActivitiesChart from './ActivitiesChart_Enhanced';
