@@ -2,7 +2,7 @@ import React from 'react';
 import DashboardHeader from "./DashboardHeader";
 import TrackedHoursChart from './WeeklyChart';
 import HolidaysViewer from './HolidaySection';
-import ActivitiesChart from './ActivitiesChart';
+import ActivityRing from "./ActivityRing";
 import ProjectsChart from './ProjectsChart';
 import WelcomeCard from './WelcomeCard';
 import WhosInOutPanel from './WhosInOutPanel'; // Assuming you have this component
@@ -37,7 +37,7 @@ const DashboardPage = () => {
           {/* Third Row - Activities and Projects Charts */}
           <div className="dashboard-row">
             <div className="dashboard-col">
-              <ActivitiesChart />
+              <ActivityRing />
             </div>
             <div className="dashboard-col">
               <ProjectsChart />
