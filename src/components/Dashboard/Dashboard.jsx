@@ -1,10 +1,10 @@
 import React from 'react';
 import DashboardHeader from "./DashboardHeader";
-import TrackedHoursChart from './TrackedHoursChart_Enhanced_Fixed';
-import HolidaysViewer from './HolidaysViewer_Enhanced_Fixed';
-import ActivitiesChart from './ActivitiesChart_Enhanced';
-import ProjectsChart from './ProjectsChart_New';
-import WelcomeCard from './WelcomeCard_ProtectedRoute_Compatible';
+import TrackedHoursChart from './TrackedHoursChart';
+import HolidaysViewer from './HolidaysViewer';
+import ActivitiesChart from './ActivitiesChart';
+import ProjectsChart from './ProjectsChart';
+import WelcomeCard from './WelcomeCard';
 import WhosInOutPanel from './WhosInOutPanel'; // Assuming you have this component
 
 const DashboardPage = () => {
