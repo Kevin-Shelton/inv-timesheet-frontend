@@ -1,47 +1,85 @@
 import React from 'react';
-import WelcomeCard from './WelcomeCard';
-import HolidaySection from './HolidaySection';
-import ActivityRing from './ActivityRing';
-import WeeklyChart from './WeeklyChart';
-import WhoIsInOutPanel from './WhoIsInOutPanel';
-import './Dashboard.css';
-import './DashboardNamespaced.css';
+import DashboardHeader from './DashboardHeader_WithDropdowns';
+import TrackedHoursChart from './TrackedHoursChart_Enhanced_Fixed';
+import HolidaysViewer from './HolidaysViewer_Enhanced_Fixed';
+import ActivitiesChart from './ActivitiesChart_Enhanced';
+import ProjectsChart from './ProjectsChart_New';
+import WelcomeCard from './WelcomeCard_ProtectedRoute_Compatible';
+import WhosInOutPanel from './WhosInOutPanel'; // Assuming you have this component
 
-const Dashboard = () => {
+const DashboardPage = () => {
   return (
-    <div className="dashboard-page with-sidebar">
-      <div className="dashboard-main">
-        {/* Top row: Welcome and Holiday cards side-by-side, equal width/height */}
-        <div className="dashboard-row dashboard-top-row">
-          <div className="dashboard-col welcome">
-            <WelcomeCard />
+    <div className="dashboard-container">
+      {/* Header with Dropdowns */}
+      <DashboardHeader />
+      
+      {/* Main Content Area */}
+      <div className="dashboard-content">
+        {/* Main Content with Vertical Scrolling (RED RECTANGLE AREA) */}
+        <div className="dashboard-main">
+          {/* First Row - Welcome Card and Holidays */}
+          <div className="dashboard-row">
+            <div className="dashboard-col welcome">
+              <WelcomeCard />
+            </div>
+            <div className="dashboard-col holidays">
+              <HolidaysViewer />
+            </div>
           </div>
-          <div className="dashboard-col holidays">
-            <HolidaySection />
+
+          {/* Second Row - Tracked Hours Chart */}
+          <div className="dashboard-row">
+            <div className="dashboard-col wide">
+              <TrackedHoursChart />
+            </div>
+          </div>
+
+          {/* Third Row - Activities and Projects Charts */}
+          <div className="dashboard-row">
+            <div className="dashboard-col">
+              <ActivitiesChart />
+            </div>
+            <div className="dashboard-col">
+              <ProjectsChart />
+            </div>
+          </div>
+
+          {/* Add more rows as needed for additional charts */}
+          {/* Fourth Row - Example for more charts */}
+          <div className="dashboard-row">
+            <div className="dashboard-col">
+              <div className="chart-placeholder">
+                <h3>Additional Chart 1</h3>
+                <p>This area can contain more charts or widgets</p>
+              </div>
+            </div>
+            <div className="dashboard-col">
+              <div className="chart-placeholder">
+                <h3>Additional Chart 2</h3>
+                <p>This area can contain more charts or widgets</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Fifth Row - Example for wide chart */}
+          <div className="dashboard-row">
+            <div className="dashboard-col wide">
+              <div className="chart-placeholder">
+                <h3>Wide Chart Example</h3>
+                <p>This demonstrates how the vertical scrolling works with multiple rows of content</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Middle row: Weekly Chart */}
-        <div className="dashboard-row">
-          <div className="dashboard-col wide">
-            <WeeklyChart />
-          </div>
+        {/* Sidebar - Who's In/Out Panel */}
+        <div className="dashboard-sidebar">
+          <WhosInOutPanel />
         </div>
-
-        {/* Bottom row: Activity Ring */}
-        <div className="dashboard-row">
-          <div className="dashboard-col activity">
-            <ActivityRing />
-          </div>
-        </div>
-      </div>
-
-      {/* Sidebar: Who's In/Out Panel */}
-      <div className="dashboard-sidebar">
-        <WhoIsInOutPanel />
       </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default DashboardPage;
+
