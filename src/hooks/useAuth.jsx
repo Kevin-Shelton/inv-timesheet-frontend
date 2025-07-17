@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '../supabaseClient.js'
 
 // Create the auth context
 const AuthContext = createContext(null)
@@ -8,25 +9,116 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Initialize auth state on mount
+  // Initialize auth state and listen for changes
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem('timesheet_user')
-      if (savedUser) {
-        const userData = JSON.parse(savedUser)
-        setUser(userData)
+    console.log('🔐 AUTH PROVIDER: Initializing Supabase authentication...')
+    
+    // Get initial session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('🔐 AUTH ERROR: Failed to get session:', error)
+          setUser(null)
+        } else if (session?.user) {
+          console.log('🔐 AUTH SUCCESS: Found existing session for:', session.user.email)
+          await setUserFromSupabaseUser(session.user)
+        } else {
+          console.log('🔐 AUTH INFO: No existing session found')
+          setUser(null)
+        }
+      } catch (error) {
+        console.error('🔐 AUTH ERROR: Session initialization failed:', error)
+        setUser(null)
+      } finally {
+        setLoading(false)
       }
-    } catch (error) {
-      console.error('Error loading saved user:', error)
-      localStorage.removeItem('timesheet_user')
-    } finally {
+    }
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 AUTH STATE CHANGE:', event, session?.user?.email || 'no user')
+      
+      if (session?.user) {
+        await setUserFromSupabaseUser(session.user)
+      } else {
+        setUser(null)
+      }
+      
       setLoading(false)
+    })
+
+    // Initialize
+    initializeAuth()
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('🔐 AUTH PROVIDER: Cleaning up auth subscription')
+      subscription?.unsubscribe()
     }
   }, [])
 
-  // Simple login function
+  // Convert Supabase user to our user format
+  const setUserFromSupabaseUser = async (supabaseUser) => {
+    try {
+      console.log('🔐 AUTH: Converting Supabase user to app user format')
+      
+      // Try to get user profile from database
+      let userProfile = null
+      try {
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', supabaseUser.id)
+          .single()
+
+        if (!profileError && profile) {
+          userProfile = profile
+          console.log('🔐 AUTH: Found user profile in database:', profile.full_name)
+        }
+      } catch (profileError) {
+        console.log('🔐 AUTH: No user profile found in database, using auth data')
+      }
+
+      // Create user object compatible with existing system
+      const userData = {
+        id: supabaseUser.id,
+        email: supabaseUser.email,
+        name: userProfile?.full_name || 
+              supabaseUser.user_metadata?.full_name || 
+              supabaseUser.email?.split('@')[0] || 
+              'User',
+        role: userProfile?.role || 
+              supabaseUser.user_metadata?.role || 
+              (supabaseUser.email === 'admin@test.com' ? 'admin' : 'user'),
+        company: userProfile?.company || 
+                 supabaseUser.user_metadata?.company || 
+                 'Invictus',
+        // Include additional Supabase data
+        supabase_user: supabaseUser,
+        profile: userProfile
+      }
+
+      console.log('🔐 AUTH: User data prepared:', {
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        role: userData.role
+      })
+
+      setUser(userData)
+      return userData
+    } catch (error) {
+      console.error('🔐 AUTH ERROR: Failed to set user from Supabase user:', error)
+      setUser(null)
+      return null
+    }
+  }
+
+  // Supabase-based login function (same interface as before)
   const login = async (email, password) => {
-    console.log('Login function called with:', { email, password })
+    console.log('🔐 AUTH LOGIN: Attempting login with:', { email })
     
     try {
       setLoading(true)
@@ -36,63 +128,104 @@ export function AuthProvider({ children }) {
         throw new Error('Email and password are required')
       }
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Use Supabase authentication
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      })
 
-      // Check credentials
-      let userData = null
-      
-      if (email === 'admin@test.com' && password === 'password123') {
-        userData = {
-          id: '1',
-          email: 'admin@test.com',
-          name: 'Admin User',
-          role: 'admin',
-          company: 'Invictus'
-        }
-      } else if (email === 'user@test.com' && password === 'password123') {
-        userData = {
-          id: '2',
-          email: 'user@test.com',
-          name: 'Test User',
-          role: 'user',
-          company: 'Invictus'
-        }
-      } else {
-        throw new Error('Invalid email or password')
+      if (error) {
+        console.error('🔐 AUTH LOGIN ERROR:', error.message)
+        throw new Error(error.message || 'Login failed')
       }
 
-      // Save user data
-      setUser(userData)
-      localStorage.setItem('timesheet_user', JSON.stringify(userData))
+      if (!data.user) {
+        throw new Error('Login failed - no user returned')
+      }
 
-      console.log('Login successful:', userData)
+      console.log('🔐 AUTH LOGIN SUCCESS:', data.user.email)
+      
+      // Convert to our user format
+      const userData = await setUserFromSupabaseUser(data.user)
+      
+      if (!userData) {
+        throw new Error('Failed to process user data')
+      }
+
       return { success: true, user: userData }
 
     } catch (error) {
-      console.error('Login error:', error)
+      console.error('🔐 AUTH LOGIN ERROR:', error)
       setUser(null)
-      localStorage.removeItem('timesheet_user')
       throw error
     } finally {
       setLoading(false)
     }
   }
 
-  // Logout function
-  const logout = () => {
-    console.log('Logout called')
-    setUser(null)
-    localStorage.removeItem('timesheet_user')
+  // Supabase-based logout function
+  const logout = async () => {
+    console.log('🔐 AUTH LOGOUT: Signing out user...')
+    
+    try {
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error('🔐 AUTH LOGOUT ERROR:', error)
+        throw error
+      }
+      
+      console.log('🔐 AUTH LOGOUT SUCCESS: User signed out')
+      setUser(null)
+      
+    } catch (error) {
+      console.error('🔐 AUTH LOGOUT ERROR:', error)
+      // Force local logout even if Supabase logout fails
+      setUser(null)
+      throw error
+    }
   }
 
-  // Context value
+  // Get current session (helper function)
+  const getCurrentSession = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) throw error
+      return session
+    } catch (error) {
+      console.error('🔐 AUTH: Failed to get current session:', error)
+      return null
+    }
+  }
+
+  // Refresh user data (helper function)
+  const refreshUser = async () => {
+    try {
+      const { data: { user: supabaseUser }, error } = await supabase.auth.getUser()
+      if (error) throw error
+      
+      if (supabaseUser) {
+        await setUserFromSupabaseUser(supabaseUser)
+      } else {
+        setUser(null)
+      }
+    } catch (error) {
+      console.error('🔐 AUTH: Failed to refresh user:', error)
+      setUser(null)
+    }
+  }
+
+  // Context value (same interface as before + new helpers)
   const value = {
     user,
     loading,
     login,
     logout,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    // Additional Supabase-specific helpers
+    getCurrentSession,
+    refreshUser,
+    supabase // Expose supabase client for advanced usage
   }
 
   return (
@@ -102,7 +235,7 @@ export function AuthProvider({ children }) {
   )
 }
 
-// Custom hook to use auth
+// Custom hook to use auth (same as before)
 export function useAuth() {
   const context = useContext(AuthContext)
   
