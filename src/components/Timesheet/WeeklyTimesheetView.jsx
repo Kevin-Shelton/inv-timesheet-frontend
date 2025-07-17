@@ -32,16 +32,12 @@ const WeeklyTimesheetView = ({
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const user = await supabase.auth.getUser();
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
         setCurrentUser(user);
       } catch (error) {
         console.error('Error loading user:', error);
-        // Set default user if API fails
-        setCurrentUser({ 
-          id: 'default-user',
-          full_name: 'Kevin Shelton',
-          email: 'kevin@example.com'
-        });
+        setCurrentUser(null);
       }
     };
 
@@ -58,11 +54,18 @@ const WeeklyTimesheetView = ({
         const startDate = weekDates[0];
         const endDate = weekDates[6];
         
-        const entries = await enhancedSupabaseApi.getTimesheetEntries({
-          userId: currentUser.id,
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0]
-        });
+        // Direct Supabase query instead of enhancedSupabaseApi
+        const { data: entries, error } = await supabase
+          .from('timesheet_entries')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .gte('date', startDate.toISOString().split('T')[0])
+          .lte('date', endDate.toISOString().split('T')[0])
+          .order('date', { ascending: true });
+
+        if (error) {
+          throw error;
+        }
         
         setTimesheetData(entries || []);
       } catch (error) {
@@ -122,9 +125,17 @@ const WeeklyTimesheetView = ({
   };
 
   // Get user initials
-  const getUserInitials = (name) => {
-    if (!name) return 'K';
+  const getUserInitials = (user) => {
+    if (!user) return 'U';
+    const name = user.user_metadata?.full_name || user.email;
+    if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  // Get user display name
+  const getUserDisplayName = (user) => {
+    if (!user) return 'User';
+    return user.user_metadata?.full_name || user.email || 'User';
   };
 
   if (loading) {
@@ -309,14 +320,14 @@ const WeeklyTimesheetView = ({
                       fontWeight: '500',
                       fontSize: '14px'
                     }}>
-                      {getUserInitials(currentUser?.full_name)}
+                      {getUserInitials(currentUser)}
                     </div>
                     <div style={{
                       fontSize: '14px',
                       color: '#111827',
                       fontWeight: '500'
                     }}>
-                      {currentUser?.full_name || 'Kevin Shelton'}
+                      {getUserDisplayName(currentUser)}
                     </div>
                   </div>
                 </td>
@@ -422,7 +433,7 @@ const WeeklyTimesheetView = ({
               fontSize: '14px',
               marginBottom: '16px'
             }}>
-              No timesheet data for Sat, Jul 12
+              No timesheet data for this week
             </p>
             <button 
               onClick={() => onCreateEntry && onCreateEntry({

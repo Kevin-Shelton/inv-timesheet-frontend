@@ -12,15 +12,12 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const user = await supabase.auth.getUser();
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
         setCurrentUser(user);
       } catch (error) {
         console.error('Error loading user:', error);
-        setCurrentUser({ 
-          id: 'default-user',
-          full_name: 'Kevin Shelton',
-          email: 'kevin@example.com'
-        });
+        setCurrentUser(null);
       }
     };
 
@@ -39,15 +36,22 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
         const startDate = new Date(year, month, 1);
         const endDate = new Date(year, month + 1, 0);
         
-        const entries = await enhancedSupabaseApi.getTimesheetEntries({
-          userId: currentUser.id,
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0]
-        });
+        // Direct Supabase query instead of enhancedSupabaseApi
+        const { data: entries, error } = await supabase
+          .from('timesheet_entries')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .gte('date', startDate.toISOString().split('T')[0])
+          .lte('date', endDate.toISOString().split('T')[0])
+          .order('date', { ascending: true });
+
+        if (error) {
+          throw error;
+        }
         
         // Group entries by date
         const groupedData = {};
-        entries.forEach(entry => {
+        (entries || []).forEach(entry => {
           const date = entry.date;
           if (!groupedData[date]) {
             groupedData[date] = {
@@ -324,7 +328,7 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
                 fontWeight: '600',
                 fontSize: '16px'
               }}>
-                {currentUser.full_name?.charAt(0) || 'U'}
+                {currentUser.user_metadata?.full_name?.charAt(0) || currentUser.email?.charAt(0) || 'U'}
               </div>
               <div>
                 <h2 style={{
@@ -333,7 +337,7 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
                   color: '#111827',
                   margin: '0 0 2px 0'
                 }}>
-                  {currentUser.full_name || 'User'}
+                  {currentUser.user_metadata?.full_name || currentUser.email || 'User'}
                 </h2>
                 <p style={{
                   fontSize: '12px',

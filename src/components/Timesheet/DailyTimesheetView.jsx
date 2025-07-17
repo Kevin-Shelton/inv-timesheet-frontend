@@ -12,14 +12,6 @@ const DailyTimesheetView = ({ selectedDate, userId, onDateChange }) => {
     members: 'all',
     schedules: 'all'
   });
-    {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-      }
-    }
-  );
 
   // Format date for display
   const formatDisplayDate = (date) => {
