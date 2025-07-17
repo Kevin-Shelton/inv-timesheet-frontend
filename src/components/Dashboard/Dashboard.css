@@ -1,5 +1,6 @@
 /* ===========================
-   DASHBOARD LAYOUT WITH SCROLLING
+   DASHBOARD LAYOUT WITH SCROLLING v2.0
+   Enhanced with Campaign filters and draggable components
    =========================== */
 
 .dashboard-container {
@@ -10,7 +11,7 @@
 }
 
 /* ===========================
-   DASHBOARD HEADER
+   DASHBOARD HEADER - Horizontal Layout
    =========================== */
 
 .dashboard-header {
@@ -103,7 +104,7 @@
 }
 
 /* ===========================
-   DASHBOARD CONTENT LAYOUT
+   DASHBOARD CONTENT LAYOUT - Vertical Scrolling
    =========================== */
 
 .dashboard-content {
@@ -212,7 +213,7 @@
 }
 
 /* ===========================
-   DRAGGABLE WHO'S IN/OUT PANEL
+   DRAGGABLE WHO'S IN/OUT PANEL - Enhanced v2.0
    =========================== */
 
 .who-is-in-out-panel {
@@ -285,7 +286,7 @@
 }
 
 /* ===========================
-   TIME COMPONENT
+   TIME COMPONENT - Enhanced Display
    =========================== */
 
 .time-component {
@@ -313,7 +314,7 @@
 }
 
 /* ===========================
-   MEMBERS COMPONENT
+   MEMBERS COMPONENT - Enhanced with Campaign Filter
    =========================== */
 
 .members-component {
@@ -486,7 +487,7 @@
 }
 
 /* ===========================
-   RESPONSIVE DESIGN
+   RESPONSIVE DESIGN - Mobile Optimized
    =========================== */
 
 @media (max-width: 1200px) {

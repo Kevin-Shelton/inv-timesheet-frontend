@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { supabase } from '../../../lib/supabaseClient';
 
+// Enhanced WhoIsInOutPanel v2.0 - with draggable components and campaign filtering
 const WhoIsInOutPanel = () => {
   const [components, setComponents] = useState([
     { id: 'time', type: 'time', title: 'Current Time' },
@@ -24,7 +25,7 @@ const WhoIsInOutPanel = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch campaigns
+  // Fetch campaigns from database
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
@@ -44,7 +45,7 @@ const WhoIsInOutPanel = () => {
     fetchCampaigns();
   }, []);
 
-  // Fetch members
+  // Fetch members based on selected campaign
   useEffect(() => {
     const fetchMembers = async () => {
       setLoading(true);
@@ -176,7 +177,7 @@ const WhoIsInOutPanel = () => {
           </select>
         </div>
 
-        {/* Search */}
+        {/* Member Search */}
         <div className="member-search">
           <input
             type="text"

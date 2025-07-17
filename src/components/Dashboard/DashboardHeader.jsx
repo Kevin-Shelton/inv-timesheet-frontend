@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 
+// Updated: Campaign filter with database integration - v2.0
 const DashboardHeader = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
@@ -63,9 +64,9 @@ const DashboardHeader = () => {
 
   return (
     <div className="dashboard-header">
-      {/* NO DUPLICATE TITLE - removed dashboard title */}
+      {/* NO DUPLICATE TITLE - header shows only filters */}
       
-      {/* Horizontal dropdown filters - reordered with Campaign next to time period */}
+      {/* Horizontal dropdown filters - Campaign moved next to time period */}
       <div className="dashboard-filters">
         {/* Time Period Dropdown */}
         <div className="dashboard-header-dropdown">
@@ -100,7 +101,7 @@ const DashboardHeader = () => {
           )}
         </div>
 
-        {/* Campaign Dropdown - moved next to time period */}
+        {/* Campaign Dropdown - positioned next to time period */}
         <div className="dashboard-header-dropdown">
           <button 
             className="dropdown-trigger"

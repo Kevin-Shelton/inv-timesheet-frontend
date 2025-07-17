@@ -8,18 +8,19 @@ import WelcomeCard from './WelcomeCard';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
 import './Dashboard.css';
 
+// Dashboard Layout v2.1 - with vertical scrolling and draggable components
 const Dashboard = () => {
   return (
     <div className="dashboard-container">
-      {/* Header with horizontal dropdowns - Campaign moved next to time period */}
+      {/* Header with horizontal dropdowns - Campaign positioned next to time period */}
       <DashboardHeader />
       
-      {/* Main dashboard content with scrolling */}
+      {/* Main dashboard content with vertical scrolling */}
       <div className="dashboard-content">
-        {/* Left side - main content with vertical scroll */}
+        {/* Left side - main content area with vertical scroll */}
         <div className="dashboard-main">
           <div className="dashboard-main-content">
-            {/* Welcome Card */}
+            {/* Welcome Card Section */}
             <div className="dashboard-section">
               <WelcomeCard />
             </div>
@@ -44,14 +45,14 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Right side - sidebar with independent scroll */}
+        {/* Right side - sidebar with independent scrolling */}
         <div className="dashboard-sidebar">
           {/* Holiday Section */}
           <div className="sidebar-section">
             <HolidaySection />
           </div>
 
-          {/* Draggable Who's In/Out Panel with Time */}
+          {/* Draggable Who's In/Out Panel with Time component */}
           <div className="sidebar-section">
             <WhoIsInOutPanel />
           </div>
