@@ -1,5 +1,8 @@
 // BULLETPROOF SINGLETON SUPABASE CLIENT
 // This prevents multiple GoTrueClient instances completely
+console.log('🔧 SUPABASE CLIENT: File loading started');
+console.log('🔧 ENV CHECK: URL =', import.meta.env.VITE_SUPABASE_URL ? 'SET' : 'MISSING');
+console.log('🔧 ENV CHECK: KEY =', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'MISSING');
 
 import { createClient } from '@supabase/supabase-js';
 
