@@ -1,211 +1,261 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { supabase } from '../../../lib/supabaseClient';
 
 const WhoIsInOutPanel = () => {
+  const [components, setComponents] = useState([
+    { id: 'time', type: 'time', title: 'Current Time' },
+    { id: 'members', type: 'members', title: "Who's in/out" }
+  ]);
   const [members, setMembers] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [selectedCampaign, setSelectedCampaign] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Define draggable panel components
-  const [panelComponents, setPanelComponents] = useState([
-    {
-      id: 'whos-in-out',
-      title: "Who's in/out",
-      type: 'members',
-      component: 'MembersComponent'
-    },
-    {
-      id: 'current-time',
-      title: 'Current Time',
-      type: 'time',
-      component: 'TimeComponent'
-    }
-  ]);
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
 
-  // Mock data for demonstration
+    return () => clearInterval(timer);
+  }, []);
+
+  // Fetch campaigns
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('campaigns')
+          .select('id, name')
+          .eq('status', 'active')
+          .order('name');
+
+        if (error) throw error;
+        setCampaigns(data || []);
+      } catch (error) {
+        console.error('Error fetching campaigns:', error);
+      }
+    };
+
+    fetchCampaigns();
+  }, []);
+
+  // Fetch members
   useEffect(() => {
     const fetchMembers = async () => {
+      setLoading(true);
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        setMembers([
-          { id: 1, name: 'John Doe', status: 'in', avatar: null },
-          { id: 2, name: 'Jane Smith', status: 'out', avatar: null },
-          { id: 3, name: 'Mike Johnson', status: 'break', avatar: null },
-        ]);
-        setLoading(false);
-      } catch (err) {
+        let query = supabase
+          .from('users')
+          .select(`
+            id,
+            full_name,
+            email,
+            status,
+            last_activity,
+            campaign_id,
+            campaigns!inner(name)
+          `)
+          .eq('is_active', true);
+
+        if (selectedCampaign !== 'all') {
+          query = query.eq('campaign_id', selectedCampaign);
+        }
+
+        const { data, error } = await query.order('full_name');
+
+        if (error) throw error;
+        setMembers(data || []);
+      } catch (error) {
+        console.error('Error fetching members:', error);
         setError('Failed to load members');
+      } finally {
         setLoading(false);
       }
     };
 
     fetchMembers();
-  }, []);
+  }, [selectedCampaign]);
 
-  // Handle drag end
   const handleDragEnd = (result) => {
     if (!result.destination) return;
 
-    const items = Array.from(panelComponents);
+    const items = Array.from(components);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    setPanelComponents(items);
+    setComponents(items);
   };
 
-  // Current time component
-  const TimeComponent = () => {
-    const [currentTime, setCurrentTime] = useState(new Date());
+  const filteredMembers = members.filter(member =>
+    member.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-    useEffect(() => {
-      const timer = setInterval(() => {
-        setCurrentTime(new Date());
-      }, 1000);
+  const getStatusCounts = () => {
+    const counts = { in: 0, break: 0, out: 0 };
+    filteredMembers.forEach(member => {
+      if (member.status === 'active') counts.in++;
+      else if (member.status === 'break') counts.break++;
+      else counts.out++;
+    });
+    return counts;
+  };
 
-      return () => clearInterval(timer);
-    }, []);
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
 
-    return (
-      <div className="time-component">
-        <div className="current-time">
-          <div className="time-display">
-            {currentTime.toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit',
-              hour12: true 
-            })}
-          </div>
-          <div className="date-display">
-            {currentTime.toLocaleDateString([], { 
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric'
-            })}
-          </div>
-        </div>
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getInitials = (name) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const renderTimeComponent = () => (
+    <div className="time-component">
+      <div className="current-time">
+        <div className="time-display">{formatTime(currentTime)}</div>
+        <div className="date-display">{formatDate(currentTime)}</div>
       </div>
-    );
-  };
+    </div>
+  );
 
-  // Members component
-  const MembersComponent = () => {
-    const inCount = members.filter(m => m.status === 'in').length;
-    const outCount = members.filter(m => m.status === 'out').length;
-    const breakCount = members.filter(m => m.status === 'break').length;
-
-    if (loading) {
-      return <div className="loading">Loading...</div>;
-    }
-
-    if (error) {
-      return <div className="error">{error}</div>;
-    }
+  const renderMembersComponent = () => {
+    const statusCounts = getStatusCounts();
 
     return (
       <div className="members-component">
         {/* Status Summary */}
         <div className="status-summary">
           <div className="status-item in">
-            <span className="count">{inCount}</span>
-            <span className="label">IN</span>
+            <div className="count">{statusCounts.in}</div>
+            <div className="label">IN</div>
           </div>
           <div className="status-item break">
-            <span className="count">{breakCount}</span>
-            <span className="label">BREAK</span>
+            <div className="count">{statusCounts.break}</div>
+            <div className="label">BREAK</div>
           </div>
           <div className="status-item out">
-            <span className="count">{outCount}</span>
-            <span className="label">OUT</span>
+            <div className="count">{statusCounts.out}</div>
+            <div className="label">OUT</div>
           </div>
         </div>
 
         {/* Campaign Filter */}
         <div className="campaign-filter">
-          <select className="campaign-select">
-            <option>All Campaigns</option>
-            <option>Campaign A</option>
-            <option>Campaign B</option>
+          <select
+            className="campaign-select"
+            value={selectedCampaign}
+            onChange={(e) => setSelectedCampaign(e.target.value)}
+          >
+            <option value="all">All Campaigns</option>
+            {campaigns.map(campaign => (
+              <option key={campaign.id} value={campaign.id}>
+                {campaign.name}
+              </option>
+            ))}
           </select>
         </div>
 
         {/* Search */}
         <div className="member-search">
-          <input 
-            type="text" 
-            placeholder="Search members..." 
+          <input
+            type="text"
             className="search-input"
+            placeholder="Search members..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         {/* Members List */}
-        <div className="members-list">
-          {members.length === 0 ? (
-            <div className="no-members">No members found</div>
-          ) : (
-            members.map(member => (
+        {loading ? (
+          <div className="loading">Loading members...</div>
+        ) : error ? (
+          <div className="error">{error}</div>
+        ) : filteredMembers.length === 0 ? (
+          <div className="no-members">No members found</div>
+        ) : (
+          <div className="members-list">
+            {filteredMembers.map(member => (
               <div key={member.id} className="member-item">
                 <div className="member-avatar">
-                  {member.avatar ? (
-                    <img src={member.avatar} alt={member.name} />
-                  ) : (
-                    <div className="avatar-placeholder">
-                      {member.name.charAt(0)}
-                    </div>
-                  )}
+                  <div className="avatar-placeholder">
+                    {getInitials(member.full_name)}
+                  </div>
                 </div>
                 <div className="member-info">
-                  <div className="member-name">{member.name}</div>
-                  <div className={`member-status ${member.status}`}>
-                    {member.status.toUpperCase()}
+                  <div className="member-name">{member.full_name}</div>
+                  <div className={`member-status ${member.status || 'out'}`}>
+                    {member.status === 'active' ? 'IN' : 
+                     member.status === 'break' ? 'BREAK' : 'OUT'}
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
 
-  // Render component based on type
   const renderComponent = (component) => {
     switch (component.type) {
       case 'time':
-        return <TimeComponent />;
+        return renderTimeComponent();
       case 'members':
-        return <MembersComponent />;
+        return renderMembersComponent();
       default:
-        return <div>Unknown component</div>;
+        return null;
     }
   };
 
   return (
     <div className="who-is-in-out-panel">
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="panel-components">
+        <Droppable droppableId="components">
           {(provided) => (
             <div
+              className="draggable-container"
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="draggable-container"
             >
-              {panelComponents.map((component, index) => (
-                <Draggable 
-                  key={component.id} 
-                  draggableId={component.id} 
+              {components.map((component, index) => (
+                <Draggable
+                  key={component.id}
+                  draggableId={component.id}
                   index={index}
                 >
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
-                      className={`draggable-component ${snapshot.isDragging ? 'dragging' : ''}`}
+                      className={`draggable-component ${
+                        snapshot.isDragging ? 'dragging' : ''
+                      }`}
                     >
-                      <div 
-                        {...provided.dragHandleProps}
+                      <div
                         className="drag-handle"
+                        {...provided.dragHandleProps}
                       >
                         <div className="component-header">
                           <h3 className="component-title">{component.title}</h3>

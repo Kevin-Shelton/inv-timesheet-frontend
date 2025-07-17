@@ -6,13 +6,12 @@ import ActivityRing from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
 import WelcomeCard from './WelcomeCard';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
-import CurrentTime from './CurrentTime';
 import './Dashboard.css';
 
 const Dashboard = () => {
   return (
     <div className="dashboard-container">
-      {/* Header with horizontal dropdowns - no duplicate title */}
+      {/* Header with horizontal dropdowns - Campaign moved next to time period */}
       <DashboardHeader />
       
       {/* Main dashboard content with scrolling */}
@@ -52,14 +51,9 @@ const Dashboard = () => {
             <HolidaySection />
           </div>
 
-          {/* Who's In/Out Panel */}
+          {/* Draggable Who's In/Out Panel with Time */}
           <div className="sidebar-section">
             <WhoIsInOutPanel />
-          </div>
-
-          {/* Current Time */}
-          <div className="sidebar-section">
-            <CurrentTime />
           </div>
         </div>
       </div>

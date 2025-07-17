@@ -1,133 +1,190 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../lib/supabaseClient';
 
 const DashboardHeader = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [selectedFilters, setSelectedFilters] = useState({
-    timeframe: 'Day',
-    locations: 'All locations',
-    groups: 'All groups',
-    schedules: 'All schedules'
-  });
+  const [campaigns, setCampaigns] = useState([]);
+  const [selectedCampaign, setSelectedCampaign] = useState('All campaigns');
+  const [selectedPeriod, setSelectedPeriod] = useState('Day');
 
-  const dropdownOptions = {
-    timeframe: ['Day', 'Week', 'Month'],
-    locations: ['All locations', 'Main Office', 'Remote', 'Branch A', 'Branch B'],
-    groups: ['All groups', 'Development', 'Marketing', 'Sales', 'Support', 'Management'],
-    schedules: ['All schedules', 'Full-time', 'Part-time', 'Contract', 'Intern']
+  // Fetch campaigns from database
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('campaigns')
+          .select('id, name, status')
+          .eq('status', 'active')
+          .order('name');
+
+        if (error) {
+          console.error('Error fetching campaigns:', error);
+          return;
+        }
+
+        setCampaigns(data || []);
+      } catch (error) {
+        console.error('Error fetching campaigns:', error);
+      }
+    };
+
+    fetchCampaigns();
+  }, []);
+
+  const toggleDropdown = (dropdownName) => {
+    setActiveDropdown(activeDropdown === dropdownName ? null : dropdownName);
   };
 
-  const toggleDropdown = (dropdown) => {
-    setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
-  };
-
-  const selectOption = (dropdown, option) => {
-    setSelectedFilters(prev => ({
-      ...prev,
-      [dropdown]: option
-    }));
+  const closeDropdowns = () => {
     setActiveDropdown(null);
   };
 
-  const handleClickOutside = (e) => {
-    if (!e.target.closest('.dropdown-container')) {
-      setActiveDropdown(null);
-    }
+  const selectCampaign = (campaignName) => {
+    setSelectedCampaign(campaignName);
+    closeDropdowns();
   };
 
-  React.useEffect(() => {
+  const selectPeriod = (period) => {
+    setSelectedPeriod(period);
+    closeDropdowns();
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dashboard-header-dropdown')) {
+        closeDropdowns();
+      }
+    };
+
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  const DropdownButton = ({ type, label, options }) => (
-    <div className="dropdown-container">
-      <button 
-        className={`dropdown-button ${activeDropdown === type ? 'active' : ''} ${type === 'timeframe' ? 'primary' : 'secondary'}`}
-        onClick={() => toggleDropdown(type)}
-      >
-        <span className="dropdown-label">{selectedFilters[type]}</span>
-        <svg 
-          className={`dropdown-arrow ${activeDropdown === type ? 'rotated' : ''}`}
-          width="12" 
-          height="12" 
-          viewBox="0 0 12 12" 
-          fill="currentColor"
-        >
-          <path d="M3 4.5L6 7.5L9 4.5H3Z"/>
-        </svg>
-      </button>
-      
-      {activeDropdown === type && (
-        <div className="dropdown-menu">
-          {options.map((option, index) => (
-            <button
-              key={index}
-              className={`dropdown-option ${selectedFilters[type] === option ? 'selected' : ''}`}
-              onClick={() => selectOption(type, option)}
-            >
-              {option}
-              {selectedFilters[type] === option && (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" className="check-icon">
-                  <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
-                </svg>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div className="dashboard-header">
-      {/* Top Navigation Bar */}
-      <div className="dashboard-nav">
-        <div className="nav-left">
-          <h1 className="dashboard-title">Dashboard</h1>
-        </div>
-        
-        <div className="nav-right">
-          <button className="organization-button">
-            Organization
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-              <path d="M3 4.5L6 7.5L9 4.5H3Z"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Filter Controls */}
+      {/* NO DUPLICATE TITLE - removed dashboard title */}
+      
+      {/* Horizontal dropdown filters - reordered with Campaign next to time period */}
       <div className="dashboard-filters">
-        <div className="filters-left">
-          {/* Timeframe Buttons */}
-          <div className="timeframe-group">
-            <DropdownButton 
-              type="timeframe" 
-              label="Timeframe" 
-              options={dropdownOptions.timeframe} 
-            />
-          </div>
+        {/* Time Period Dropdown */}
+        <div className="dashboard-header-dropdown">
+          <button 
+            className="dropdown-trigger active"
+            onClick={() => toggleDropdown('period')}
+          >
+            {selectedPeriod}
+            <span className={`dropdown-arrow ${activeDropdown === 'period' ? 'open' : ''}`}>▼</span>
+          </button>
+          {activeDropdown === 'period' && (
+            <div className="dropdown-menu">
+              <div 
+                className={`dropdown-item ${selectedPeriod === 'Day' ? 'active' : ''}`}
+                onClick={() => selectPeriod('Day')}
+              >
+                Day
+              </div>
+              <div 
+                className={`dropdown-item ${selectedPeriod === 'Week' ? 'active' : ''}`}
+                onClick={() => selectPeriod('Week')}
+              >
+                Week
+              </div>
+              <div 
+                className={`dropdown-item ${selectedPeriod === 'Month' ? 'active' : ''}`}
+                onClick={() => selectPeriod('Month')}
+              >
+                Month
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="filters-right">
-          {/* Filter Dropdowns */}
-          <div className="filter-group">
-            <DropdownButton 
-              type="locations" 
-              label="Locations" 
-              options={dropdownOptions.locations} 
-            />
-            <DropdownButton 
-              type="groups" 
-              label="Groups" 
-              options={dropdownOptions.groups} 
-            />
-            <DropdownButton 
-              type="schedules" 
-              label="Schedules" 
-              options={dropdownOptions.schedules} 
-            />
-          </div>
+        {/* Campaign Dropdown - moved next to time period */}
+        <div className="dashboard-header-dropdown">
+          <button 
+            className="dropdown-trigger"
+            onClick={() => toggleDropdown('campaign')}
+          >
+            {selectedCampaign}
+            <span className={`dropdown-arrow ${activeDropdown === 'campaign' ? 'open' : ''}`}>▼</span>
+          </button>
+          {activeDropdown === 'campaign' && (
+            <div className="dropdown-menu">
+              <div 
+                className={`dropdown-item ${selectedCampaign === 'All campaigns' ? 'active' : ''}`}
+                onClick={() => selectCampaign('All campaigns')}
+              >
+                All campaigns
+              </div>
+              {campaigns.map((campaign) => (
+                <div 
+                  key={campaign.id}
+                  className={`dropdown-item ${selectedCampaign === campaign.name ? 'active' : ''}`}
+                  onClick={() => selectCampaign(campaign.name)}
+                >
+                  {campaign.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Locations Dropdown */}
+        <div className="dashboard-header-dropdown">
+          <button 
+            className="dropdown-trigger"
+            onClick={() => toggleDropdown('locations')}
+          >
+            All locations
+            <span className={`dropdown-arrow ${activeDropdown === 'locations' ? 'open' : ''}`}>▼</span>
+          </button>
+          {activeDropdown === 'locations' && (
+            <div className="dropdown-menu">
+              <div className="dropdown-item">All locations</div>
+              <div className="dropdown-item">New York</div>
+              <div className="dropdown-item">Los Angeles</div>
+              <div className="dropdown-item">Chicago</div>
+            </div>
+          )}
+        </div>
+
+        {/* Groups Dropdown */}
+        <div className="dashboard-header-dropdown">
+          <button 
+            className="dropdown-trigger"
+            onClick={() => toggleDropdown('groups')}
+          >
+            All groups
+            <span className={`dropdown-arrow ${activeDropdown === 'groups' ? 'open' : ''}`}>▼</span>
+          </button>
+          {activeDropdown === 'groups' && (
+            <div className="dropdown-menu">
+              <div className="dropdown-item">All groups</div>
+              <div className="dropdown-item">Development</div>
+              <div className="dropdown-item">Design</div>
+              <div className="dropdown-item">Marketing</div>
+            </div>
+          )}
+        </div>
+
+        {/* Schedules Dropdown */}
+        <div className="dashboard-header-dropdown">
+          <button 
+            className="dropdown-trigger"
+            onClick={() => toggleDropdown('schedules')}
+          >
+            All schedules
+            <span className={`dropdown-arrow ${activeDropdown === 'schedules' ? 'open' : ''}`}>▼</span>
+          </button>
+          {activeDropdown === 'schedules' && (
+            <div className="dropdown-menu">
+              <div className="dropdown-item">All schedules</div>
+              <div className="dropdown-item">Full-time</div>
+              <div className="dropdown-item">Part-time</div>
+              <div className="dropdown-item">Contract</div>
+            </div>
+          )}
         </div>
       </div>
     </div>
