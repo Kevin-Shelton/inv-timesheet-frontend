@@ -59,55 +59,44 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  // Convert Supabase user to our user format
+  // Convert Supabase user to our user format - SIMPLIFIED VERSION
   const setUserFromSupabaseUser = async (supabaseUser) => {
     try {
       console.log('🔐 AUTH: Converting Supabase user to app user format')
+      console.log('🔐 AUTH: User ID:', supabaseUser.id)
+      console.log('🔐 AUTH: User email:', supabaseUser.email)
+      console.log('🔐 AUTH: User metadata:', supabaseUser.user_metadata)
       
-      // Try to get user profile from database
-      let userProfile = null
-      try {
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', supabaseUser.id)
-          .single()
-
-        if (!profileError && profile) {
-          userProfile = profile
-          console.log('🔐 AUTH: Found user profile in database:', profile.full_name)
-        }
-      } catch (profileError) {
-        console.log('🔐 AUTH: No user profile found in database, using auth data')
-      }
-
-      // Create user object compatible with existing system
+      // SIMPLIFIED: Skip database query and use auth data directly
+      console.log('🔐 AUTH: Using simplified user data (no database query)')
+      
+      // Create user object compatible with existing system using only auth data
       const userData = {
         id: supabaseUser.id,
         email: supabaseUser.email,
-        name: userProfile?.full_name || 
-              supabaseUser.user_metadata?.full_name || 
+        name: supabaseUser.user_metadata?.full_name || 
               supabaseUser.email?.split('@')[0] || 
               'User',
-        role: userProfile?.role || 
-              supabaseUser.user_metadata?.role || 
+        role: supabaseUser.user_metadata?.role || 
               (supabaseUser.email === 'admin@test.com' ? 'admin' : 'user'),
-        company: userProfile?.company || 
-                 supabaseUser.user_metadata?.company || 
-                 'Invictus',
+        company: supabaseUser.user_metadata?.company || 'Invictus',
         // Include additional Supabase data
         supabase_user: supabaseUser,
-        profile: userProfile
+        profile: null // No database profile for now
       }
 
-      console.log('🔐 AUTH: User data prepared:', {
+      console.log('🔐 AUTH: User data prepared (simplified):', {
         id: userData.id,
         email: userData.email,
         name: userData.name,
-        role: userData.role
+        role: userData.role,
+        company: userData.company
       })
 
+      console.log('🔐 AUTH: Setting user state...')
       setUser(userData)
+      console.log('🔐 AUTH: User state set successfully')
+      
       return userData
     } catch (error) {
       console.error('🔐 AUTH ERROR: Failed to set user from Supabase user:', error)
@@ -198,9 +187,10 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Refresh user data (helper function)
+  // Refresh user data (helper function) - SIMPLIFIED
   const refreshUser = async () => {
     try {
+      console.log('🔐 AUTH: Refreshing user data...')
       const { data: { user: supabaseUser }, error } = await supabase.auth.getUser()
       if (error) throw error
       
