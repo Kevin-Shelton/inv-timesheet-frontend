@@ -6,7 +6,7 @@ import WeeklyTimesheetView from './WeeklyTimesheetView';
 import MonthlyTimesheetView from './MonthlyTimesheetView';
 import TimesheetEntryModal from './TimesheetEntryModal';
 import { TimesheetIndicators, StatusBadge } from './TimesheetIndicators';
-import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API';
+import { supabase } from "../../supabaseClient.js";
 
 const ComprehensiveTimesheetPage = () => {
   // State management
@@ -27,23 +27,92 @@ const ComprehensiveTimesheetPage = () => {
   });
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
 
   // Initialize user data
   useEffect(() => {
     const initializeUser = async () => {
+      console.log('🔍 TIMESHEET: Initializing user authentication...');
+      
       try {
-        const user = await enhancedSupabaseApi.getCurrentUser();
-        setCurrentUser(user);
+        // Get current authenticated user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error('❌ TIMESHEET: Authentication error:', userError);
+          setAuthError('Authentication failed: ' + userError.message);
+          setCurrentUser(null);
+          setLoading(false);
+          return;
+        }
+
+        if (!user) {
+          console.log('❌ TIMESHEET: No authenticated user found');
+          setAuthError('No authenticated user found');
+          setCurrentUser(null);
+          setLoading(false);
+          // Let ProtectedRoute handle the redirect to login
+          return;
+        }
+
+        console.log('✅ TIMESHEET: Authenticated user found:', user.email);
+
+        // Try to get user profile from database
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.warn('⚠️ TIMESHEET: Profile fetch error:', profileError);
+          // Use basic user info from auth if profile not found
+          const basicUser = {
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || user.email,
+            role: 'Standard',
+            employee_type: 'Non-Exempt'
+          };
+          console.log('📊 TIMESHEET: Using basic user info:', basicUser);
+          setCurrentUser(basicUser);
+        } else {
+          console.log('✅ TIMESHEET: User profile loaded:', profile.full_name);
+          setCurrentUser(profile);
+        }
+
+        setAuthError(null);
         setLoading(false);
+
       } catch (error) {
-        console.error('Error initializing user:', error);
-        // Fallback user for testing
-        setCurrentUser({ id: 1, full_name: 'Kevin Shelton' });
+        console.error('❌ TIMESHEET: Initialization error:', error);
+        setAuthError('Failed to initialize user: ' + error.message);
+        setCurrentUser(null);
         setLoading(false);
       }
     };
 
     initializeUser();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔄 TIMESHEET: Auth state changed:', event, session?.user?.email || 'no user');
+      
+      if (event === 'SIGNED_OUT' || !session) {
+        console.log('🚪 TIMESHEET: User signed out, clearing state');
+        setCurrentUser(null);
+        setAuthError(null);
+        setLoading(false);
+        // Let ProtectedRoute handle redirect
+      } else if (event === 'SIGNED_IN' && session) {
+        console.log('🔑 TIMESHEET: User signed in, reinitializing');
+        initializeUser();
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
   // Date navigation functions
@@ -95,10 +164,17 @@ const ComprehensiveTimesheetPage = () => {
 
   // Export functionality
   const handleExport = async () => {
+    if (!currentUser) {
+      console.error('❌ EXPORT: No user available for export');
+      return;
+    }
+
     try {
-      console.log('Exporting timesheet data...');
+      console.log('📊 EXPORT: Exporting timesheet data for user:', currentUser.id);
+      // Implement your export logic here
+      // Example: Generate CSV, PDF, or call export API
     } catch (error) {
-      console.error('Export error:', error);
+      console.error('❌ EXPORT: Export error:', error);
     }
   };
 
@@ -112,14 +188,47 @@ const ComprehensiveTimesheetPage = () => {
 
   // Handle view change
   const handleViewChange = (newView) => {
-    console.log('Changing view from', currentView, 'to', newView);
+    console.log('🔄 TIMESHEET: Changing view from', currentView, 'to', newView);
     setCurrentView(newView);
   };
 
+  // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading timesheet...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Authentication error state
+  if (authError || !currentUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
+          <p className="text-gray-600 mb-4">
+            {authError || 'You need to be logged in to access the timesheet.'}
+          </p>
+          <div className="text-sm text-gray-500">
+            <p>If you're seeing this message, you may need to:</p>
+            <ul className="list-disc list-inside mt-2 space-y-1">
+              <li>Log in to your account</li>
+              <li>Check your internet connection</li>
+              <li>Contact support if the issue persists</li>
+            </ul>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -154,8 +263,13 @@ const ComprehensiveTimesheetPage = () => {
               </button>
             </div>
 
-            {/* Right side - Selectors */}
+            {/* Right side - User Info and Selectors */}
             <div className="flex items-center space-x-4">
+              {/* User Info */}
+              <div className="text-sm text-gray-600">
+                Welcome, <span className="font-medium">{currentUser.full_name || currentUser.email}</span>
+              </div>
+
               <select
                 value={filters.campaign}
                 onChange={(e) => handleFilterChange('campaign', e.target.value)}
@@ -358,6 +472,7 @@ const ComprehensiveTimesheetPage = () => {
       <button
         onClick={() => setShowEntryModal(true)}
         className="fixed bottom-6 right-6 bg-orange-500 text-white p-4 rounded-full shadow-lg hover:bg-orange-600 transition-colors z-50"
+        title="Add new timesheet entry"
       >
         <Plus className="h-6 w-6" />
       </button>
