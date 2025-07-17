@@ -4,52 +4,56 @@ import { useAuth } from '../../hooks/useAuth';
 
 const TrackedHoursChart = () => {
   const { user, canViewAllTimesheets } = useAuth();
-  const [chartData, setChartData] = useState(null);
+  const [chartData, setChartData] = useState({
+    workedHours: { total: 0, daily: [] },
+    breaks: { total: 0, daily: [] },
+    overtimeHours: { total: 0, daily: [] }
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchTrackedHours();
+  // Get current week dates
+  const getCurrentWeekDates = () => {
+    const today = new Date();
+    const currentDay = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - currentDay + 1);
+    
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      weekDates.push(date);
     }
+    return weekDates;
+  };
+
+  const weekDates = getCurrentWeekDates();
+  const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  useEffect(() => {
+    fetchTimesheetData();
   }, [user]);
 
-  const fetchTrackedHours = async () => {
+  const fetchTimesheetData = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
       setError(null);
 
-      console.log('📊 TRACKED HOURS: Fetching data...');
+      const startDate = weekDates[0].toISOString().split('T')[0];
+      const endDate = weekDates[6].toISOString().split('T')[0];
 
-      // Get current week dates
-      const today = new Date();
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6); // Saturday
+      console.log('📊 TRACKED HOURS: Fetching data for week:', startDate, 'to', endDate);
 
-      const startDate = startOfWeek.toISOString().split('T')[0];
-      const endDate = endOfWeek.toISOString().split('T')[0];
-
-      // Generate week dates for display
-      const weekDates = [];
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(startOfWeek);
-        date.setDate(startOfWeek.getDate() + i);
-        weekDates.push(date);
-      }
-
-      console.log('📊 TRACKED HOURS: Date range:', startDate, 'to', endDate);
-
-      // FIXED: Explicitly specify the relationship using the foreign key column name
-      // Instead of 'users!inner' which causes ambiguity, use 'user_id!inner'
+      // FIXED: Build query based on user permissions with corrected schema
       let query = supabase
         .from('timesheet_entries')
         .select(`
           date,
           hours_worked,
           break_duration,
-          overtime_hours,
           user_id,
           user_id!inner(full_name, role)
         `)
@@ -70,11 +74,11 @@ const TrackedHoursChart = () => {
 
       console.log('📊 TRACKED HOURS: Fetched entries:', entries?.length || 0);
 
-      // Process data by day
+      // Process data by day - FIXED: Removed overtime_hours references
       const processedData = {
         workedHours: { total: 0, daily: new Array(7).fill(0) },
         breaks: { total: 0, daily: new Array(7).fill(0) },
-        overtimeHours: { total: 0, daily: new Array(7).fill(0) }
+        overtimeHours: { total: 0, daily: new Array(7).fill(0) } // Keep structure but set to 0
       };
 
       entries?.forEach(entry => {
@@ -86,70 +90,58 @@ const TrackedHoursChart = () => {
         if (dayIndex !== -1) {
           const worked = parseFloat(entry.hours_worked) || 0;
           const breakTime = parseFloat(entry.break_duration) || 0;
-          const overtime = parseFloat(entry.overtime_hours) || 0;
+          // FIXED: Don't try to access overtime_hours since it doesn't exist
+          // const overtime = parseFloat(entry.overtime_hours) || 0;
 
           processedData.workedHours.daily[dayIndex] += worked;
           processedData.breaks.daily[dayIndex] += breakTime;
-          processedData.overtimeHours.daily[dayIndex] += overtime;
+          // processedData.overtimeHours.daily[dayIndex] += overtime; // Keep as 0
 
           processedData.workedHours.total += worked;
           processedData.breaks.total += breakTime;
-          processedData.overtimeHours.total += overtime;
+          // processedData.overtimeHours.total += overtime; // Keep as 0
         }
       });
 
-      // Calculate max value for scaling
-      const maxDailyHours = Math.max(
-        ...processedData.workedHours.daily.map((worked, i) => 
-          worked + processedData.breaks.daily[i] + processedData.overtimeHours.daily[i]
-        )
-      );
+      setChartData(processedData);
+      console.log('📊 TRACKED HOURS: Processed data:', processedData);
 
-      setChartData({
-        ...processedData,
-        weekDates,
-        maxDailyHours: Math.max(maxDailyHours, 8), // Minimum scale of 8 hours
-        totalEntries: entries?.length || 0
-      });
-
-      console.log('📊 TRACKED HOURS: Data processed successfully');
-
-    } catch (err) {
-      console.error('📊 TRACKED HOURS: Error fetching data:', err);
-      setError(err.message || 'Failed to load tracked hours data');
+    } catch (error) {
+      console.error('📊 TRACKED HOURS ERROR:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const formatHours = (hours) => {
-    return hours.toFixed(1);
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
   };
 
-  const getDayLabel = (date) => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return days[date.getDay()];
+  const getMaxValue = () => {
+    const allValues = [
+      ...chartData.workedHours.daily,
+      ...chartData.breaks.daily,
+      ...chartData.overtimeHours.daily
+    ];
+    const max = Math.max(...allValues);
+    return Math.ceil(max / 2) * 2; // Round up to nearest even number
   };
 
-  const getBarHeight = (value, maxValue) => {
-    if (maxValue === 0) return 0;
-    return Math.max((value / maxValue) * 100, 2); // Minimum 2% height for visibility
-  };
-
-  const retryFetch = () => {
-    fetchTrackedHours();
-  };
+  const maxValue = getMaxValue() || 8;
 
   if (loading) {
     return (
       <div className="tracked-hours-chart">
         <div className="chart-header">
-          <h3>Tracked Hours</h3>
-          <a href="/timesheets" className="chart-link">View Details</a>
+          <h3>TRACKED HOURS</h3>
+          <a href="/timesheets" className="chart-link">Go to timesheets</a>
         </div>
         <div className="chart-loading">
           <div className="loading-spinner"></div>
-          <p>Loading tracked hours...</p>
+          <p>Loading timesheet data...</p>
         </div>
       </div>
     );
@@ -159,33 +151,14 @@ const TrackedHoursChart = () => {
     return (
       <div className="tracked-hours-chart">
         <div className="chart-header">
-          <h3>Tracked Hours</h3>
-          <a href="/timesheets" className="chart-link">View Details</a>
+          <h3>TRACKED HOURS</h3>
+          <a href="/timesheets" className="chart-link">Go to timesheets</a>
         </div>
         <div className="chart-error">
-          <p>Error loading tracked hours</p>
-          <small>{error}</small>
-          <button onClick={retryFetch} className="retry-button">
+          <p>Error loading data: {error}</p>
+          <button onClick={fetchTimesheetData} className="retry-button">
             Retry
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!chartData || chartData.totalEntries === 0) {
-    return (
-      <div className="tracked-hours-chart">
-        <div className="chart-header">
-          <h3>Tracked Hours</h3>
-          <a href="/timesheets" className="chart-link">View Details</a>
-        </div>
-        <div className="chart-empty">
-          <div className="empty-state">
-            <div className="empty-icon">📊</div>
-            <h4>No Time Entries</h4>
-            <p>No timesheet entries found for this week. Start tracking your time to see your progress here.</p>
-          </div>
         </div>
       </div>
     );
@@ -194,97 +167,85 @@ const TrackedHoursChart = () => {
   return (
     <div className="tracked-hours-chart">
       <div className="chart-header">
-        <h3>Tracked Hours</h3>
-        <a href="/timesheets" className="chart-link">View Details</a>
+        <h3>TRACKED HOURS</h3>
+        <a href="/timesheets" className="chart-link">Go to timesheets</a>
       </div>
 
-      {/* Summary Statistics */}
+      {/* Summary Stats */}
       <div className="hours-summary">
         <div className="summary-item">
-          <div className="summary-label">Worked</div>
-          <div className="summary-value">{formatHours(chartData.workedHours.total)}h</div>
+          <span className="summary-label">WORKED HOURS</span>
+          <span className="summary-value">{formatHours(chartData.workedHours.total)}</span>
         </div>
         <div className="summary-item">
-          <div className="summary-label">Breaks</div>
-          <div className="summary-value">{formatHours(chartData.breaks.total)}h</div>
+          <span className="summary-label">BREAKS</span>
+          <span className="summary-value">{formatHours(chartData.breaks.total)}</span>
         </div>
         <div className="summary-item">
-          <div className="summary-label">Overtime</div>
-          <div className="summary-value">{formatHours(chartData.overtimeHours.total)}h</div>
+          <span className="summary-label">OVERTIME HOURS</span>
+          <span className="summary-value">{formatHours(chartData.overtimeHours.total)}</span>
         </div>
       </div>
 
-      {/* Chart Container */}
+      {/* Chart */}
       <div className="chart-container">
-        {/* Y-axis */}
+        {/* Y-axis labels */}
         <div className="y-axis">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="y-axis-label">
-              {Math.round((chartData.maxDailyHours * (4 - i)) / 4)}h
+          {[maxValue, maxValue * 0.75, maxValue * 0.5, maxValue * 0.25, 0].map(value => (
+            <div key={value} className="y-axis-label">
+              {Math.round(value)}h
             </div>
           ))}
         </div>
 
-        {/* Chart Bars */}
+        {/* Chart bars */}
         <div className="chart-bars">
-          {chartData.weekDates.map((date, dayIndex) => {
-            const workedHours = chartData.workedHours.daily[dayIndex];
-            const breakHours = chartData.breaks.daily[dayIndex];
-            const overtimeHours = chartData.overtimeHours.daily[dayIndex];
-            const totalHours = workedHours + breakHours + overtimeHours;
+          {dayLabels.map((day, index) => {
+            const workedHeight = (chartData.workedHours.daily[index] / maxValue) * 100;
+            const breakHeight = (chartData.breaks.daily[index] / maxValue) * 100;
+            const overtimeHeight = (chartData.overtimeHours.daily[index] / maxValue) * 100;
 
             return (
-              <div key={dayIndex} className="day-column">
+              <div key={day} className="day-column">
                 <div className="bar-container">
-                  <div className="stacked-bar" style={{ height: '100%' }}>
-                    {/* Overtime segment (top) */}
-                    {overtimeHours > 0 && (
-                      <div 
-                        className="bar-segment overtime"
-                        style={{ 
-                          height: `${getBarHeight(overtimeHours, chartData.maxDailyHours)}%`,
-                          minHeight: overtimeHours > 0 ? '3px' : '0'
-                        }}
-                        title={`Overtime: ${formatHours(overtimeHours)}h`}
-                      />
-                    )}
-                    
-                    {/* Break segment (middle) */}
-                    {breakHours > 0 && (
-                      <div 
-                        className="bar-segment breaks"
-                        style={{ 
-                          height: `${getBarHeight(breakHours, chartData.maxDailyHours)}%`,
-                          minHeight: breakHours > 0 ? '3px' : '0'
-                        }}
-                        title={`Breaks: ${formatHours(breakHours)}h`}
-                      />
-                    )}
-                    
-                    {/* Worked hours segment (bottom) */}
-                    {workedHours > 0 && (
+                  {/* Stacked bars - bottom to top: worked, breaks, overtime */}
+                  <div className="stacked-bar">
+                    {/* Worked hours bar (bottom) */}
+                    {workedHeight > 0 && (
                       <div 
                         className="bar-segment worked"
-                        style={{ 
-                          height: `${getBarHeight(workedHours, chartData.maxDailyHours)}%`,
-                          minHeight: workedHours > 0 ? '3px' : '0'
-                        }}
-                        title={`Worked: ${formatHours(workedHours)}h`}
+                        style={{ height: `${workedHeight}%` }}
+                        title={`Worked: ${formatHours(chartData.workedHours.daily[index])}`}
+                      />
+                    )}
+                    
+                    {/* Break time bar (middle) */}
+                    {breakHeight > 0 && (
+                      <div 
+                        className="bar-segment breaks"
+                        style={{ height: `${breakHeight}%` }}
+                        title={`Breaks: ${formatHours(chartData.breaks.daily[index])}`}
+                      />
+                    )}
+                    
+                    {/* Overtime hours bar (top) - will be 0 but keeping for UI consistency */}
+                    {overtimeHeight > 0 && (
+                      <div 
+                        className="bar-segment overtime"
+                        style={{ height: `${overtimeHeight}%` }}
+                        title={`Overtime: ${formatHours(chartData.overtimeHours.daily[index])}`}
                       />
                     )}
                   </div>
                 </div>
-                
-                <div className="day-label">
-                  {getDayLabel(date)}
-                </div>
+                <div className="day-label">{day}</div>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Chart Legend */}
+      {/* Legend */}
       <div className="chart-legend">
         <div className="legend-item">
           <div className="legend-color worked"></div>
@@ -292,7 +253,7 @@ const TrackedHoursChart = () => {
         </div>
         <div className="legend-item">
           <div className="legend-color breaks"></div>
-          <span>Break Time</span>
+          <span>Breaks</span>
         </div>
         <div className="legend-item">
           <div className="legend-color overtime"></div>
@@ -300,11 +261,9 @@ const TrackedHoursChart = () => {
         </div>
       </div>
 
-      {/* Chart Footer */}
+      {/* Footer note */}
       <div className="chart-footer">
-        <small>
-          Showing data for week of {chartData.weekDates[0].toLocaleDateString()} - {chartData.weekDates[6].toLocaleDateString()}
-        </small>
+        <small>Does not include manually entered payroll hours</small>
       </div>
     </div>
   );

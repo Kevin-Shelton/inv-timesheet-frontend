@@ -3641,5 +3641,279 @@
     padding: 6px 12px;
     font-size: 11px;
   }
+ /* =====================================================
+   DASHBOARD LAYOUT WITH VERTICAL SCROLLING
+   ===================================================== */
+
+/* Main Dashboard Container */
+.dashboard-page {
+  display: flex;
+  gap: 24px;
+  min-height: 100vh;
+  padding: 24px;
+  background: #f8f9fa;
+  overflow: hidden; /* Prevent page-level scrolling */
+}
+
+/* Dashboard Main Content Area */
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0; /* Allow flex shrinking */
+  max-height: calc(100vh - 48px); /* Account for padding */
+  overflow-y: auto; /* Enable vertical scrolling for main content */
+  overflow-x: hidden;
+  padding-right: 8px; /* Space for scrollbar */
+}
+
+/* Dashboard Sidebar (Who's In/Out Panel) */
+.dashboard-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  max-height: calc(100vh - 48px); /* Account for padding */
+  overflow-y: auto; /* Enable vertical scrolling for sidebar */
+  overflow-x: hidden;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 0; /* Remove padding to let components handle their own */
+}
+
+/* Dashboard Rows */
+.dashboard-row {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  align-items: stretch;
+  flex-shrink: 0; /* Prevent rows from shrinking */
+}
+
+/* Dashboard Columns */
+.dashboard-col {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 300px; /* Ensure minimum height for charts */
+}
+
+.dashboard-col.wide {
+  flex: 1 1 100%;
+  min-height: 400px; /* Taller for wide charts */
+}
+
+.dashboard-col.welcome {
+  flex: 1.5;
+  min-height: 250px;
+}
+
+.dashboard-col.holidays {
+  flex: 1;
+  min-height: 250px;
+}
+
+.dashboard-col.activity {
+  flex: 1;
+  min-height: 350px; /* Taller for pie chart */
+}
+
+/* Chart Specific Heights */
+.tracked-hours-chart,
+.activities-chart,
+.projects-chart {
+  height: 100%;
+  min-height: 350px;
+  display: flex;
+  flex-direction: column;
+}
+
+.holidays-viewer {
+  height: 100%;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar Styling for Main Content */
+.dashboard-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-main::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dashboard-main::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.dashboard-main::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Scrollbar Styling for Sidebar */
+.dashboard-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 3px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+  background: #dee2e6;
+  border-radius: 3px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboard-page {
+    flex-direction: column;
+    padding: 16px;
+  }
+  
+  .dashboard-main {
+    max-height: none;
+    overflow-y: visible;
+  }
+  
+  .dashboard-sidebar {
+    width: 100%;
+    max-height: 400px;
+    margin-top: 24px;
+  }
+  
+  .dashboard-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .dashboard-col {
+    min-height: 250px;
+  }
+  
+  .dashboard-col.wide {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding: 12px;
+    gap: 16px;
+  }
+  
+  .dashboard-col {
+    padding: 16px;
+    min-height: 200px;
+  }
+  
+  .tracked-hours-chart,
+  .activities-chart,
+  .projects-chart {
+    min-height: 250px;
+  }
+  
+  .holidays-viewer {
+    min-height: 180px;
+  }
+}
+
+/* =====================================================
+   LAYOUT UTILITIES
+   ===================================================== */
+
+/* Ensure charts fill their containers properly */
+.chart-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Allow flex shrinking */
+}
+
+/* Prevent content overflow in cards */
+.dashboard-col > * {
+  min-width: 0; /* Allow flex items to shrink */
+  overflow: hidden; /* Prevent content overflow */
+}
+
+/* Smooth scrolling behavior */
+.dashboard-main,
+.dashboard-sidebar {
+  scroll-behavior: smooth;
+}
+
+/* Focus styles for accessibility */
+.dashboard-main:focus,
+.dashboard-sidebar:focus {
+  outline: 2px solid #4299e1;
+  outline-offset: 2px;
+}
+
+/* Loading and error states take full height */
+.chart-loading,
+.chart-error,
+.chart-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* =====================================================
+   PERFORMANCE OPTIMIZATIONS
+   ===================================================== */
+
+/* Use transform for better performance */
+.dashboard-col {
+  will-change: transform;
+  transform: translateZ(0); /* Force hardware acceleration */
+}
+
+/* Optimize scrolling performance */
+.dashboard-main,
+.dashboard-sidebar {
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  overscroll-behavior: contain; /* Prevent scroll chaining */
+}
+
+/* =====================================================
+   PRINT STYLES
+   ===================================================== */
+
+@media print {
+  .dashboard-page {
+    flex-direction: column;
+    overflow: visible;
+    max-height: none;
+  }
+  
+  .dashboard-main,
+  .dashboard-sidebar {
+    overflow: visible;
+    max-height: none;
+  }
+  
+  .dashboard-sidebar {
+    width: 100%;
+    page-break-before: always;
+  }
+}
+
+ 
 }
 
