@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API';
+import { supabase } from "../../supabaseClient.js";
 
 const WeeklyTimesheetView = ({ 
   selectedWeek, 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Plus } from 'lucide-react';
-import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API';
+import enhancedSupabaseApi from '../../lib/';
 
 const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick, onCreateEntry }) => {
   const [monthlyData, setMonthlyData] = useState({});

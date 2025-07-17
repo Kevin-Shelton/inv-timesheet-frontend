@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Calendar, Clock, User, Plus, Info, ChevronDown, ChevronUp } from 'lucide-react'
-import enhancedSupabaseApi from '../../lib/Enhanced_Supabase_API'
+import { supabase } from "../../supabaseClient.js";
 import { 
   TimesheetIndicators, 
   StatusBadge, 
