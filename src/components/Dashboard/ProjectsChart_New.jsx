@@ -2,25 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient.js';
 import { useAuth } from '../../hooks/useAuth';
 
-const ActivitiesChart = () => {
+const ProjectsChart = () => {
   const { user, canViewAllTimesheets } = useAuth();
-  const [activitiesData, setActivitiesData] = useState([]);
+  const [projectsData, setProjectsData] = useState([]);
   const [totalHours, setTotalHours] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchActivitiesData();
+    fetchProjectsData();
   }, [user]);
 
-  const fetchActivitiesData = async () => {
+  const fetchProjectsData = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      console.log('📊 ACTIVITIES: Fetching activities data...');
+      console.log('📊 PROJECTS: Fetching projects data...');
 
       // Get current week dates
       const today = new Date();
@@ -37,18 +37,19 @@ const ActivitiesChart = () => {
       let query = supabase
         .from('timesheet_entries')
         .select(`
-          activity_id,
+          project_id,
           hours_worked,
-          activities!inner(
+          projects!inner(
             id,
             name,
             description,
-            color
+            color,
+            status
           )
         `)
         .gte('date', startDate)
         .lte('date', endDate)
-        .not('activity_id', 'is', null);
+        .not('project_id', 'is', null);
 
       // If user can't view all timesheets, only show their own
       if (!canViewAllTimesheets()) {
@@ -58,31 +59,32 @@ const ActivitiesChart = () => {
       const { data: entries, error: fetchError } = await query;
 
       if (fetchError) {
-        console.error('📊 ACTIVITIES ERROR:', fetchError);
+        console.error('📊 PROJECTS ERROR:', fetchError);
         throw fetchError;
       }
 
-      console.log('📊 ACTIVITIES: Fetched entries:', entries?.length || 0);
+      console.log('📊 PROJECTS: Fetched entries:', entries?.length || 0);
 
-      // Aggregate activities data
-      const activityMap = new Map();
+      // Aggregate projects data
+      const projectMap = new Map();
       let total = 0;
 
       entries?.forEach(entry => {
         const hours = parseFloat(entry.hours_worked) || 0;
-        const activity = entry.activities;
+        const project = entry.projects;
         
-        if (activity && hours > 0) {
-          const activityId = activity.id;
+        if (project && hours > 0) {
+          const projectId = project.id;
           
-          if (activityMap.has(activityId)) {
-            activityMap.get(activityId).hours += hours;
+          if (projectMap.has(projectId)) {
+            projectMap.get(projectId).hours += hours;
           } else {
-            activityMap.set(activityId, {
-              id: activityId,
-              name: activity.name,
-              description: activity.description,
-              color: activity.color || '#8884d8',
+            projectMap.set(projectId, {
+              id: projectId,
+              name: project.name,
+              description: project.description,
+              color: project.color || '#82ca9d',
+              status: project.status,
               hours: hours
             });
           }
@@ -91,16 +93,16 @@ const ActivitiesChart = () => {
       });
 
       // Convert to array and sort by hours
-      const activitiesArray = Array.from(activityMap.values())
+      const projectsArray = Array.from(projectMap.values())
         .sort((a, b) => b.hours - a.hours)
-        .slice(0, 10); // Top 10 activities
+        .slice(0, 10); // Top 10 projects
 
-      setActivitiesData(activitiesArray);
+      setProjectsData(projectsArray);
       setTotalHours(total);
-      console.log('📊 ACTIVITIES: Processed data:', activitiesArray);
+      console.log('📊 PROJECTS: Processed data:', projectsArray);
 
     } catch (error) {
-      console.error('📊 ACTIVITIES ERROR:', error);
+      console.error('📊 PROJECTS ERROR:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -119,18 +121,18 @@ const ActivitiesChart = () => {
 
   // Generate chart segments for donut chart
   const generateChartSegments = () => {
-    if (activitiesData.length === 0) return [];
+    if (projectsData.length === 0) return [];
 
     let cumulativePercentage = 0;
-    return activitiesData.map(activity => {
-      const percentage = parseFloat(getPercentage(activity.hours));
+    return projectsData.map(project => {
+      const percentage = parseFloat(getPercentage(project.hours));
       const startAngle = cumulativePercentage * 3.6; // Convert to degrees
       const endAngle = (cumulativePercentage + percentage) * 3.6;
       
       cumulativePercentage += percentage;
       
       return {
-        ...activity,
+        ...project,
         percentage,
         startAngle,
         endAngle,
@@ -144,14 +146,14 @@ const ActivitiesChart = () => {
 
   if (loading) {
     return (
-      <div className="activities-chart">
+      <div className="projects-chart">
         <div className="chart-header">
-          <h3>ACTIVITIES</h3>
-          <a href="/activities" className="chart-link">Go to activities</a>
+          <h3>PROJECTS</h3>
+          <a href="/projects" className="chart-link">Go to projects</a>
         </div>
         <div className="chart-loading">
           <div className="loading-spinner"></div>
-          <p>Loading activities data...</p>
+          <p>Loading projects data...</p>
         </div>
       </div>
     );
@@ -159,14 +161,14 @@ const ActivitiesChart = () => {
 
   if (error) {
     return (
-      <div className="activities-chart">
+      <div className="projects-chart">
         <div className="chart-header">
-          <h3>ACTIVITIES</h3>
-          <a href="/activities" className="chart-link">Go to activities</a>
+          <h3>PROJECTS</h3>
+          <a href="/projects" className="chart-link">Go to projects</a>
         </div>
         <div className="chart-error">
           <p>Error loading data: {error}</p>
-          <button onClick={fetchActivitiesData} className="retry-button">
+          <button onClick={fetchProjectsData} className="retry-button">
             Retry
           </button>
         </div>
@@ -174,12 +176,12 @@ const ActivitiesChart = () => {
     );
   }
 
-  if (activitiesData.length === 0) {
+  if (projectsData.length === 0) {
     return (
-      <div className="activities-chart">
+      <div className="projects-chart">
         <div className="chart-header">
-          <h3>ACTIVITIES</h3>
-          <a href="/activities" className="chart-link">Go to activities</a>
+          <h3>PROJECTS</h3>
+          <a href="/projects" className="chart-link">Go to projects</a>
         </div>
         <div className="chart-empty">
           <div className="empty-donut-chart">
@@ -188,9 +190,9 @@ const ActivitiesChart = () => {
               <div className="donut-value">0h 0m</div>
             </div>
           </div>
-          <div className="activities-list">
-            <h4>Top 10 activities</h4>
-            <p>No activities tracked this week</p>
+          <div className="projects-list">
+            <h4>Top 10 projects</h4>
+            <p>No projects tracked this week</p>
           </div>
         </div>
       </div>
@@ -198,10 +200,10 @@ const ActivitiesChart = () => {
   }
 
   return (
-    <div className="activities-chart">
+    <div className="projects-chart">
       <div className="chart-header">
-        <h3>ACTIVITIES</h3>
-        <a href="/activities" className="chart-link">Go to activities</a>
+        <h3>PROJECTS</h3>
+        <a href="/projects" className="chart-link">Go to projects</a>
       </div>
 
       <div className="chart-content">
@@ -218,18 +220,18 @@ const ActivitiesChart = () => {
               strokeWidth="8"
             />
             
-            {/* Activity segments */}
-            {chartSegments.map((activity, index) => (
+            {/* Project segments */}
+            {chartSegments.map((project, index) => (
               <circle
-                key={activity.id}
+                key={project.id}
                 cx="50"
                 cy="50"
                 r="40"
                 fill="none"
-                stroke={activity.color}
+                stroke={project.color}
                 strokeWidth="8"
-                strokeDasharray={`${activity.percentage * 2.51} 251.2`}
-                strokeDashoffset={-activity.strokeDashoffset * 2.51}
+                strokeDasharray={`${project.percentage * 2.51} 251.2`}
+                strokeDashoffset={-project.strokeDashoffset * 2.51}
                 transform="rotate(-90 50 50)"
                 className="donut-segment"
                 style={{
@@ -246,24 +248,29 @@ const ActivitiesChart = () => {
           </div>
         </div>
 
-        {/* Activities List */}
-        <div className="activities-list">
-          <h4>Top 10 activities</h4>
-          <div className="activities-items">
-            {activitiesData.map((activity, index) => (
-              <div key={activity.id} className="activity-item">
-                <div className="activity-info">
+        {/* Projects List */}
+        <div className="projects-list">
+          <h4>Top 10 projects</h4>
+          <div className="projects-items">
+            {projectsData.map((project, index) => (
+              <div key={project.id} className="project-item">
+                <div className="project-info">
                   <div 
-                    className="activity-color" 
-                    style={{ backgroundColor: activity.color }}
+                    className="project-color" 
+                    style={{ backgroundColor: project.color }}
                   ></div>
-                  <div className="activity-details">
-                    <span className="activity-name">{activity.name}</span>
-                    <span className="activity-hours">{formatHours(activity.hours)}</span>
+                  <div className="project-details">
+                    <span className="project-name">{project.name}</span>
+                    <span className="project-hours">{formatHours(project.hours)}</span>
                   </div>
+                  {project.status && (
+                    <span className={`project-status status-${project.status.toLowerCase()}`}>
+                      {project.status}
+                    </span>
+                  )}
                 </div>
-                <div className="activity-percentage">
-                  {getPercentage(activity.hours)}%
+                <div className="project-percentage">
+                  {getPercentage(project.hours)}%
                 </div>
               </div>
             ))}
@@ -274,5 +281,5 @@ const ActivitiesChart = () => {
   );
 };
 
-export default ActivitiesChart;
+export default ProjectsChart;
 

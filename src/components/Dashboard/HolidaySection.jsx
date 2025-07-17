@@ -1,243 +1,289 @@
-import React, { useEffect, useState } from "react";
-import { Calendar, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
-import { supabase, authHelpers } from "../../supabaseClient.js";
-import "./DashboardNamespaced.css";
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../supabaseClient.js';
+import { useAuth } from '../../hooks/useAuth';
 
-export default function HolidayCard({ onNavigateToHolidays }) {
-  const [upcomingHolidays, setUpcomingHolidays] = useState([]);
+const HolidaysViewer = () => {
+  const { user, canManageHolidays } = useAuth();
+  const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false); // Default to collapsed
   const [error, setError] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-
-    const fetchUpcomingHolidays = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const today = new Date().toISOString().split('T')[0];
-        
-        const { data, error } = await supabase
-          .from('holidays')
-          .select('*')
-          .gte('date', today)
-          .eq('is_company_wide', true)
-          .order('date', { ascending: true })
-          .limit(5); // Get more holidays for expanded view
-
-        if (error) {
-          console.error('Error fetching holidays:', error);
-          if (mounted) {
-            setError('Unable to load holidays');
-            setUpcomingHolidays([]);
-          }
-        } else {
-          if (mounted) {
-            setUpcomingHolidays(data || []);
-          }
-        }
-      } catch (err) {
-        console.error('Exception in fetchUpcomingHolidays:', err);
-        if (mounted) {
-          setError('Failed to connect to holiday data');
-          setUpcomingHolidays([]);
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
     fetchUpcomingHolidays();
-
-    // Set up real-time subscription for holiday changes
-    const subscription = supabase
-      .channel('holiday_changes')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'holidays' 
-        }, 
-        (payload) => {
-          console.log('Holiday change detected:', payload);
-          // Refetch holidays when changes occur
-          if (mounted) {
-            fetchUpcomingHolidays();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
   }, []);
 
-  const formatDate = (dateString) => {
+  const fetchUpcomingHolidays = async () => {
     try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-    } catch (err) {
-      console.warn('Error formatting date:', dateString);
-      return dateString;
-    }
-  };
+      setLoading(true);
+      setError(null);
 
-  const getDaysUntil = (dateString) => {
-    try {
+      console.log('🎉 HOLIDAYS: Fetching upcoming holidays...');
+
       const today = new Date();
-      const holidayDate = new Date(dateString);
-      const diffTime = holidayDate - today;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 0) return 'Today';
-      if (diffDays === 1) return 'Tomorrow';
-      if (diffDays < 7) return `In ${diffDays} days`;
-      if (diffDays < 30) return `In ${Math.ceil(diffDays / 7)} weeks`;
-      return `In ${Math.ceil(diffDays / 30)} months`;
-    } catch (err) {
-      console.warn('Error calculating days until:', dateString);
-      return '';
-    }
-  };
+      const nextYear = new Date(today);
+      nextYear.setFullYear(today.getFullYear() + 1);
 
-  const handleSetupHolidays = () => {
-    try {
-      if (onNavigateToHolidays) {
-        onNavigateToHolidays();
-      } else {
-        // Fallback navigation
-        console.log('Navigate to holiday maintenance page');
-        // You can implement routing here based on your router setup
-        // Example: navigate('/holidays-maintenance');
+      const { data: holidaysData, error: fetchError } = await supabase
+        .from('holidays')
+        .select('*')
+        .gte('date', today.toISOString().split('T')[0])
+        .lte('date', nextYear.toISOString().split('T')[0])
+        .eq('is_active', true)
+        .order('date', { ascending: true })
+        .limit(10);
+
+      if (fetchError) {
+        console.error('🎉 HOLIDAYS ERROR:', fetchError);
+        throw fetchError;
       }
-    } catch (err) {
-      console.error('Error navigating to holidays:', err);
+
+      setHolidays(holidaysData || []);
+      console.log('🎉 HOLIDAYS: Fetched holidays:', holidaysData?.length || 0);
+
+    } catch (error) {
+      console.error('🎉 HOLIDAYS ERROR:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDismiss = () => {
-    // Hide the card or mark as dismissed
-    console.log('Holiday setup dismissed');
-    // You can implement local storage or user preference saving here
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const diffTime = date - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    const month = monthNames[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
+
+    let timeInfo = '';
+    if (diffDays === 0) {
+      timeInfo = 'Today';
+    } else if (diffDays === 1) {
+      timeInfo = 'Tomorrow';
+    } else if (diffDays > 0 && diffDays <= 30) {
+      timeInfo = `In ${diffDays} days`;
+    } else if (diffDays > 30 && diffDays <= 365) {
+      const months = Math.floor(diffDays / 30);
+      timeInfo = `In ${months} month${months > 1 ? 's' : ''}`;
+    }
+
+    return {
+      formatted: `${month} ${day}, ${year}`,
+      timeInfo,
+      isPast: diffDays < 0,
+      isToday: diffDays === 0,
+      isSoon: diffDays >= 0 && diffDays <= 7
+    };
   };
 
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
+  const getHolidayTypeColor = (type) => {
+    const colors = {
+      'national': '#ff6b6b',
+      'company': '#4ecdc4',
+      'religious': '#45b7d1',
+      'cultural': '#96ceb4',
+      'personal': '#feca57',
+      'other': '#a55eea'
+    };
+    return colors[type?.toLowerCase()] || colors.other;
   };
 
-  // Show only next holiday when collapsed, all when expanded
-  const displayHolidays = isExpanded ? upcomingHolidays : upcomingHolidays.slice(0, 1);
+  const nextHoliday = holidays.find(holiday => {
+    const date = new Date(holiday.date);
+    const today = new Date();
+    return date >= today;
+  });
+
+  if (loading) {
+    return (
+      <div className="holidays-viewer">
+        <div className="holidays-header">
+          <div className="holidays-title">
+            <h3>UPCOMING HOLIDAYS AND TIME OFF</h3>
+            <button 
+              className="expand-button"
+              onClick={() => setIsExpanded(!isExpanded)}
+              disabled
+            >
+              ⌄
+            </button>
+          </div>
+          <p className="holidays-subtitle">Add your holiday calendar for reminders and overtime calculations</p>
+        </div>
+        <div className="holidays-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading holidays...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="holidays-viewer">
+        <div className="holidays-header">
+          <div className="holidays-title">
+            <h3>UPCOMING HOLIDAYS AND TIME OFF</h3>
+            <button 
+              className="expand-button"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              ⌄
+            </button>
+          </div>
+          <p className="holidays-subtitle">Add your holiday calendar for reminders and overtime calculations</p>
+        </div>
+        <div className="holidays-error">
+          <p>Error loading holidays: {error}</p>
+          <button onClick={fetchUpcomingHolidays} className="retry-button">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div 
-      className={`holiday-card ${isExpanded ? 'expanded' : 'collapsed'}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="holiday-header">
-        <div className="holiday-icon">
-          <Calendar size={24} />
-        </div>
-        <div className="holiday-title">
+    <div className={`holidays-viewer ${isExpanded ? 'expanded' : ''}`}>
+      <div className="holidays-header">
+        <div className="holidays-title">
           <h3>UPCOMING HOLIDAYS AND TIME OFF</h3>
-          <p>Add your holiday calendar for reminders and overtime calculations.</p>
+          <button 
+            className={`expand-button ${isExpanded ? 'expanded' : ''}`}
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            ⌄
+          </button>
         </div>
-        <button 
-          className="expand-toggle"
-          onClick={toggleExpanded}
-          aria-label={isExpanded ? 'Collapse' : 'Expand'}
-        >
-          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
+        <p className="holidays-subtitle">Add your holiday calendar for reminders and overtime calculations</p>
       </div>
 
-      <div className={`holiday-content ${isExpanded ? 'expanded' : 'collapsed'}`}>
-        {loading ? (
-          <div className="holiday-loading">
-            <p>Loading holidays...</p>
+      {holidays.length === 0 ? (
+        <div className="holidays-empty">
+          <div className="empty-state">
+            <div className="empty-icon">📅</div>
+            <p>No upcoming holidays found</p>
+            {canManageHolidays() && (
+              <button className="add-holiday-button">
+                Add Holiday
+              </button>
+            )}
           </div>
-        ) : error ? (
-          <div className="no-holidays">
-            <Calendar size={48} className="empty-calendar" />
-            <p>Unable to load holidays</p>
-            <span className="empty-subtext">{error}</span>
-          </div>
-        ) : upcomingHolidays.length > 0 ? (
-          <div className="holiday-list">
-            {displayHolidays.map((holiday) => (
-              <div key={holiday.id} className="holiday-item">
-                <div className="holiday-date">
-                  <span className="date-text">{formatDate(holiday.date)}</span>
-                  <span className="days-until">{getDaysUntil(holiday.date)}</span>
+        </div>
+      ) : (
+        <>
+          {/* Next Holiday Preview */}
+          {nextHoliday && !isExpanded && (
+            <div className="next-holiday-preview">
+              <div className="holiday-preview-card">
+                <div className="holiday-date-section">
+                  <div className="holiday-month-day">
+                    {formatDate(nextHoliday.date).formatted.split(',')[0]}
+                  </div>
+                  <div className="holiday-year">
+                    {formatDate(nextHoliday.date).formatted.split(',')[1]}
+                  </div>
+                  <div className="holiday-time-info">
+                    {formatDate(nextHoliday.date).timeInfo}
+                  </div>
                 </div>
-                <div className="holiday-details">
-                  <h4>{holiday.name}</h4>
-                  {holiday.description && (
-                    <p className="holiday-description">{holiday.description}</p>
-                  )}
-                  {holiday.overtime_multiplier > 1 && (
-                    <span className="overtime-badge">
-                      {holiday.overtime_multiplier === 2.0 ? 'Double Pay' : 
-                       holiday.overtime_multiplier === 1.5 ? 'Time & Half' :
-                       `${holiday.overtime_multiplier}x Pay`}
+                <div className="holiday-info-section">
+                  <div className="holiday-name">{nextHoliday.name}</div>
+                  <div className="holiday-meta">
+                    <span 
+                      className="holiday-type"
+                      style={{ 
+                        backgroundColor: getHolidayTypeColor(nextHoliday.type),
+                        color: 'white'
+                      }}
+                    >
+                      {nextHoliday.type || 'Holiday'}
                     </span>
+                    {nextHoliday.is_paid && (
+                      <span className="holiday-paid">TIME & HALF</span>
+                    )}
+                  </div>
+                  {nextHoliday.description && (
+                    <div className="holiday-description">
+                      {nextHoliday.description}
+                    </div>
                   )}
                 </div>
               </div>
-            ))}
-            
-            {/* Show "and X more" when collapsed */}
-            {!isExpanded && upcomingHolidays.length > 1 && (
-              <div className="more-holidays-indicator">
-                <button 
-                  className="show-more-btn"
-                  onClick={toggleExpanded}
-                >
-                  +{upcomingHolidays.length - 1} more holiday{upcomingHolidays.length - 1 !== 1 ? 's' : ''}
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="no-holidays">
-            <Calendar size={isExpanded ? 48 : 32} className="empty-calendar" />
-            <p>No upcoming holidays</p>
-            {isExpanded && (
-              <span className="empty-subtext">Set up your holiday calendar to get started</span>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
 
-      {/* Hover Actions - Only show when expanded or when no holidays */}
-      <div className={`holiday-actions ${(isHovered && (isExpanded || upcomingHolidays.length === 0)) ? 'visible' : ''}`}>
-        <button 
-          className="setup-btn primary"
-          onClick={handleSetupHolidays}
-        >
-          <Plus size={16} />
-          Set up Holidays
-        </button>
-        <button 
-          className="dismiss-btn secondary"
-          onClick={handleDismiss}
-        >
-          <X size={16} />
-          No, thanks
-        </button>
-      </div>
+          {/* Full Holidays List */}
+          {isExpanded && (
+            <div className="holidays-list">
+              {holidays.map((holiday, index) => {
+                const dateInfo = formatDate(holiday.date);
+                return (
+                  <div 
+                    key={holiday.id || index} 
+                    className={`holiday-item ${dateInfo.isToday ? 'today' : ''} ${dateInfo.isSoon ? 'soon' : ''}`}
+                  >
+                    <div className="holiday-date-column">
+                      <div className="holiday-date">
+                        {dateInfo.formatted}
+                      </div>
+                      <div className="holiday-time">
+                        {dateInfo.timeInfo}
+                      </div>
+                    </div>
+                    
+                    <div className="holiday-details-column">
+                      <div className="holiday-name">{holiday.name}</div>
+                      <div className="holiday-meta">
+                        <span 
+                          className="holiday-type"
+                          style={{ 
+                            backgroundColor: getHolidayTypeColor(holiday.type),
+                            color: 'white'
+                          }}
+                        >
+                          {holiday.type || 'Holiday'}
+                        </span>
+                        {holiday.is_paid && (
+                          <span className="holiday-paid">TIME & HALF</span>
+                        )}
+                      </div>
+                      {holiday.description && (
+                        <div className="holiday-description">
+                          {holiday.description}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {canManageHolidays() && (
+                <div className="holidays-actions">
+                  <button className="add-holiday-button">
+                    Add New Holiday
+                  </button>
+                  <button className="manage-holidays-button">
+                    Manage All Holidays
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
-}
+};
+
+export default HolidaysViewer;
 
