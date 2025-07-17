@@ -1,12 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Search, Filter, Users, Clock, Coffee, LogOut } from "lucide-react";
-import { createClient } from '@supabase/supabase-js';
 import "./DashboardNamespaced.css";
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from "../../supabaseClient.js";
 
 export default function WhoIsInOutPanel() {
   const [currentTime, setCurrentTime] = useState(new Date());

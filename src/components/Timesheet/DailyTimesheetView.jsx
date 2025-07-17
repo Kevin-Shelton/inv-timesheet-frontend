@@ -12,11 +12,6 @@ const DailyTimesheetView = ({ selectedDate, userId, onDateChange }) => {
     members: 'all',
     schedules: 'all'
   });
-
-  // Initialize Supabase client directly in component
-  const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL || '',
-    import.meta.env.VITE_SUPABASE_ANON_KEY || '',
     {
       auth: {
         autoRefreshToken: true,

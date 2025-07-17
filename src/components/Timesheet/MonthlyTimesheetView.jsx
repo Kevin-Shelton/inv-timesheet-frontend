@@ -12,7 +12,7 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const user = await enhancedSupabaseApi.getCurrentUser();
+        const user = await supabase.auth.getUser();
         setCurrentUser(user);
       } catch (error) {
         console.error('Error loading user:', error);
