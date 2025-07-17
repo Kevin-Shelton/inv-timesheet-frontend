@@ -5,7 +5,7 @@ import HolidaysViewer from './HolidaySection';
 import ActivityRing from "./ActivityRing";
 import ProjectsChart from './ProjectsChart';
 import WelcomeCard from './WelcomeCard';
-import WhosInOutPanel from './WhosInOutPanel'; // Assuming you have this component
+import WhosInOutPanel from './WhosInOutPanel';
 
 const DashboardPage = () => {
   return (
