@@ -1,6 +1,6 @@
 import React from 'react';
 import DashboardHeader from "./DashboardHeader";
-import TrackedHoursChart from './TrackedHoursChart';
+import TrackedHoursChart from './WeeklyChart';
 import HolidaysViewer from './HolidaysViewer';
 import ActivitiesChart from './ActivitiesChart';
 import ProjectsChart from './ProjectsChart';
