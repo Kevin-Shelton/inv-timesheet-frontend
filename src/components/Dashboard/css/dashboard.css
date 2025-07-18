@@ -1,11 +1,11 @@
-/* Dashboard CSS - Complete Styling (FIXED VERSION) */
+/* Dashboard CSS - Complete Styling (IMPORT PATHS FIXED) */
 /* This file imports all component-specific CSS files in the correct order */
 
 /* 1. CSS Variables and Design Tokens */
 @import './variables.css';
 
 /* 2. Core Layout and Structure */
-@import './dashboard-layout-fixed.css';
+@import './dashboard-layout.css';
 @import './dashboard-header.css';
 
 /* 3. Component-Specific Styles */
@@ -45,23 +45,10 @@ body {
   line-height: 1.6;
 }
 
-/* FORCE STYLING APPLICATION - Override any conflicting styles */
-.dashboard-page,
-.dashboard-container,
-.dashboard-content,
-.dashboard-main,
-.dashboard-sidebar,
-.dashboard-row,
-.dashboard-col {
-  /* Force CSS to be applied */
-  all: unset;
-  display: revert;
-  box-sizing: border-box;
-}
+/* LAYOUT FIXES - Override existing layout with proper stacking */
 
-/* Re-apply dashboard styles with higher specificity */
-.dashboard-page .dashboard-container,
-div.dashboard-container {
+/* Main Dashboard Container */
+.dashboard-container {
   display: flex !important;
   flex-direction: column !important;
   height: 100vh !important;
@@ -70,15 +57,15 @@ div.dashboard-container {
   font-family: var(--font-family-primary) !important;
 }
 
-.dashboard-page .dashboard-content,
-div.dashboard-content {
+/* Dashboard Content Wrapper */
+.dashboard-content {
   display: flex !important;
   flex: 1 !important;
   overflow: hidden !important;
 }
 
-.dashboard-page .dashboard-main,
-div.dashboard-main {
+/* Main Content Area - LEFT SIDE */
+.dashboard-main {
   flex: 1 !important;
   padding: var(--space-6) !important;
   overflow-y: auto !important;
@@ -88,8 +75,58 @@ div.dashboard-main {
   gap: var(--space-6) !important;
 }
 
-.dashboard-page .dashboard-sidebar,
-div.dashboard-sidebar {
+/* Dashboard Rows */
+.dashboard-row {
+  display: flex !important;
+  gap: var(--space-6) !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+/* FIXED: Force single column layout for bottom sections */
+.dashboard-row:nth-child(3),
+.dashboard-row:nth-child(4) {
+  display: block !important;
+}
+
+.dashboard-row:nth-child(3) .dashboard-col,
+.dashboard-row:nth-child(4) .dashboard-col {
+  width: 100% !important;
+  flex: none !important;
+}
+
+/* Dashboard Columns */
+.dashboard-col {
+  background: var(--bg-secondary) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: var(--space-6) !important;
+  box-shadow: var(--shadow-base) !important;
+  border: 1px solid var(--color-gray-200) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Column Variants */
+.dashboard-col.welcome {
+  flex: 2 !important;
+  background: var(--bg-gradient-welcome) !important;
+  color: var(--color-white) !important;
+  min-height: 200px !important;
+}
+
+.dashboard-col.holidays {
+  flex: 1 !important;
+  min-height: 200px !important;
+}
+
+.dashboard-col.wide {
+  flex: 1 !important;
+  width: 100% !important;
+  min-height: 350px !important;
+}
+
+/* Sidebar - RIGHT SIDE */
+.dashboard-sidebar {
   width: var(--sidebar-width) !important;
   background: var(--bg-secondary) !important;
   border-left: 1px solid var(--color-gray-200) !important;
@@ -101,64 +138,8 @@ div.dashboard-sidebar {
   box-shadow: var(--shadow-base) !important;
 }
 
-.dashboard-page .dashboard-row,
-div.dashboard-row {
-  display: flex !important;
-  gap: var(--space-6) !important;
-  align-items: stretch !important;
-  width: 100% !important;
-}
-
-.dashboard-page .dashboard-col,
-div.dashboard-col {
-  background: var(--bg-secondary) !important;
-  border-radius: var(--radius-lg) !important;
-  padding: var(--space-6) !important;
-  box-shadow: var(--shadow-base) !important;
-  border: 1px solid var(--color-gray-200) !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* Welcome Card Styling */
-.dashboard-page .dashboard-col.welcome,
-div.dashboard-col.welcome {
-  flex: 2 !important;
-  background: var(--bg-gradient-welcome) !important;
-  color: var(--color-white) !important;
-  min-height: 200px !important;
-}
-
-/* Holiday Section Styling */
-.dashboard-page .dashboard-col.holidays,
-div.dashboard-col.holidays {
-  flex: 1 !important;
-  min-height: 200px !important;
-}
-
-/* Wide Columns (Charts) */
-.dashboard-page .dashboard-col.wide,
-div.dashboard-col.wide {
-  flex: 1 !important;
-  width: 100% !important;
-  min-height: 350px !important;
-}
-
-/* Force single column layout for wide sections */
-.dashboard-page .dashboard-row:has(.dashboard-col.wide:only-child),
-div.dashboard-row:has(div.dashboard-col.wide:only-child) {
-  display: block !important;
-}
-
-.dashboard-page .dashboard-row:has(.dashboard-col.wide:only-child) .dashboard-col.wide,
-div.dashboard-row:has(div.dashboard-col.wide:only-child) div.dashboard-col.wide {
-  width: 100% !important;
-  flex: none !important;
-}
-
 /* Header Styling */
-.dashboard-page .dashboard-header,
-div.dashboard-header {
+.dashboard-header {
   background: var(--bg-secondary) !important;
   border-bottom: 1px solid var(--color-gray-200) !important;
   padding: var(--space-4) var(--space-6) !important;
@@ -171,8 +152,7 @@ div.dashboard-header {
 /* Component-specific forced styling */
 
 /* Welcome Card */
-.dashboard-page .welcome-card,
-div.welcome-card {
+.welcome-card {
   height: 100% !important;
   display: flex !important;
   flex-direction: column !important;
@@ -182,8 +162,7 @@ div.welcome-card {
 }
 
 /* Weekly Chart */
-.dashboard-page .weekly-chart-wrapper,
-div.weekly-chart-wrapper {
+.weekly-chart-wrapper {
   background: var(--bg-secondary) !important;
   padding: var(--space-4) !important;
   border-radius: var(--radius-lg) !important;
@@ -192,14 +171,11 @@ div.weekly-chart-wrapper {
   flex-direction: column !important;
   gap: var(--space-4) !important;
   width: 100% !important;
-  max-width: 100% !important;
-  overflow-x: auto !important;
   height: 100% !important;
 }
 
 /* Activity Ring */
-.dashboard-page .activity-summary-section,
-div.activity-summary-section {
+.activity-summary-section {
   background: var(--bg-secondary) !important;
   padding: var(--space-4) !important;
   border-radius: var(--radius-lg) !important;
@@ -211,8 +187,7 @@ div.activity-summary-section {
 }
 
 /* Projects Chart */
-.dashboard-page .projects-chart,
-div.projects-chart {
+.projects-chart {
   background: var(--bg-secondary) !important;
   padding: var(--space-4) !important;
   border-radius: var(--radius-lg) !important;
@@ -224,8 +199,7 @@ div.projects-chart {
 }
 
 /* Holiday Section */
-.dashboard-page .holiday-section,
-div.holiday-section {
+.holiday-section {
   background: var(--bg-secondary) !important;
   padding: var(--space-4) !important;
   border-radius: var(--radius-lg) !important;
@@ -237,8 +211,7 @@ div.holiday-section {
 }
 
 /* Who's In/Out Panel */
-.dashboard-page .who-is-in-out-panel,
-div.who-is-in-out-panel {
+.who-is-in-out-panel {
   background: var(--bg-secondary) !important;
   border-radius: var(--radius-lg) !important;
   border: 1px solid var(--color-gray-200) !important;
@@ -249,35 +222,53 @@ div.who-is-in-out-panel {
   flex-direction: column !important;
 }
 
-/* Typography Reset with higher specificity */
-.dashboard-page h1, .dashboard-page h2, .dashboard-page h3, .dashboard-page h4, .dashboard-page h5, .dashboard-page h6,
-div h1, div h2, div h3, div h4, div h5, div h6 {
+/* Custom Scrollbars */
+.dashboard-main::-webkit-scrollbar,
+.dashboard-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-main::-webkit-scrollbar-track,
+.dashboard-sidebar::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+}
+
+.dashboard-main::-webkit-scrollbar-thumb,
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: var(--radius-sm);
+}
+
+.dashboard-main::-webkit-scrollbar-thumb:hover,
+.dashboard-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}
+
+/* Typography Reset */
+h1, h2, h3, h4, h5, h6 {
   margin: 0 !important;
   font-weight: var(--font-weight-semibold) !important;
   line-height: 1.2 !important;
 }
 
-.dashboard-page p,
-div p {
+p {
   margin: 0 0 var(--space-4) 0 !important;
 }
 
-/* Button Reset with higher specificity */
-.dashboard-page button,
-div button {
+/* Button Reset */
+button {
   font-family: inherit !important;
   font-size: inherit !important;
   line-height: inherit !important;
   margin: 0 !important;
-  padding: 0 !important;
   border: none !important;
   background: none !important;
   cursor: pointer !important;
 }
 
-/* Utility Classes with higher specificity */
-.dashboard-page .sr-only,
-div .sr-only {
+/* Utility Classes */
+.sr-only {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -289,50 +280,21 @@ div .sr-only {
   border: 0 !important;
 }
 
-.dashboard-page .text-center,
-div .text-center {
-  text-align: center !important;
-}
+.text-center { text-align: center !important; }
+.flex { display: flex !important; }
+.flex-col { flex-direction: column !important; }
+.items-center { align-items: center !important; }
+.justify-between { justify-content: space-between !important; }
+.w-full { width: 100% !important; }
+.h-full { height: 100% !important; }
 
-.dashboard-page .flex,
-div .flex {
-  display: flex !important;
-}
-
-.dashboard-page .flex-col,
-div .flex-col {
-  flex-direction: column !important;
-}
-
-.dashboard-page .items-center,
-div .items-center {
-  align-items: center !important;
-}
-
-.dashboard-page .justify-between,
-div .justify-between {
-  justify-content: space-between !important;
-}
-
-.dashboard-page .w-full,
-div .w-full {
-  width: 100% !important;
-}
-
-.dashboard-page .h-full,
-div .h-full {
-  height: 100% !important;
-}
-
-/* Responsive overrides */
+/* Responsive Design */
 @media (max-width: 768px) {
-  .dashboard-page .dashboard-content,
-  div.dashboard-content {
+  .dashboard-content {
     flex-direction: column !important;
   }
   
-  .dashboard-page .dashboard-sidebar,
-  div.dashboard-sidebar {
+  .dashboard-sidebar {
     width: 100% !important;
     border-left: none !important;
     border-top: 1px solid var(--color-gray-200) !important;
@@ -340,16 +302,20 @@ div .h-full {
     order: 2 !important;
   }
   
-  .dashboard-page .dashboard-main,
-  div.dashboard-main {
+  .dashboard-main {
     padding: var(--space-4) !important;
     order: 1 !important;
   }
   
-  .dashboard-page .dashboard-row,
-  div.dashboard-row {
+  .dashboard-row {
     flex-direction: column !important;
     gap: var(--space-4) !important;
+  }
+  
+  .dashboard-row:nth-child(3),
+  .dashboard-row:nth-child(4) {
+    display: flex !important;
+    flex-direction: column !important;
   }
 }
 
