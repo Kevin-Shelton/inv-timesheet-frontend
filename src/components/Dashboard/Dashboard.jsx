@@ -13,48 +13,42 @@ import './css/dashboard.css';
 
 const Dashboard = () => {
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-wrapper">
       {/* Header */}
       <DashboardHeader />
       
       {/* Main Content */}
-      <div className="dashboard-content">
+      <div className="dashboard-layout">
         {/* Left Side - Main Content */}
-        <div className="dashboard-main">
-          {/* Top Row - Welcome Card and Holiday Section */}
-          <div className="dashboard-row">
-            <div className="dashboard-col-2">
+        <div className="dashboard-left">
+          {/* Top Row */}
+          <div className="top-row">
+            <div className="welcome-section">
               <WelcomeCard />
             </div>
-            <div className="dashboard-col-1">
+            <div className="holiday-section">
               <HolidaySection />
             </div>
           </div>
 
-          {/* Weekly Chart Row */}
-          <div className="dashboard-row">
-            <div className="dashboard-col-full">
-              <WeeklyChart />
-            </div>
+          {/* Weekly Chart */}
+          <div className="chart-section">
+            <WeeklyChart />
           </div>
 
-          {/* Activities Chart Row */}
-          <div className="dashboard-row">
-            <div className="dashboard-col-full">
-              <ActivityRing />
-            </div>
+          {/* Activities Chart */}
+          <div className="chart-section">
+            <ActivityRing />
           </div>
 
-          {/* Projects Chart Row */}
-          <div className="dashboard-row">
-            <div className="dashboard-col-full">
-              <ProjectsChart />
-            </div>
+          {/* Projects Chart */}
+          <div className="chart-section">
+            <ProjectsChart />
           </div>
         </div>
 
         {/* Right Side - Sidebar */}
-        <div className="dashboard-sidebar">
+        <div className="dashboard-right">
           <WhoIsInOutPanel />
           <CurrentTime />
         </div>
