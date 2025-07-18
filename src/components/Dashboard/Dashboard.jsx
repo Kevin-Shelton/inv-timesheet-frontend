@@ -6,18 +6,19 @@ import WeeklyChart from './WeeklyChart';
 import ActivityRing from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
-import './DashboardNamespaced.css'; // Use existing CSS file (update its content with consolidated styles)
+import './DashboardNamespaced.css';
 
 const Dashboard = () => {
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-container">
       {/* Dashboard Header */}
       <div className="dashboard-header">
         <DashboardHeader />
       </div>
 
-      {/* Main Content Area with Vertical Scrolling */}
+      {/* Main Dashboard Content */}
       <div className="dashboard-content">
+        {/* Main Content Area */}
         <div className="dashboard-main">
           {/* Top Row: Welcome Card + Holiday Section */}
           <div className="dashboard-row">
@@ -47,7 +48,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Sidebar: Who's In/Out Panel */}
+        {/* Sidebar */}
         <div className="dashboard-sidebar">
           <WhoIsInOutPanel />
         </div>

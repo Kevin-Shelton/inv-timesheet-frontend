@@ -3988,5 +3988,241 @@
     width: 100%;
     page-break-before: always;
   }
+  /* =====================================================
+   DASHBOARD LAYOUT FIX - ADD TO DashboardNamespaced.css
+   ===================================================== */
+
+/* IMPORTANT: Add this CSS to your existing DashboardNamespaced.css file */
+/* This fixes the layout issues shown in the screenshot */
+
+/* Main Dashboard Container - CORRECTED */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  background-color: #f8f9fa;
+}
+
+/* Dashboard Header - CORRECTED */
+.dashboard-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid #e0e0e0;
+  background: white;
+  padding: 16px 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  z-index: 10;
+}
+
+/* Dashboard Content Container - CORRECTED */
+.dashboard-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  gap: 24px;
+  padding: 24px;
+}
+
+/* Main Content Area - CORRECTED */
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  min-width: 0; /* Allow flex shrinking */
+}
+
+/* Sidebar - CORRECTED */
+.dashboard-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 0; /* Let components handle their own padding */
+}
+
+/* Dashboard Rows - CORRECTED */
+.dashboard-row {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  align-items: stretch;
+  flex-shrink: 0; /* Prevent rows from shrinking */
+}
+
+/* Dashboard Columns - CORRECTED */
+.dashboard-col {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px; /* Ensure minimum height */
+}
+
+.dashboard-col.wide {
+  flex: 1 1 100%;
+  min-height: 400px; /* Taller for wide charts */
+}
+
+.dashboard-col.welcome {
+  flex: 1.5;
+  min-height: 250px;
+}
+
+.dashboard-col.holidays {
+  flex: 1;
+  min-height: 250px;
+}
+
+.dashboard-col.activity {
+  flex: 1;
+  min-height: 350px; /* Taller for charts */
+}
+
+/* OVERRIDE ANY CONFLICTING STYLES FROM EXISTING CSS */
+/* Remove any existing .dashboard-page styles that conflict */
+.dashboard-page {
+  /* Reset any existing styles */
+  display: none !important; /* Hide old layout */
+}
+
+/* Scrollbar Styling for Main Content */
+.dashboard-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-main::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dashboard-main::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.dashboard-main::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Scrollbar Styling for Sidebar */
+.dashboard-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 3px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+  background: #dee2e6;
+  border-radius: 3px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboard-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .dashboard-main {
+    overflow-y: visible;
+  }
+  
+  .dashboard-sidebar {
+    width: 100%;
+    max-height: 400px;
+  }
+  
+  .dashboard-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .dashboard-col {
+    min-height: 250px;
+  }
+  
+  .dashboard-col.wide {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .dashboard-header {
+    padding: 12px 16px;
+  }
+  
+  .dashboard-col {
+    padding: 16px;
+    min-height: 200px;
+  }
+}
+
+/* Ensure charts fill their containers properly */
+.chart-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Prevent content overflow in cards */
+.dashboard-col > * {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Smooth scrolling behavior */
+.dashboard-main,
+.dashboard-sidebar {
+  scroll-behavior: smooth;
+}
+
+/* Loading and error states take full height */
+.chart-loading,
+.chart-error,
+.chart-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* Performance optimizations */
+.dashboard-col {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.dashboard-main,
+.dashboard-sidebar {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+
 }
 
