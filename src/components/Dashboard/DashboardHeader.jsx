@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, CalendarDays, MapPin, Users, Clock, Search, X } from 'lucide-react';
-import { supabase } from '@/supabaseClient'; // FIXED: Corrected import path
+import { supabase } from '@/supabaseClient';
 
 const DashboardHeader = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -16,52 +16,49 @@ const DashboardHeader = () => {
 
   const dropdownRefs = useRef({});
 
-  // Updated: Campaign filter with database integration - v2.1
-  // positioned next to time period
-  // NO DUPLICATE TITLE - header shows only filters
-
   useEffect(() => {
     const fetchCampaigns = async () => {
       const { data, error } = await supabase
         .from('campaigns')
         .select('id, name')
-        .eq('is_active', true); // Assuming an is_active column
-
-      if (error) {
-        console.error('Error fetching campaigns:', error.message);
-      } else {
-        setCampaigns([{ id: null, name: 'All campaigns' }, ...data]);
+        .eq('is_active', true);
+      
+      if (data) {
+        setCampaigns(data);
       }
     };
 
     const fetchLocations = async () => {
-      // Mock data for locations, replace with actual Supabase fetch
-      const mockLocations = [
-        { id: 1, name: 'New York Office' },
-        { id: 2, name: 'Remote' },
-        { id: 3, name: 'London Office' },
-      ];
-      setLocations([{ id: null, name: 'All locations' }, ...mockLocations]);
+      const { data, error } = await supabase
+        .from('locations')
+        .select('id, name')
+        .eq('is_active', true);
+      
+      if (data) {
+        setLocations(data);
+      }
     };
 
     const fetchGroups = async () => {
-      // Mock data for groups, replace with actual Supabase fetch
-      const mockGroups = [
-        { id: 1, name: 'Engineering' },
-        { id: 2, name: 'Design' },
-        { id: 3, name: 'Marketing' },
-      ];
-      setGroups([{ id: null, name: 'All groups' }, ...mockGroups]);
+      const { data, error } = await supabase
+        .from('groups')
+        .select('id, name')
+        .eq('is_active', true);
+      
+      if (data) {
+        setGroups(data);
+      }
     };
 
     const fetchSchedules = async () => {
-      // Mock data for schedules, replace with actual Supabase fetch
-      const mockSchedules = [
-        { id: 1, name: 'Full-time' },
-        { id: 2, name: 'Part-time' },
-        { id: 3, name: 'Flexible' },
-      ];
-      setSchedules([{ id: null, name: 'All schedules' }, ...mockSchedules]);
+      const { data, error } = await supabase
+        .from('schedules')
+        .select('id, name')
+        .eq('is_active', true);
+      
+      if (data) {
+        setSchedules(data);
+      }
     };
 
     fetchCampaigns();
@@ -72,7 +69,8 @@ const DashboardHeader = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (activeDropdown && dropdownRefs.current[activeDropdown] && !dropdownRefs.current[activeDropdown].contains(event.target)) {
+      if (activeDropdown && dropdownRefs.current[activeDropdown] && 
+          !dropdownRefs.current[activeDropdown].contains(event.target)) {
         setActiveDropdown(null);
       }
     };
@@ -87,66 +85,49 @@ const DashboardHeader = () => {
     setActiveDropdown(activeDropdown === dropdownName ? null : dropdownName);
   };
 
-  const handleTimeframeSelect = (option) => {
-    setTimeframe(option);
+  const handleSelect = (type, value) => {
+    switch (type) {
+      case 'timeframe':
+        setTimeframe(value);
+        break;
+      case 'campaign':
+        setSelectedCampaign(value);
+        break;
+      case 'location':
+        setSelectedLocation(value);
+        break;
+      case 'group':
+        setSelectedGroup(value);
+        break;
+      case 'schedule':
+        setSelectedSchedule(value);
+        break;
+    }
     setActiveDropdown(null);
   };
 
-  const handleCampaignSelect = (campaign) => {
-    setSelectedCampaign(campaign.name);
-    setActiveDropdown(null);
-    // Implement filtering logic based on selected campaign
-    console.log('Selected Campaign:', campaign.name);
-  };
-
-  const handleLocationSelect = (location) => {
-    setSelectedLocation(location.name);
-    setActiveDropdown(null);
-    // Implement filtering logic based on selected location
-    console.log('Selected Location:', location.name);
-  };
-
-  const handleGroupSelect = (group) => {
-    setSelectedGroup(group.name);
-    setActiveDropdown(null);
-    // Implement filtering logic based on selected group
-    console.log('Selected Group:', group.name);
-  };
-
-  const handleScheduleSelect = (schedule) => {
-    setSelectedSchedule(schedule.name);
-    setActiveDropdown(null);
-    // Implement filtering logic based on selected schedule
-    console.log('Selected Schedule:', schedule.name);
-  };
-
-  const renderDropdown = (name, selectedValue, options, onSelect) => (
-    <div className="relative" ref={el => dropdownRefs.current[name] = el}>
+  const DropdownButton = ({ name, value, icon: Icon, options, type }) => (
+    <div className="dropdown-container" ref={el => dropdownRefs.current[name] = el}>
       <button
-        className={`flex items-center px-4 py-2 rounded-md transition-all duration-200
-          ${activeDropdown === name ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+        className={`dropdown-button ${activeDropdown === name ? 'active' : ''}`}
         onClick={() => toggleDropdown(name)}
       >
-        {selectedValue}
-        <ChevronDown className={`ml-2 h-4 w-4 transition-transform duration-200 ${activeDropdown === name ? 'rotate-180' : ''}`} />
+        <Icon className="dropdown-icon" size={16} />
+        <span className="dropdown-text">{value}</span>
+        <ChevronDown className={`dropdown-chevron ${activeDropdown === name ? 'rotated' : ''}`} size={16} />
       </button>
+      
       {activeDropdown === name && (
-        <div className="absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-          <div className="py-1">
-            {options.map((option, index) => (
-              <a
-                key={index}
-                href="#"
-                className={`flex items-center px-4 py-2 text-sm ${selectedValue === option.name ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'}`}
-                onClick={(e) => { e.preventDefault(); onSelect(option); }}
+        <div className="dropdown-menu">
+          <div className="dropdown-content">
+            {options.map((option) => (
+              <button
+                key={option.value || option}
+                className="dropdown-item"
+                onClick={() => handleSelect(type, option.value || option)}
               >
-                {option.name}
-                {selectedValue === option.name && (
-                  <svg className="ml-auto h-4 w-4 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </a>
+                {option.label || option}
+              </button>
             ))}
           </div>
         </div>
@@ -154,26 +135,59 @@ const DashboardHeader = () => {
     </div>
   );
 
+  const timeframeOptions = ['Day', 'Week', 'Month'];
+  const campaignOptions = ['All campaigns', ...campaigns.map(c => c.name)];
+  const locationOptions = ['All locations', ...locations.map(l => l.name)];
+  const groupOptions = ['All groups', ...groups.map(g => g.name)];
+  const scheduleOptions = ['All schedules', ...schedules.map(s => s.name)];
+
   return (
-    <header className="dashboard-header bg-white p-4 shadow-sm flex flex-wrap items-center justify-between space-y-2 md:space-y-0">
-      <div className="flex flex-wrap items-center space-x-2 md:space-x-4">
-        {renderDropdown('timeframe', timeframe, [
-          { name: 'Day' }, { name: 'Week' }, { name: 'Month' }
-        ], handleTimeframeSelect)}
-
-        {renderDropdown('campaign', selectedCampaign, campaigns, handleCampaignSelect)}
-
-        {renderDropdown('location', selectedLocation, locations, handleLocationSelect)}
-
-        {renderDropdown('group', selectedGroup, groups, handleGroupSelect)}
-
-        {renderDropdown('schedule', selectedSchedule, schedules, handleScheduleSelect)}
+    <div className="dashboard-header-container">
+      {/* REMOVED: Top row filters (Day/Week/Month buttons and dropdowns) */}
+      
+      {/* Main filter row - KEPT */}
+      <div className="dashboard-filters">
+        <DropdownButton
+          name="timeframe"
+          value={timeframe}
+          icon={CalendarDays}
+          options={timeframeOptions}
+          type="timeframe"
+        />
+        
+        <DropdownButton
+          name="campaign"
+          value={selectedCampaign}
+          icon={Users}
+          options={campaignOptions}
+          type="campaign"
+        />
+        
+        <DropdownButton
+          name="location"
+          value={selectedLocation}
+          icon={MapPin}
+          options={locationOptions}
+          type="location"
+        />
+        
+        <DropdownButton
+          name="group"
+          value={selectedGroup}
+          icon={Users}
+          options={groupOptions}
+          type="group"
+        />
+        
+        <DropdownButton
+          name="schedule"
+          value={selectedSchedule}
+          icon={Clock}
+          options={scheduleOptions}
+          type="schedule"
+        />
       </div>
-
-      <div className="flex items-center space-x-4">
-        {/* Add any other header elements here, e.g., user profile, notifications */}
-      </div>
-    </header>
+    </div>
   );
 };
 
