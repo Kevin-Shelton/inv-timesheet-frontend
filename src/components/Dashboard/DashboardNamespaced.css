@@ -3958,7 +3958,7 @@
   min-height: 200px;
 }
 
-/* Performance Optimizations */
+/* Performance_Optimizations */
 .dashboard-col {
   will-change: transform;
   transform: translateZ(0);

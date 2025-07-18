@@ -6,7 +6,7 @@ import WeeklyChart from './WeeklyChart';
 import ActivityRing from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
-import './DashboardNamespaced_Complete_Full.css'; // ONLY CSS FILE IMPORTED
+import './DashboardNamespaced.css'; // Use existing CSS file (update its content with consolidated styles)
 
 const Dashboard = () => {
   return (
