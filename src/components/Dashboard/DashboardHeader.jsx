@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, CalendarDays, MapPin, Users, Clock, Search, X } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient'; // Updated: Corrected import path using alias
+import { supabase } from '@/supabaseClient'; // FIXED: Corrected import path
 
 const DashboardHeader = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -16,7 +16,7 @@ const DashboardHeader = () => {
 
   const dropdownRefs = useRef({});
 
-  // Updated: Campaign filter with database integration - v2.0
+  // Updated: Campaign filter with database integration - v2.1
   // positioned next to time period
   // NO DUPLICATE TITLE - header shows only filters
 
@@ -178,3 +178,4 @@ const DashboardHeader = () => {
 };
 
 export default DashboardHeader;
+

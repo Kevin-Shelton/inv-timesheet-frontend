@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Search, X, GripVertical } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient'; // Updated: Corrected import path using alias
+import { supabase } from '@/supabaseClient'; // FIXED: Corrected import path
 
-// Enhanced WhoIsInOutPanel v2.0 - with draggable components and campaign filtering
+// Enhanced WhoIsInOutPanel v2.1 - with draggable components and campaign filtering
 
 const WhoIsInOutPanel = () => {
   const [members, setMembers] = useState([]);
@@ -90,7 +90,7 @@ const WhoIsInOutPanel = () => {
                   </p>
                 </div>
               </div>
-             ))
+            ))
           ) : (
             <p className="text-gray-500 text-sm">No members found.</p>
           )}
@@ -151,3 +151,4 @@ const WhoIsInOutPanel = () => {
 };
 
 export default WhoIsInOutPanel;
+
