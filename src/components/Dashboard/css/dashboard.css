@@ -1,4 +1,4 @@
-/* Enhanced Modular Dashboard CSS - Imports all modules with enhanced welcome card */
+/* Enhanced Modular Dashboard CSS - With Scrollbar Fix */
 
 /* Import CSS Variables First */
 @import './variables.css';
@@ -8,9 +8,6 @@
 
 /* Import Component Styles */
 @import './dashboard-header.css';
-
-/* Import Enhanced Welcome Card (instead of regular welcome-card.css) */
-/* @import './welcome-card.css'; */  /* Commented out original */
 
 /* Import Other Component Styles */
 @import './weekly-chart.css';
@@ -24,7 +21,6 @@
 @import './responsive.css';
 
 /* Enhanced Welcome Card Styles - Inline to ensure they're applied */
-/* Main Welcome Card Container - ADD PURPLE GRADIENT */
 .welcome-card {
   height: 100% !important;
   display: flex !important;
@@ -33,17 +29,16 @@
   position: relative !important;
   overflow: hidden !important;
   
-  /* ADD PURPLE GRADIENT BACKGROUND */
+  /* Purple gradient background */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   
-  /* ADD PROFESSIONAL STYLING */
+  /* Professional styling */
   border-radius: 12px !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
   padding: 24px !important;
   color: white !important;
 }
 
-/* Welcome Card Content */
 .welcome-card-content {
   display: flex !important;
   align-items: center !important;
@@ -53,7 +48,6 @@
   z-index: 2 !important;
 }
 
-/* Image Container */
 .welcome-card-image {
   flex-shrink: 0 !important;
   display: flex !important;
@@ -67,7 +61,6 @@
   backdrop-filter: blur(10px) !important;
 }
 
-/* Session Image */
 .session-image {
   width: 120px !important;
   height: 120px !important;
@@ -88,7 +81,6 @@
   object-fit: cover !important;
 }
 
-/* Welcome Content */
 .welcome-content {
   flex: 1 !important;
   display: flex !important;
@@ -96,7 +88,6 @@
   gap: 16px !important;
 }
 
-/* Welcome Header */
 .welcome-header h2 {
   font-size: 30px !important;
   font-weight: 700 !important;
@@ -105,7 +96,6 @@
   line-height: 1.2 !important;
 }
 
-/* Welcome Subtitle */
 .welcome-subtitle {
   font-size: 16px !important;
   opacity: 0.9 !important;
@@ -113,7 +103,6 @@
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
-/* User Info */
 .user-info {
   display: flex !important;
   flex-direction: column !important;
@@ -134,7 +123,6 @@
   opacity: 0.8 !important;
 }
 
-/* Action Buttons */
 .action-buttons {
   display: flex !important;
   gap: 12px !important;
@@ -177,7 +165,6 @@
   transform: translateY(-1px) !important;
 }
 
-/* Auth Status */
 .auth-status {
   margin-top: 16px !important;
   padding-top: 16px !important;
@@ -194,10 +181,11 @@
   height: 14px !important;
 }
 
-/* Additional Dashboard Layout Enhancements */
+/* Dashboard Layout with Scrollbar */
 .dashboard-wrapper {
   min-height: 100vh !important;
   background: var(--bg-primary, #f8fafc) !important;
+  overflow: hidden !important; /* Prevent body scroll */
 }
 
 .dashboard-layout {
@@ -206,26 +194,87 @@
   padding: 24px !important;
   max-width: 1400px !important;
   margin: 0 auto !important;
+  height: calc(100vh - 80px) !important; /* Account for header */
+  overflow: hidden !important; /* Prevent outer scroll */
 }
 
+/* Main content area with vertical scroll */
 .dashboard-left {
   flex: 1 !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 24px !important;
+  
+  /* VERTICAL SCROLL */
+  height: calc(100vh - 120px) !important; /* Account for header height */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  
+  /* Custom scrollbar styling */
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent !important;
 }
 
+/* Webkit scrollbar styling for main content */
+.dashboard-left::-webkit-scrollbar {
+  width: 8px !important;
+}
+
+.dashboard-left::-webkit-scrollbar-track {
+  background: transparent !important;
+  border-radius: 4px !important;
+}
+
+.dashboard-left::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5) !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dashboard-left::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7) !important;
+}
+
+/* Right sidebar */
 .dashboard-right {
   width: 320px !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 24px !important;
+  
+  /* Sidebar scroll if needed */
+  height: calc(100vh - 120px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  
+  /* Custom scrollbar for sidebar */
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent !important;
+}
+
+/* Webkit scrollbar styling for sidebar */
+.dashboard-right::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.dashboard-right::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.dashboard-right::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3) !important;
+  border-radius: 3px !important;
+}
+
+.dashboard-right::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5) !important;
 }
 
 .top-row {
   display: grid !important;
   grid-template-columns: 2fr 1fr !important;
   gap: 24px !important;
+  flex-shrink: 0 !important; /* Don't shrink this row */
 }
 
 .chart-section {
@@ -233,16 +282,26 @@
   border-radius: 12px !important;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
   padding: 24px !important;
+  flex-shrink: 0 !important; /* Don't shrink chart sections */
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
   .dashboard-layout {
     flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  .dashboard-left {
+    height: auto !important;
+    overflow: visible !important;
   }
   
   .dashboard-right {
     width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
   }
   
   .top-row {
