@@ -1,0 +1,247 @@
+/* Dashboard Layout - Core Structure */
+
+/* Main Dashboard Container */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg-primary);
+  overflow: hidden;
+  font-family: var(--font-family-primary);
+}
+
+/* Dashboard Content Wrapper */
+.dashboard-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Main Content Area - LEFT SIDE */
+.dashboard-main {
+  flex: 1;
+  padding: var(--space-6);
+  overflow-y: auto;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Custom Scrollbar for Main Content */
+.dashboard-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-main::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+}
+
+.dashboard-main::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: var(--radius-sm);
+}
+
+.dashboard-main::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}
+
+/* Dashboard Rows */
+.dashboard-row {
+  display: flex;
+  gap: var(--space-6);
+  align-items: stretch;
+  width: 100%;
+}
+
+/* Dashboard Columns */
+.dashboard-col {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-base);
+  border: 1px solid var(--color-gray-200);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Column Variants */
+.dashboard-col.welcome {
+  flex: 2;
+  background: var(--bg-gradient-welcome);
+  color: var(--color-white);
+  min-height: 200px;
+}
+
+.dashboard-col.holidays {
+  flex: 1;
+  min-height: 200px;
+}
+
+.dashboard-col.wide {
+  flex: 1;
+  min-height: 350px;
+}
+
+.dashboard-col.activity {
+  flex: 1;
+  min-height: 350px;
+}
+
+/* Sidebar - RIGHT SIDE */
+.dashboard-sidebar {
+  width: var(--sidebar-width);
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--color-gray-200);
+  padding: var(--space-6);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Custom Scrollbar for Sidebar */
+.dashboard-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: var(--radius-sm);
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}
+
+/* Top Row Specific Layout */
+.dashboard-top-row {
+  display: flex;
+  gap: var(--space-6);
+  align-items: stretch;
+  width: 100%;
+}
+
+.dashboard-top-row > * {
+  flex: 1;
+}
+
+/* Middle Row Specific Layout */
+.dashboard-middle-row {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.dashboard-middle-row .tracked-hours-section {
+  width: 100%;
+}
+
+.dashboard-middle-row > .weekly-chart-wrapper {
+  width: 100%;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboard-sidebar {
+    width: var(--sidebar-width-collapsed);
+  }
+  
+  .dashboard-main {
+    padding: var(--space-4);
+  }
+  
+  .dashboard-row {
+    gap: var(--space-4);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-content {
+    flex-direction: column;
+  }
+  
+  .dashboard-sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--color-gray-200);
+    max-height: 300px;
+    order: 2;
+  }
+  
+  .dashboard-main {
+    padding: var(--space-4);
+    order: 1;
+  }
+  
+  .dashboard-row {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  
+  .dashboard-col {
+    min-height: auto;
+  }
+  
+  .dashboard-col.welcome {
+    min-height: 180px;
+  }
+  
+  .dashboard-col.wide,
+  .dashboard-col.activity {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-main {
+    padding: var(--space-3);
+  }
+  
+  .dashboard-row {
+    gap: var(--space-3);
+  }
+  
+  .dashboard-col {
+    padding: var(--space-4);
+  }
+  
+  .dashboard-sidebar {
+    padding: var(--space-4);
+    gap: var(--space-4);
+  }
+}
+
+/* Print Styles */
+@media print {
+  .dashboard-container {
+    height: auto;
+    overflow: visible;
+  }
+  
+  .dashboard-content {
+    flex-direction: column;
+  }
+  
+  .dashboard-sidebar {
+    display: none;
+  }
+  
+  .dashboard-main {
+    overflow: visible;
+    padding: 0;
+  }
+  
+  .dashboard-col {
+    box-shadow: none;
+    border: 1px solid var(--color-gray-300);
+    break-inside: avoid;
+    margin-bottom: var(--space-4);
+  }
+}
+

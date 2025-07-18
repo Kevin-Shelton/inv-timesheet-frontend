@@ -1,0 +1,586 @@
+/* Responsive Design - Mobile and Tablet Optimizations */
+
+/* Base Responsive Utilities */
+.container {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+/* Responsive Text Sizes */
+@media (max-width: 768px) {
+  .responsive-text-lg {
+    font-size: var(--font-size-base);
+  }
+  
+  .responsive-text-xl {
+    font-size: var(--font-size-lg);
+  }
+  
+  .responsive-text-2xl {
+    font-size: var(--font-size-xl);
+  }
+  
+  .responsive-text-3xl {
+    font-size: var(--font-size-2xl);
+  }
+}
+
+/* Mobile First Breakpoints */
+
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) {
+  .container {
+    padding: 0 var(--space-6);
+  }
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+  .container {
+    padding: 0 var(--space-8);
+  }
+  
+  /* Dashboard specific adjustments */
+  .dashboard-main {
+    padding: var(--space-6);
+  }
+  
+  .dashboard-row {
+    gap: var(--space-6);
+  }
+  
+  .dashboard-col {
+    padding: var(--space-6);
+  }
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+  .container {
+    padding: 0 var(--space-10);
+  }
+}
+
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+  .container {
+    padding: 0 var(--space-12);
+  }
+}
+
+/* Mobile Specific Styles (max-width: 767px) */
+@media (max-width: 767px) {
+  /* Dashboard Layout */
+  .dashboard-container {
+    height: auto;
+    min-height: 100vh;
+  }
+  
+  .dashboard-content {
+    flex-direction: column;
+  }
+  
+  .dashboard-main {
+    padding: var(--space-4);
+    order: 1;
+  }
+  
+  .dashboard-sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--color-gray-200);
+    max-height: 400px;
+    order: 2;
+    padding: var(--space-4);
+  }
+  
+  /* Dashboard Rows and Columns */
+  .dashboard-row {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  
+  .dashboard-col {
+    min-height: auto;
+    padding: var(--space-4);
+  }
+  
+  .dashboard-col.welcome {
+    min-height: 200px;
+  }
+  
+  .dashboard-col.wide,
+  .dashboard-col.activity {
+    min-height: 300px;
+  }
+  
+  /* Header Adjustments */
+  .dashboard-header {
+    padding: var(--space-3) var(--space-4);
+  }
+  
+  .dashboard-header-filters {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  
+  .filter-button {
+    min-width: 80px;
+    font-size: var(--font-size-xs);
+    padding: var(--space-2);
+  }
+  
+  /* Hide filter text on mobile, show only icons */
+  .filter-text {
+    display: none;
+  }
+  
+  .filter-button .filter-icon {
+    margin-right: 0;
+  }
+  
+  /* Welcome Card Mobile */
+  .welcome-card-content {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--space-4);
+  }
+  
+  .session-image {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .welcome-header h2 {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .quick-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .action-button {
+    width: 100%;
+    max-width: 200px;
+    justify-content: center;
+  }
+  
+  /* Charts Mobile */
+  .weekly-chart {
+    height: 180px;
+    min-width: 350px;
+  }
+  
+  .stacked-bar {
+    width: 24px;
+  }
+  
+  .chart-legend {
+    gap: var(--space-3);
+  }
+  
+  .legend-item {
+    font-size: var(--font-size-xs);
+  }
+  
+  /* Activity Ring Mobile */
+  .activity-content {
+    flex-direction: column;
+    gap: var(--space-4);
+    text-align: center;
+  }
+  
+  .activity-ring {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .legend-columns {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  .ring-center-value {
+    font-size: var(--font-size-xl);
+  }
+  
+  /* Projects Chart Mobile */
+  .projects-header {
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: flex-start;
+  }
+  
+  .project-bar-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+  
+  .project-info {
+    min-width: auto;
+  }
+  
+  .project-hours {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  /* Holiday Section Mobile */
+  .holiday-compact {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--space-3);
+  }
+  
+  .holiday-compact-countdown {
+    text-align: center;
+  }
+  
+  .holiday-info {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  .holiday-badges {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  
+  /* Who's In/Out Mobile */
+  .current-time-time {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .member-item {
+    padding: var(--space-2);
+  }
+  
+  .member-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+  
+  .status-tabs {
+    flex-wrap: wrap;
+  }
+  
+  .status-tab {
+    min-width: 60px;
+  }
+}
+
+/* Small Mobile Specific (max-width: 479px) */
+@media (max-width: 479px) {
+  /* Ultra compact mobile styles */
+  .dashboard-main,
+  .dashboard-sidebar {
+    padding: var(--space-3);
+  }
+  
+  .dashboard-row {
+    gap: var(--space-3);
+  }
+  
+  .dashboard-col {
+    padding: var(--space-3);
+  }
+  
+  .dashboard-header {
+    padding: var(--space-2) var(--space-3);
+  }
+  
+  /* Welcome Card Ultra Mobile */
+  .welcome-header h2 {
+    font-size: var(--font-size-xl);
+  }
+  
+  .user-info {
+    align-items: center;
+  }
+  
+  .user-detail {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--space-1);
+  }
+  
+  .user-detail .label {
+    min-width: auto;
+  }
+  
+  /* Charts Ultra Mobile */
+  .weekly-chart-wrapper {
+    padding: var(--space-3);
+  }
+  
+  .weekly-chart {
+    height: 160px;
+    min-width: 300px;
+  }
+  
+  .stacked-bar {
+    width: 20px;
+  }
+  
+  .chart-legend {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  /* Activity Ring Ultra Mobile */
+  .activity-summary-section {
+    padding: var(--space-3);
+  }
+  
+  .activity-ring {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .ring-center-value {
+    font-size: var(--font-size-lg);
+  }
+  
+  .legend-item {
+    padding: var(--space-1);
+  }
+  
+  .activity-item {
+    padding: var(--space-2);
+  }
+  
+  /* Projects Ultra Mobile */
+  .projects-chart {
+    padding: var(--space-3);
+  }
+  
+  .projects-view-toggle {
+    width: 100%;
+  }
+  
+  .view-toggle-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .project-list-item {
+    padding: var(--space-3);
+  }
+  
+  .project-list-info {
+    gap: var(--space-2);
+  }
+  
+  /* Holiday Ultra Mobile */
+  .holiday-section {
+    padding: var(--space-3);
+  }
+  
+  .holiday-item {
+    padding: var(--space-2);
+  }
+  
+  .holiday-compact {
+    padding: var(--space-3);
+  }
+  
+  .countdown-value {
+    font-size: var(--font-size-xl);
+  }
+  
+  /* Who's In/Out Ultra Mobile */
+  .section-header,
+  .member-list {
+    padding: var(--space-3);
+  }
+  
+  .current-time-section {
+    padding: var(--space-3);
+  }
+  
+  .current-time-time {
+    font-size: var(--font-size-xl);
+  }
+  
+  .member-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+  
+  .member-status {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+/* Tablet Specific (768px to 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .dashboard-sidebar {
+    width: var(--sidebar-width-collapsed);
+  }
+  
+  .filter-button {
+    min-width: 100px;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-xs);
+  }
+  
+  .dashboard-header-filters {
+    gap: var(--space-3);
+  }
+}
+
+/* Large Desktop Specific (1200px and up) */
+@media (min-width: 1200px) {
+  .dashboard-main {
+    padding: var(--space-8);
+  }
+  
+  .dashboard-row {
+    gap: var(--space-8);
+  }
+  
+  .dashboard-col {
+    padding: var(--space-8);
+  }
+  
+  .dashboard-sidebar {
+    width: 360px;
+    padding: var(--space-8);
+  }
+}
+
+/* Landscape Orientation */
+@media (orientation: landscape) and (max-height: 600px) {
+  .dashboard-container {
+    height: auto;
+    min-height: 100vh;
+  }
+  
+  .dashboard-sidebar {
+    max-height: none;
+  }
+  
+  .current-time-time {
+    font-size: var(--font-size-xl);
+  }
+}
+
+/* Print Styles */
+@media print {
+  .dashboard-container {
+    height: auto;
+    overflow: visible;
+  }
+  
+  .dashboard-content {
+    flex-direction: column;
+  }
+  
+  .dashboard-sidebar {
+    display: none;
+  }
+  
+  .dashboard-main {
+    overflow: visible;
+    padding: 0;
+  }
+  
+  .dashboard-header {
+    display: none;
+  }
+  
+  .dashboard-col {
+    box-shadow: none;
+    border: 1px solid var(--color-gray-300);
+    break-inside: avoid;
+    margin-bottom: var(--space-4);
+    page-break-inside: avoid;
+  }
+  
+  .dashboard-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  /* Hide interactive elements */
+  .action-button,
+  .filter-button,
+  .toggle-button,
+  .view-toggle-btn {
+    display: none;
+  }
+  
+  /* Ensure text is readable */
+  body {
+    font-size: 12pt;
+    line-height: 1.4;
+    color: #000;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: #000;
+    page-break-after: avoid;
+  }
+}
+
+/* High DPI / Retina Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Ensure crisp rendering on high DPI displays */
+  .chart-bar,
+  .project-bar-fill,
+  .status-indicator {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-row,
+  .dashboard-col,
+  .member-item,
+  .project-bar-item,
+  .holiday-item {
+    transition: none;
+    animation: none;
+  }
+  
+  .hover-lift:hover,
+  .hover-scale:hover {
+    transform: none;
+  }
+}
+
+/* Accessibility - High Contrast */
+@media (prefers-contrast: high) {
+  .dashboard-col {
+    border-width: 2px;
+  }
+  
+  .filter-button,
+  .member-item,
+  .project-bar-item,
+  .holiday-item {
+    border-width: 2px;
+  }
+  
+  .status-indicator {
+    border: 2px solid var(--color-gray-800);
+  }
+}
+
+/* Dark Mode Support (if implemented) */
+@media (prefers-color-scheme: dark) {
+  /* Dark mode styles would go here */
+  /* This is a placeholder for future dark mode implementation */
+}
+

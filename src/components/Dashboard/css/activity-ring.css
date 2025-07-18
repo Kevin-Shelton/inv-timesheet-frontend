@@ -1,0 +1,462 @@
+/* Activity Ring - Circular Progress Chart */
+
+/* Activity Summary Section */
+.activity-summary-section {
+  background: var(--bg-secondary);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: 100%;
+}
+
+/* Activity Content Layout */
+.activity-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-8);
+  flex: 1;
+}
+
+/* Activity Ring Container */
+.activity-ring {
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SVG Circular Chart */
+.circular-chart {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+/* Background Circle */
+.circular-chart .bg {
+  fill: none;
+  stroke: var(--color-gray-200);
+  stroke-width: 8;
+}
+
+/* Progress Circle */
+.circular-chart .progress {
+  fill: none;
+  stroke: var(--color-chart-primary);
+  stroke-width: 8;
+  stroke-dasharray: 0, 100;
+  stroke-linecap: round;
+  transition: stroke-dasharray var(--duration-chart) ease-in-out;
+}
+
+/* Multiple Progress Circles for Different Activities */
+.circular-chart .progress-1 {
+  stroke: var(--color-chart-primary);
+}
+
+.circular-chart .progress-2 {
+  stroke: var(--color-chart-secondary);
+}
+
+.circular-chart .progress-3 {
+  stroke: var(--color-chart-tertiary);
+}
+
+.circular-chart .progress-4 {
+  stroke: var(--color-chart-quaternary);
+}
+
+.circular-chart .progress-5 {
+  stroke: var(--color-chart-quinary);
+}
+
+/* Ring Labels and Values */
+.ring-label,
+.ring-value {
+  fill: var(--color-gray-800);
+  font-size: 14px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  transform: rotate(90deg);
+  font-family: var(--font-family-primary);
+}
+
+.ring-label {
+  font-weight: var(--font-weight-semibold);
+  font-size: 16px;
+}
+
+.ring-value {
+  fill: var(--color-gray-600);
+  font-size: 12px;
+}
+
+/* Center Text */
+.ring-center-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.ring-center-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+  line-height: 1;
+  margin: 0;
+}
+
+.ring-center-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+  margin: var(--space-1) 0 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Activity Legend */
+.activity-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-sm);
+  min-width: 0;
+}
+
+.activity-legend h4 {
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--space-3) 0;
+  color: var(--color-gray-700);
+  font-size: var(--font-size-base);
+}
+
+/* Legend Columns */
+.legend-columns {
+  display: flex;
+  gap: var(--space-4);
+  flex: 1;
+}
+
+.legend-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+/* Legend Items */
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-base);
+  transition: background-color var(--transition-base);
+  cursor: pointer;
+}
+
+.legend-item:hover {
+  background-color: var(--color-gray-50);
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  flex: 1;
+}
+
+.legend-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-800);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legend-hours {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+}
+
+.legend-percentage {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Activity List (Alternative View) */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  background: var(--color-gray-50);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-gray-200);
+  transition: all var(--transition-base);
+}
+
+.activity-item:hover {
+  background: var(--color-gray-100);
+  border-color: var(--color-gray-300);
+}
+
+.activity-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+.activity-hours {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-700);
+}
+
+.activity-percentage {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Loading State */
+.activity-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+}
+
+.activity-loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-gray-300);
+  border-top: 2px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: var(--space-2);
+}
+
+/* Error State */
+.activity-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  gap: var(--space-2);
+}
+
+/* Empty State */
+.activity-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  gap: var(--space-2);
+}
+
+.activity-empty-icon {
+  font-size: var(--font-size-3xl);
+  opacity: 0.5;
+  margin-bottom: var(--space-2);
+}
+
+/* View Toggle */
+.view-toggle {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.toggle-button {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-gray-300);
+  background: var(--bg-secondary);
+  color: var(--color-gray-700);
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  transition: all var(--transition-base);
+}
+
+.toggle-button.active {
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
+}
+
+.toggle-button:hover:not(.active) {
+  background: var(--color-gray-100);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .activity-content {
+    flex-direction: column;
+    gap: var(--space-4);
+    text-align: center;
+  }
+  
+  .activity-ring {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .legend-columns {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  .ring-center-value {
+    font-size: var(--font-size-xl);
+  }
+}
+
+@media (max-width: 480px) {
+  .activity-summary-section {
+    padding: var(--space-3);
+  }
+  
+  .activity-ring {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .ring-center-value {
+    font-size: var(--font-size-lg);
+  }
+  
+  .legend-item {
+    padding: var(--space-1);
+  }
+  
+  .activity-item {
+    padding: var(--space-2);
+  }
+}
+
+/* Custom Scrollbar for Activity List */
+.activity-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.activity-list::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+}
+
+.activity-list::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: var(--radius-sm);
+}
+
+.activity-list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}
+
+/* Animations */
+@keyframes ringFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.activity-ring {
+  animation: ringFadeIn var(--duration-slow) ease-out;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .circular-chart .bg {
+    stroke-width: 10;
+  }
+  
+  .circular-chart .progress {
+    stroke-width: 10;
+  }
+  
+  .legend-item {
+    border: 1px solid var(--color-gray-300);
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .circular-chart .progress {
+    transition: none;
+  }
+  
+  .activity-ring {
+    animation: none;
+  }
+  
+  .legend-item,
+  .activity-item,
+  .toggle-button {
+    transition: none;
+  }
+}
+
