@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, CalendarDays, MapPin, Users, Clock, Search, X } from 'lucide-react';
+import { ChevronDown, CalendarDays, MapPin, Users, Clock } from 'lucide-react';
 import { supabase } from '@/supabaseClient';
 
 const DashboardHeader = () => {
@@ -18,46 +18,62 @@ const DashboardHeader = () => {
 
   useEffect(() => {
     const fetchCampaigns = async () => {
-      const { data, error } = await supabase
-        .from('campaigns')
-        .select('id, name')
-        .eq('is_active', true);
-      
-      if (data) {
-        setCampaigns(data);
+      try {
+        const { data, error } = await supabase
+          .from('campaigns')
+          .select('id, name')
+          .eq('is_active', true);
+        
+        if (data) {
+          setCampaigns(data);
+        }
+      } catch (err) {
+        console.error('Error fetching campaigns:', err);
       }
     };
 
     const fetchLocations = async () => {
-      const { data, error } = await supabase
-        .from('locations')
-        .select('id, name')
-        .eq('is_active', true);
-      
-      if (data) {
-        setLocations(data);
+      try {
+        const { data, error } = await supabase
+          .from('locations')
+          .select('id, name')
+          .eq('is_active', true);
+        
+        if (data) {
+          setLocations(data);
+        }
+      } catch (err) {
+        console.error('Error fetching locations:', err);
       }
     };
 
     const fetchGroups = async () => {
-      const { data, error } = await supabase
-        .from('groups')
-        .select('id, name')
-        .eq('is_active', true);
-      
-      if (data) {
-        setGroups(data);
+      try {
+        const { data, error } = await supabase
+          .from('groups')
+          .select('id, name')
+          .eq('is_active', true);
+        
+        if (data) {
+          setGroups(data);
+        }
+      } catch (err) {
+        console.error('Error fetching groups:', err);
       }
     };
 
     const fetchSchedules = async () => {
-      const { data, error } = await supabase
-        .from('schedules')
-        .select('id, name')
-        .eq('is_active', true);
-      
-      if (data) {
-        setSchedules(data);
+      try {
+        const { data, error } = await supabase
+          .from('schedules')
+          .select('id, name')
+          .eq('is_active', true);
+        
+        if (data) {
+          setSchedules(data);
+        }
+      } catch (err) {
+        console.error('Error fetching schedules:', err);
       }
     };
 
@@ -107,23 +123,23 @@ const DashboardHeader = () => {
   };
 
   const DropdownButton = ({ name, value, icon: Icon, options, type }) => (
-    <div className="dropdown-container" ref={el => dropdownRefs.current[name] = el}>
+    <div className="filter-dropdown" ref={el => dropdownRefs.current[name] = el}>
       <button
-        className={`dropdown-button ${activeDropdown === name ? 'active' : ''}`}
+        className={`filter-button ${activeDropdown === name ? 'active' : ''}`}
         onClick={() => toggleDropdown(name)}
       >
-        <Icon className="dropdown-icon" size={16} />
-        <span className="dropdown-text">{value}</span>
-        <ChevronDown className={`dropdown-chevron ${activeDropdown === name ? 'rotated' : ''}`} size={16} />
+        <Icon className="filter-icon" size={16} />
+        <span className="filter-text">{value}</span>
+        <ChevronDown className={`filter-chevron ${activeDropdown === name ? 'rotated' : ''}`} size={16} />
       </button>
       
       {activeDropdown === name && (
-        <div className="dropdown-menu">
-          <div className="dropdown-content">
+        <div className="filter-menu">
+          <div className="filter-menu-content">
             {options.map((option) => (
               <button
                 key={option.value || option}
-                className="dropdown-item"
+                className="filter-menu-item"
                 onClick={() => handleSelect(type, option.value || option)}
               >
                 {option.label || option}
@@ -142,51 +158,46 @@ const DashboardHeader = () => {
   const scheduleOptions = ['All schedules', ...schedules.map(s => s.name)];
 
   return (
-    <div className="dashboard-header-container">
-      {/* REMOVED: Top row filters (Day/Week/Month buttons and dropdowns) */}
+    <div className="dashboard-header-filters">
+      <DropdownButton
+        name="timeframe"
+        value={timeframe}
+        icon={CalendarDays}
+        options={timeframeOptions}
+        type="timeframe"
+      />
       
-      {/* Main filter row - KEPT */}
-      <div className="dashboard-filters">
-        <DropdownButton
-          name="timeframe"
-          value={timeframe}
-          icon={CalendarDays}
-          options={timeframeOptions}
-          type="timeframe"
-        />
-        
-        <DropdownButton
-          name="campaign"
-          value={selectedCampaign}
-          icon={Users}
-          options={campaignOptions}
-          type="campaign"
-        />
-        
-        <DropdownButton
-          name="location"
-          value={selectedLocation}
-          icon={MapPin}
-          options={locationOptions}
-          type="location"
-        />
-        
-        <DropdownButton
-          name="group"
-          value={selectedGroup}
-          icon={Users}
-          options={groupOptions}
-          type="group"
-        />
-        
-        <DropdownButton
-          name="schedule"
-          value={selectedSchedule}
-          icon={Clock}
-          options={scheduleOptions}
-          type="schedule"
-        />
-      </div>
+      <DropdownButton
+        name="campaign"
+        value={selectedCampaign}
+        icon={Users}
+        options={campaignOptions}
+        type="campaign"
+      />
+      
+      <DropdownButton
+        name="location"
+        value={selectedLocation}
+        icon={MapPin}
+        options={locationOptions}
+        type="location"
+      />
+      
+      <DropdownButton
+        name="group"
+        value={selectedGroup}
+        icon={Users}
+        options={groupOptions}
+        type="group"
+      />
+      
+      <DropdownButton
+        name="schedule"
+        value={selectedSchedule}
+        icon={Clock}
+        options={scheduleOptions}
+        type="schedule"
+      />
     </div>
   );
 };
