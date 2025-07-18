@@ -1,26 +1,24 @@
 import React from 'react';
 import DashboardHeader from './DashboardHeader';
-import WelcomeCard from './WelcomeCard';
-import HolidaySection from './HolidaySection';
-import WeeklyChart from './WeeklyChart';
+import WelcomeCard from './WelcomeCard_Fixed';
+import HolidaySection from './HolidaySection_DatabaseFixed';
+import WeeklyChart from './WeeklyChart_DatabaseFixed';
 import ActivityRing from './ActivityRing';
-import ProjectsChart from './ProjectsChart';
-import WhoIsInOutPanel from './WhoIsInOutPanel';
-import './css/dashboard.css';
+import ProjectsChart from './ProjectsChart_DatabaseFixed';
+import WhoIsInOutPanel from './WhoIsInOutPanel_Fixed';
+import CurrentTime from './CurrentTime';
 
 const Dashboard = () => {
   return (
     <div className="dashboard-container">
-      {/* Dashboard Header */}
-      <div className="dashboard-header">
-        <DashboardHeader />
-      </div>
-
-      {/* Main Dashboard Content */}
+      {/* Header - ONLY ONE HEADER */}
+      <DashboardHeader />
+      
+      {/* Main Content */}
       <div className="dashboard-content">
-        {/* Main Content Area */}
+        {/* Left Side - Main Dashboard */}
         <div className="dashboard-main">
-          {/* Top Row: Welcome Card + Holiday Section */}
+          {/* Top Row - Welcome Card + Holiday Section */}
           <div className="dashboard-row">
             <div className="dashboard-col welcome">
               <WelcomeCard />
@@ -30,21 +28,21 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Middle Row: Weekly Chart (Full Width) */}
+          {/* Middle Row - Weekly Chart (Full Width) */}
           <div className="dashboard-row">
             <div className="dashboard-col wide">
               <WeeklyChart />
             </div>
           </div>
 
-          {/* Bottom Row 1: Activities Chart (Full Width) */}
+          {/* Bottom Row 1 - Activities Chart (Full Width) */}
           <div className="dashboard-row">
             <div className="dashboard-col wide">
               <ActivityRing />
             </div>
           </div>
 
-          {/* Bottom Row 2: Projects Chart (Full Width) */}
+          {/* Bottom Row 2 - Projects Chart (Full Width) */}
           <div className="dashboard-row">
             <div className="dashboard-col wide">
               <ProjectsChart />
@@ -52,9 +50,10 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Sidebar */}
+        {/* Right Side - Sidebar */}
         <div className="dashboard-sidebar">
           <WhoIsInOutPanel />
+          <CurrentTime />
         </div>
       </div>
     </div>
