@@ -1,259 +1,235 @@
-/* Enhanced Welcome Card - Adds Purple Gradient and Professional Styling */
+/* Welcome Card Rotating Images - Bottom Right Corner with Blending */
 
-/* Main Welcome Card Container - ADD PURPLE GRADIENT */
-.welcome-card {
-  height: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: center !important;
-  position: relative !important;
-  overflow: hidden !important;
-  
-  /* ADD PURPLE GRADIENT BACKGROUND */
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  
-  /* ADD PROFESSIONAL STYLING */
-  border-radius: var(--radius-lg, 12px) !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-  padding: var(--space-6, 24px) !important;
-  color: white !important;
-}
-
-/* Welcome Card Content */
-.welcome-card-content {
-  display: flex !important;
-  align-items: center !important;
-  gap: var(--space-6, 24px) !important;
-  height: 100% !important;
-  position: relative !important;
-  z-index: 2 !important;
-}
-
-/* Image Container */
-.welcome-card-image {
-  flex-shrink: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+/* Rotating Images Container - Bottom Right Corner */
+.rotating-images-container {
+  position: absolute !important;
+  bottom: 20px !important;
+  right: 20px !important;
   width: 120px !important;
   height: 120px !important;
-  border-radius: var(--radius-lg, 12px) !important;
+  border-radius: 12px !important;
   overflow: hidden !important;
-  background: rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(10px) !important;
-}
-
-/* Session Image */
-.session-image {
-  width: 120px !important;
-  height: 120px !important;
-  border-radius: var(--radius-lg, 12px) !important;
-  overflow: hidden !important;
+  
+  /* Blending effect with background */
   background: rgba(255, 255, 255, 0.1) !important;
   backdrop-filter: blur(10px) !important;
   border: 2px solid rgba(255, 255, 255, 0.2) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: relative !important;
+  
+  /* Shadow for depth */
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
 
-.session-image img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-}
-
-/* Employee Award Image */
-.employee-award-image {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  border-radius: var(--radius-md, 8px) !important;
-}
-
-/* Image Info */
-.image-info {
+/* Individual Rotating Image */
+.rotating-image {
   position: absolute !important;
-  bottom: -20px !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  
+  /* Smooth transitions */
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  opacity: 0 !important;
+  transform: scale(0.95) !important;
+  
+  /* Blending mode for smooth edges */
+  mix-blend-mode: multiply !important;
+}
+
+/* Active rotating image */
+.rotating-image.active {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+  mix-blend-mode: normal !important;
+}
+
+/* Image within rotating container */
+.rotating-image img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 10px !important;
+  
+  /* Smooth edges with gradient mask */
+  mask: radial-gradient(circle at center, black 60%, transparent 100%) !important;
+  -webkit-mask: radial-gradient(circle at center, black 60%, transparent 100%) !important;
+  
+  /* Additional blending for smooth integration */
+  filter: brightness(0.9) contrast(1.1) !important;
+  transition: filter 0.3s ease !important;
+}
+
+/* Hover effect on images */
+.rotating-images-container:hover .rotating-image.active img {
+  filter: brightness(1) contrast(1.2) !important;
+  transform: scale(1.05) !important;
+}
+
+/* Image Indicators - Small dots at bottom */
+.image-indicators {
+  position: absolute !important;
+  bottom: 8px !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
-  width: max-content !important;
+  display: flex !important;
+  gap: 4px !important;
+  z-index: 10 !important;
 }
 
-/* Image Note */
-.image-note {
-  font-size: var(--font-size-xs, 12px) !important;
+/* Individual indicator dot */
+.indicator-dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.4) !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Active indicator dot */
+.indicator-dot.active {
+  background: rgba(255, 255, 255, 0.9) !important;
+  transform: scale(1.2) !important;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Hover effect on indicator dots */
+.indicator-dot:hover {
+  background: rgba(255, 255, 255, 0.7) !important;
+  transform: scale(1.1) !important;
+}
+
+/* Gradient overlay for better blending */
+.rotating-images-container::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  ) !important;
+  border-radius: 10px !important;
+  pointer-events: none !important;
+  z-index: 5 !important;
+}
+
+/* Loading state for images */
+.rotating-image img[src=""] {
+  display: none !important;
+}
+
+/* Fallback for broken images */
+.rotating-image img[alt]:after {
+  content: attr(alt) !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
   color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 12px !important;
   text-align: center !important;
   background: rgba(0, 0, 0, 0.3) !important;
-  padding: var(--space-1, 4px) var(--space-2, 8px) !important;
-  border-radius: var(--radius-base, 6px) !important;
-  backdrop-filter: blur(5px) !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
 }
 
-/* No Images Placeholder */
-.no-images-placeholder {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-align: center !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  font-size: var(--font-size-sm, 14px) !important;
-}
-
-.placeholder-icon {
-  font-size: var(--space-12, 48px) !important;
-  margin-bottom: var(--space-2, 8px) !important;
-  opacity: 0.7 !important;
-}
-
-/* Welcome Content */
-.welcome-content {
-  flex: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: var(--space-4, 16px) !important;
-}
-
-/* Welcome Header */
-.welcome-header h2 {
-  font-size: var(--font-size-3xl, 30px) !important;
-  font-weight: var(--font-weight-bold, 700) !important;
-  margin: 0 0 var(--space-2, 8px) 0 !important;
-  color: white !important;
-  line-height: 1.2 !important;
-}
-
-/* Welcome Subtitle */
-.welcome-subtitle {
-  font-size: var(--font-size-base, 16px) !important;
-  opacity: 0.9 !important;
-  margin: 0 !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-/* User Info */
-.user-info {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: var(--space-2, 8px) !important;
-}
-
-.user-detail {
-  display: flex !important;
-  align-items: center !important;
-  gap: var(--space-2, 8px) !important;
-  font-size: var(--font-size-sm, 14px) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-.user-detail svg {
-  width: 16px !important;
-  height: 16px !important;
-  opacity: 0.8 !important;
-}
-
-/* Action Buttons */
-.action-buttons {
-  display: flex !important;
-  gap: var(--space-3, 12px) !important;
-  margin-top: var(--space-4, 16px) !important;
-}
-
-.action-button {
-  padding: var(--space-2, 8px) var(--space-4, 16px) !important;
-  border-radius: var(--radius-md, 8px) !important;
-  font-size: var(--font-size-sm, 14px) !important;
-  font-weight: var(--font-weight-medium, 500) !important;
-  border: none !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: var(--space-2, 8px) !important;
-}
-
-.action-button.primary {
-  background: rgba(255, 255, 255, 0.2) !important;
-  color: white !important;
-  backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-}
-
-.action-button.primary:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
-  transform: translateY(-1px) !important;
-}
-
-.action-button.secondary {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-}
-
-.action-button.secondary:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  transform: translateY(-1px) !important;
-}
-
-/* Auth Status */
-.auth-status {
-  margin-top: var(--space-4, 16px) !important;
-  padding-top: var(--space-4, 16px) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
-  font-size: var(--font-size-xs, 12px) !important;
-  color: rgba(255, 255, 255, 0.7) !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: var(--space-2, 8px) !important;
-}
-
-.auth-status svg {
-  width: 14px !important;
-  height: 14px !important;
-}
-
-/* Responsive Design */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .welcome-card {
-    padding: var(--space-4, 16px) !important;
-  }
-  
-  .welcome-card-content {
-    flex-direction: column !important;
-    text-align: center !important;
-    gap: var(--space-4, 16px) !important;
-  }
-  
-  .session-image {
+  .rotating-images-container {
     width: 100px !important;
     height: 100px !important;
+    bottom: 16px !important;
+    right: 16px !important;
   }
   
-  .welcome-header h2 {
-    font-size: var(--font-size-2xl, 24px) !important;
+  .indicator-dot {
+    width: 5px !important;
+    height: 5px !important;
   }
   
-  .action-buttons {
-    justify-content: center !important;
-    flex-wrap: wrap !important;
+  .image-indicators {
+    bottom: 6px !important;
+    gap: 3px !important;
   }
 }
 
 @media (max-width: 480px) {
-  .session-image {
+  .rotating-images-container {
     width: 80px !important;
     height: 80px !important;
+    bottom: 12px !important;
+    right: 12px !important;
   }
   
-  .welcome-header h2 {
-    font-size: var(--font-size-xl, 20px) !important;
+  .indicator-dot {
+    width: 4px !important;
+    height: 4px !important;
   }
   
-  .action-buttons {
-    flex-direction: column !important;
+  .image-indicators {
+    bottom: 4px !important;
+    gap: 2px !important;
+  }
+}
+
+/* Animation keyframes for smooth transitions */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeOutScale {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+}
+
+/* Apply animations to rotating images */
+.rotating-image.active {
+  animation: fadeInScale 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Ensure welcome card has relative positioning for absolute positioning of images */
+.welcome-card {
+  position: relative !important;
+  overflow: visible !important; /* Allow images to show outside if needed */
+}
+
+/* Adjust welcome card content to not overlap with rotating images */
+.welcome-card-content {
+  padding-right: 140px !important; /* Make room for rotating images */
+}
+
+/* Responsive padding adjustments */
+@media (max-width: 768px) {
+  .welcome-card-content {
+    padding-right: 120px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-card-content {
+    padding-right: 100px !important;
   }
 }
 
