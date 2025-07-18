@@ -24,10 +24,37 @@ const HolidaysViewer = () => {
       const nextYear = new Date(today);
       nextYear.setFullYear(today.getFullYear() + 1);
 
-      // FIXED: Removed .eq('is_active', true) since the column doesn't exist
-      const { data: holidaysData, error: fetchError } = await supabase
+      // First, check what columns exist in the holidays table
+      const { data: sampleData, error: sampleError } = await supabase
         .from('holidays')
         .select('*')
+        .limit(1);
+
+      let selectColumns = 'id, name, date';
+      
+      if (sampleData && sampleData.length > 0) {
+        const availableColumns = Object.keys(sampleData[0]);
+        console.log('🎉 HOLIDAYS: Available columns:', availableColumns);
+        
+        // Add optional columns if they exist
+        if (availableColumns.includes('description')) {
+          selectColumns += ', description';
+        }
+        if (availableColumns.includes('is_paid')) {
+          selectColumns += ', is_paid';
+        }
+        if (availableColumns.includes('holiday_type')) {
+          selectColumns += ', holiday_type';
+        }
+        if (availableColumns.includes('created_at')) {
+          selectColumns += ', created_at';
+        }
+      }
+
+      // Fetch holidays with only available columns
+      const { data: holidaysData, error: fetchError } = await supabase
+        .from('holidays')
+        .select(selectColumns)
         .gte('date', today.toISOString().split('T')[0])
         .lte('date', nextYear.toISOString().split('T')[0])
         .order('date', { ascending: true })
@@ -35,7 +62,7 @@ const HolidaysViewer = () => {
 
       if (fetchError) {
         console.error('🎉 HOLIDAYS ERROR:', fetchError);
-        throw fetchError;
+        throw new Error(`Failed to fetch holidays: ${fetchError.message}`);
       }
 
       setHolidays(holidaysData || []);
@@ -43,99 +70,43 @@ const HolidaysViewer = () => {
 
     } catch (error) {
       console.error('🎉 HOLIDAYS ERROR:', error);
-      setError(error.message);
+      setError(error.message || 'Failed to load holidays');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
+  const getTimeUntilHoliday = (holidayDate) => {
     const today = new Date();
-    const diffTime = date - today;
+    const holiday = new Date(holidayDate);
+    const diffTime = holiday - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    const monthNames = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-
-    const month = monthNames[date.getMonth()];
-    const day = date.getDate();
-    const year = date.getFullYear();
-
-    let timeInfo = '';
-    let urgency = 'normal';
-
-    if (diffDays === 0) {
-      timeInfo = 'Today';
-      urgency = 'today';
-    } else if (diffDays === 1) {
-      timeInfo = 'Tomorrow';
-      urgency = 'soon';
-    } else if (diffDays > 0 && diffDays <= 7) {
-      timeInfo = `In ${diffDays} days`;
-      urgency = 'soon';
-    } else if (diffDays > 7 && diffDays <= 30) {
-      timeInfo = `In ${diffDays} days`;
-      urgency = 'upcoming';
-    } else if (diffDays > 30) {
-      const months = Math.floor(diffDays / 30);
-      timeInfo = `In ${months} month${months > 1 ? 's' : ''}`;
-      urgency = 'future';
-    }
-
-    return {
-      formatted: `${month} ${day}, ${year}`,
-      shortDate: `${month} ${day}`,
-      timeInfo,
-      urgency,
-      isPast: diffDays < 0,
-      isToday: diffDays === 0,
-      isSoon: diffDays >= 0 && diffDays <= 7,
-      diffDays
-    };
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays <= 7) return `In ${diffDays} days`;
+    if (diffDays <= 30) return `In ${Math.ceil(diffDays / 7)} weeks`;
+    return `In ${Math.ceil(diffDays / 30)} months`;
   };
 
-  const getHolidayTypeColor = (type) => {
-    const colors = {
-      'national': '#e53e3e',
-      'company': '#38b2ac',
-      'religious': '#4299e1',
-      'cultural': '#48bb78',
-      'personal': '#ed8936',
-      'other': '#9f7aea'
-    };
-    return colors[type?.toLowerCase()] || colors.other;
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
   };
-
-  const nextHoliday = holidays.find(holiday => {
-    const date = new Date(holiday.date);
-    const today = new Date();
-    return date >= today;
-  });
 
   if (loading) {
     return (
-      <div className="holidays-viewer">
-        <div className="holidays-header">
-          <div className="holidays-title">
-            <h3>UPCOMING HOLIDAYS</h3>
-            <button 
-              className="expand-button"
-              onClick={() => setIsExpanded(!isExpanded)}
-              disabled
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M4 6l4 4 4-4H4z"/>
-              </svg>
-            </button>
-          </div>
-          <p className="holidays-subtitle">Holiday calendar for reminders and overtime calculations</p>
+      <div className="holiday-section">
+        <div className="holiday-header">
+          <h3 className="holiday-title">Upcoming Holidays</h3>
         </div>
-        <div className="holidays-loading">
-          <div className="loading-spinner"></div>
-          <p>Loading holidays...</p>
+        <div className="holiday-loading">
+          <div className="holiday-loading-spinner"></div>
+          Loading holidays...
         </div>
       </div>
     );
@@ -143,24 +114,31 @@ const HolidaysViewer = () => {
 
   if (error) {
     return (
-      <div className="holidays-viewer">
-        <div className="holidays-header">
-          <div className="holidays-title">
-            <h3>UPCOMING HOLIDAYS</h3>
-            <button 
-              className="expand-button"
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M4 6l4 4 4-4H4z"/>
-              </svg>
-            </button>
-          </div>
-          <p className="holidays-subtitle">Holiday calendar for reminders and overtime calculations</p>
+      <div className="holiday-section">
+        <div className="holiday-header">
+          <h3 className="holiday-title">Upcoming Holidays and Time Off</h3>
         </div>
-        <div className="holidays-error">
-          <p>Error loading holidays: {error}</p>
-          <button onClick={fetchUpcomingHolidays} className="retry-button">
+        <div className="holiday-error">
+          <div className="chart-error-icon">⚠️</div>
+          <div>Error loading holidays</div>
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+            {error.includes('column') 
+              ? 'Database schema needs updating. Please contact your administrator.'
+              : error
+            }
+          </div>
+          <button 
+            onClick={fetchUpcomingHolidays}
+            style={{
+              marginTop: '12px',
+              padding: '8px 16px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
             Retry
           </button>
         </div>
@@ -168,142 +146,108 @@ const HolidaysViewer = () => {
     );
   }
 
-  return (
-    <div className={`holidays-viewer ${isExpanded ? 'expanded' : ''}`}>
-      <div className="holidays-header">
-        <div className="holidays-title">
-          <h3>UPCOMING HOLIDAYS</h3>
-          <button 
-            className={`expand-button ${isExpanded ? 'expanded' : ''}`}
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M4 6l4 4 4-4H4z"/>
-            </svg>
-          </button>
+  if (holidays.length === 0) {
+    return (
+      <div className="holiday-section">
+        <div className="holiday-header">
+          <h3 className="holiday-title">Upcoming Holidays and Time Off</h3>
+          <p style={{ fontSize: '14px', color: '#666', margin: '8px 0 0 0' }}>
+            Add your holiday calendar for reminders and overtime calculations
+          </p>
         </div>
-        <p className="holidays-subtitle">Holiday calendar for reminders and overtime calculations</p>
+        <div className="holiday-empty">
+          <div className="holiday-empty-icon">🎉</div>
+          <div>No upcoming holidays</div>
+        </div>
+      </div>
+    );
+  }
+
+  const nextHoliday = holidays[0];
+  const timeUntil = getTimeUntilHoliday(nextHoliday.date);
+
+  return (
+    <div className="holiday-section">
+      <div className="holiday-header">
+        <h3 className="holiday-title">Upcoming Holidays and Time Off</h3>
+        <p style={{ fontSize: '14px', color: '#666', margin: '8px 0 0 0' }}>
+          Holiday calendar for reminders and overtime calculations
+        </p>
       </div>
 
-      {holidays.length === 0 ? (
-        <div className="holidays-empty">
-          <div className="empty-state">
-            <div className="empty-icon">🎉</div>
-            <h4>No upcoming holidays</h4>
-            <p>No holidays scheduled for the next 12 months</p>
-            {canManageHolidays() && (
-              <button className="add-holiday-button">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/>
-                </svg>
-                Add Holiday
-              </button>
-            )}
+      <div className="holiday-content">
+        {/* Next Holiday - Compact View */}
+        <div className="holiday-compact">
+          <div className="holiday-compact-info">
+            <div className="holiday-compact-name">{nextHoliday.name}</div>
+            <div className="holiday-compact-date">{formatDate(nextHoliday.date)}</div>
+          </div>
+          <div className="holiday-compact-countdown">
+            <div className="countdown-value">
+              {timeUntil === 'Today' ? '0' : 
+               timeUntil === 'Tomorrow' ? '1' :
+               timeUntil.match(/\d+/) ? timeUntil.match(/\d+/)[0] : '?'}
+            </div>
+            <div className="countdown-label">
+              {timeUntil === 'Today' ? 'Today' :
+               timeUntil === 'Tomorrow' ? 'Day' :
+               timeUntil.includes('days') ? 'Days' :
+               timeUntil.includes('weeks') ? 'Weeks' :
+               timeUntil.includes('months') ? 'Months' : 'Time'}
+            </div>
           </div>
         </div>
-      ) : (
-        <>
-          {/* Compact View - Next Holiday */}
-          {!isExpanded && nextHoliday && (
-            <div className="next-holiday-compact">
-              <div className={`holiday-card compact ${formatDate(nextHoliday.date).urgency}`}>
-                <div className="holiday-date-badge">
-                  <div className="date-month-day">{formatDate(nextHoliday.date).shortDate}</div>
-                  <div className="date-time-info">{formatDate(nextHoliday.date).timeInfo}</div>
-                </div>
-                
-                <div className="holiday-info">
-                  <div className="holiday-name">{nextHoliday.name}</div>
-                  <div className="holiday-meta">
-                    <span 
-                      className="holiday-type-badge"
-                      style={{ backgroundColor: getHolidayTypeColor(nextHoliday.type) }}
-                    >
-                      {nextHoliday.type || 'Holiday'}
-                    </span>
-                    {/* FIXED: Check if is_paid exists before using it */}
-                    {nextHoliday.is_paid && (
-                      <span className="holiday-paid-badge">TIME & HALF</span>
-                    )}
-                  </div>
-                  {nextHoliday.description && (
-                    <div className="holiday-description">{nextHoliday.description}</div>
-                  )}
-                </div>
-              </div>
-              
-              {holidays.length > 1 && (
-                <div className="more-holidays-indicator">
-                  <span>+{holidays.length - 1} more holidays</span>
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* Expanded View - All Holidays */}
-          {isExpanded && (
-            <div className="holidays-expanded">
-              <div className="holidays-grid">
-                {holidays.map((holiday, index) => {
-                  const dateInfo = formatDate(holiday.date);
-                  return (
-                    <div 
-                      key={holiday.id || index} 
-                      className={`holiday-card expanded ${dateInfo.urgency}`}
-                    >
-                      <div className="holiday-date-section">
-                        <div className="date-display">
-                          <div className="date-month-day">{dateInfo.shortDate}</div>
-                          <div className="date-year">{new Date(holiday.date).getFullYear()}</div>
-                        </div>
-                        <div className={`date-countdown ${dateInfo.urgency}`}>
-                          {dateInfo.timeInfo}
-                        </div>
+        {/* Additional Holidays */}
+        {holidays.length > 1 && (
+          <>
+            <div className="holiday-toggle" onClick={() => setIsExpanded(!isExpanded)}>
+              <span className="holiday-toggle-text">
+                {isExpanded ? 'Show less' : `+${holidays.length - 1} more holidays`}
+              </span>
+              <span className={`holiday-toggle-icon ${isExpanded ? 'expanded' : ''}`}>
+                ▼
+              </span>
+            </div>
+
+            {isExpanded && (
+              <div className="holiday-list">
+                {holidays.slice(1).map((holiday) => (
+                  <div key={holiday.id} className="holiday-item">
+                    <div className="holiday-info">
+                      <div className="holiday-details">
+                        <h4 className="holiday-name">{holiday.name}</h4>
+                        <p className="holiday-date">
+                          📅 {formatDate(holiday.date)}
+                        </p>
                       </div>
-                      
-                      <div className="holiday-content">
-                        <div className="holiday-name">{holiday.name}</div>
-                        <div className="holiday-meta">
-                          <span 
-                            className="holiday-type-badge"
-                            style={{ backgroundColor: getHolidayTypeColor(holiday.type) }}
-                          >
-                            {holiday.type || 'Holiday'}
+                      <div className="holiday-badges">
+                        <span className={`time-indicator ${
+                          getTimeUntilHoliday(holiday.date) === 'Today' ? 'today' :
+                          getTimeUntilHoliday(holiday.date) === 'Tomorrow' ? 'tomorrow' :
+                          getTimeUntilHoliday(holiday.date).includes('days') ? 'this-week' : 'upcoming'
+                        }`}>
+                          {getTimeUntilHoliday(holiday.date)}
+                        </span>
+                        {holiday.is_paid !== undefined && (
+                          <span className={`holiday-badge ${holiday.is_paid ? 'paid' : 'unpaid'}`}>
+                            {holiday.is_paid ? 'Paid' : 'Unpaid'}
                           </span>
-                          {/* FIXED: Check if is_paid exists before using it */}
-                          {holiday.is_paid && (
-                            <span className="holiday-paid-badge">TIME & HALF</span>
-                          )}
-                        </div>
-                        {holiday.description && (
-                          <div className="holiday-description">{holiday.description}</div>
+                        )}
+                        {holiday.holiday_type && (
+                          <span className={`holiday-badge ${holiday.holiday_type.toLowerCase()}`}>
+                            {holiday.holiday_type}
+                          </span>
                         )}
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
-              
-              {canManageHolidays() && (
-                <div className="holidays-actions">
-                  <button className="add-holiday-button">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/>
-                    </svg>
-                    Add Holiday
-                  </button>
-                  <button className="manage-holidays-button">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-                    </svg>
-                    Manage All
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

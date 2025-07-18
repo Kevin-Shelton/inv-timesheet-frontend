@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Grid3X3, Search } from 'lucide-react';
+import { Search, Clock, Users } from 'lucide-react';
 
 const WhoIsInOutPanel = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All');
+  const [selectedCampaign, setSelectedCampaign] = useState('All Campaigns');
+  const [campaignDropdownOpen, setCampaignDropdownOpen] = useState(false);
 
   // Update time every second
   useEffect(() => {
@@ -19,17 +21,17 @@ const WhoIsInOutPanel = () => {
     return date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      second: '2-digit',
       hour12: true
     });
   };
 
   const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'numeric',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    const options = { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    };
+    return date.toLocaleDateString('en-US', options);
   };
 
   // Mock data for demonstration - replace with real data
@@ -38,6 +40,8 @@ const WhoIsInOutPanel = () => {
     { id: 2, name: 'Jane Smith', status: 'Break', campaign: 'Campaign B', lastUpdate: '2:15 PM' },
     { id: 3, name: 'Mike Johnson', status: 'Out', campaign: 'Campaign A', lastUpdate: '1:45 PM' },
   ];
+
+  const campaigns = ['All Campaigns', 'Campaign A', 'Campaign B', 'Campaign C'];
 
   const tabs = [
     { id: 'All', label: 'All', count: mockMembers.length },
@@ -50,84 +54,112 @@ const WhoIsInOutPanel = () => {
     const matchesSearch = searchTerm === '' || 
       member.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = activeTab === 'All' || member.status === activeTab;
-    return matchesSearch && matchesTab;
+    const matchesCampaign = selectedCampaign === 'All Campaigns' || 
+      member.campaign === selectedCampaign;
+    return matchesSearch && matchesTab && matchesCampaign;
   });
 
   return (
-    <div className="whoisinout-panel-container">
-      {/* Current Time Section */}
-      <div className="current-time-section">
-        <div className="section-header-row">
-          <Grid3X3 className="section-grid-icon" size={16} />
-          <span className="section-title-text">CURRENT TIME</span>
+    <div className="who-is-in-out-panel">
+      {/* Header Section */}
+      <div className="section-header">
+        <h3 className="section-title">
+          <Users className="section-icon" />
+          Who's in/out
+        </h3>
+        
+        {/* Status Tabs */}
+        <div className="status-tabs">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              className={`status-tab ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span className="tab-count">{tab.count}</span>
+              <span className="tab-label">{tab.label.toUpperCase()}</span>
+            </button>
+          ))}
         </div>
-        <div className="current-time-display">
-          <div className="time-text">{formatTime(currentTime)}</div>
-          <div className="date-text">{formatDate(currentTime)}</div>
+
+        {/* Campaign Dropdown */}
+        <div className="campaign-dropdown">
+          <button
+            className={`campaign-button ${campaignDropdownOpen ? 'active' : ''}`}
+            onClick={() => setCampaignDropdownOpen(!campaignDropdownOpen)}
+          >
+            <span className="campaign-text">{selectedCampaign}</span>
+            <span className={`campaign-chevron ${campaignDropdownOpen ? 'rotated' : ''}`}>
+              ▼
+            </span>
+          </button>
+          
+          {campaignDropdownOpen && (
+            <div className="campaign-menu">
+              {campaigns.map(campaign => (
+                <button
+                  key={campaign}
+                  className={`campaign-menu-item ${selectedCampaign === campaign ? 'selected' : ''}`}
+                  onClick={() => {
+                    setSelectedCampaign(campaign);
+                    setCampaignDropdownOpen(false);
+                  }}
+                >
+                  {campaign}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Search Input */}
+        <div className="search-container">
+          <Search className="search-icon" />
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search members..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
-      {/* Member List Section */}
-      <div className="member-list-section">
-        <div className="section-header-row">
-          <Grid3X3 className="section-grid-icon" size={16} />
-          <span className="section-title-text">MEMBER LIST</span>
-        </div>
-        
-        <div className="whoisinout-content">
-          <h3 className="whoisinout-main-title">Who's In/Out</h3>
-          <p className="whoisinout-subtitle">Search members...</p>
-          
-          {/* Status Tabs */}
-          <div className="status-tabs-container">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                className={`status-tab-button ${activeTab === tab.id ? 'active' : ''} ${tab.id.toLowerCase()}-tab`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                <span className="tab-label-text">{tab.label}</span>
-                <span className="tab-count-text">({tab.count})</span>
-              </button>
-            ))}
+      {/* Member List */}
+      <div className="member-list">
+        {filteredMembers.length === 0 ? (
+          <div className="member-empty">
+            <Users className="member-empty-icon" />
+            <div>No members found</div>
           </div>
-
-          {/* Search Input */}
-          <div className="search-input-container">
-            <Search className="search-input-icon" size={16} />
-            <input
-              type="text"
-              placeholder="Search members..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input-field"
-            />
-          </div>
-
-          {/* Members List or Empty State */}
-          <div className="members-display-area">
-            {filteredMembers.length === 0 ? (
-              <div className="no-members-message">
-                <p>No members found.</p>
+        ) : (
+          filteredMembers.map(member => (
+            <div key={member.id} className="member-item">
+              <div className={`status-indicator ${member.status.toLowerCase()}`}></div>
+              <div className="member-info">
+                <div className="member-name">{member.name}</div>
+                <div className="member-details">
+                  <span className="member-campaign">{member.campaign}</span>
+                  <span className="member-time">Last: {member.lastUpdate}</span>
+                </div>
               </div>
-            ) : (
-              <div className="members-list-container">
-                {filteredMembers.map((member) => (
-                  <div key={member.id} className={`member-list-item status-${member.status.toLowerCase()}`}>
-                    <div className="member-info-section">
-                      <div className="member-name-text">{member.name}</div>
-                      <div className="member-campaign-text">{member.campaign}</div>
-                      <div className="member-time-text">Last: {member.lastUpdate}</div>
-                    </div>
-                    <div className="member-status-section">
-                      <div className={`status-indicator ${member.status.toLowerCase()}`}>
-                        {member.status.toUpperCase()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="member-status">
+                <span className={`status-text ${member.status.toLowerCase()}`}>
+                  {member.status.toUpperCase()}
+                </span>
               </div>
-            )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Current Time Section */}
+      <div className="current-time-section">
+        <div className="current-time-wrapper">
+          <Clock className="time-icon" />
+          <div className="time-display">
+            <div className="current-time-time">{formatTime(currentTime)}</div>
+            <div className="current-time-date">{formatDate(currentTime)}</div>
           </div>
         </div>
       </div>

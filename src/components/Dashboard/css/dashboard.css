@@ -1,5 +1,4 @@
-/* Dashboard CSS - Complete Styling (IMPORT PATHS FIXED) */
-/* This file imports all component-specific CSS files in the correct order */
+/* Dashboard CSS - Final Version with All Fixes */
 
 /* 1. CSS Variables and Design Tokens */
 @import './variables.css';
@@ -14,7 +13,7 @@
 @import './activity-ring.css';
 @import './projects-chart.css';
 @import './holiday-section.css';
-@import './who-is-in-out.css';
+@import './who-is-in-out-fixed.css';
 
 /* 4. Animations and Effects */
 @import './animations.css';
@@ -45,7 +44,7 @@ body {
   line-height: 1.6;
 }
 
-/* LAYOUT FIXES - Override existing layout with proper stacking */
+/* FORCE STYLING APPLICATION - Override any conflicting styles */
 
 /* Main Dashboard Container */
 .dashboard-container {
@@ -125,16 +124,16 @@ body {
   min-height: 350px !important;
 }
 
-/* Sidebar - RIGHT SIDE */
+/* Sidebar - RIGHT SIDE - FIXED STYLING */
 .dashboard-sidebar {
-  width: var(--sidebar-width) !important;
+  width: 320px !important;
   background: var(--bg-secondary) !important;
   border-left: 1px solid var(--color-gray-200) !important;
-  padding: var(--space-6) !important;
+  padding: 0 !important;
   overflow-y: auto !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: var(--space-6) !important;
+  gap: 0 !important;
   box-shadow: var(--shadow-base) !important;
 }
 
@@ -210,18 +209,6 @@ body {
   height: 100% !important;
 }
 
-/* Who's In/Out Panel */
-.who-is-in-out-panel {
-  background: var(--bg-secondary) !important;
-  border-radius: var(--radius-lg) !important;
-  border: 1px solid var(--color-gray-200) !important;
-  overflow: hidden !important;
-  box-shadow: var(--shadow-base) !important;
-  height: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
 /* Custom Scrollbars */
 .dashboard-main::-webkit-scrollbar,
 .dashboard-sidebar::-webkit-scrollbar {
@@ -289,6 +276,12 @@ button {
 .h-full { height: 100% !important; }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboard-sidebar {
+    width: 280px !important;
+  }
+}
+
 @media (max-width: 768px) {
   .dashboard-content {
     flex-direction: column !important;
@@ -298,7 +291,7 @@ button {
     width: 100% !important;
     border-left: none !important;
     border-top: 1px solid var(--color-gray-200) !important;
-    max-height: 300px !important;
+    max-height: 400px !important;
     order: 2 !important;
   }
   
