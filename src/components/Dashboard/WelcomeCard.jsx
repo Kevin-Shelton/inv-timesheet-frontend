@@ -23,18 +23,13 @@ const WelcomeCard = () => {
     fetchImages();
   }, []);
 
-  // Rotate images every 4 seconds
+  // Set random image on component mount (session refresh)
   useEffect(() => {
-    if (images.length > 1) {
-      const interval = setInterval(() => {
-        setCurrentImageIndex((prevIndex) => 
-          (prevIndex + 1) % images.length
-        );
-      }, 4000);
-
-      return () => clearInterval(interval);
+    if (images.length > 0) {
+      const randomIndex = Math.floor(Math.random() * images.length);
+      setCurrentImageIndex(randomIndex);
     }
-  }, [images.length]);
+  }, [images]);
 
   const fetchUserData = async () => {
     try {
@@ -84,24 +79,7 @@ const WelcomeCard = () => {
   return (
     <div className="welcome-card">
       <div className="welcome-card-content">
-        {/* Left side - User avatar/icon */}
-        <div className="welcome-card-image">
-          <div className="session-image">
-            {user?.user_metadata?.avatar_url ? (
-              <img 
-                src={user.user_metadata.avatar_url} 
-                alt="User Avatar"
-                className="employee-award-image"
-              />
-            ) : (
-              <div className="no-images-placeholder">
-                <div className="placeholder-icon">👤</div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Center - Welcome content */}
+        {/* Welcome content - No user avatar */}
         <div className="welcome-content">
           <div className="welcome-header">
             <h2>Hello, {user?.user_metadata?.full_name || 'Admin User'}! 👋</h2>
@@ -148,38 +126,18 @@ const WelcomeCard = () => {
         </div>
       </div>
 
-      {/* Rotating images in bottom right corner */}
+      {/* Single random image in bottom right corner - No controllers */}
       {!isLoading && images.length > 0 && (
         <div className="rotating-images-container">
-          {images.map((image, index) => (
-            <div
-              key={index}
-              className={`rotating-image ${index === currentImageIndex ? 'active' : ''}`}
-              style={{
-                opacity: index === currentImageIndex ? 1 : 0,
-                transform: `scale(${index === currentImageIndex ? 1 : 0.95})`,
+          <div className="rotating-image active">
+            <img
+              src={images[currentImageIndex]?.image_url}
+              alt={images[currentImageIndex]?.alt_text || 'Employee Award'}
+              onError={(e) => {
+                // Hide broken images
+                e.target.style.display = 'none';
               }}
-            >
-              <img
-                src={image.image_url}
-                alt={image.alt_text || 'Employee Award'}
-                onError={(e) => {
-                  // Hide broken images
-                  e.target.style.display = 'none';
-                }}
-              />
-            </div>
-          ))}
-          
-          {/* Image indicator dots */}
-          <div className="image-indicators">
-            {images.map((_, index) => (
-              <div
-                key={index}
-                className={`indicator-dot ${index === currentImageIndex ? 'active' : ''}`}
-                onClick={() => setCurrentImageIndex(index)}
-              />
-            ))}
+            />
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-/* Enhanced Modular Dashboard CSS - With Scrollbar and Rotating Images */
+/* Enhanced Modular Dashboard CSS - No Avatar, Random Image, No Controllers */
 
 /* Import CSS Variables First */
 @import './variables.css';
@@ -20,14 +20,14 @@
 @import './animations.css';
 @import './responsive.css';
 
-/* Enhanced Welcome Card Styles with Rotating Images */
+/* Enhanced Welcome Card Styles - No Avatar, Random Image */
 .welcome-card {
   height: 100% !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
   position: relative !important;
-  overflow: visible !important; /* Allow rotating images to show */
+  overflow: visible !important;
   
   /* Purple gradient background */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
@@ -39,6 +39,7 @@
   color: white !important;
 }
 
+/* Welcome Card Content - No Avatar, Full Width */
 .welcome-card-content {
   display: flex !important;
   align-items: center !important;
@@ -46,47 +47,16 @@
   height: 100% !important;
   position: relative !important;
   z-index: 2 !important;
-  padding-right: 140px !important; /* Make room for rotating images */
+  padding-right: 140px !important; /* Make room for random image */
 }
 
-.welcome-card-image {
-  flex-shrink: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 120px !important;
-  height: 120px !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  background: rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(10px) !important;
-}
-
-.session-image {
-  width: 120px !important;
-  height: 120px !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  background: rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(10px) !important;
-  border: 2px solid rgba(255, 255, 255, 0.2) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: relative !important;
-}
-
-.session-image img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-}
-
+/* Welcome Content - Full Width */
 .welcome-content {
   flex: 1 !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 16px !important;
+  width: 100% !important;
 }
 
 .welcome-header h2 {
@@ -182,7 +152,7 @@
   height: 14px !important;
 }
 
-/* Rotating Images Container - Bottom Right Corner */
+/* Single Random Image Container - Bottom Right Corner */
 .rotating-images-container {
   position: absolute !important;
   bottom: 20px !important;
@@ -204,27 +174,18 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Individual Rotating Image */
+/* Single Random Image - No Animation Needed */
 .rotating-image {
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  
-  /* Smooth transitions */
-  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  opacity: 0 !important;
-  transform: scale(0.95) !important;
-}
-
-/* Active rotating image */
-.rotating-image.active {
   opacity: 1 !important;
   transform: scale(1) !important;
 }
 
-/* Image within rotating container */
+/* Image within container */
 .rotating-image img {
   width: 100% !important;
   height: 100% !important;
@@ -235,50 +196,15 @@
   mask: radial-gradient(circle at center, black 70%, transparent 100%) !important;
   -webkit-mask: radial-gradient(circle at center, black 70%, transparent 100%) !important;
   
-  /* Additional blending for smooth integration */
+  /* Professional image styling */
   filter: brightness(0.9) contrast(1.1) !important;
   transition: filter 0.3s ease !important;
 }
 
-/* Hover effect on images */
-.rotating-images-container:hover .rotating-image.active img {
+/* Hover effect on image */
+.rotating-images-container:hover .rotating-image img {
   filter: brightness(1) contrast(1.2) !important;
   transform: scale(1.05) !important;
-}
-
-/* Image Indicators - Small dots at bottom */
-.image-indicators {
-  position: absolute !important;
-  bottom: 8px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  display: flex !important;
-  gap: 4px !important;
-  z-index: 10 !important;
-}
-
-/* Individual indicator dot */
-.indicator-dot {
-  width: 6px !important;
-  height: 6px !important;
-  border-radius: 50% !important;
-  background: rgba(255, 255, 255, 0.4) !important;
-  cursor: pointer !important;
-  transition: all 0.3s ease !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-/* Active indicator dot */
-.indicator-dot.active {
-  background: rgba(255, 255, 255, 0.9) !important;
-  transform: scale(1.2) !important;
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.5) !important;
-}
-
-/* Hover effect on indicator dots */
-.indicator-dot:hover {
-  background: rgba(255, 255, 255, 0.7) !important;
-  transform: scale(1.1) !important;
 }
 
 /* Gradient overlay for better blending */
@@ -298,6 +224,23 @@
   border-radius: 10px !important;
   pointer-events: none !important;
   z-index: 5 !important;
+}
+
+/* Remove any indicator dots or controllers */
+.image-indicators {
+  display: none !important;
+}
+
+.indicator-dot {
+  display: none !important;
+}
+
+/* Remove user avatar styles (no longer needed) */
+.welcome-card-image,
+.session-image,
+.employee-award-image,
+.no-images-placeholder {
+  display: none !important;
 }
 
 /* Dashboard Layout with Scrollbar */
@@ -450,7 +393,7 @@
     padding: 16px !important;
   }
   
-  /* Responsive adjustments for rotating images */
+  /* Responsive adjustments for random image */
   .welcome-card-content {
     padding-right: 120px !important;
   }
@@ -461,21 +404,14 @@
     bottom: 16px !important;
     right: 16px !important;
   }
-  
-  .indicator-dot {
-    width: 5px !important;
-    height: 5px !important;
-  }
-  
-  .image-indicators {
-    bottom: 6px !important;
-    gap: 3px !important;
-  }
 }
 
 @media (max-width: 480px) {
   .welcome-card-content {
     padding-right: 100px !important;
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 16px !important;
   }
   
   .rotating-images-container {
@@ -485,14 +421,13 @@
     right: 12px !important;
   }
   
-  .indicator-dot {
-    width: 4px !important;
-    height: 4px !important;
+  .welcome-header h2 {
+    font-size: 24px !important;
   }
   
-  .image-indicators {
-    bottom: 4px !important;
-    gap: 2px !important;
+  .action-buttons {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
   }
 }
 
