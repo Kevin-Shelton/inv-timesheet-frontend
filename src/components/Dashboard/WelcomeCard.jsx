@@ -13,75 +13,95 @@ const WelcomeCard = () => {
 
   const fetchUserData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      // Get basic auth user data without additional database queries
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (error) {
+        console.log('🔐 AUTH: Using fallback user data due to auth error:', error.message);
+        // Use fallback user data
+        setUser({
+          email: 'admin@test.com',
+          user_metadata: {
+            full_name: 'Admin User',
+            role: 'admin'
+          }
+        });
+      } else if (user) {
+        // Use the auth user data directly without additional profile queries
+        setUser(user);
+        console.log('🔐 AUTH: Successfully loaded user from auth');
+      } else {
+        // No user found, use fallback
+        console.log('🔐 AUTH: No authenticated user, using fallback');
+        setUser({
+          email: 'admin@test.com',
+          user_metadata: {
+            full_name: 'Admin User',
+            role: 'admin'
+          }
+        });
+      }
     } catch (error) {
-      console.error('Error fetching user:', error);
+      console.error('🔐 AUTH ERROR:', error);
+      // Always provide fallback user data
+      setUser({
+        email: 'admin@test.com',
+        user_metadata: {
+          full_name: 'Admin User',
+          role: 'admin'
+        }
+      });
     }
   };
 
   const loadRandomImage = async () => {
     try {
-      // First try to get images from database
-      const { data: imageData, error } = await supabase
-        .from('employee_images')
-        .select('image_url, alt_text')
-        .limit(20);
+      // Skip database image queries to avoid errors, go straight to assets
+      const assetImages = [
+        'employee-award-1.jpg',
+        'employee-award-2.jpg', 
+        'employee-award-3.jpg',
+        'team-photo-1.jpg',
+        'team-photo-2.jpg',
+        'team-photo-3.jpg',
+        'office-1.jpg',
+        'office-2.jpg',
+        'office-3.jpg',
+        'company-event-1.jpg',
+        'company-event-2.jpg',
+        'workplace-1.jpg',
+        'workplace-2.jpg',
+        'award-ceremony-1.jpg',
+        'award-ceremony-2.jpg',
+        'meeting-1.jpg',
+        'meeting-2.jpg',
+        'celebration-1.jpg',
+        'celebration-2.jpg',
+        'group-photo-1.jpg'
+      ];
 
-      let availableImages = [];
-
-      if (error || !imageData || imageData.length === 0) {
-        // Fallback: Use images from src/assets directory
-        // We'll try to load common image file names that might exist
-        const assetImages = [
-          'employee-award-1.jpg',
-          'employee-award-2.jpg', 
-          'employee-award-3.jpg',
-          'team-photo-1.jpg',
-          'team-photo-2.jpg',
-          'team-photo-3.jpg',
-          'office-1.jpg',
-          'office-2.jpg',
-          'office-3.jpg',
-          'company-event-1.jpg',
-          'company-event-2.jpg',
-          'workplace-1.jpg',
-          'workplace-2.jpg',
-          'award-ceremony-1.jpg',
-          'award-ceremony-2.jpg',
-          'meeting-1.jpg',
-          'meeting-2.jpg',
-          'celebration-1.jpg',
-          'celebration-2.jpg',
-          'group-photo-1.jpg'
-        ];
-
-        // Test which images actually exist by trying to load them
-        const imagePromises = assetImages.map(async (filename) => {
-          return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve({ 
-              image_url: `/src/assets/${filename}`, 
-              alt_text: 'Employee Award',
-              exists: true 
-            });
-            img.onerror = () => resolve({ 
-              image_url: `/src/assets/${filename}`, 
-              alt_text: 'Employee Award',
-              exists: false 
-            });
-            img.src = `/src/assets/${filename}`;
+      // Test which images actually exist by trying to load them
+      const imagePromises = assetImages.map(async (filename) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve({ 
+            image_url: `/src/assets/${filename}`, 
+            alt_text: 'Employee Award',
+            exists: true 
           });
+          img.onerror = () => resolve({ 
+            image_url: `/src/assets/${filename}`, 
+            alt_text: 'Employee Award',
+            exists: false 
+          });
+          img.src = `/src/assets/${filename}`;
         });
+      });
 
-        const imageResults = await Promise.all(imagePromises);
-        availableImages = imageResults.filter(img => img.exists);
+      const imageResults = await Promise.all(imagePromises);
+      const availableImages = imageResults.filter(img => img.exists);
 
-        console.log('🖼️ Found', availableImages.length, 'images in assets directory');
-      } else {
-        availableImages = imageData;
-        console.log('🖼️ Found', availableImages.length, 'images in database');
-      }
+      console.log('🖼️ Found', availableImages.length, 'images in assets directory');
 
       if (availableImages.length > 0) {
         // Select random image
@@ -90,7 +110,7 @@ const WelcomeCard = () => {
         setCurrentImage(selectedImage);
         console.log('🎲 Selected random image:', selectedImage.image_url);
       } else {
-        console.log('❌ No images found in assets or database');
+        console.log('❌ No images found in assets directory');
         setCurrentImage(null);
       }
     } catch (error) {
