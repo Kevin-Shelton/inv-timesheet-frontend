@@ -1,11 +1,11 @@
-/* Dashboard CSS - Main Import File */
+/* Dashboard CSS - Complete Styling (FIXED VERSION) */
 /* This file imports all component-specific CSS files in the correct order */
 
 /* 1. CSS Variables and Design Tokens */
 @import './variables.css';
 
 /* 2. Core Layout and Structure */
-@import './dashboard-layout.css';
+@import './dashboard-layout-fixed.css';
 @import './dashboard-header.css';
 
 /* 3. Component-Specific Styles */
@@ -45,368 +45,311 @@ body {
   line-height: 1.6;
 }
 
-/* Typography Reset */
-h1, h2, h3, h4, h5, h6 {
-  margin: 0;
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.2;
-}
-
-p {
-  margin: 0 0 var(--space-4) 0;
-}
-
-/* Link Styles */
-a {
-  color: var(--color-primary);
-  text-decoration: none;
-  transition: color var(--transition-base);
-}
-
-a:hover {
-  color: var(--color-primary-hover);
-  text-decoration: underline;
-}
-
-a:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Button Reset */
-button {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-
-button:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Input Reset */
-input, textarea, select {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  margin: 0;
-}
-
-input:focus, textarea:focus, select:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* List Reset */
-ul, ol {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* Image Reset */
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* Table Reset */
-table {
-  border-collapse: collapse;
-  border-spacing: 0;
-}
-
-/* Utility Classes */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.text-left {
-  text-align: left;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.font-bold {
-  font-weight: var(--font-weight-bold);
-}
-
-.font-semibold {
-  font-weight: var(--font-weight-semibold);
-}
-
-.font-medium {
-  font-weight: var(--font-weight-medium);
-}
-
-.text-sm {
-  font-size: var(--font-size-sm);
-}
-
-.text-lg {
-  font-size: var(--font-size-lg);
-}
-
-.text-xl {
-  font-size: var(--font-size-xl);
-}
-
-.text-2xl {
-  font-size: var(--font-size-2xl);
-}
-
-.text-primary {
-  color: var(--color-primary);
-}
-
-.text-gray-600 {
-  color: var(--color-gray-600);
-}
-
-.text-gray-800 {
-  color: var(--color-gray-800);
-}
-
-.bg-white {
-  background-color: var(--color-white);
-}
-
-.bg-gray-50 {
-  background-color: var(--color-gray-50);
-}
-
-.bg-primary {
-  background-color: var(--color-primary);
-}
-
-.rounded {
-  border-radius: var(--radius-base);
-}
-
-.rounded-md {
-  border-radius: var(--radius-md);
-}
-
-.rounded-lg {
-  border-radius: var(--radius-lg);
-}
-
-.shadow {
-  box-shadow: var(--shadow-base);
-}
-
-.shadow-md {
-  box-shadow: var(--shadow-md);
-}
-
-.shadow-lg {
-  box-shadow: var(--shadow-lg);
-}
-
-/* Spacing Utilities */
-.m-0 { margin: 0; }
-.m-1 { margin: var(--space-1); }
-.m-2 { margin: var(--space-2); }
-.m-3 { margin: var(--space-3); }
-.m-4 { margin: var(--space-4); }
-.m-6 { margin: var(--space-6); }
-.m-8 { margin: var(--space-8); }
-
-.p-0 { padding: 0; }
-.p-1 { padding: var(--space-1); }
-.p-2 { padding: var(--space-2); }
-.p-3 { padding: var(--space-3); }
-.p-4 { padding: var(--space-4); }
-.p-6 { padding: var(--space-6); }
-.p-8 { padding: var(--space-8); }
-
-.mt-0 { margin-top: 0; }
-.mt-1 { margin-top: var(--space-1); }
-.mt-2 { margin-top: var(--space-2); }
-.mt-3 { margin-top: var(--space-3); }
-.mt-4 { margin-top: var(--space-4); }
-
-.mb-0 { margin-bottom: 0; }
-.mb-1 { margin-bottom: var(--space-1); }
-.mb-2 { margin-bottom: var(--space-2); }
-.mb-3 { margin-bottom: var(--space-3); }
-.mb-4 { margin-bottom: var(--space-4); }
-
-/* Flexbox Utilities */
-.flex {
-  display: flex;
-}
-
-.flex-col {
-  flex-direction: column;
-}
-
-.flex-row {
-  flex-direction: row;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.items-start {
-  align-items: flex-start;
-}
-
-.items-end {
-  align-items: flex-end;
-}
-
-.justify-center {
-  justify-content: center;
-}
-
-.justify-between {
-  justify-content: space-between;
-}
-
-.justify-start {
-  justify-content: flex-start;
-}
-
-.justify-end {
-  justify-content: flex-end;
-}
-
-.flex-1 {
-  flex: 1;
-}
-
-.flex-shrink-0 {
-  flex-shrink: 0;
-}
-
-/* Grid Utilities */
-.grid {
-  display: grid;
-}
-
-.grid-cols-1 {
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-
-.grid-cols-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.grid-cols-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.gap-1 { gap: var(--space-1); }
-.gap-2 { gap: var(--space-2); }
-.gap-3 { gap: var(--space-3); }
-.gap-4 { gap: var(--space-4); }
-.gap-6 { gap: var(--space-6); }
-
-/* Display Utilities */
-.hidden {
-  display: none;
-}
-
-.block {
-  display: block;
-}
-
-.inline {
-  display: inline;
-}
-
-.inline-block {
-  display: inline-block;
-}
-
-/* Position Utilities */
-.relative {
-  position: relative;
-}
-
-.absolute {
-  position: absolute;
-}
-
-.fixed {
-  position: fixed;
-}
-
-.sticky {
-  position: sticky;
-}
-
-/* Overflow Utilities */
-.overflow-hidden {
-  overflow: hidden;
-}
-
-.overflow-auto {
-  overflow: auto;
-}
-
-.overflow-x-auto {
-  overflow-x: auto;
-}
-
-.overflow-y-auto {
-  overflow-y: auto;
-}
-
-/* Width and Height Utilities */
-.w-full {
-  width: 100%;
-}
-
-.h-full {
-  height: 100%;
-}
-
-.min-h-0 {
-  min-height: 0;
-}
-
-/* Z-Index Utilities */
-.z-10 {
-  z-index: 10;
-}
-
-.z-20 {
-  z-index: 20;
-}
-
-.z-30 {
-  z-index: 30;
-}
-
-.z-40 {
-  z-index: 40;
-}
-
-.z-50 {
-  z-index: 50;
+/* FORCE STYLING APPLICATION - Override any conflicting styles */
+.dashboard-page,
+.dashboard-container,
+.dashboard-content,
+.dashboard-main,
+.dashboard-sidebar,
+.dashboard-row,
+.dashboard-col {
+  /* Force CSS to be applied */
+  all: unset;
+  display: revert;
+  box-sizing: border-box;
+}
+
+/* Re-apply dashboard styles with higher specificity */
+.dashboard-page .dashboard-container,
+div.dashboard-container {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  background: var(--bg-primary) !important;
+  overflow: hidden !important;
+  font-family: var(--font-family-primary) !important;
+}
+
+.dashboard-page .dashboard-content,
+div.dashboard-content {
+  display: flex !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+}
+
+.dashboard-page .dashboard-main,
+div.dashboard-main {
+  flex: 1 !important;
+  padding: var(--space-6) !important;
+  overflow-y: auto !important;
+  background: var(--bg-primary) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--space-6) !important;
+}
+
+.dashboard-page .dashboard-sidebar,
+div.dashboard-sidebar {
+  width: var(--sidebar-width) !important;
+  background: var(--bg-secondary) !important;
+  border-left: 1px solid var(--color-gray-200) !important;
+  padding: var(--space-6) !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--space-6) !important;
+  box-shadow: var(--shadow-base) !important;
+}
+
+.dashboard-page .dashboard-row,
+div.dashboard-row {
+  display: flex !important;
+  gap: var(--space-6) !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+.dashboard-page .dashboard-col,
+div.dashboard-col {
+  background: var(--bg-secondary) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: var(--space-6) !important;
+  box-shadow: var(--shadow-base) !important;
+  border: 1px solid var(--color-gray-200) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Welcome Card Styling */
+.dashboard-page .dashboard-col.welcome,
+div.dashboard-col.welcome {
+  flex: 2 !important;
+  background: var(--bg-gradient-welcome) !important;
+  color: var(--color-white) !important;
+  min-height: 200px !important;
+}
+
+/* Holiday Section Styling */
+.dashboard-page .dashboard-col.holidays,
+div.dashboard-col.holidays {
+  flex: 1 !important;
+  min-height: 200px !important;
+}
+
+/* Wide Columns (Charts) */
+.dashboard-page .dashboard-col.wide,
+div.dashboard-col.wide {
+  flex: 1 !important;
+  width: 100% !important;
+  min-height: 350px !important;
+}
+
+/* Force single column layout for wide sections */
+.dashboard-page .dashboard-row:has(.dashboard-col.wide:only-child),
+div.dashboard-row:has(div.dashboard-col.wide:only-child) {
+  display: block !important;
+}
+
+.dashboard-page .dashboard-row:has(.dashboard-col.wide:only-child) .dashboard-col.wide,
+div.dashboard-row:has(div.dashboard-col.wide:only-child) div.dashboard-col.wide {
+  width: 100% !important;
+  flex: none !important;
+}
+
+/* Header Styling */
+.dashboard-page .dashboard-header,
+div.dashboard-header {
+  background: var(--bg-secondary) !important;
+  border-bottom: 1px solid var(--color-gray-200) !important;
+  padding: var(--space-4) var(--space-6) !important;
+  box-shadow: var(--shadow-sm) !important;
+  z-index: var(--z-sticky) !important;
+  position: sticky !important;
+  top: 0 !important;
+}
+
+/* Component-specific forced styling */
+
+/* Welcome Card */
+.dashboard-page .welcome-card,
+div.welcome-card {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Weekly Chart */
+.dashboard-page .weekly-chart-wrapper,
+div.weekly-chart-wrapper {
+  background: var(--bg-secondary) !important;
+  padding: var(--space-4) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-base) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--space-4) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  height: 100% !important;
+}
+
+/* Activity Ring */
+.dashboard-page .activity-summary-section,
+div.activity-summary-section {
+  background: var(--bg-secondary) !important;
+  padding: var(--space-4) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-base) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--space-3) !important;
+  height: 100% !important;
+}
+
+/* Projects Chart */
+.dashboard-page .projects-chart,
+div.projects-chart {
+  background: var(--bg-secondary) !important;
+  padding: var(--space-4) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-base) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--space-4) !important;
+  height: 100% !important;
+}
+
+/* Holiday Section */
+.dashboard-page .holiday-section,
+div.holiday-section {
+  background: var(--bg-secondary) !important;
+  padding: var(--space-4) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-base) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--space-4) !important;
+  height: 100% !important;
+}
+
+/* Who's In/Out Panel */
+.dashboard-page .who-is-in-out-panel,
+div.who-is-in-out-panel {
+  background: var(--bg-secondary) !important;
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--color-gray-200) !important;
+  overflow: hidden !important;
+  box-shadow: var(--shadow-base) !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Typography Reset with higher specificity */
+.dashboard-page h1, .dashboard-page h2, .dashboard-page h3, .dashboard-page h4, .dashboard-page h5, .dashboard-page h6,
+div h1, div h2, div h3, div h4, div h5, div h6 {
+  margin: 0 !important;
+  font-weight: var(--font-weight-semibold) !important;
+  line-height: 1.2 !important;
+}
+
+.dashboard-page p,
+div p {
+  margin: 0 0 var(--space-4) 0 !important;
+}
+
+/* Button Reset with higher specificity */
+.dashboard-page button,
+div button {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+  cursor: pointer !important;
+}
+
+/* Utility Classes with higher specificity */
+.dashboard-page .sr-only,
+div .sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.dashboard-page .text-center,
+div .text-center {
+  text-align: center !important;
+}
+
+.dashboard-page .flex,
+div .flex {
+  display: flex !important;
+}
+
+.dashboard-page .flex-col,
+div .flex-col {
+  flex-direction: column !important;
+}
+
+.dashboard-page .items-center,
+div .items-center {
+  align-items: center !important;
+}
+
+.dashboard-page .justify-between,
+div .justify-between {
+  justify-content: space-between !important;
+}
+
+.dashboard-page .w-full,
+div .w-full {
+  width: 100% !important;
+}
+
+.dashboard-page .h-full,
+div .h-full {
+  height: 100% !important;
+}
+
+/* Responsive overrides */
+@media (max-width: 768px) {
+  .dashboard-page .dashboard-content,
+  div.dashboard-content {
+    flex-direction: column !important;
+  }
+  
+  .dashboard-page .dashboard-sidebar,
+  div.dashboard-sidebar {
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid var(--color-gray-200) !important;
+    max-height: 300px !important;
+    order: 2 !important;
+  }
+  
+  .dashboard-page .dashboard-main,
+  div.dashboard-main {
+    padding: var(--space-4) !important;
+    order: 1 !important;
+  }
+  
+  .dashboard-page .dashboard-row,
+  div.dashboard-row {
+    flex-direction: column !important;
+    gap: var(--space-4) !important;
+  }
 }
 

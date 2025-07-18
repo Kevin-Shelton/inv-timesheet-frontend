@@ -34,20 +34,30 @@ const ProjectsChart = () => {
       const startDate = monday.toISOString().split('T')[0];
       const endDate = sunday.toISOString().split('T')[0];
 
-      // Build query based on user permissions
+      // First, try to get projects data separately to check if projects table exists
+      let projectsMap = new Map();
+      
+      try {
+        const { data: projectsData, error: projectsError } = await supabase
+          .from('projects')
+          .select('*');
+          
+        if (projectsError) {
+          console.log('📊 PROJECTS: Projects table not accessible:', projectsError.message);
+        } else if (projectsData) {
+          projectsData.forEach(project => {
+            projectsMap.set(project.id, project);
+          });
+          console.log('📊 PROJECTS: Found projects:', projectsData.length);
+        }
+      } catch (projectsErr) {
+        console.log('📊 PROJECTS: Projects table error:', projectsErr.message);
+      }
+
+      // Try to get timesheet entries with project_id
       let query = supabase
         .from('timesheet_entries')
-        .select(`
-          project_id,
-          hours_worked,
-          projects!inner(
-            id,
-            name,
-            description,
-            color,
-            status
-          )
-        `)
+        .select('project_id, hours_worked, date')
         .gte('date', startDate)
         .lte('date', endDate)
         .not('project_id', 'is', null);
@@ -61,52 +71,62 @@ const ProjectsChart = () => {
 
       if (fetchError) {
         console.error('📊 PROJECTS ERROR:', fetchError);
-        throw new Error(`Failed to fetch projects data: ${fetchError.message}`);
+        throw new Error(`Failed to fetch timesheet entries: ${fetchError.message}`);
       }
 
-      console.log('📊 PROJECTS: Raw data:', entriesData);
+      console.log('📊 PROJECTS: Raw timesheet entries:', entriesData?.length || 0);
 
       if (!entriesData || entriesData.length === 0) {
-        console.log('📊 PROJECTS: No data found');
+        console.log('📊 PROJECTS: No timesheet entries with projects found');
         setProjectsData([]);
         setTotalHours(0);
         return;
       }
 
       // Process and aggregate project data
-      const projectMap = new Map();
+      const projectHoursMap = new Map();
       let total = 0;
 
       entriesData.forEach(entry => {
-        if (!entry.projects || !entry.hours_worked) return;
+        if (!entry.project_id || !entry.hours_worked) return;
 
         const projectId = entry.project_id;
         const hours = parseFloat(entry.hours_worked) || 0;
         total += hours;
 
-        if (projectMap.has(projectId)) {
-          projectMap.get(projectId).hours += hours;
+        if (projectHoursMap.has(projectId)) {
+          projectHoursMap.get(projectId).hours += hours;
         } else {
-          projectMap.set(projectId, {
+          // Get project info from our projects map, or create default
+          const projectInfo = projectsMap.get(projectId) || {
             id: projectId,
-            name: entry.projects.name || 'Unknown Project',
-            description: entry.projects.description || '',
-            color: entry.projects.color || '#3b82f6',
-            status: entry.projects.status || 'active',
+            name: `Project ${projectId}`,
+            description: '',
+            color: null,
+            status: 'active'
+          };
+
+          projectHoursMap.set(projectId, {
+            id: projectId,
+            name: projectInfo.name,
+            description: projectInfo.description || '',
+            color: projectInfo.color,
+            status: projectInfo.status || 'active',
             hours: hours
           });
         }
       });
 
       // Convert to array and sort by hours
-      const projectsArray = Array.from(projectMap.values())
+      const projectsArray = Array.from(projectHoursMap.values())
         .sort((a, b) => b.hours - a.hours)
         .slice(0, 10); // Top 10 projects
 
       // Calculate percentages
-      const projectsWithPercentages = projectsArray.map(project => ({
+      const projectsWithPercentages = projectsArray.map((project, index) => ({
         ...project,
-        percentage: total > 0 ? ((project.hours / total) * 100).toFixed(1) : 0
+        percentage: total > 0 ? ((project.hours / total) * 100).toFixed(1) : 0,
+        color: project.color || getProjectColor(index)
       }));
 
       setProjectsData(projectsWithPercentages);
@@ -140,6 +160,12 @@ const ProjectsChart = () => {
   if (loading) {
     return (
       <div className="projects-chart">
+        <div className="projects-header">
+          <div>
+            <h3 className="projects-title">Projects</h3>
+            <p className="projects-subtitle">Loading project data...</p>
+          </div>
+        </div>
         <div className="projects-loading">
           <div className="projects-loading-spinner"></div>
           Loading projects data...
@@ -151,11 +177,20 @@ const ProjectsChart = () => {
   if (error) {
     return (
       <div className="projects-chart">
+        <div className="projects-header">
+          <div>
+            <h3 className="projects-title">Projects</h3>
+            <p className="projects-subtitle">Error loading data</p>
+          </div>
+        </div>
         <div className="projects-error">
           <div className="chart-error-icon">⚠️</div>
-          <div>Error loading projects data</div>
+          <div>Unable to load projects data</div>
           <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
-            {error}
+            {error.includes('relationship') 
+              ? 'Database relationship not configured. Please contact your administrator.'
+              : error
+            }
           </div>
           <button 
             onClick={fetchProjectsData}
@@ -242,7 +277,7 @@ const ProjectsChart = () => {
                       className={`project-bar-fill project-${(index % 5) + 1}`}
                       style={{
                         width: `${project.percentage}%`,
-                        backgroundColor: project.color || getProjectColor(index)
+                        backgroundColor: project.color
                       }}
                     />
                   </div>
@@ -266,7 +301,7 @@ const ProjectsChart = () => {
                   <div
                     className="project-color-indicator"
                     style={{
-                      backgroundColor: project.color || getProjectColor(index)
+                      backgroundColor: project.color
                     }}
                   />
                   <div className="project-details">
