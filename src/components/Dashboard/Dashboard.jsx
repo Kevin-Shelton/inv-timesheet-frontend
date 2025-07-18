@@ -8,112 +8,47 @@ import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
 
-const Dashboard = () => {
-  const styles = {
-    dashboardWrapper: {
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      background: '#f8fafc',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    },
-    dashboardLayout: {
-      display: 'flex',
-      flex: 1,
-      overflow: 'hidden',
-      gap: '24px',
-      padding: '24px'
-    },
-    dashboardLeft: {
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '24px',
-      overflowY: 'auto'
-    },
-    dashboardRight: {
-      width: '320px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '16px',
-      background: 'white',
-      borderRadius: '12px',
-      padding: '0',
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e5e7eb',
-      overflow: 'hidden'
-    },
-    topRow: {
-      display: 'flex',
-      gap: '24px',
-      alignItems: 'stretch'
-    },
-    welcomeSection: {
-      flex: 2,
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      borderRadius: '12px',
-      padding: '24px',
-      color: 'white',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e5e7eb',
-      minHeight: '200px'
-    },
-    holidaySection: {
-      flex: 1,
-      background: 'white',
-      borderRadius: '12px',
-      padding: '24px',
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e5e7eb',
-      minHeight: '200px'
-    },
-    chartSection: {
-      background: 'white',
-      borderRadius: '12px',
-      padding: '24px',
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e5e7eb',
-      minHeight: '300px'
-    }
-  };
+// Import the modular CSS
+import './css/dashboard.css';
 
+const Dashboard = () => {
   return (
-    <div style={styles.dashboardWrapper}>
+    <div className="dashboard-wrapper">
       {/* Header */}
       <DashboardHeader />
       
       {/* Main Content */}
-      <div style={styles.dashboardLayout}>
+      <div className="dashboard-layout">
         {/* Left Side - Main Content */}
-        <div style={styles.dashboardLeft}>
+        <div className="dashboard-left">
           {/* Top Row */}
-          <div style={styles.topRow}>
-            <div style={styles.welcomeSection}>
+          <div className="top-row">
+            <div className="welcome-section">
               <WelcomeCard />
             </div>
-            <div style={styles.holidaySection}>
+            <div className="holiday-section">
               <HolidaySection />
             </div>
           </div>
 
           {/* Weekly Chart */}
-          <div style={styles.chartSection}>
+          <div className="chart-section">
             <WeeklyChart />
           </div>
 
           {/* Activities Chart */}
-          <div style={styles.chartSection}>
+          <div className="chart-section">
             <ActivityRing />
           </div>
 
           {/* Projects Chart */}
-          <div style={styles.chartSection}>
+          <div className="chart-section">
             <ProjectsChart />
           </div>
         </div>
 
         {/* Right Side - Sidebar */}
-        <div style={styles.dashboardRight}>
+        <div className="dashboard-right">
           <WhoIsInOutPanel />
           <CurrentTime />
         </div>

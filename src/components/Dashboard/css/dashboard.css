@@ -1,298 +1,143 @@
-/* Dashboard Simple CSS - High Specificity to Force Application */
+/* Modular Dashboard CSS - Imports all component styles */
 
-/* Reset and Base */
-.dashboard-wrapper * {
-  box-sizing: border-box !important;
-}
+/* Import CSS Variables and Design Tokens */
+@import './variables.css';
 
-/* Main Dashboard Container */
+/* Import Layout and Structure */
+@import './dashboard-layout.css';
+
+/* Import Header Components */
+@import './dashboard-header.css';
+
+/* Import Main Content Components */
+@import './welcome-card.css';
+@import './weekly-chart.css';
+@import './activity-ring.css';
+@import './projects-chart.css';
+@import './holiday-section.css';
+
+/* Import Sidebar Components */
+@import './who-is-in-out.css';
+
+/* Import Utility Styles */
+@import './animations.css';
+@import './responsive.css';
+
+/* Additional Dashboard-specific styles that don't belong in individual components */
+
+/* Dashboard wrapper - main container */
 .dashboard-wrapper {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100vh !important;
-  background: #f8fafc !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--color-background);
+  font-family: var(--font-family-base);
 }
 
-/* Dashboard Layout */
+/* Main dashboard layout container */
 .dashboard-layout {
-  display: flex !important;
-  flex: 1 !important;
-  overflow: hidden !important;
-  gap: 24px !important;
-  padding: 24px !important;
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: var(--spacing-6);
+  padding: var(--spacing-6);
 }
 
-/* Left Side - Main Content */
+/* Left side - main content area */
 .dashboard-left {
-  flex: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 24px !important;
-  overflow-y: auto !important;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  overflow-y: auto;
 }
 
-/* Right Side - Sidebar */
+/* Right side - sidebar */
 .dashboard-right {
-  width: 320px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 16px !important;
-  background: white !important;
-  border-radius: 12px !important;
-  padding: 0 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-  border: 1px solid #e5e7eb !important;
-  overflow: hidden !important;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
 }
 
-/* Top Row */
-.dashboard-top-row {
-  display: flex !important;
-  gap: 24px !important;
-  align-items: stretch !important;
+/* Top row layout */
+.top-row {
+  display: flex;
+  gap: var(--spacing-6);
+  align-items: stretch;
 }
 
-/* Welcome Section */
+/* Welcome section container */
 .welcome-section {
-  flex: 2 !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  border-radius: 12px !important;
-  padding: 24px !important;
-  color: white !important;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
-  border: 1px solid #e5e7eb !important;
-  min-height: 200px !important;
+  flex: 2;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  color: white;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+  min-height: 200px;
 }
 
-/* Holiday Section */
+/* Holiday section container */
 .holiday-section {
-  flex: 1 !important;
-  background: white !important;
-  border-radius: 12px !important;
-  padding: 24px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-  border: 1px solid #e5e7eb !important;
-  min-height: 200px !important;
+  flex: 1;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  min-height: 200px;
 }
 
-/* Chart Sections */
+/* Chart section containers */
 .chart-section {
-  background: white !important;
-  border-radius: 12px !important;
-  padding: 24px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-  border: 1px solid #e5e7eb !important;
-  min-height: 300px !important;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  min-height: 300px;
 }
 
-/* Force Welcome Card Styling */
-.welcome-section h1,
-.welcome-section .welcome-card h1 {
-  color: white !important;
-  font-size: 24px !important;
-  font-weight: bold !important;
-  margin: 0 0 8px 0 !important;
-}
-
-.welcome-section p,
-.welcome-section .welcome-card p {
-  color: rgba(255, 255, 255, 0.9) !important;
-  margin: 0 0 16px 0 !important;
-}
-
-/* Force image sizing in welcome card */
-.welcome-section img {
-  width: 80px !important;
-  height: 80px !important;
-  border-radius: 8px !important;
-  object-fit: cover !important;
-  max-width: 80px !important;
-  max-height: 80px !important;
-}
-
-/* Section Headers */
-.holiday-section h2,
-.chart-section h2,
-.holiday-section h3,
-.chart-section h3 {
-  color: #1f2937 !important;
-  font-size: 18px !important;
-  font-weight: 600 !important;
-  margin: 0 0 16px 0 !important;
-}
-
-/* Who's In/Out Panel Styling */
-.dashboard-right .who-is-in-out-panel,
-.dashboard-right > div:first-child {
-  flex: 1 !important;
-  background: white !important;
-  border-radius: 0 !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 16px !important;
-}
-
-/* Current Time Styling */
-.dashboard-right .current-time-section,
-.dashboard-right > div:last-child {
-  background: #f9fafb !important;
-  border-top: 1px solid #e5e7eb !important;
-  padding: 16px !important;
-  border-radius: 0 !important;
-}
-
-/* Status Tabs Styling */
-.status-tabs {
-  display: flex !important;
-  gap: 4px !important;
-  background: #f3f4f6 !important;
-  padding: 4px !important;
-  border-radius: 8px !important;
-  margin-bottom: 16px !important;
-}
-
-.status-tab {
-  flex: 1 !important;
-  padding: 8px 12px !important;
-  border: none !important;
-  background: transparent !important;
-  color: #6b7280 !important;
-  border-radius: 6px !important;
-  cursor: pointer !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  text-align: center !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 4px !important;
-}
-
-.status-tab.active {
-  background: white !important;
-  color: #3b82f6 !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-}
-
-.tab-count {
-  background: #d1d5db !important;
-  color: #374151 !important;
-  padding: 2px 8px !important;
-  border-radius: 4px !important;
-  font-size: 12px !important;
-  font-weight: bold !important;
-  min-width: 20px !important;
-  height: 20px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.status-tab.active .tab-count {
-  background: #3b82f6 !important;
-  color: white !important;
-}
-
-/* Member List */
-.member-list {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 8px !important;
-  max-height: 300px !important;
-  overflow-y: auto !important;
-}
-
-.member-item {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-  padding: 12px !important;
-  background: #f9fafb !important;
-  border-radius: 8px !important;
-  border: 1px solid #e5e7eb !important;
-}
-
-.member-item:hover {
-  background: #f3f4f6 !important;
-}
-
-/* Search Input */
-.search-input {
-  width: 100% !important;
-  padding: 8px 12px !important;
-  border: 1px solid #d1d5db !important;
-  border-radius: 6px !important;
-  font-size: 14px !important;
-  margin-bottom: 16px !important;
-}
-
-.search-input:focus {
-  outline: none !important;
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-}
-
-/* Campaign Dropdown */
-.campaign-dropdown {
-  margin-bottom: 16px !important;
-}
-
-.campaign-button {
-  width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  padding: 8px 12px !important;
-  background: white !important;
-  border: 1px solid #d1d5db !important;
-  border-radius: 6px !important;
-  cursor: pointer !important;
-  font-size: 14px !important;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Responsive adjustments */
+@media (max-width: 1024px) {
   .dashboard-layout {
-    flex-direction: column !important;
-    padding: 16px !important;
+    flex-direction: column;
+    gap: var(--spacing-4);
   }
   
   .dashboard-right {
-    width: 100% !important;
-    max-height: 400px !important;
+    width: 100%;
+    order: -1;
   }
   
-  .dashboard-top-row {
-    flex-direction: column !important;
+  .top-row {
+    flex-direction: column;
   }
   
   .welcome-section,
   .holiday-section {
-    flex: none !important;
+    flex: none;
   }
 }
 
-/* Force text colors */
-.chart-section * {
-  color: #1f2937 !important;
-}
-
-.holiday-section * {
-  color: #1f2937 !important;
-}
-
-/* Override any conflicting styles */
-.dashboard-wrapper .dashboard-layout .dashboard-left .welcome-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  color: white !important;
-}
-
-.dashboard-wrapper .dashboard-layout .dashboard-left .welcome-section * {
-  color: white !important;
-}
-
-.dashboard-wrapper .dashboard-layout .dashboard-left .welcome-section img {
-  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+@media (max-width: 768px) {
+  .dashboard-layout {
+    padding: var(--spacing-4);
+  }
+  
+  .welcome-section,
+  .holiday-section,
+  .chart-section {
+    padding: var(--spacing-4);
+    min-height: auto;
+  }
 }
 
