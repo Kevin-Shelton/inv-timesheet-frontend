@@ -1,143 +1,275 @@
-/* Modular Dashboard CSS - Imports all component styles */
+/* Enhanced Modular Dashboard CSS - Imports all modules with enhanced welcome card */
 
-/* Import CSS Variables and Design Tokens */
+/* Import CSS Variables First */
 @import './variables.css';
 
-/* Import Layout and Structure */
+/* Import Layout Styles */
 @import './dashboard-layout.css';
 
-/* Import Header Components */
+/* Import Component Styles */
 @import './dashboard-header.css';
 
-/* Import Main Content Components */
-@import './welcome-card.css';
+/* Import Enhanced Welcome Card (instead of regular welcome-card.css) */
+/* @import './welcome-card.css'; */  /* Commented out original */
+
+/* Import Other Component Styles */
 @import './weekly-chart.css';
 @import './activity-ring.css';
 @import './projects-chart.css';
 @import './holiday-section.css';
-
-/* Import Sidebar Components */
 @import './who-is-in-out.css';
 
 /* Import Utility Styles */
 @import './animations.css';
 @import './responsive.css';
 
-/* Additional Dashboard-specific styles that don't belong in individual components */
+/* Enhanced Welcome Card Styles - Inline to ensure they're applied */
+/* Main Welcome Card Container - ADD PURPLE GRADIENT */
+.welcome-card {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  position: relative !important;
+  overflow: hidden !important;
+  
+  /* ADD PURPLE GRADIENT BACKGROUND */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  
+  /* ADD PROFESSIONAL STYLING */
+  border-radius: 12px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  padding: 24px !important;
+  color: white !important;
+}
 
-/* Dashboard wrapper - main container */
+/* Welcome Card Content */
+.welcome-card-content {
+  display: flex !important;
+  align-items: center !important;
+  gap: 24px !important;
+  height: 100% !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Image Container */
+.welcome-card-image {
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 120px !important;
+  height: 120px !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* Session Image */
+.session-image {
+  width: 120px !important;
+  height: 120px !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.session-image img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* Welcome Content */
+.welcome-content {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+/* Welcome Header */
+.welcome-header h2 {
+  font-size: 30px !important;
+  font-weight: 700 !important;
+  margin: 0 0 8px 0 !important;
+  color: white !important;
+  line-height: 1.2 !important;
+}
+
+/* Welcome Subtitle */
+.welcome-subtitle {
+  font-size: 16px !important;
+  opacity: 0.9 !important;
+  margin: 0 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* User Info */
+.user-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.user-detail {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 14px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.user-detail svg {
+  width: 16px !important;
+  height: 16px !important;
+  opacity: 0.8 !important;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex !important;
+  gap: 12px !important;
+  margin-top: 16px !important;
+}
+
+.action-button {
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.action-button.primary {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.action-button.primary:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.action-button.secondary {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.action-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Auth Status */
+.auth-status {
+  margin-top: 16px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+  font-size: 12px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.auth-status svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Additional Dashboard Layout Enhancements */
 .dashboard-wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: var(--color-background);
-  font-family: var(--font-family-base);
+  min-height: 100vh !important;
+  background: var(--bg-primary, #f8fafc) !important;
 }
 
-/* Main dashboard layout container */
 .dashboard-layout {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  gap: var(--spacing-6);
-  padding: var(--spacing-6);
+  display: flex !important;
+  gap: 24px !important;
+  padding: 24px !important;
+  max-width: 1400px !important;
+  margin: 0 auto !important;
 }
 
-/* Left side - main content area */
 .dashboard-left {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-  overflow-y: auto;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
 }
 
-/* Right side - sidebar */
 .dashboard-right {
-  width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-4);
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: 0;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border);
-  overflow: hidden;
+  width: 320px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
 }
 
-/* Top row layout */
 .top-row {
-  display: flex;
-  gap: var(--spacing-6);
-  align-items: stretch;
+  display: grid !important;
+  grid-template-columns: 2fr 1fr !important;
+  gap: 24px !important;
 }
 
-/* Welcome section container */
-.welcome-section {
-  flex: 2;
-  background: var(--gradient-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-6);
-  color: white;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--color-border);
-  min-height: 200px;
-}
-
-/* Holiday section container */
-.holiday-section {
-  flex: 1;
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-6);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border);
-  min-height: 200px;
-}
-
-/* Chart section containers */
 .chart-section {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-6);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border);
-  min-height: 300px;
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+  padding: 24px !important;
 }
 
-/* Responsive adjustments */
+/* Responsive Design */
 @media (max-width: 1024px) {
   .dashboard-layout {
-    flex-direction: column;
-    gap: var(--spacing-4);
+    flex-direction: column !important;
   }
   
   .dashboard-right {
-    width: 100%;
-    order: -1;
+    width: 100% !important;
   }
   
   .top-row {
-    flex-direction: column;
-  }
-  
-  .welcome-section,
-  .holiday-section {
-    flex: none;
+    grid-template-columns: 1fr !important;
   }
 }
 
 @media (max-width: 768px) {
   .dashboard-layout {
-    padding: var(--spacing-4);
+    padding: 16px !important;
+    gap: 16px !important;
   }
   
-  .welcome-section,
-  .holiday-section,
+  .dashboard-left {
+    gap: 16px !important;
+  }
+  
+  .dashboard-right {
+    gap: 16px !important;
+  }
+  
+  .top-row {
+    gap: 16px !important;
+  }
+  
   .chart-section {
-    padding: var(--spacing-4);
-    min-height: auto;
+    padding: 16px !important;
   }
 }
 
