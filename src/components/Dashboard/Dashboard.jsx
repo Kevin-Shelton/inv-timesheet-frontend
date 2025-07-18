@@ -37,12 +37,16 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Bottom Row: Activity Ring + Projects Chart */}
+          {/* Bottom Row 1: Activities Chart (Full Width) */}
           <div className="dashboard-row">
-            <div className="dashboard-col activity">
+            <div className="dashboard-col wide">
               <ActivityRing />
             </div>
-            <div className="dashboard-col activity">
+          </div>
+
+          {/* Bottom Row 2: Projects Chart (Full Width) */}
+          <div className="dashboard-row">
+            <div className="dashboard-col wide">
               <ProjectsChart />
             </div>
           </div>

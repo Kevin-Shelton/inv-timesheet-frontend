@@ -1,4 +1,4 @@
-/* Dashboard Layout - Core Structure */
+/* Dashboard Layout - Core Structure (FIXED VERSION) */
 
 /* Main Dashboard Container */
 .dashboard-container {
@@ -55,6 +55,16 @@
   width: 100%;
 }
 
+/* FIXED: Single column rows should not flex */
+.dashboard-row:has(.dashboard-col.wide:only-child) {
+  display: block;
+}
+
+/* Alternative approach for browsers that don't support :has() */
+.dashboard-row.single-column {
+  display: block;
+}
+
 /* Dashboard Columns */
 .dashboard-col {
   background: var(--bg-secondary);
@@ -81,7 +91,15 @@
 
 .dashboard-col.wide {
   flex: 1;
+  width: 100%;
   min-height: 350px;
+}
+
+/* FIXED: Ensure wide columns take full width when alone */
+.dashboard-row:has(.dashboard-col.wide:only-child) .dashboard-col.wide,
+.dashboard-row.single-column .dashboard-col.wide {
+  width: 100%;
+  flex: none;
 }
 
 .dashboard-col.activity {
@@ -99,6 +117,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+  box-shadow: var(--shadow-base);
 }
 
 /* Custom Scrollbar for Sidebar */
@@ -132,18 +151,31 @@
   flex: 1;
 }
 
-/* Middle Row Specific Layout */
+/* Middle Row Specific Layout - FIXED */
 .dashboard-middle-row {
-  grid-column: 1 / -1;
+  width: 100%;
+  display: block; /* Force single column layout */
+}
+
+.dashboard-middle-row .dashboard-col {
   width: 100%;
 }
 
-.dashboard-middle-row .tracked-hours-section {
+/* Bottom Rows - FIXED to stack properly */
+.dashboard-bottom-row {
+  width: 100%;
+  display: block; /* Force single column layout */
+}
+
+.dashboard-bottom-row .dashboard-col {
   width: 100%;
 }
 
-.dashboard-middle-row > .weekly-chart-wrapper {
+/* Ensure Activities and Projects sections are full width */
+.dashboard-col.activities-section,
+.dashboard-col.projects-section {
   width: 100%;
+  flex: none;
 }
 
 /* Responsive Design */

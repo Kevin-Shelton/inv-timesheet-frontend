@@ -8,6 +8,7 @@ const ProjectsChart = () => {
   const [totalHours, setTotalHours] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState('chart'); // 'chart' or 'list'
 
   useEffect(() => {
     fetchProjectsData();
@@ -51,44 +52,49 @@ const ProjectsChart = () => {
         .lte('date', endDate)
         .not('project_id', 'is', null);
 
-      // If user can't view all timesheets, only show their own
-      if (!canViewAllTimesheets()) {
+      // Add user filter if not admin
+      if (!canViewAllTimesheets) {
         query = query.eq('user_id', user.id);
       }
 
-      const { data: entries, error: fetchError } = await query;
+      const { data: entriesData, error: fetchError } = await query;
 
       if (fetchError) {
         console.error('📊 PROJECTS ERROR:', fetchError);
-        throw fetchError;
+        throw new Error(`Failed to fetch projects data: ${fetchError.message}`);
       }
 
-      console.log('📊 PROJECTS: Fetched entries:', entries?.length || 0);
+      console.log('📊 PROJECTS: Raw data:', entriesData);
 
-      // Aggregate projects data
+      if (!entriesData || entriesData.length === 0) {
+        console.log('📊 PROJECTS: No data found');
+        setProjectsData([]);
+        setTotalHours(0);
+        return;
+      }
+
+      // Process and aggregate project data
       const projectMap = new Map();
       let total = 0;
 
-      entries?.forEach(entry => {
+      entriesData.forEach(entry => {
+        if (!entry.projects || !entry.hours_worked) return;
+
+        const projectId = entry.project_id;
         const hours = parseFloat(entry.hours_worked) || 0;
-        const project = entry.projects;
-        
-        if (project && hours > 0) {
-          const projectId = project.id;
-          
-          if (projectMap.has(projectId)) {
-            projectMap.get(projectId).hours += hours;
-          } else {
-            projectMap.set(projectId, {
-              id: projectId,
-              name: project.name,
-              description: project.description,
-              color: project.color || '#82ca9d',
-              status: project.status,
-              hours: hours
-            });
-          }
-          total += hours;
+        total += hours;
+
+        if (projectMap.has(projectId)) {
+          projectMap.get(projectId).hours += hours;
+        } else {
+          projectMap.set(projectId, {
+            id: projectId,
+            name: entry.projects.name || 'Unknown Project',
+            description: entry.projects.description || '',
+            color: entry.projects.color || '#3b82f6',
+            status: entry.projects.status || 'active',
+            hours: hours
+          });
         }
       });
 
@@ -97,63 +103,46 @@ const ProjectsChart = () => {
         .sort((a, b) => b.hours - a.hours)
         .slice(0, 10); // Top 10 projects
 
-      setProjectsData(projectsArray);
+      // Calculate percentages
+      const projectsWithPercentages = projectsArray.map(project => ({
+        ...project,
+        percentage: total > 0 ? ((project.hours / total) * 100).toFixed(1) : 0
+      }));
+
+      setProjectsData(projectsWithPercentages);
       setTotalHours(total);
-      console.log('📊 PROJECTS: Processed data:', projectsArray);
+      console.log('📊 PROJECTS: Processed data:', projectsWithPercentages);
 
     } catch (error) {
       console.error('📊 PROJECTS ERROR:', error);
-      setError(error.message);
+      setError(error.message || 'Failed to load projects data');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatHours = (hours) => {
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    return `${h}h ${m}m`;
+  const getProjectColor = (index) => {
+    const colors = [
+      '#3b82f6', // blue
+      '#10b981', // green
+      '#f59e0b', // yellow
+      '#ef4444', // red
+      '#8b5cf6', // purple
+      '#06b6d4', // cyan
+      '#f97316', // orange
+      '#84cc16', // lime
+      '#ec4899', // pink
+      '#6b7280'  // gray
+    ];
+    return colors[index % colors.length];
   };
-
-  const getPercentage = (hours) => {
-    return totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
-  };
-
-  // Generate chart segments for donut chart
-  const generateChartSegments = () => {
-    if (projectsData.length === 0) return [];
-
-    let cumulativePercentage = 0;
-    return projectsData.map(project => {
-      const percentage = parseFloat(getPercentage(project.hours));
-      const startAngle = cumulativePercentage * 3.6; // Convert to degrees
-      const endAngle = (cumulativePercentage + percentage) * 3.6;
-      
-      cumulativePercentage += percentage;
-      
-      return {
-        ...project,
-        percentage,
-        startAngle,
-        endAngle,
-        strokeDasharray: `${percentage} ${100 - percentage}`,
-        strokeDashoffset: -cumulativePercentage + percentage
-      };
-    });
-  };
-
-  const chartSegments = generateChartSegments();
 
   if (loading) {
     return (
       <div className="projects-chart">
-        <div className="chart-header">
-          <h3>PROJECTS</h3>
-          <a href="/projects" className="chart-link">Go to projects</a>
-        </div>
-        <div className="chart-loading">
-          <div className="loading-spinner"></div>
-          <p>Loading projects data...</p>
+        <div className="projects-loading">
+          <div className="projects-loading-spinner"></div>
+          Loading projects data...
         </div>
       </div>
     );
@@ -162,13 +151,24 @@ const ProjectsChart = () => {
   if (error) {
     return (
       <div className="projects-chart">
-        <div className="chart-header">
-          <h3>PROJECTS</h3>
-          <a href="/projects" className="chart-link">Go to projects</a>
-        </div>
-        <div className="chart-error">
-          <p>Error loading data: {error}</p>
-          <button onClick={fetchProjectsData} className="retry-button">
+        <div className="projects-error">
+          <div className="chart-error-icon">⚠️</div>
+          <div>Error loading projects data</div>
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+            {error}
+          </div>
+          <button 
+            onClick={fetchProjectsData}
+            style={{
+              marginTop: '12px',
+              padding: '8px 16px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
             Retry
           </button>
         </div>
@@ -179,20 +179,17 @@ const ProjectsChart = () => {
   if (projectsData.length === 0) {
     return (
       <div className="projects-chart">
-        <div className="chart-header">
-          <h3>PROJECTS</h3>
-          <a href="/projects" className="chart-link">Go to projects</a>
-        </div>
-        <div className="chart-empty">
-          <div className="empty-donut-chart">
-            <div className="donut-center">
-              <div className="donut-label">No data</div>
-              <div className="donut-value">0h 0m</div>
-            </div>
+        <div className="projects-header">
+          <div>
+            <h3 className="projects-title">Projects</h3>
+            <p className="projects-subtitle">This week's project breakdown</p>
           </div>
-          <div className="projects-list">
-            <h4>Top 10 projects</h4>
-            <p>No projects tracked this week</p>
+        </div>
+        <div className="projects-empty">
+          <div className="projects-empty-icon">📊</div>
+          <div>No project data available</div>
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+            Start tracking time on projects to see data here
           </div>
         </div>
       </div>
@@ -201,81 +198,100 @@ const ProjectsChart = () => {
 
   return (
     <div className="projects-chart">
-      <div className="chart-header">
-        <h3>PROJECTS</h3>
-        <a href="/projects" className="chart-link">Go to projects</a>
+      {/* Header */}
+      <div className="projects-header">
+        <div>
+          <h3 className="projects-title">Projects</h3>
+          <p className="projects-subtitle">
+            {totalHours.toFixed(1)} hours across {projectsData.length} projects this week
+          </p>
+        </div>
+        <div className="projects-view-toggle">
+          <button
+            className={`view-toggle-btn ${viewMode === 'chart' ? 'active' : ''}`}
+            onClick={() => setViewMode('chart')}
+          >
+            📊 Chart
+          </button>
+          <button
+            className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+            onClick={() => setViewMode('list')}
+          >
+            📋 List
+          </button>
+        </div>
       </div>
 
-      <div className="chart-content">
-        {/* Donut Chart */}
-        <div className="donut-chart-container">
-          <svg className="donut-chart" viewBox="0 0 100 100">
-            {/* Background circle */}
-            <circle
-              cx="50"
-              cy="50"
-              r="40"
-              fill="none"
-              stroke="#f0f0f0"
-              strokeWidth="8"
-            />
-            
-            {/* Project segments */}
-            {chartSegments.map((project, index) => (
-              <circle
-                key={project.id}
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                stroke={project.color}
-                strokeWidth="8"
-                strokeDasharray={`${project.percentage * 2.51} 251.2`}
-                strokeDashoffset={-project.strokeDashoffset * 2.51}
-                transform="rotate(-90 50 50)"
-                className="donut-segment"
-                style={{
-                  transition: 'stroke-dasharray 0.3s ease, stroke-dashoffset 0.3s ease'
-                }}
-              />
-            ))}
-          </svg>
-          
-          {/* Center content */}
-          <div className="donut-center">
-            <div className="donut-label">clocked</div>
-            <div className="donut-value">{formatHours(totalHours)}</div>
-          </div>
-        </div>
-
-        {/* Projects List */}
-        <div className="projects-list">
-          <h4>Top 10 projects</h4>
-          <div className="projects-items">
-            {projectsData.map((project, index) => (
-              <div key={project.id} className="project-item">
-                <div className="project-info">
-                  <div 
-                    className="project-color" 
-                    style={{ backgroundColor: project.color }}
-                  ></div>
-                  <div className="project-details">
-                    <span className="project-name">{project.name}</span>
-                    <span className="project-hours">{formatHours(project.hours)}</span>
-                  </div>
-                  {project.status && (
-                    <span className={`project-status status-${project.status.toLowerCase()}`}>
+      {/* Content */}
+      <div className="projects-content">
+        {viewMode === 'chart' ? (
+          <div className="projects-chart-view">
+            <div className="projects-bars-container">
+              {projectsData.map((project, index) => (
+                <div key={project.id} className="project-bar-item">
+                  <div className="project-info">
+                    <div className="project-name" title={project.name}>
+                      {project.name}
+                    </div>
+                    <div className={`project-status ${project.status}`}>
                       {project.status}
-                    </span>
-                  )}
+                    </div>
+                  </div>
+                  <div className="project-bar">
+                    <div
+                      className={`project-bar-fill project-${(index % 5) + 1}`}
+                      style={{
+                        width: `${project.percentage}%`,
+                        backgroundColor: project.color || getProjectColor(index)
+                      }}
+                    />
+                  </div>
+                  <div className="project-hours">
+                    <div className="project-hours-value">
+                      {project.hours.toFixed(1)}h
+                    </div>
+                    <div className="project-hours-percentage">
+                      {project.percentage}%
+                    </div>
+                  </div>
                 </div>
-                <div className="project-percentage">
-                  {getPercentage(project.hours)}%
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="projects-list-view">
+            {projectsData.map((project, index) => (
+              <div key={project.id} className="project-list-item">
+                <div className="project-list-info">
+                  <div
+                    className="project-color-indicator"
+                    style={{
+                      backgroundColor: project.color || getProjectColor(index)
+                    }}
+                  />
+                  <div className="project-details">
+                    <div className="project-list-name" title={project.name}>
+                      {project.name}
+                    </div>
+                    {project.description && (
+                      <div className="project-description" title={project.description}>
+                        {project.description}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="project-list-stats">
+                  <div className="project-list-hours">
+                    {project.hours.toFixed(1)}h
+                  </div>
+                  <div className="project-list-percentage">
+                    {project.percentage}%
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
