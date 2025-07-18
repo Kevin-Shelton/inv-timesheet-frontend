@@ -6,19 +6,22 @@ const WelcomeCard = () => {
   const [images, setImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState('');
 
-  // Sample images for rotation - Updated to use src/assets directory
+  // Sample images for rotation - Multiple path formats to test
   const sampleImages = [
+    // Try different path formats
+    './src/assets/employee-award-1.jpg',
+    './src/assets/employee-award-2.jpg',
     '/src/assets/employee-award-1.jpg',
     '/src/assets/employee-award-2.jpg',
-    '/src/assets/employee-award-3.jpg',
-    '/src/assets/team-photo-1.jpg',
-    '/src/assets/team-photo-2.jpg',
-    '/src/assets/office-1.jpg',
-    '/src/assets/office-2.jpg',
-    '/src/assets/company-event-1.jpg',
-    '/src/assets/company-event-2.jpg',
-    '/src/assets/workplace-1.jpg'
+    'src/assets/employee-award-1.jpg',
+    'src/assets/employee-award-2.jpg',
+    // Also try some common fallback images
+    'https://via.placeholder.com/120x120/667eea/ffffff?text=Award+1',
+    'https://via.placeholder.com/120x120/764ba2/ffffff?text=Award+2',
+    'https://via.placeholder.com/120x120/4f46e5/ffffff?text=Team+1',
+    'https://via.placeholder.com/120x120/7c3aed/ffffff?text=Office+1'
   ];
 
   useEffect(() => {
@@ -31,6 +34,13 @@ const WelcomeCard = () => {
     if (images.length > 0) {
       const randomIndex = Math.floor(Math.random() * images.length);
       setCurrentImageIndex(randomIndex);
+      setDebugInfo(`Selected image ${randomIndex}: ${images[randomIndex]?.image_url}`);
+      console.log('🖼️ WELCOME CARD DEBUG:', {
+        totalImages: images.length,
+        selectedIndex: randomIndex,
+        selectedImage: images[randomIndex]?.image_url,
+        allImages: images
+      });
     }
   }, [images]);
 
@@ -45,6 +55,8 @@ const WelcomeCard = () => {
 
   const fetchImages = async () => {
     try {
+      console.log('🔍 Attempting to fetch images from database...');
+      
       // Try to fetch images from database first
       const { data: imageData, error } = await supabase
         .from('employee_images')
@@ -52,18 +64,23 @@ const WelcomeCard = () => {
         .limit(10);
 
       if (error) {
-        console.log('No employee images table, using sample images from src/assets');
-        setImages(sampleImages.map(url => ({ image_url: url, alt_text: 'Employee Award' })));
+        console.log('❌ Database error, using sample images:', error.message);
+        setDebugInfo('Database unavailable, using sample images');
+        setImages(sampleImages.map(url => ({ image_url: url, alt_text: 'Sample Image' })));
       } else if (imageData && imageData.length > 0) {
+        console.log('✅ Found database images:', imageData);
+        setDebugInfo(`Found ${imageData.length} database images`);
         setImages(imageData);
       } else {
-        // Fallback to sample images from src/assets
-        setImages(sampleImages.map(url => ({ image_url: url, alt_text: 'Employee Award' })));
+        console.log('📁 No database images found, using sample images');
+        setDebugInfo('No database images, using sample images');
+        setImages(sampleImages.map(url => ({ image_url: url, alt_text: 'Sample Image' })));
       }
     } catch (error) {
-      console.error('Error fetching images:', error);
-      // Use sample images from src/assets as fallback
-      setImages(sampleImages.map(url => ({ image_url: url, alt_text: 'Employee Award' })));
+      console.error('💥 Error fetching images:', error);
+      setDebugInfo(`Error: ${error.message}`);
+      // Use sample images as fallback
+      setImages(sampleImages.map(url => ({ image_url: url, alt_text: 'Sample Image' })));
     } finally {
       setIsLoading(false);
     }
@@ -77,6 +94,17 @@ const WelcomeCard = () => {
   const handleQuickClockIn = () => {
     // Handle quick clock in
     console.log('Quick clock in clicked');
+  };
+
+  const handleImageLoad = (e) => {
+    console.log('✅ Image loaded successfully:', e.target.src);
+  };
+
+  const handleImageError = (e) => {
+    console.log('❌ Image failed to load:', e.target.src);
+    setDebugInfo(`Image failed: ${e.target.src}`);
+    // Try to show a different image or hide this one
+    e.target.style.display = 'none';
   };
 
   return (
@@ -126,25 +154,79 @@ const WelcomeCard = () => {
             </svg>
             <span>Auth Status: authenticated | Client: Standard</span>
           </div>
+
+          {/* Debug information */}
+          <div style={{ 
+            marginTop: '8px', 
+            fontSize: '10px', 
+            color: 'rgba(255,255,255,0.6)',
+            fontFamily: 'monospace'
+          }}>
+            Debug: {debugInfo}
+          </div>
         </div>
       </div>
 
-      {/* Single random image in bottom right corner - No controllers */}
-      {!isLoading && images.length > 0 && (
-        <div className="rotating-images-container">
+      {/* Image container with debug info */}
+      <div className="rotating-images-container" style={{
+        border: '2px solid rgba(255,255,255,0.5)', // Make container more visible for debugging
+        background: 'rgba(255,255,255,0.2)' // More visible background
+      }}>
+        {isLoading ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            color: 'white',
+            fontSize: '12px'
+          }}>
+            Loading...
+          </div>
+        ) : images.length > 0 ? (
           <div className="rotating-image active">
             <img
               src={images[currentImageIndex]?.image_url}
-              alt={images[currentImageIndex]?.alt_text || 'Employee Award'}
-              onError={(e) => {
-                // Hide broken images and try next image
-                console.log('Image failed to load:', e.target.src);
-                e.target.style.display = 'none';
+              alt={images[currentImageIndex]?.alt_text || 'Sample Image'}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: '10px'
               }}
             />
+            {/* Debug overlay */}
+            <div style={{
+              position: 'absolute',
+              bottom: '2px',
+              left: '2px',
+              right: '2px',
+              background: 'rgba(0,0,0,0.7)',
+              color: 'white',
+              fontSize: '8px',
+              padding: '2px',
+              borderRadius: '2px',
+              wordBreak: 'break-all'
+            }}>
+              {images[currentImageIndex]?.image_url?.substring(0, 30)}...
+            </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            color: 'white',
+            fontSize: '12px',
+            textAlign: 'center'
+          }}>
+            No Images
+          </div>
+        )}
+      </div>
     </div>
   );
 };
