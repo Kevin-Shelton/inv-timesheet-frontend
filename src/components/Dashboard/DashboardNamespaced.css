@@ -2100,7 +2100,6 @@ to {
     gap: 16px;
 }
 
-}
 
 /* =====================================================
    ENHANCED ACTIVITIES CHART STYLES
@@ -2355,7 +2354,6 @@ to {
     text-align: center;
 }
 
-}
 
 /* =====================================================
    ENHANCED HOLIDAYS VIEWER STYLES
@@ -2748,7 +2746,6 @@ to {
     justify-content: center;
 }
 
-}
 
 /* =====================================================
    PROJECTS CHART STYLES
@@ -3033,7 +3030,6 @@ to {
   text-align: center;
 }
 
-}
 
 /* Responsive Design for Holiday Maintenance Page */
 @media (max-width: 768px) {
@@ -3728,7 +3724,6 @@ to {
   color: #6b7280;
 }
 
-}
 
 /* Error State */
 .error-state {
@@ -3751,7 +3746,6 @@ to {
   color: #6b7280;
 }
 
-}
 /* =====================================================
    DASHBOARD NAMESPACED CSS - COMPLETE INTEGRATED VERSION
    ===================================================== */
@@ -4418,7 +4412,6 @@ to {
   padding: 16px;
 }
 
-}
 
 @media (max-width: 640px) {
   .dashboard-header-filters {
