@@ -972,7 +972,7 @@
 }
 
 /* =====================================================
-   WELCOME CARD WITH LOGIN NAVIGATION STYLES
+   WELCOME CARD WITH LOGIN NAVIGATION STYLES - FIXED IMAGE SIZING
    ===================================================== */
 
 .welcome-card {
@@ -995,12 +995,14 @@
 }
 
 /* =====================================================
-   IMAGE SECTION
+   IMAGE SECTION - FIXED SIZING
    ===================================================== */
 
 .welcome-image-container {
   position: relative;
   flex-shrink: 0;
+  width: 120px;
+  height: 120px;
 }
 
 .welcome-image {
@@ -1278,12 +1280,14 @@
 }
 
 /* =====================================================
-   SESSION-BASED IMAGE STYLES
+   SESSION-BASED IMAGE STYLES - FIXED SIZING
    ===================================================== */
 
 .welcome-image-container {
   position: relative;
   flex-shrink: 0;
+  width: 120px;
+  height: 120px;
 }
 
 .session-image {
@@ -1309,7 +1313,7 @@
 .employee-award-image {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover; /* FIXED: Changed from contain to cover for proper sizing */
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   transition: all 0.3s ease;
   animation: sessionImageLoad 0.8s ease-out;
@@ -3641,44 +3645,170 @@
     padding: 6px 12px;
     font-size: 11px;
   }
- /* =====================================================
-   DASHBOARD LAYOUT WITH VERTICAL SCROLLING
+}
+
+/* =====================================================
+   DASHBOARD LAYOUT WITH VERTICAL SCROLLING - COMPLETE
    ===================================================== */
 
 /* Main Dashboard Container */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  background-color: #f8f9fa;
+}
+
+.dashboard-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid #e0e0e0;
+  background: white;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-content {
+  flex-grow: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.dashboard-main {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.dashboard-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-main::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.dashboard-main::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.dashboard-main::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.dashboard-sidebar {
+  flex-shrink: 0;
+  width: 300px;
+  overflow-y: auto;
+  padding: 1rem;
+  border-left: 1px solid #e0e0e0;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.dashboard-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Dashboard Header Dropdown Styles */
+.dashboard-header > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dashboard-header .flex-wrap > div {
+  margin-bottom: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .dashboard-header .flex-wrap > div {
+    margin-bottom: 0;
+  }
+}
+
+/* Section Styling */
+.dashboard-section {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+}
+
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.chart-section {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+}
+
+.sidebar-section {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+}
+
+/* Dashboard Page Layout */
 .dashboard-page {
   display: flex;
   gap: 24px;
   min-height: 100vh;
   padding: 24px;
   background: #f8f9fa;
-  overflow: hidden; /* Prevent page-level scrolling */
+  overflow: hidden;
 }
 
-/* Dashboard Main Content Area */
 .dashboard-main {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  min-width: 0; /* Allow flex shrinking */
-  max-height: calc(100vh - 48px); /* Account for padding */
-  overflow-y: auto; /* Enable vertical scrolling for main content */
+  min-width: 0;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 8px; /* Space for scrollbar */
+  padding-right: 8px;
 }
 
-/* Dashboard Sidebar (Who's In/Out Panel) */
 .dashboard-sidebar {
   width: 320px;
   flex-shrink: 0;
-  max-height: calc(100vh - 48px); /* Account for padding */
-  overflow-y: auto; /* Enable vertical scrolling for sidebar */
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   overflow-x: hidden;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  padding: 0; /* Remove padding to let components handle their own */
+  padding: 0;
 }
 
 /* Dashboard Rows */
@@ -3687,7 +3817,7 @@
   gap: 24px;
   width: 100%;
   align-items: stretch;
-  flex-shrink: 0; /* Prevent rows from shrinking */
+  flex-shrink: 0;
 }
 
 /* Dashboard Columns */
@@ -3700,12 +3830,12 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 300px; /* Ensure minimum height for charts */
+  min-height: 300px;
 }
 
 .dashboard-col.wide {
   flex: 1 1 100%;
-  min-height: 400px; /* Taller for wide charts */
+  min-height: 400px;
 }
 
 .dashboard-col.welcome {
@@ -3720,7 +3850,7 @@
 
 .dashboard-col.activity {
   flex: 1;
-  min-height: 350px; /* Taller for pie chart */
+  min-height: 350px;
 }
 
 /* Chart Specific Heights */
@@ -3738,44 +3868,6 @@
   min-height: 250px;
   display: flex;
   flex-direction: column;
-}
-
-/* Scrollbar Styling for Main Content */
-.dashboard-main::-webkit-scrollbar {
-  width: 8px;
-}
-
-.dashboard-main::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.dashboard-main::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.dashboard-main::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Scrollbar Styling for Sidebar */
-.dashboard-sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.dashboard-sidebar::-webkit-scrollbar-track {
-  background: #f8f9fa;
-  border-radius: 3px;
-}
-
-.dashboard-sidebar::-webkit-scrollbar-thumb {
-  background: #dee2e6;
-  border-radius: 3px;
-}
-
-.dashboard-sidebar::-webkit-scrollbar-thumb:hover {
-  background: #adb5bd;
 }
 
 /* Responsive Design */
@@ -3832,38 +3924,30 @@
   }
 }
 
-/* =====================================================
-   LAYOUT UTILITIES
-   ===================================================== */
-
-/* Ensure charts fill their containers properly */
+/* Layout Utilities */
 .chart-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Allow flex shrinking */
+  min-height: 0;
 }
 
-/* Prevent content overflow in cards */
 .dashboard-col > * {
-  min-width: 0; /* Allow flex items to shrink */
-  overflow: hidden; /* Prevent content overflow */
+  min-width: 0;
+  overflow: hidden;
 }
 
-/* Smooth scrolling behavior */
 .dashboard-main,
 .dashboard-sidebar {
   scroll-behavior: smooth;
 }
 
-/* Focus styles for accessibility */
 .dashboard-main:focus,
 .dashboard-sidebar:focus {
   outline: 2px solid #4299e1;
   outline-offset: 2px;
 }
 
-/* Loading and error states take full height */
 .chart-loading,
 .chart-error,
 .chart-empty {
@@ -3874,27 +3958,19 @@
   min-height: 200px;
 }
 
-/* =====================================================
-   PERFORMANCE OPTIMIZATIONS
-   ===================================================== */
-
-/* Use transform for better performance */
+/* Performance Optimizations */
 .dashboard-col {
   will-change: transform;
-  transform: translateZ(0); /* Force hardware acceleration */
+  transform: translateZ(0);
 }
 
-/* Optimize scrolling performance */
 .dashboard-main,
 .dashboard-sidebar {
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-  overscroll-behavior: contain; /* Prevent scroll chaining */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
-/* =====================================================
-   PRINT STYLES
-   ===================================================== */
-
+/* Print Styles */
 @media print {
   .dashboard-page {
     flex-direction: column;
@@ -3912,8 +3988,5 @@
     width: 100%;
     page-break-before: always;
   }
-}
-
- 
 }
 
