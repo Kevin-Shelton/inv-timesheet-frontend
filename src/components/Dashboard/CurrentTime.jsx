@@ -1,33 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
-export default function CurrentTime() {
-  const [currentTime, setCurrentTime] = useState(new Date());
+/**
+ * CurrentTime Component - Removed to prevent duplicate time display
+ * 
+ * This component has been disabled to remove the duplicate time display
+ * that was appearing at the bottom of the Who's In/Out panel.
+ * The time is now only shown in the top section of the right panel.
+ */
+const CurrentTime = () => {
+  // Return null to completely remove this component from rendering
+  return null;
+};
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+export default CurrentTime;
 
-    return () => clearInterval(timer);
-  }, []);
-
-  const timeString = currentTime.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-
-  const dateString = currentTime.toLocaleDateString('en-US', {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-
-  return (
-    <div className="dashboard-page current-time-wrapper">
-      <div className="dashboard-page current-time-time">{timeString}</div>
-      <div className="dashboard-page current-time-date">{dateString}</div>
-    </div>
-  );
-}
