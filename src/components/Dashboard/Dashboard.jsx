@@ -1,11 +1,11 @@
 import React from 'react';
 import DashboardHeader from './DashboardHeader';
-import WelcomeCard from './WelcomeCard_Fixed';
-import HolidaySection from './HolidaySection_DatabaseFixed';
-import WeeklyChart from './WeeklyChart_DatabaseFixed';
+import WelcomeCard from './WelcomeCard';
+import HolidaySection from './HolidaySection';
+import WeeklyChart from './WeeklyChart';
 import ActivityRing from './ActivityRing';
-import ProjectsChart from './ProjectsChart_DatabaseFixed';
-import WhoIsInOutPanel from './WhoIsInOutPanel_Fixed';
+import ProjectsChart from './ProjectsChart';
+import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
 
 const Dashboard = () => {
