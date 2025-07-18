@@ -1,4 +1,4 @@
-/* Dashboard Complete CSS - All Styles in One File */
+/* Dashboard Complete CSS - All Styles in One File (IMAGE SIZE FIXED) */
 /* NO IMPORTS - Self-contained file to avoid build errors */
 
 /* ===== CSS VARIABLES ===== */
@@ -209,6 +209,167 @@ body {
   z-index: var(--z-sticky) !important;
   position: sticky !important;
   top: 0 !important;
+}
+
+/* ===== WELCOME CARD STYLING (FIXED IMAGE SIZE) ===== */
+
+/* Welcome Card Container */
+.welcome-card {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  position: relative !important;
+  overflow: hidden !important;
+  padding: var(--space-6) !important;
+}
+
+/* Welcome Card Content Layout */
+.welcome-card-content {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-6) !important;
+  width: 100% !important;
+}
+
+/* Welcome Card Image Container */
+.welcome-card-image {
+  flex-shrink: 0 !important;
+  width: 120px !important;
+  height: 120px !important;
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Welcome Card Image */
+.welcome-card-image img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: var(--radius-md) !important;
+}
+
+/* Fallback for missing image */
+.welcome-card-image-placeholder {
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: var(--radius-md) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: var(--font-size-2xl) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Welcome Card Text Content */
+.welcome-card-text {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--space-4) !important;
+}
+
+/* Welcome Card Header */
+.welcome-card-header {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--space-2) !important;
+}
+
+.welcome-card-title {
+  font-size: var(--font-size-2xl) !important;
+  font-weight: var(--font-weight-bold) !important;
+  color: var(--color-white) !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+}
+
+.welcome-card-subtitle {
+  font-size: var(--font-size-base) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  margin: 0 !important;
+  opacity: 0.9 !important;
+}
+
+/* Welcome Card User Info */
+.welcome-card-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--space-2) !important;
+}
+
+.welcome-card-info-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-2) !important;
+  font-size: var(--font-size-sm) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.welcome-card-info-icon {
+  width: 16px !important;
+  height: 16px !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  flex-shrink: 0 !important;
+}
+
+/* Welcome Card Actions */
+.welcome-card-actions {
+  display: flex !important;
+  gap: var(--space-3) !important;
+  margin-top: var(--space-4) !important;
+}
+
+.welcome-card-button {
+  padding: var(--space-2) var(--space-4) !important;
+  border-radius: var(--radius-md) !important;
+  font-size: var(--font-size-sm) !important;
+  font-weight: var(--font-weight-medium) !important;
+  cursor: pointer !important;
+  transition: all var(--transition-base) !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-2) !important;
+}
+
+.welcome-card-button.primary {
+  background: var(--color-white) !important;
+  color: var(--color-primary) !important;
+}
+
+.welcome-card-button.primary:hover {
+  background: var(--color-gray-100) !important;
+  transform: translateY(-1px) !important;
+}
+
+.welcome-card-button.secondary {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: var(--color-white) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.welcome-card-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Welcome Card Status */
+.welcome-card-status {
+  position: absolute !important;
+  bottom: var(--space-4) !important;
+  right: var(--space-6) !important;
+  font-size: var(--font-size-xs) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-2) !important;
 }
 
 /* ===== WHO IS IN/OUT PANEL ===== */
@@ -630,16 +791,6 @@ body {
 
 /* ===== COMPONENT STYLING ===== */
 
-/* Welcome Card */
-.welcome-card {
-  height: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: center !important;
-  position: relative !important;
-  overflow: hidden !important;
-}
-
 /* Weekly Chart */
 .weekly-chart-wrapper {
   background: var(--bg-secondary) !important;
@@ -768,6 +919,15 @@ button {
   .dashboard-sidebar {
     width: var(--sidebar-width-collapsed) !important;
   }
+  
+  .welcome-card-content {
+    gap: var(--space-4) !important;
+  }
+  
+  .welcome-card-image {
+    width: 100px !important;
+    height: 100px !important;
+  }
 }
 
 @media (max-width: 768px) {
@@ -816,6 +976,24 @@ button {
     align-items: flex-start !important;
     gap: var(--space-1) !important;
   }
+  
+  /* Welcome Card Mobile */
+  .welcome-card-content {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: var(--space-4) !important;
+  }
+  
+  .welcome-card-image {
+    width: 80px !important;
+    height: 80px !important;
+    align-self: center !important;
+  }
+  
+  .welcome-card-actions {
+    flex-direction: column !important;
+    gap: var(--space-2) !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -842,6 +1020,20 @@ button {
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
+  }
+  
+  /* Welcome Card Small Mobile */
+  .welcome-card {
+    padding: var(--space-4) !important;
+  }
+  
+  .welcome-card-title {
+    font-size: var(--font-size-xl) !important;
+  }
+  
+  .welcome-card-image {
+    width: 60px !important;
+    height: 60px !important;
   }
 }
 
