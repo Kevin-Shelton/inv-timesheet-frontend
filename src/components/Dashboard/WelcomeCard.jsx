@@ -7,15 +7,18 @@ const WelcomeCard = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Sample images for rotation (replace with your actual image URLs)
+  // Sample images for rotation - Updated to use src/assets directory
   const sampleImages = [
-    '/images/employee-award-1.jpg',
-    '/images/employee-award-2.jpg',
-    '/images/employee-award-3.jpg',
-    '/images/team-photo-1.jpg',
-    '/images/team-photo-2.jpg',
-    '/images/office-1.jpg',
-    '/images/office-2.jpg'
+    '/src/assets/employee-award-1.jpg',
+    '/src/assets/employee-award-2.jpg',
+    '/src/assets/employee-award-3.jpg',
+    '/src/assets/team-photo-1.jpg',
+    '/src/assets/team-photo-2.jpg',
+    '/src/assets/office-1.jpg',
+    '/src/assets/office-2.jpg',
+    '/src/assets/company-event-1.jpg',
+    '/src/assets/company-event-2.jpg',
+    '/src/assets/workplace-1.jpg'
   ];
 
   useEffect(() => {
@@ -49,17 +52,17 @@ const WelcomeCard = () => {
         .limit(10);
 
       if (error) {
-        console.log('No employee images table, using sample images');
+        console.log('No employee images table, using sample images from src/assets');
         setImages(sampleImages.map(url => ({ image_url: url, alt_text: 'Employee Award' })));
       } else if (imageData && imageData.length > 0) {
         setImages(imageData);
       } else {
-        // Fallback to sample images
+        // Fallback to sample images from src/assets
         setImages(sampleImages.map(url => ({ image_url: url, alt_text: 'Employee Award' })));
       }
     } catch (error) {
       console.error('Error fetching images:', error);
-      // Use sample images as fallback
+      // Use sample images from src/assets as fallback
       setImages(sampleImages.map(url => ({ image_url: url, alt_text: 'Employee Award' })));
     } finally {
       setIsLoading(false);
@@ -134,7 +137,8 @@ const WelcomeCard = () => {
               src={images[currentImageIndex]?.image_url}
               alt={images[currentImageIndex]?.alt_text || 'Employee Award'}
               onError={(e) => {
-                // Hide broken images
+                // Hide broken images and try next image
+                console.log('Image failed to load:', e.target.src);
                 e.target.style.display = 'none';
               }}
             />
