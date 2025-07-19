@@ -1,272 +1,307 @@
 import React, { useState, useEffect } from 'react';
-import { campaignsData, employeesData } from '../../data/TimesheetData';
-import { 
-  getUserTimezone, 
-  getCurrentTimeShort, 
-  getCurrentDate,
-  calculateTotalHoursFromEntries,
-  getTimeEntryStatus,
-  validateTimeEntry,
-  getSplitTimeInfo,
-  formatDuration
-} from '../../utils/TimezoneUtils';
+import { supabase } from '../../supabaseClient.js';
+import OvertimeCalculationEngine from '../utils/overtime_calculation_engine.js';
 
-const TimesheetEntryModal = ({ 
-  isOpen, 
-  onClose, 
+const TimesheetEntryForm = ({ 
+  entry = null, 
   onSave, 
-  editEntry = null,
-  currentUser = null 
+  onCancel, 
+  userId,
+  defaultDate = null 
 }) => {
-  const [activeTab, setActiveTab] = useState('time'); // 'time' or 'hour'
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [timeEntries, setTimeEntries] = useState([]);
-  const [splitTimeInfo, setSplitTimeInfo] = useState(null);
   const [formData, setFormData] = useState({
-    employeeId: '',
-    campaignId: '',
-    date: '',
-    description: '',
-    status: 'Draft'
+    date: defaultDate || new Date().toISOString().split('T')[0],
+    timeIn: '',
+    timeOut: '',
+    breakDuration: 0,
+    isManualOverride: false,
+    overrideReason: '',
+    manualRegular: 0,
+    manualOvertime: 0,
+    manualDailyDouble: 0
   });
 
+  const [calculatedHours, setCalculatedHours] = useState({
+    regular: 0,
+    overtime: 0,
+    dailyDoubleOvertime: 0,
+    total: 0,
+    calculationMethod: '',
+    weeklyHoursAtCalculation: null
+  });
+
+  const [employeeInfo, setEmployeeInfo] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentTime, setCurrentTime] = useState(getCurrentTimeShort());
+  const [isCalculating, setIsCalculating] = useState(false);
 
-  // Update current time every second
+  // Load employee info and existing entry data
   useEffect(() => {
-    if (!isOpen) return;
-    
-    const timer = setInterval(() => {
-      setCurrentTime(getCurrentTimeShort());
-    }, 1000);
+    const loadData = async () => {
+      try {
+        // Load employee information
+        const empInfo = await OvertimeCalculationEngine.getEmployeeInfo(userId);
+        setEmployeeInfo(empInfo);
 
-    return () => clearInterval(timer);
-  }, [isOpen]);
+        // If editing existing entry, populate form
+        if (entry) {
+          setFormData({
+            date: entry.date,
+            timeIn: entry.time_in || '',
+            timeOut: entry.time_out || '',
+            breakDuration: parseFloat(entry.break_duration) || 0,
+            isManualOverride: entry.is_manual_override || false,
+            overrideReason: entry.override_reason || '',
+            manualRegular: parseFloat(entry.regular_hours) || 0,
+            manualOvertime: parseFloat(entry.overtime_hours) || 0,
+            manualDailyDouble: parseFloat(entry.daily_double_overtime) || 0
+          });
 
-  // Update split time info when time entries change
-  useEffect(() => {
-    const info = getSplitTimeInfo(timeEntries);
-    setSplitTimeInfo(info);
-  }, [timeEntries]);
-
-  // Initialize form data when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      const today = getCurrentDate('iso');
-      if (editEntry) {
-        setFormData({
-          employeeId: editEntry.employeeId,
-          campaignId: editEntry.campaignId,
-          date: editEntry.date,
-          description: editEntry.description,
-          status: editEntry.status
-        });
-        const employee = employeesData.find(emp => emp.id === editEntry.employeeId);
-        setSelectedEmployee(employee);
-        setTimeEntries(editEntry.timeEntries || []);
-      } else {
-        setFormData({
-          employeeId: currentUser?.id || '',
-          campaignId: '',
-          date: today,
-          description: '',
-          status: 'Draft'
-        });
-        if (currentUser?.id) {
-          const employee = employeesData.find(emp => emp.id === currentUser.id);
-          setSelectedEmployee(employee);
+          // Set calculated hours from existing entry
+          setCalculatedHours({
+            regular: parseFloat(entry.regular_hours) || 0,
+            overtime: parseFloat(entry.overtime_hours) || 0,
+            dailyDoubleOvertime: parseFloat(entry.daily_double_overtime) || 0,
+            total: parseFloat(entry.total_hours) || 0,
+            calculationMethod: entry.calculation_method || '',
+            weeklyHoursAtCalculation: entry.weekly_hours_at_calculation
+          });
         }
-        setTimeEntries([]);
+      } catch (error) {
+        console.error('Error loading data:', error);
       }
-      setErrors({});
-    }
-  }, [editEntry, currentUser, isOpen]);
-
-  // Update selected employee when employeeId changes
-  useEffect(() => {
-    if (formData.employeeId) {
-      const employee = employeesData.find(emp => emp.id === parseInt(formData.employeeId));
-      setSelectedEmployee(employee);
-    }
-  }, [formData.employeeId]);
-
-  // Handle time tracking actions
-  const handleTimeAction = (action) => {
-    const validation = validateTimeEntry(timeEntries, action);
-    
-    if (!validation.valid) {
-      setErrors(prev => ({ ...prev, timeAction: validation.message }));
-      return;
-    }
-
-    // Clear any previous time action errors
-    setErrors(prev => ({ ...prev, timeAction: '' }));
-
-    const now = new Date();
-    const timeString = getCurrentTimeShort();
-    
-    const newEntry = {
-      id: Date.now(),
-      type: action,
-      time: timeString,
-      timestamp: now.toISOString(),
-      date: getCurrentDate('iso')
     };
-    
-    setTimeEntries(prev => [...prev, newEntry]);
-  };
 
-  // Handle removing a time entry
-  const handleRemoveTimeEntry = (entryId) => {
-    setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
-  };
+    if (userId) {
+      loadData();
+    }
+  }, [userId, entry]);
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    const newErrors = {};
-    
-    if (!formData.employeeId) {
-      newErrors.employeeId = 'Employee is required';
+  // Real-time calculation when time fields change
+  useEffect(() => {
+    if (formData.timeIn && formData.timeOut && !formData.isManualOverride) {
+      calculateHours();
     }
-    
-    if (!formData.campaignId) {
-      newErrors.campaignId = 'Campaign/Project is required';
-    }
-    
-    if (!formData.date) {
-      newErrors.date = 'Date is required';
-    }
-    
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    }
-    
-    if (activeTab === 'time' && timeEntries.length === 0) {
-      newErrors.timeEntries = 'Please add time entries using In/Break/Out buttons';
-    }
-    
-    // Check if there's an incomplete time entry (clocked in or on break)
-    if (activeTab === 'time' && timeEntries.length > 0) {
-      const status = getTimeEntryStatus(timeEntries);
-      if (status.status === 'in' || status.status === 'break') {
-        newErrors.timeEntries = 'Please clock out before saving the timesheet entry';
-      }
-    }
-    
-    setErrors(newErrors);
-    
-    if (Object.keys(newErrors).length > 0) {
+  }, [formData.timeIn, formData.timeOut, formData.breakDuration, formData.date, formData.isManualOverride]);
+
+  const calculateHours = async () => {
+    if (!formData.timeIn || !formData.timeOut || formData.isManualOverride) {
       return;
     }
-    
-    setIsSubmitting(true);
-    
+
+    setIsCalculating(true);
     try {
-      const totalHours = calculateTotalHoursFromEntries(timeEntries);
-      const entryData = {
-        ...formData,
-        timeEntries: timeEntries,
-        totalHours: totalHours,
-        regularHours: Math.min(totalHours, 8),
-        overtimeHours: Math.max(0, totalHours - 8),
-        submittedAt: new Date().toISOString(),
-        id: editEntry?.id || Date.now()
-      };
-      
-      await onSave(entryData);
-      onClose();
+      const result = await OvertimeCalculationEngine.calculateOvertimeEntry(
+        userId,
+        formData.date,
+        formData.timeIn,
+        formData.timeOut,
+        formData.breakDuration,
+        formData.isManualOverride
+      );
+
+      setCalculatedHours(result);
+      console.log('🧮 REAL-TIME CALCULATION:', result);
     } catch (error) {
-      console.error('Error saving timesheet entry:', error);
-      setErrors({ submit: 'Failed to save timesheet entry. Please try again.' });
+      console.error('❌ CALCULATION ERROR:', error);
+      setCalculatedHours({
+        regular: 0,
+        overtime: 0,
+        dailyDoubleOvertime: 0,
+        total: 0,
+        calculationMethod: 'error',
+        weeklyHoursAtCalculation: null
+      });
     } finally {
-      setIsSubmitting(false);
+      setIsCalculating(false);
     }
   };
 
-  // Handle input changes
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
-    
+
+    // Clear related errors
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
-        [field]: ''
+        [field]: null
       }));
     }
   };
 
-  // Get filtered campaigns based on selected employee
-  const getAvailableCampaigns = () => {
-    if (!formData.employeeId) return campaignsData;
-    
-    const employee = employeesData.find(emp => emp.id === parseInt(formData.employeeId));
-    if (!employee) return campaignsData;
+  const handleManualOverrideToggle = (enabled) => {
+    setFormData(prev => ({
+      ...prev,
+      isManualOverride: enabled,
+      overrideReason: enabled ? prev.overrideReason : ''
+    }));
 
-    return campaignsData.filter(campaign => 
-      campaign.status === 'Active' && 
-      campaign.teamMembers.includes(employee.username)
-    );
+    if (!enabled) {
+      // Recalculate when turning off manual override
+      calculateHours();
+    }
   };
 
-  // Get button state for time tracking
-  const getButtonState = (action) => {
-    const status = getTimeEntryStatus(timeEntries);
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.date) {
+      newErrors.date = 'Date is required';
+    }
+
+    if (!formData.isManualOverride) {
+      if (!formData.timeIn) {
+        newErrors.timeIn = 'Time in is required';
+      }
+      if (!formData.timeOut) {
+        newErrors.timeOut = 'Time out is required';
+      }
+
+      // Validate time range
+      if (formData.timeIn && formData.timeOut) {
+        const validation = OvertimeCalculationEngine.validateTimesheetEntry({
+          userId,
+          date: formData.date,
+          timeIn: formData.timeIn,
+          timeOut: formData.timeOut,
+          totalHours: calculatedHours.total,
+          breakDuration: formData.breakDuration
+        });
+
+        if (!validation.isValid) {
+          validation.errors.forEach(error => {
+            if (error.includes('Time out')) {
+              newErrors.timeOut = error;
+            } else if (error.includes('exceed 24 hours')) {
+              newErrors.timeOut = error;
+            } else if (error.includes('negative')) {
+              newErrors.breakDuration = error;
+            }
+          });
+        }
+      }
+    } else {
+      // Manual override validation
+      if (!formData.overrideReason.trim()) {
+        newErrors.overrideReason = 'Override reason is required';
+      }
+
+      const totalManual = formData.manualRegular + formData.manualOvertime + formData.manualDailyDouble;
+      if (totalManual <= 0) {
+        newErrors.manualRegular = 'Total hours must be greater than 0';
+      }
+      if (totalManual > 24) {
+        newErrors.manualRegular = 'Total hours cannot exceed 24';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    switch (action) {
-      case 'in':
-        return status.canClockIn ? 'enabled' : 'disabled';
-      case 'break':
-        return status.canTakeBreak ? 'enabled' : 'disabled';
-      case 'out':
-        return status.canClockOut ? 'enabled' : 'disabled';
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const entryData = {
+        user_id: userId,
+        date: formData.date,
+        time_in: formData.isManualOverride ? null : formData.timeIn,
+        time_out: formData.isManualOverride ? null : formData.timeOut,
+        break_duration: formData.isManualOverride ? 0 : formData.breakDuration,
+        is_manual_override: formData.isManualOverride,
+        override_reason: formData.isManualOverride ? formData.overrideReason : null,
+        calculation_method: formData.isManualOverride ? 'manual_override' : calculatedHours.calculationMethod,
+        weekly_hours_at_calculation: calculatedHours.weeklyHoursAtCalculation
+      };
+
+      if (formData.isManualOverride) {
+        // Use manual values
+        entryData.regular_hours = OvertimeCalculationEngine.roundToQuarterHour(formData.manualRegular);
+        entryData.overtime_hours = OvertimeCalculationEngine.roundToQuarterHour(formData.manualOvertime);
+        entryData.daily_double_overtime = OvertimeCalculationEngine.roundToQuarterHour(formData.manualDailyDouble);
+        entryData.total_hours = OvertimeCalculationEngine.roundToQuarterHour(
+          formData.manualRegular + formData.manualOvertime + formData.manualDailyDouble
+        );
+      } else {
+        // Use calculated values
+        entryData.regular_hours = calculatedHours.regular;
+        entryData.overtime_hours = calculatedHours.overtime;
+        entryData.daily_double_overtime = calculatedHours.dailyDoubleOvertime;
+        entryData.total_hours = calculatedHours.total;
+      }
+
+      let result;
+      if (entry) {
+        // Update existing entry
+        result = await supabase
+          .from('timesheet_entries')
+          .update(entryData)
+          .eq('id', entry.id)
+          .select()
+          .single();
+      } else {
+        // Create new entry
+        result = await supabase
+          .from('timesheet_entries')
+          .insert(entryData)
+          .select()
+          .single();
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      console.log('✅ TIMESHEET ENTRY SAVED:', result.data);
+
+      // Recalculate weekly overtime if this affects other entries
+      if (!formData.isManualOverride && employeeInfo?.employmentType === 'full_time') {
+        await OvertimeCalculationEngine.recalculateWeeklyOvertime(userId, formData.date);
+      }
+
+      if (onSave) {
+        onSave(result.data);
+      }
+    } catch (error) {
+      console.error('❌ SAVE ERROR:', error);
+      setErrors({ submit: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    return timeString.slice(0, 5); // HH:MM format
+  };
+
+  const formatHours = (hours) => {
+    return parseFloat(hours || 0).toFixed(2);
+  };
+
+  const getCalculationMethodDisplay = (method) => {
+    switch (method) {
+      case 'weekly_cumulative':
+        return 'Weekly Cumulative (40+ hours)';
+      case 'daily_threshold':
+        return 'Daily Threshold (8+ hours)';
+      case 'manual_override':
+        return 'Manual Override';
+      case 'exempt_no_calculation':
+        return 'Exempt Employee';
       default:
-        return 'disabled';
+        return 'Unknown';
     }
   };
-
-  // Get button style based on state and current status
-  const getButtonStyle = (action) => {
-    const state = getButtonState(action);
-    const status = getTimeEntryStatus(timeEntries);
-    const isCurrentAction = status.status === action;
-    
-    if (state === 'disabled') {
-      return {
-        color: '#9CA3AF',
-        backgroundColor: '#F9FAFB',
-        border: '1px solid #E5E7EB',
-        cursor: 'not-allowed'
-      };
-    }
-    
-    if (isCurrentAction) {
-      return {
-        color: '#FFFFFF',
-        backgroundColor: '#F97316',
-        border: '1px solid #F97316',
-        cursor: 'pointer'
-      };
-    }
-    
-    return {
-      color: '#374151',
-      backgroundColor: '#FFFFFF',
-      border: '1px solid #D1D5DB',
-      cursor: 'pointer'
-    };
-  };
-
-  if (!isOpen) return null;
-
-  const timezoneInfo = getUserTimezone();
-  const status = getTimeEntryStatus(timeEntries);
 
   return (
     <div style={{
@@ -285,539 +320,570 @@ const TimesheetEntryModal = ({
       <div style={{
         backgroundColor: '#FFFFFF',
         borderRadius: '12px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        padding: '24px',
         width: '100%',
-        maxWidth: '500px',
+        maxWidth: '600px',
         maxHeight: '90vh',
-        overflow: 'auto'
+        overflowY: 'auto',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
       }}>
         {/* Header */}
         <div style={{
-          padding: '24px 24px 0 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '24px',
+          paddingBottom: '16px',
           borderBottom: '1px solid #E5E7EB'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: 0 }}>
-              Add Manual Time Entry
-            </h2>
-            <button
-              onClick={onClose}
-              style={{
-                padding: '8px',
-                backgroundColor: 'transparent',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                color: '#6B7280'
-              }}
-            >
-              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          
-          {/* Employee Profile Section */}
-          {selectedEmployee && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              padding: '16px',
-              backgroundColor: '#F9FAFB',
-              borderRadius: '8px',
-              marginBottom: '20px'
-            }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                backgroundColor: '#E5E7EB',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#6B7280'
-              }}>
-                {selectedEmployee.name.charAt(0)}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
-                  {selectedEmployee.name}
-                </div>
-                <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '2px' }}>
-                  Clocking from {timezoneInfo.shortFormat}
-                </div>
-                <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '2px' }}>
-                  Split time: {currentTime}
-                </div>
-                <div style={{ fontSize: '12px', color: '#6B7280' }}>
-                  {timeEntries.length === 0 ? 'No previous entry' : 
-                   status.lastAction ? `${status.lastAction} at ${status.lastTime}` : 
-                   `${timeEntries.length} time entries`}
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Tab Navigation */}
-          <div style={{ display: 'flex', marginBottom: '20px' }}>
-            <button
-              onClick={() => setActiveTab('time')}
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: activeTab === 'time' ? '#F97316' : '#6B7280',
-                backgroundColor: 'transparent',
-                border: 'none',
-                borderBottom: `2px solid ${activeTab === 'time' ? '#F97316' : 'transparent'}`,
-                cursor: 'pointer'
-              }}
-            >
-              Time entry
-            </button>
-            <button
-              onClick={() => setActiveTab('hour')}
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: activeTab === 'hour' ? '#F97316' : '#6B7280',
-                backgroundColor: 'transparent',
-                border: 'none',
-                borderBottom: `2px solid ${activeTab === 'hour' ? '#F97316' : 'transparent'}`,
-                cursor: 'pointer'
-              }}
-            >
-              Hour entry
-            </button>
-          </div>
+          <h2 style={{
+            margin: 0,
+            fontSize: '20px',
+            fontWeight: '600',
+            color: '#111827'
+          }}>
+            {entry ? 'Edit Timesheet Entry' : 'Add Timesheet Entry'}
+          </h2>
+          <button
+            onClick={onCancel}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              color: '#6B7280',
+              cursor: 'pointer',
+              padding: '4px'
+            }}
+          >
+            ×
+          </button>
         </div>
 
-        {/* Content */}
-        <div style={{ padding: '24px' }}>
-          {activeTab === 'time' && (
+        {/* Employee Info */}
+        {employeeInfo && (
+          <div style={{
+            backgroundColor: '#F9FAFB',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <span style={{
+              fontSize: '14px',
+              color: '#6B7280'
+            }}>
+              Employee Type:
+            </span>
+            <span style={{
+              padding: '4px 8px',
+              backgroundColor: employeeInfo.isExempt ? '#FEF3C7' : '#DBEAFE',
+              color: employeeInfo.isExempt ? '#92400E' : '#1E40AF',
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: '500'
+            }}>
+              {employeeInfo.employmentType.replace('_', ' ').toUpperCase()}
+              {employeeInfo.isExempt && ' (EXEMPT)'}
+            </span>
+            <span style={{
+              fontSize: '12px',
+              color: '#6B7280'
+            }}>
+              OT: {employeeInfo.employmentType === 'part_time' ? 'Daily (8+ hours)' : 'Weekly (40+ hours)'}
+            </span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          {/* Date Field */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#374151',
+              marginBottom: '6px'
+            }}>
+              Date *
+            </label>
+            <input
+              type="date"
+              value={formData.date}
+              onChange={(e) => handleInputChange('date', e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: `1px solid ${errors.date ? '#EF4444' : '#D1D5DB'}`,
+                borderRadius: '6px',
+                fontSize: '14px',
+                backgroundColor: '#FFFFFF'
+              }}
+            />
+            {errors.date && (
+              <p style={{ color: '#EF4444', fontSize: '12px', margin: '4px 0 0 0' }}>
+                {errors.date}
+              </p>
+            )}
+          </div>
+
+          {/* Manual Override Toggle */}
+          <div style={{
+            marginBottom: '20px',
+            padding: '16px',
+            backgroundColor: '#F9FAFB',
+            borderRadius: '8px',
+            border: '1px solid #E5E7EB'
+          }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer'
+            }}>
+              <input
+                type="checkbox"
+                checked={formData.isManualOverride}
+                onChange={(e) => handleManualOverrideToggle(e.target.checked)}
+                style={{
+                  width: '16px',
+                  height: '16px'
+                }}
+              />
+              <span style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151'
+              }}>
+                Manual Override
+              </span>
+            </label>
+            <p style={{
+              fontSize: '12px',
+              color: '#6B7280',
+              margin: '4px 0 0 24px'
+            }}>
+              Enable to manually enter hours instead of calculating from time in/out
+            </p>
+          </div>
+
+          {!formData.isManualOverride ? (
+            /* Automatic Calculation Mode */
             <>
-              {/* Time Tracking Buttons */}
+              {/* Time In/Out Fields */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr',
-                gap: '12px',
-                marginBottom: '24px'
+                gridTemplateColumns: '1fr 1fr',
+                gap: '16px',
+                marginBottom: '20px'
               }}>
-                <button
-                  onClick={() => handleTimeAction('in')}
-                  disabled={getButtonState('in') === 'disabled'}
-                  style={{
-                    padding: '16px 12px',
+                <div>
+                  <label style={{
+                    display: 'block',
                     fontSize: '14px',
                     fontWeight: '500',
-                    borderRadius: '8px',
-                    transition: 'all 0.2s',
-                    ...getButtonStyle('in')
-                  }}
-                >
-                  In
-                </button>
-                <button
-                  onClick={() => handleTimeAction('break')}
-                  disabled={getButtonState('break') === 'disabled'}
-                  style={{
-                    padding: '16px 12px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    borderRadius: '8px',
-                    transition: 'all 0.2s',
-                    ...getButtonStyle('break')
-                  }}
-                >
-                  Break
-                </button>
-                <button
-                  onClick={() => handleTimeAction('out')}
-                  disabled={getButtonState('out') === 'disabled'}
-                  style={{
-                    padding: '16px 12px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    borderRadius: '8px',
-                    transition: 'all 0.2s',
-                    ...getButtonStyle('out')
-                  }}
-                >
-                  Out
-                </button>
-              </div>
-
-              {/* Time Action Error */}
-              {errors.timeAction && (
-                <div style={{
-                  padding: '12px',
-                  backgroundColor: '#FEF2F2',
-                  border: '1px solid #FECACA',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  color: '#DC2626',
-                  marginBottom: '16px'
-                }}>
-                  {errors.timeAction}
-                </div>
-              )}
-
-              {/* Current Status */}
-              {splitTimeInfo && (
-                <div style={{
-                  backgroundColor: '#F0F9FF',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  marginBottom: '24px'
-                }}>
-                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#0369A1', marginBottom: '8px' }}>
-                    Current Status: {status.status === 'in' ? 'Working' : 
-                                   status.status === 'break' ? 'On Break' : 'Clocked Out'}
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '12px' }}>
-                    <div>
-                      <span style={{ color: '#6B7280' }}>Total Hours: </span>
-                      <span style={{ fontWeight: '500', color: '#111827' }}>
-                        {formatDuration(splitTimeInfo.totalHours)}
-                      </span>
-                    </div>
-                    <div>
-                      <span style={{ color: '#6B7280' }}>Overtime: </span>
-                      <span style={{ fontWeight: '500', color: splitTimeInfo.overtimeHours > 0 ? '#DC2626' : '#111827' }}>
-                        {formatDuration(splitTimeInfo.overtimeHours)}
-                      </span>
-                    </div>
-                  </div>
-                  {splitTimeInfo.workingSince && (
-                    <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-                      Working since {splitTimeInfo.workingSince}
-                    </div>
-                  )}
-                  {splitTimeInfo.onBreakSince && (
-                    <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-                      On break since {splitTimeInfo.onBreakSince}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Time Entries Display */}
-              {timeEntries.length > 0 && (
-                <div style={{
-                  backgroundColor: '#F9FAFB',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  marginBottom: '24px'
-                }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    marginBottom: '12px' 
+                    color: '#374151',
+                    marginBottom: '6px'
                   }}>
-                    <div style={{ fontSize: '14px', fontWeight: '500', color: '#374151' }}>
-                      Time Entries ({timeEntries.length})
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#6B7280' }}>
-                      Total: {formatDuration(calculateTotalHoursFromEntries(timeEntries))}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
-                    {timeEntries.map((entry, index) => (
-                      <div key={entry.id} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '8px 12px',
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '6px',
-                        fontSize: '12px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ 
-                            color: entry.type === 'in' ? '#10B981' : entry.type === 'break' ? '#F59E0B' : '#EF4444',
-                            fontWeight: '500',
-                            textTransform: 'capitalize',
-                            minWidth: '40px'
-                          }}>
-                            {entry.type}
-                          </span>
-                          <span style={{ color: '#6B7280' }}>
-                            {entry.time}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveTimeEntry(entry.id)}
-                          style={{
-                            padding: '2px',
-                            backgroundColor: 'transparent',
-                            border: 'none',
-                            color: '#EF4444',
-                            cursor: 'pointer',
-                            fontSize: '12px'
-                          }}
-                          title="Remove entry"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                    Time In *
+                  </label>
+                  <input
+                    type="time"
+                    value={formatTime(formData.timeIn)}
+                    onChange={(e) => handleInputChange('timeIn', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: `1px solid ${errors.timeIn ? '#EF4444' : '#D1D5DB'}`,
+                      borderRadius: '6px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  {errors.timeIn && (
+                    <p style={{ color: '#EF4444', fontSize: '12px', margin: '4px 0 0 0' }}>
+                      {errors.timeIn}
+                    </p>
+                  )}
                 </div>
-              )}
-            </>
-          )}
 
-          {/* Form Fields */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Employee Selection */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '6px'
-              }}>
-                Employee *
-              </label>
-              <select
-                value={formData.employeeId}
-                onChange={(e) => handleInputChange('employeeId', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: `1px solid ${errors.employeeId ? '#EF4444' : '#D1D5DB'}`,
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  backgroundColor: '#FFFFFF'
-                }}
-              >
-                <option value="">Select Employee</option>
-                {employeesData.map(employee => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.name} - {employee.position}
-                  </option>
-                ))}
-              </select>
-              {errors.employeeId && (
-                <div style={{ fontSize: '12px', color: '#EF4444', marginTop: '4px' }}>
-                  {errors.employeeId}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px'
+                  }}>
+                    Time Out *
+                  </label>
+                  <input
+                    type="time"
+                    value={formatTime(formData.timeOut)}
+                    onChange={(e) => handleInputChange('timeOut', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: `1px solid ${errors.timeOut ? '#EF4444' : '#D1D5DB'}`,
+                      borderRadius: '6px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  {errors.timeOut && (
+                    <p style={{ color: '#EF4444', fontSize: '12px', margin: '4px 0 0 0' }}>
+                      {errors.timeOut}
+                    </p>
+                  )}
                 </div>
-              )}
-            </div>
-
-            {/* Campaign Selection */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '6px'
-              }}>
-                Campaign/Project *
-              </label>
-              <select
-                value={formData.campaignId}
-                onChange={(e) => handleInputChange('campaignId', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: `1px solid ${errors.campaignId ? '#EF4444' : '#D1D5DB'}`,
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  backgroundColor: '#FFFFFF'
-                }}
-              >
-                <option value="">Select Campaign/Project</option>
-                {getAvailableCampaigns().map(campaign => (
-                  <option key={campaign.id} value={campaign.id}>
-                    {campaign.name} - {campaign.client}
-                  </option>
-                ))}
-              </select>
-              {errors.campaignId && (
-                <div style={{ fontSize: '12px', color: '#EF4444', marginTop: '4px' }}>
-                  {errors.campaignId}
-                </div>
-              )}
-            </div>
-
-            {/* Date */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '6px'
-              }}>
-                Date *
-              </label>
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) => handleInputChange('date', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: `1px solid ${errors.date ? '#EF4444' : '#D1D5DB'}`,
-                  borderRadius: '6px',
-                  fontSize: '14px'
-                }}
-              />
-              {errors.date && (
-                <div style={{ fontSize: '12px', color: '#EF4444', marginTop: '4px' }}>
-                  {errors.date}
-                </div>
-              )}
-            </div>
-
-            {/* Description */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '6px'
-              }}>
-                Description *
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Describe the work performed..."
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: `1px solid ${errors.description ? '#EF4444' : '#D1D5DB'}`,
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  resize: 'vertical',
-                  fontFamily: 'inherit'
-                }}
-              />
-              {errors.description && (
-                <div style={{ fontSize: '12px', color: '#EF4444', marginTop: '4px' }}>
-                  {errors.description}
-                </div>
-              )}
-            </div>
-
-            {/* Status */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '6px'
-              }}>
-                Status
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => handleInputChange('status', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid #D1D5DB',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  backgroundColor: '#FFFFFF'
-                }}
-              >
-                <option value="Draft">Draft</option>
-                <option value="Pending">Submit for Approval</option>
-                {currentUser?.role === 'admin' && (
-                  <option value="Approved">Approved</option>
-                )}
-              </select>
-            </div>
-
-            {errors.timeEntries && (
-              <div style={{
-                padding: '12px',
-                backgroundColor: '#FEF2F2',
-                border: '1px solid #FECACA',
-                borderRadius: '6px',
-                fontSize: '14px',
-                color: '#DC2626'
-              }}>
-                {errors.timeEntries}
               </div>
-            )}
 
-            {errors.submit && (
-              <div style={{
-                padding: '12px',
-                backgroundColor: '#FEF2F2',
-                border: '1px solid #FECACA',
-                borderRadius: '6px',
-                fontSize: '14px',
-                color: '#DC2626'
-              }}>
-                {errors.submit}
-              </div>
-            )}
-
-            {/* Footer */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '12px',
-              marginTop: '20px',
-              paddingTop: '20px',
-              borderTop: '1px solid #E5E7EB'
-            }}>
-              <button
-                type="button"
-                onClick={onClose}
-                style={{
-                  padding: '10px 20px',
+              {/* Break Duration */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
                   fontSize: '14px',
                   fontWeight: '500',
                   color: '#374151',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #D1D5DB',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                style={{
-                  padding: '10px 20px',
+                  marginBottom: '6px'
+                }}>
+                  Break Duration (hours)
+                </label>
+                <input
+                  type="number"
+                  step="0.25"
+                  min="0"
+                  max="8"
+                  value={formData.breakDuration}
+                  onChange={(e) => handleInputChange('breakDuration', parseFloat(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: `1px solid ${errors.breakDuration ? '#EF4444' : '#D1D5DB'}`,
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+                {errors.breakDuration && (
+                  <p style={{ color: '#EF4444', fontSize: '12px', margin: '4px 0 0 0' }}>
+                    {errors.breakDuration}
+                  </p>
+                )}
+              </div>
+
+              {/* Calculated Hours Display */}
+              <div style={{
+                backgroundColor: '#F0F9FF',
+                border: '1px solid #0EA5E9',
+                borderRadius: '8px',
+                padding: '16px',
+                marginBottom: '20px'
+              }}>
+                <h4 style={{
+                  margin: '0 0 12px 0',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#0C4A6E',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  {isCalculating ? (
+                    <>
+                      <div style={{
+                        width: '16px',
+                        height: '16px',
+                        border: '2px solid #0EA5E9',
+                        borderTop: '2px solid transparent',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                      }}></div>
+                      Calculating...
+                    </>
+                  ) : (
+                    <>
+                      🧮 Calculated Hours
+                    </>
+                  )}
+                </h4>
+                
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gap: '12px',
+                  marginBottom: '12px'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '2px' }}>Regular</div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
+                      {formatHours(calculatedHours.regular)}h
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '2px' }}>Overtime</div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#DC2626' }}>
+                      {formatHours(calculatedHours.overtime)}h
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '2px' }}>Daily 2x</div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#DC2626' }}>
+                      {formatHours(calculatedHours.dailyDoubleOvertime)}h
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '2px' }}>Total</div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
+                      {formatHours(calculatedHours.total)}h
+                    </div>
+                  </div>
+                </div>
+
+                {calculatedHours.calculationMethod && (
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#6B7280',
+                    borderTop: '1px solid #BAE6FD',
+                    paddingTop: '8px'
+                  }}>
+                    Method: {getCalculationMethodDisplay(calculatedHours.calculationMethod)}
+                    {calculatedHours.weeklyHoursAtCalculation && (
+                      <span> • Weekly Total: {calculatedHours.weeklyHoursAtCalculation}h</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            /* Manual Override Mode */
+            <>
+              {/* Override Reason */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
                   fontSize: '14px',
                   fontWeight: '500',
-                  color: '#FFFFFF',
-                  backgroundColor: isSubmitting ? '#9CA3AF' : '#F97316',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {isSubmitting ? 'Saving...' : (editEntry ? 'Update Entry' : 'Save Entry')}
-              </button>
+                  color: '#374151',
+                  marginBottom: '6px'
+                }}>
+                  Override Reason *
+                </label>
+                <textarea
+                  value={formData.overrideReason}
+                  onChange={(e) => handleInputChange('overrideReason', e.target.value)}
+                  placeholder="Explain why manual override is needed..."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: `1px solid ${errors.overrideReason ? '#EF4444' : '#D1D5DB'}`,
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    resize: 'vertical'
+                  }}
+                />
+                {errors.overrideReason && (
+                  <p style={{ color: '#EF4444', fontSize: '12px', margin: '4px 0 0 0' }}>
+                    {errors.overrideReason}
+                  </p>
+                )}
+              </div>
+
+              {/* Manual Hours Input */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '16px',
+                marginBottom: '20px'
+              }}>
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px'
+                  }}>
+                    Regular Hours
+                  </label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    max="24"
+                    value={formData.manualRegular}
+                    onChange={(e) => handleInputChange('manualRegular', parseFloat(e.target.value) || 0)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: `1px solid ${errors.manualRegular ? '#EF4444' : '#D1D5DB'}`,
+                      borderRadius: '6px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px'
+                  }}>
+                    Overtime Hours
+                  </label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    max="24"
+                    value={formData.manualOvertime}
+                    onChange={(e) => handleInputChange('manualOvertime', parseFloat(e.target.value) || 0)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px'
+                  }}>
+                    Daily Double Hours
+                  </label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    max="24"
+                    value={formData.manualDailyDouble}
+                    onChange={(e) => handleInputChange('manualDailyDouble', parseFloat(e.target.value) || 0)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {errors.manualRegular && (
+                <p style={{ color: '#EF4444', fontSize: '12px', margin: '0 0 16px 0' }}>
+                  {errors.manualRegular}
+                </p>
+              )}
+
+              {/* Manual Total Display */}
+              <div style={{
+                backgroundColor: '#FEF3C7',
+                border: '1px solid #F59E0B',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '20px'
+              }}>
+                <div style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#92400E'
+                }}>
+                  Total Manual Hours: {formatHours(formData.manualRegular + formData.manualOvertime + formData.manualDailyDouble)}h
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Submit Error */}
+          {errors.submit && (
+            <div style={{
+              backgroundColor: '#FEE2E2',
+              border: '1px solid #EF4444',
+              borderRadius: '6px',
+              padding: '12px',
+              marginBottom: '20px'
+            }}>
+              <p style={{ color: '#DC2626', fontSize: '14px', margin: 0 }}>
+                {errors.submit}
+              </p>
             </div>
-          </form>
-        </div>
+          )}
+
+          {/* Action Buttons */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'flex-end',
+            paddingTop: '16px',
+            borderTop: '1px solid #E5E7EB'
+          }}>
+            <button
+              type="button"
+              onClick={onCancel}
+              style={{
+                padding: '10px 20px',
+                border: '1px solid #D1D5DB',
+                borderRadius: '6px',
+                backgroundColor: '#FFFFFF',
+                color: '#374151',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || isCalculating}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '6px',
+                backgroundColor: loading || isCalculating ? '#9CA3AF' : '#374151',
+                color: '#FFFFFF',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: loading || isCalculating ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              {loading && (
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid #FFFFFF',
+                  borderTop: '2px solid transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+              )}
+              {loading ? 'Saving...' : (entry ? 'Update Entry' : 'Create Entry')}
+            </button>
+          </div>
+        </form>
       </div>
+
+      {/* CSS Animation */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
 
-export default TimesheetEntryModal;
+export default TimesheetEntryForm;
 
