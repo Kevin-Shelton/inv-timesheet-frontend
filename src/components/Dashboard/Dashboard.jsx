@@ -143,7 +143,7 @@ const Dashboard = () => {
     );
   }
 
-  // Check if user is admin (for future admin panel integration)_
+  // Check if user is admin (for future admin panel integration)
   const isAdmin = user?.role === 'admin' || user?.role === 'administrator';
 
   return (

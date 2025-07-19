@@ -43,7 +43,7 @@ const TimesheetEntryForm = ({
         const empInfo = await OvertimeCalculationEngine.getEmployeeInfo(userId);
         setEmployeeInfo(empInfo);
 
-        // If editing existing entry, populate form
+        // If editing existing entry, populate form_
         if (entry) {
           setFormData({
             date: entry.date,

@@ -13,7 +13,7 @@
  * - Multi-jurisdiction support
  */
 
-import { supabase } from './supabaseClient.js';
+import { supabase } from '../supabaseClient.js';
 
 /**
  * Employee type constants
