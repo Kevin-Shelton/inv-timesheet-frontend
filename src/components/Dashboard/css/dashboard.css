@@ -20,6 +20,47 @@
 @import './animations.css';
 @import './responsive.css';
 
+/* Reset browser inconsistencies */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  font-family: sans-serif;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure wrapper and layout stretch properly */
+.dashboard-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.dashboard-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  padding: 24px;
+  gap: 24px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 /* Enhanced Welcome Card Styles - No Avatar, Random Image */
 .welcome-card {
   height: 100% !important;
