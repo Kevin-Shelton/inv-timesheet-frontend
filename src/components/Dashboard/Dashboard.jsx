@@ -7,7 +7,7 @@ import WeeklyChart from './WeeklyChart';
 import ActivityRing from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
-import './DashboardNamespaced.css';
+import './Dashboard.css';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
