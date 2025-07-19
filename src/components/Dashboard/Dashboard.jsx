@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import DashboardHeader from './DashboardHeader';
-import WelcomeCard from './WelcomeCard';
-import HolidaySection from './HolidaySection';
-import WeeklyChart from './WeeklyChart';
-import ActivityRing from './ActivityRing';
-import ProjectsChart from './ProjectsChart';
-import WhoIsInOutPanel from './WhoIsInOutPanel';
-import CurrentTime from './CurrentTime';
+import DashboardHeader from './css/DashboardHeader';
+import WelcomeCard from './css/WelcomeCard';
+import HolidaySection from './css/HolidaySection';
+import WeeklyChart from './css/WeeklyChart';
+import ActivityRing from './css/ActivityRing';
+import ProjectsChart from './css/ProjectsChart';
+import WhoIsInOutPanel from './css/WhoIsInOutPanel';
+import CurrentTime from './css/CurrentTime';
 import './css/dashboard-layout.css';
 
 const Dashboard = ({ user }) => {
