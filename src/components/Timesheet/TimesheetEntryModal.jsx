@@ -35,7 +35,7 @@ const TimesheetEntryForm = ({
   const [errors, setErrors] = useState({});
   const [isCalculating, setIsCalculating] = useState(false);
 
-  // Load employee info and existing entry data_
+  // Load employee info and existing entry data
   useEffect(() => {
     const loadData = async () => {
       try {

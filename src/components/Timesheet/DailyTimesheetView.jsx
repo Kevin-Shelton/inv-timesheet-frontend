@@ -95,7 +95,7 @@ const DailyTimesheetView = ({
           throw error;
         }
 
-        // Process entries with overtime calculation
+        // Process entries with overtime calculation_
         const processedData = await processTimesheetEntries(entries || [], empInfo);
         setTimesheetData(processedData.entries);
         setCalculationDetails(processedData.details);

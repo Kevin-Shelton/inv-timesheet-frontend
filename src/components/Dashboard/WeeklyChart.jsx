@@ -420,7 +420,7 @@ const TrackedHoursChart = () => {
         </div>
       </div>
 
-      {/* Calculation Details (for debugging - can be hidden in production) */}
+      {/* Calculation Details (for debugging - - can be hidden in production) */}
       {process.env.NODE_ENV === 'development' && calculationDetails.length > 0 && (
         <div className="calculation-debug">
           <details>

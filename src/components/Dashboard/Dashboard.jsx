@@ -30,7 +30,7 @@ const Dashboard = () => {
         }
 
         if (authUser) {
-          // Get user profile with role and other details
+          // Get user profile with role and other details_
           const { data: profile, error: profileError } = await supabase
             .from('users')
             .select(`
