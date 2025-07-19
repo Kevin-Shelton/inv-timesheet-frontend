@@ -73,5 +73,5 @@ const Dashboard = ({ user }) => {
   );
 };
 
-export { Dashboard };
+export default Dashboard
 
