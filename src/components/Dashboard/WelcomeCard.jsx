@@ -145,7 +145,7 @@ const WelcomeCard = () => {
         <div className="welcome-content">
           <div className="welcome-header">
             <h2>Hello, {user?.user_metadata?.full_name || 'Admin User'}! 👋</h2>
-            <p className="welcome-subtitle">Welcome to the Invictus Internal Portal</p>
+            <p className="welcome-subtitle">Welcome to the Invictus Time Management Portal</p>
           </div>
 
           <div className="user-info">

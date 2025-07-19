@@ -152,7 +152,7 @@ const HolidaysViewer = () => {
         <div className="holiday-header">
           <h3 className="holiday-title">Upcoming Holidays and Time Off</h3>
           <p style={{ fontSize: '14px', color: '#666', margin: '8px 0 0 0' }}>
-            Add your holiday calendar for reminders and overtime calculations
+            
           </p>
         </div>
         <div className="holiday-empty">
