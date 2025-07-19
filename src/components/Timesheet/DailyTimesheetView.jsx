@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from "../../supabaseClient.js";
-import OvertimeCalculationEngine from './overtime_calculation_engine.js';
+import OvertimeCalculationEngine from '../../utils/overtime_calculation_engine.js';
 
 const DailyTimesheetView = ({ 
   selectedDate, 

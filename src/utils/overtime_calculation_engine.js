@@ -4,7 +4,7 @@
  * Comprehensive overtime calculation system supporting multiple employee types
  * and compliance with federal and state labor regulations.
  * 
- * Features:
+ * Features::
  * - Full-time weekly overtime calculation (40+ hours)
  * - Part-time daily overtime calculation (8+ hours)
  * - Quarter-hour rounding
