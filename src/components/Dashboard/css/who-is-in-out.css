@@ -10,6 +10,10 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-width: 320px; /* or 360px depending on your design */
+  max-width: 420px;
+  width: 100%;
+  flex: 1 1 360px; /* allows flexible resizing */
 }
 
 /* Current Time Section */
