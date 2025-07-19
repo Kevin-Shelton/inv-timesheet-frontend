@@ -8,16 +8,8 @@ import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
 
-// Import CSS styles_
-import './css/dashboard-layout.css';
-import './css/dashboard-header.css';
-import './css/welcome-card.css';
-import './css/holiday-section.css';
-import './css/weekly-chart.css';
-import './css/activity-ring.css';
-import './css/projects-chart.css';
-import './css/who-is-in-out.css';
-
+// Centralized CSS import for the dashboard
+import './css/dashboard.css';
 
 const Dashboard = ({ user }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
