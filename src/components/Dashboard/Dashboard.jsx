@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import DashboardHeader from './css/DashboardHeader';
-import WelcomeCard from './css/WelcomeCard';
-import HolidaySection from './css/HolidaySection';
-import WeeklyChart from './css/WeeklyChart';
-import ActivityRing from './css/ActivityRing';
-import ProjectsChart from './css/ProjectsChart';
-import WhoIsInOutPanel from './css/WhoIsInOutPanel';
-import CurrentTime from './css/CurrentTime';
+import DashboardHeader from './DashboardHeader';
+import WelcomeCard from './WelcomeCard';
+import HolidaySection from './HolidaySection';
+import WeeklyChart from './WeeklyChart';
+import ActivityRing from './ActivityRing';
+import ProjectsChart from './ProjectsChart';
+import WhoIsInOutPanel from './WhoIsInOutPanel';
+import CurrentTime from './CurrentTime';
+
+// Import CSS styles
 import './css/dashboard-layout.css';
+import './css/dashboard-header.css';
+import './css/welcome-card.css';
+import './css/holiday-section.css';
+import './css/weekly-chart.css';
+import './css/activity-ring.css';
+import './css/projects-chart.css';
+import './css/who-is-in-out.css';
+
 
 const Dashboard = ({ user }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
