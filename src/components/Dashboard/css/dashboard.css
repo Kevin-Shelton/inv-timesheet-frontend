@@ -2,6 +2,7 @@
 @import './variables.css';
 @import './dashboard-layout.css';
 @import './dashboard-header.css';
+@import './welcome-card.css'; 
 @import './weekly-chart.css';
 @import './activity-ring.css';
 @import './projects-chart.css';
@@ -9,6 +10,7 @@
 @import './who-is-in-out.css';
 @import './animations.css';
 @import './responsive.css';
+
 
 /* Reset */
 * {
