@@ -7,7 +7,7 @@ import ActivityRing from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
-import './dashboard-layout.css';
+import './css/dashboard-layout.css';
 
 const Dashboard = ({ user }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
