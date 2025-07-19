@@ -191,7 +191,7 @@ const TrackedHoursChart = () => {
           weeklyRegularTotal += regular;
           weeklyOvertimeTotal += overtime + dailyDoubleOvertime;
 
-          // Store calculation details for debugging/display
+          // Store calculation details for debugging/display_
           details.push({
             date: entry.date,
             dayIndex,

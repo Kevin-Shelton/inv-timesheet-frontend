@@ -7,12 +7,10 @@ import WeeklyChart from './WeeklyChart';
 import ActivityRing from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
-import './Dashboard.css';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
   const [error, setError] = useState(null);
 
   // Load user data and profile
@@ -29,7 +27,7 @@ const Dashboard = () => {
         }
 
         if (authUser) {
-          // Get user profile with role and other details_
+          // Get user profile with role and other details
           const { data: profile, error: profileError } = await supabase
             .from('users')
             .select(`
@@ -91,26 +89,24 @@ const Dashboard = () => {
   // Show loading state
   if (loading) {
     return (
-      <div className="dashboard-container">
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '400px',
-          backgroundColor: '#F9FAFB'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              border: '4px solid #FB923C',
-              borderTop: '4px solid transparent',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              margin: '0 auto 16px'
-            }}></div>
-            <p style={{ color: '#6B7280', fontSize: '14px' }}>Loading dashboard...</p>
-          </div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '400px',
+        backgroundColor: '#F9FAFB'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid #FB923C',
+            borderTop: '4px solid transparent',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }}></div>
+          <p style={{ color: '#6B7280', fontSize: '14px' }}>Loading dashboard...</p>
         </div>
       </div>
     );
@@ -119,181 +115,95 @@ const Dashboard = () => {
   // Show error state
   if (error) {
     return (
-      <div className="dashboard-container">
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '400px',
-          backgroundColor: '#FEF2F2'
-        }}>
-          <div style={{ textAlign: 'center', color: '#DC2626' }}>
-            <h3>Error Loading Dashboard</h3>
-            <p>{error}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              style={{
-                backgroundColor: '#DC2626',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Retry
-            </button>
-          </div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '400px',
+        backgroundColor: '#FEF2F2'
+      }}>
+        <div style={{ textAlign: 'center', color: '#DC2626' }}>
+          <h3>Error Loading Dashboard</h3>
+          <p>{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              backgroundColor: '#DC2626',
+              color: 'white',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
   }
 
-  // Check if user is admin
+  // Check if user is admin (for future admin panel integration)
   const isAdmin = user?.role === 'admin' || user?.role === 'administrator';
 
   return (
-    <div className="dashboard-container">
+    <div style={{ width: '100%', minHeight: '100vh' }}>
       {/* Dashboard Header */}
-      <div className="dashboard-header">
+      <div>
         <DashboardHeader user={user} />
       </div>
 
-      {/* Tab Navigation (if admin) */}
+      {/* Admin Notice (if admin user) */}
       {isAdmin && (
-        <div className="dashboard-tabs" style={{
-          backgroundColor: '#FFFFFF',
-          borderBottom: '1px solid #E5E7EB',
-          padding: '0 24px'
+        <div style={{
+          backgroundColor: '#FEF3C7',
+          border: '1px solid #F59E0B',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          margin: '16px 24px',
+          fontSize: '14px',
+          color: '#92400E'
         }}>
-          <div style={{
-            display: 'flex',
-            gap: '32px'
-          }}>
-            <button
-              onClick={() => setActiveTab('overview')}
-              style={{
-                padding: '16px 0',
-                border: 'none',
-                backgroundColor: 'transparent',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: activeTab === 'overview' ? '#FB923C' : '#6B7280',
-                borderBottom: activeTab === 'overview' ? '2px solid #FB923C' : '2px solid transparent',
-                cursor: 'pointer'
-              }}
-            >
-              Dashboard Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('admin')}
-              style={{
-                padding: '16px 0',
-                border: 'none',
-                backgroundColor: 'transparent',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: activeTab === 'admin' ? '#FB923C' : '#6B7280',
-                borderBottom: activeTab === 'admin' ? '2px solid #FB923C' : '2px solid transparent',
-                cursor: 'pointer'
-              }}
-            >
-              Admin Panel
-            </button>
-          </div>
+          <strong>👑 Admin User Detected:</strong> Admin panel will be available after completing the overtime system setup.
+          <br />
+          <small>User: {user?.full_name} ({user?.email}) - Role: {user?.role?.toUpperCase()}</small>
         </div>
       )}
 
       {/* Main Dashboard Content */}
-      <div className="dashboard-content">
-        {/* Overview Tab (Default) */}
-        {(!isAdmin || activeTab === 'overview') && (
-          <>
-            {/* Main Content Area */}
-            <div className="dashboard-main">
-              {/* Top Row: Welcome Card + Holiday Section */}
-              <div className="dashboard-row">
-                <div className="dashboard-col welcome">
-                  <WelcomeCard user={user} />
-                </div>
-                <div className="dashboard-col holidays">
-                  <HolidaySection user={user} />
-                </div>
-              </div>
-
-              {/* Middle Row: Weekly Chart (Full Width) */}
-              <div className="dashboard-row">
-                <div className="dashboard-col wide">
-                  <WeeklyChart user={user} />
-                </div>
-              </div>
-
-              {/* Bottom Row: Activity Ring + Projects Chart */}
-              <div className="dashboard-row">
-                <div className="dashboard-col activity">
-                  <ActivityRing user={user} />
-                </div>
-                <div className="dashboard-col activity">
-                  <ProjectsChart user={user} />
-                </div>
-              </div>
+      <div style={{ display: 'flex', gap: '24px', padding: '24px' }}>
+        {/* Main Content Area */}
+        <div style={{ flex: 1 }}>
+          {/* Top Row: Welcome Card + Holiday Section */}
+          <div style={{ display: 'flex', gap: '24px', marginBottom: '24px' }}>
+            <div style={{ flex: 1 }}>
+              <WelcomeCard user={user} />
             </div>
-
-            {/* Sidebar */}
-            <div className="dashboard-sidebar">
-              <WhoIsInOutPanel user={user} />
+            <div style={{ flex: 1 }}>
+              <HolidaySection user={user} />
             </div>
-          </>
-        )}
-
-        {/* Admin Tab (Admin Only) */}
-        {isAdmin && activeTab === 'admin' && (
-          <div className="admin-content" style={{
-            width: '100%',
-            padding: '24px',
-            backgroundColor: '#F9FAFB',
-            minHeight: 'calc(100vh - 200px)'
-          }}>
-            {/* Admin Header */}
-            <div style={{
-              marginBottom: '24px',
-              padding: '16px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '8px',
-              border: '1px solid #E5E7EB'
-            }}>
-              <h1 style={{
-                margin: '0 0 8px 0',
-                fontSize: '24px',
-                fontWeight: '600',
-                color: '#111827'
-              }}>
-                Administrative Panel
-              </h1>
-              <p style={{
-                margin: 0,
-                color: '#6B7280',
-                fontSize: '14px'
-              }}>
-                Manage overtime settings, employee types, and system configuration
-              </p>
-              
-              {/* Admin User Info */}
-              <div style={{
-                marginTop: '12px',
-                padding: '8px 12px',
-                backgroundColor: '#FEF3C7',
-                borderRadius: '4px',
-                fontSize: '12px',
-                color: '#92400E'
-              }}>
-                👑 Logged in as: {user?.full_name} ({user?.email}) - {user?.role?.toUpperCase()}
-              </div>
-            </div>
-
-
           </div>
-        )}
+
+          {/* Middle Row: Weekly Chart (Full Width) */}
+          <div style={{ marginBottom: '24px' }}>
+            <WeeklyChart user={user} />
+          </div>
+
+          {/* Bottom Row: Activity Ring + Projects Chart */}
+          <div style={{ display: 'flex', gap: '24px' }}>
+            <div style={{ flex: 1 }}>
+              <ActivityRing user={user} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <ProjectsChart user={user} />
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div style={{ width: '300px' }}>
+          <WhoIsInOutPanel user={user} />
+        </div>
       </div>
 
       {/* CSS Animation */}
@@ -301,19 +211,6 @@ const Dashboard = () => {
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
-        }
-        
-        .dashboard-tabs button:hover {
-          color: #FB923C !important;
-        }
-        
-        .admin-content {
-          animation: fadeIn 0.3s ease-in-out;
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>

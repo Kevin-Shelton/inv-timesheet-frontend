@@ -10,7 +10,7 @@
  * - Quarter-hour rounding
  * - Administrative override support
  * - Audit trail integration
- * - Multi-jurisdiction support_
+ * - Multi-jurisdiction support
  */
 
 import { supabase } from './supabaseClient.js';
