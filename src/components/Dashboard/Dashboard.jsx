@@ -8,7 +8,7 @@ import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
 
-// Import CSS styles
+// Import CSS styles_
 import './css/dashboard-layout.css';
 import './css/dashboard-header.css';
 import './css/welcome-card.css';
