@@ -7,7 +7,6 @@ import WeeklyChart from './WeeklyChart';
 import ActivityRing from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
-import AdminOvertimePanel from '../Admin/AdminOvertimePanel';
 import './DashboardNamespaced.css';
 
 const Dashboard = () => {
@@ -292,8 +291,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Admin Overtime Panel */}
-            <AdminOvertimePanel />
+
           </div>
         )}
       </div>

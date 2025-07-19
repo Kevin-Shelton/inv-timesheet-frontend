@@ -1,5 +1,5 @@
 /**
- * Overtime Calculation Engine_
+ * Overtime Calculation Engine
  * 
  * Comprehensive overtime calculation system supporting multiple employee types
  * and compliance with federal and state labor regulations.
