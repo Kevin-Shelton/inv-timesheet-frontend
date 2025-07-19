@@ -7,7 +7,7 @@
  * Features::
  * - Full-time weekly overtime calculation (40+ hours)
  * - Part-time daily overtime calculation (8+ hours)
- * - Quarter-hour rounding
+ * - Quarter-hour rounding_
  * - Administrative override support
  * - Audit trail integration
  * - Multi-jurisdiction support
