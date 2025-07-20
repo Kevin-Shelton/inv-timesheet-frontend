@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient.js';
+import { supabaseApi } from '../../supabaseClient.js';
 import { useAuth } from '../../hooks/useAuth';
 import OvertimeCalculationEngine from '../../utils/overtime_calculation_engine.js';
 
@@ -55,39 +55,21 @@ const TrackedHoursChart = () => {
       setEmployeeInfo(empInfo);
       console.log('👤 EMPLOYEE INFO:', empInfo);
 
-      // Build query based on user permissions
-      let query = supabase
-        .from('timesheet_entries')
-        .select(`
-          id,
-          date,
-          time_in,
-          time_out,
-          break_duration,
-          regular_hours,
-          overtime_hours,
-          daily_double_overtime,
-          total_hours,
-          calculation_method,
-          weekly_hours_at_calculation,
-          is_manual_override,
-          user_id,
-          users!timesheet_entries_user_id_fkey(full_name, employment_type, is_exempt)
-        `)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: true });
-
-      // If user can't view all timesheets, only show their own
-      if (!canViewAllTimesheets()) {
-        query = query.eq('user_id', user.id);
-      }
-
-      const { data: entries, error: fetchError } = await query;
-
-      if (fetchError) {
-        console.error('📊 ENHANCED TRACKED HOURS ERROR:', fetchError);
-        throw fetchError;
+      // Use corrected supabaseApi function instead of direct supabase query
+      let entries;
+      if (canViewAllTimesheets()) {
+        // Get all timesheet entries for the week
+        entries = await supabaseApi.getTimesheets({
+          startDate: startDate,
+          endDate: endDate
+        });
+      } else {
+        // Get only user's own timesheet entries
+        entries = await supabaseApi.getTimesheets({
+          user_id: user.id,
+          startDate: startDate,
+          endDate: endDate
+        });
       }
 
       console.log('📊 ENHANCED TRACKED HOURS: Fetched entries:', entries?.length || 0);
@@ -142,9 +124,9 @@ const TrackedHoursChart = () => {
           let calculationMethod = 'unknown';
 
           // Use existing calculated values if available and not manual override
-          if (entry.regular_hours !== null && entry.overtime_hours !== null && !entry.is_manual_override) {
+          if (entry.regular_hours !== null && entry.daily_overtime_hours !== null && !entry.is_manual_override) {
             regular = parseFloat(entry.regular_hours) || 0;
-            overtime = parseFloat(entry.overtime_hours) || 0;
+            overtime = parseFloat(entry.daily_overtime_hours) || 0;
             dailyDoubleOvertime = parseFloat(entry.daily_double_overtime) || 0;
             calculationMethod = entry.calculation_method || 'existing';
           } else {
@@ -153,8 +135,8 @@ const TrackedHoursChart = () => {
               const calculationResult = await OvertimeCalculationEngine.calculateOvertimeEntry(
                 userId,
                 entry.date,
-                entry.time_in,
-                entry.time_out,
+                entry.clock_in_time, // FIXED: Use correct column name
+                entry.clock_out_time, // FIXED: Use correct column name
                 parseFloat(entry.break_duration) || 0,
                 entry.is_manual_override
               );
@@ -168,7 +150,7 @@ const TrackedHoursChart = () => {
             } catch (calcError) {
               console.error('❌ CALCULATION ERROR:', calcError);
               // Fall back to existing values or total hours
-              regular = parseFloat(entry.total_hours) || 0;
+              regular = parseFloat(entry.hours_worked) || parseFloat(entry.total_hours) || 0;
               overtime = 0;
               dailyDoubleOvertime = 0;
               calculationMethod = 'fallback';
