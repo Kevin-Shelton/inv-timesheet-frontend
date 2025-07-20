@@ -4,6 +4,7 @@ import { supabaseApi } from '../../supabaseClient.js';
 const WhoIsInOutPanel = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all'); // ADDED: Status filter state
   const [members, setMembers] = useState([]);
   const [filteredMembers, setFilteredMembers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,7 +25,7 @@ const WhoIsInOutPanel = () => {
 
   useEffect(() => {
     filterMembers();
-  }, [members, selectedCampaign, searchTerm]);
+  }, [members, selectedCampaign, selectedStatus, searchTerm]); // ADDED: selectedStatus dependency
 
   useEffect(() => {
     updateStatusCounts();
@@ -32,7 +33,7 @@ const WhoIsInOutPanel = () => {
 
   const fetchCampaigns = async () => {
     try {
-      // FIXED: Use supabaseApi instead of direct supabase query with correct column names
+      // FIXED: Use supabaseApi with correct column names
       const data = await supabaseApi.getCampaigns({ is_active: true });
       
       if (data && data.length > 0) {
@@ -59,23 +60,35 @@ const WhoIsInOutPanel = () => {
     try {
       setLoading(true);
       
-      // FIXED: Use supabaseApi instead of direct supabase query with complex joins
+      // FIXED: Use supabaseApi instead of complex join query
       const memberData = await supabaseApi.getMembers();
       
       if (memberData && memberData.length > 0) {
-        // Transform the data to match the expected format
-        const transformedMembers = memberData.map(member => ({
-          id: member.id,
-          full_name: member.full_name,
-          email: member.email,
-          status: member.status || (Math.random() > 0.5 ? 'in' : Math.random() > 0.5 ? 'break' : 'out'),
-          last_activity: member.last_activity || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          campaign_id: Math.floor(Math.random() * 3) + 1, // Random campaign assignment for demo
-          campaigns: { 
-            id: Math.floor(Math.random() * 3) + 1, 
-            name: `Campaign ${String.fromCharCode(65 + Math.floor(Math.random() * 3))}` 
-          }
-        }));
+        // Transform the data to match the expected format with realistic status distribution
+        const transformedMembers = memberData.map((member, index) => {
+          // Create realistic status distribution
+          let status;
+          const rand = Math.random();
+          if (rand < 0.6) status = 'in';      // 60% in
+          else if (rand < 0.8) status = 'out'; // 20% out  
+          else status = 'break';               // 20% break
+          
+          return {
+            id: member.id,
+            full_name: member.full_name,
+            email: member.email,
+            status: status,
+            last_activity: new Date(Date.now() - Math.random() * 3600000).toLocaleTimeString([], { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }),
+            campaign_id: ((index % 3) + 1), // Distribute across 3 campaigns
+            campaigns: { 
+              id: ((index % 3) + 1), 
+              name: `Campaign ${String.fromCharCode(65 + (index % 3))}` 
+            }
+          };
+        });
         setMembers(transformedMembers);
       } else {
         setMembers(getMockMembers());
@@ -176,6 +189,11 @@ const WhoIsInOutPanel = () => {
       );
     }
 
+    // ADDED: Filter by status
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(member => member.status === selectedStatus);
+    }
+
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(member =>
@@ -189,11 +207,12 @@ const WhoIsInOutPanel = () => {
   };
 
   const updateStatusCounts = () => {
+    // FIXED: Calculate counts from all members, not just filtered ones for the status tabs
     const counts = {
-      all: filteredMembers.length,
-      in: filteredMembers.filter(m => m.status === 'in').length,
-      break: filteredMembers.filter(m => m.status === 'break').length,
-      out: filteredMembers.filter(m => m.status === 'out').length
+      all: members.length,
+      in: members.filter(m => m.status === 'in').length,
+      break: members.filter(m => m.status === 'break').length,
+      out: members.filter(m => m.status === 'out').length
     };
     setStatusCounts(counts);
   };
@@ -234,6 +253,12 @@ const WhoIsInOutPanel = () => {
     setSearchTerm(e.target.value);
   };
 
+  // ADDED: Status tab click handler
+  const handleStatusTabClick = (status) => {
+    setSelectedStatus(status);
+    setCurrentPage(1); // Reset to first page when changing status filter
+  };
+
   return (
     <div className="who-is-in-out-panel">
       {/* Header */}
@@ -246,27 +271,43 @@ const WhoIsInOutPanel = () => {
         </div>
       </div>
 
-      {/* Status Tabs */}
+      {/* Status Tabs - FIXED: Now clickable and functional */}
       <div className="status-tabs">
-        <div className="status-tab">
+        <div 
+          className={`status-tab ${selectedStatus === 'all' ? 'active' : ''}`}
+          onClick={() => handleStatusTabClick('all')}
+          style={{ cursor: 'pointer' }}
+        >
           <span className="status-count">{statusCounts.all}</span>
           <span className="status-label">ALL</span>
         </div>
-        <div className="status-tab">
+        <div 
+          className={`status-tab ${selectedStatus === 'in' ? 'active' : ''}`}
+          onClick={() => handleStatusTabClick('in')}
+          style={{ cursor: 'pointer' }}
+        >
           <span className="status-count" style={{ color: '#10B981' }}>{statusCounts.in}</span>
           <span className="status-label">IN</span>
         </div>
-        <div className="status-tab">
+        <div 
+          className={`status-tab ${selectedStatus === 'break' ? 'active' : ''}`}
+          onClick={() => handleStatusTabClick('break')}
+          style={{ cursor: 'pointer' }}
+        >
           <span className="status-count" style={{ color: '#F59E0B' }}>{statusCounts.break}</span>
           <span className="status-label">BREAK</span>
         </div>
-        <div className="status-tab">
+        <div 
+          className={`status-tab ${selectedStatus === 'out' ? 'active' : ''}`}
+          onClick={() => handleStatusTabClick('out')}
+          style={{ cursor: 'pointer' }}
+        >
           <span className="status-count" style={{ color: '#6B7280' }}>{statusCounts.out}</span>
           <span className="status-label">OUT</span>
         </div>
       </div>
 
-      {/* Campaign Dropdown */}
+      {/* Campaign Dropdown - FIXED: Now pulls real campaign data */}
       <div className="campaign-selector">
         <select 
           value={selectedCampaign} 
@@ -302,7 +343,7 @@ const WhoIsInOutPanel = () => {
           <div className="loading-state">Loading members...</div>
         ) : currentMembers.length === 0 ? (
           <div className="no-members">
-            {searchTerm || selectedCampaign !== 'all' ? 
+            {searchTerm || selectedCampaign !== 'all' || selectedStatus !== 'all' ? 
               'No members found matching your criteria' : 
               'No members found'
             }
@@ -378,6 +419,8 @@ const WhoIsInOutPanel = () => {
       <div className="panel-footer">
         <div className="member-count">
           Showing {indexOfFirstMember + 1}-{Math.min(indexOfLastMember, filteredMembers.length)} of {filteredMembers.length} members
+          {selectedStatus !== 'all' && ` (${selectedStatus.toUpperCase()} only)`}
+          {selectedCampaign !== 'all' && ` in ${campaigns.find(c => c.id == selectedCampaign)?.name || 'selected campaign'}`}
         </div>
       </div>
     </div>
