@@ -1,4 +1,4 @@
-// Enhanced Supabase Client - Fixes Dashboard Charts & Campaign Data Issues
+// Complete Enhanced Supabase Client - Includes ALL original functions + fixes
 // Replace your existing src/supabaseClient.js with this file
 
 import { createClient } from '@supabase/supabase-js'
@@ -58,7 +58,7 @@ const clearInvalidTokens = async () => {
 clearInvalidTokens()
 testConnection()
 
-// Enhanced API functions with better error handling and specific fixes
+// Complete API functions with ALL original functions + enhancements
 export const supabaseApi = {
   // Check if user is authenticated
   isAuthenticated: async () => {
@@ -101,6 +101,184 @@ export const supabaseApi = {
     }
   },
 
+  // ENHANCED: Better user fetching with role information
+  getUsers: async () => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        console.warn('👥 USERS: Not authenticated - using fallback data')
+        return [
+          { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member', employment_type: 'full_time' }
+        ]
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, full_name, role, employment_type, is_exempt, is_active')
+        .order('full_name', { ascending: true })
+      
+      if (error) {
+        console.error('👥 USER FETCH ERROR:', error)
+        return [
+          { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member', employment_type: 'full_time' }
+        ]
+      }
+      
+      return data || []
+    } catch (error) {
+      console.error('👥 USER FETCH CRITICAL ERROR:', error)
+      return [
+        { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member', employment_type: 'full_time' }
+      ]
+    }
+  },
+
+  // ENHANCED: Better member fetching for Who's In/Out panel
+  getMembers: async () => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        console.warn('👥 MEMBERS: Not authenticated - using fallback data')
+        return [
+          { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() },
+          { id: '2', full_name: 'Jane Smith', status: 'out', last_activity: new Date().toISOString() }
+        ]
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, full_name, role, employment_type, is_active')
+        .eq('is_active', true)
+        .order('full_name', { ascending: true })
+      
+      if (error) {
+        console.error('👥 MEMBER FETCH ERROR:', error)
+        return [
+          { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() },
+          { id: '2', full_name: 'Jane Smith', status: 'out', last_activity: new Date().toISOString() }
+        ]
+      }
+      
+      return data?.map(user => ({
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        employment_type: user.employment_type,
+        status: Math.random() > 0.5 ? 'in' : 'out', // Random status for demo
+        last_activity: new Date().toISOString()
+      })) || []
+    } catch (error) {
+      console.error('👥 MEMBER FETCH CRITICAL ERROR:', error)
+      return [
+        { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() },
+        { id: '2', full_name: 'Jane Smith', status: 'out', last_activity: new Date().toISOString() }
+      ]
+    }
+  },
+
+  // ENHANCED: Better employee info fetching
+  getEmployeeInfo: async (userId) => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        console.warn('👤 EMPLOYEE INFO: Not authenticated - using fallback data')
+        return {
+          id: userId || '1',
+          full_name: 'Sample Employee',
+          email: 'employee@example.com',
+          role: 'team_member',
+          employment_type: 'full_time'
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, full_name, role, employment_type, is_exempt, pay_rate_per_hour')
+        .eq('id', userId)
+        .single()
+      
+      if (error) {
+        console.error('👤 EMPLOYEE INFO FETCH ERROR:', error)
+        return {
+          id: userId || '1',
+          full_name: 'Sample Employee',
+          email: 'employee@example.com',
+          role: 'team_member',
+          employment_type: 'full_time'
+        }
+      }
+      
+      return data
+    } catch (error) {
+      console.error('👤 EMPLOYEE INFO FETCH CRITICAL ERROR:', error)
+      return {
+        id: userId || '1',
+        full_name: 'Sample Employee',
+        email: 'employee@example.com',
+        role: 'team_member',
+        employment_type: 'full_time'
+      }
+    }
+  },
+
+  // ENHANCED: Fixed campaign fetching for dropdowns
+  getCampaigns: async (params = {}) => {
+    try {
+      console.log('🎯 FETCHING CAMPAIGNS: Starting with params:', params)
+      
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        console.warn('🎯 CAMPAIGNS: Not authenticated - using fallback data')
+        return [
+          { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true },
+          { id: '2', name: 'Development Project', description: 'Software development project', is_active: true }
+        ]
+      }
+
+      let query = supabase
+        .from('campaigns')
+        .select('*')
+        .order('name', { ascending: true })
+      
+      if (params.is_active !== undefined) {
+        query = query.eq('is_active', params.is_active)
+      }
+      
+      if (params.user_id) {
+        // If filtering by user, join with user_campaigns table
+        query = supabase
+          .from('campaigns')
+          .select(`
+            *,
+            user_campaigns!inner(user_id)
+          `)
+          .eq('user_campaigns.user_id', params.user_id)
+          .order('name', { ascending: true })
+      }
+      
+      const { data, error } = await query
+      
+      if (error) {
+        console.error('🎯 CAMPAIGN FETCH ERROR:', error)
+        return [
+          { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true },
+          { id: '2', name: 'Development Project', description: 'Software development project', is_active: true }
+        ]
+      }
+      
+      console.log('🎯 CAMPAIGNS: Successfully fetched', data?.length || 0, 'campaigns')
+      return data || []
+      
+    } catch (error) {
+      console.error('🎯 CAMPAIGN FETCH CRITICAL ERROR:', error)
+      return [
+        { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true },
+        { id: '2', name: 'Development Project', description: 'Software development project', is_active: true }
+      ]
+    }
+  },
+
   // ENHANCED: Fixed timesheet fetching for WeeklyChart
   getTimesheets: async (params = {}) => {
     try {
@@ -109,7 +287,10 @@ export const supabaseApi = {
       const isAuth = await supabaseApi.isAuthenticated()
       if (!isAuth) {
         console.warn('📊 TIMESHEETS: Not authenticated - using fallback data')
-        return generateFallbackTimesheetData(params)
+        return [
+          { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, overtime_hours: 0 },
+          { id: '2', user_id: '2', campaign_id: '1', regular_hours: 7.5, overtime_hours: 0 }
+        ]
       }
 
       // Build query with proper error handling
@@ -159,157 +340,41 @@ export const supabaseApi = {
       if (error) {
         console.error('📊 TIMESHEET FETCH ERROR:', error)
         // Return fallback data instead of throwing
-        return generateFallbackTimesheetData(params)
+        return [
+          { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, overtime_hours: 0 },
+          { id: '2', user_id: '2', campaign_id: '1', regular_hours: 7.5, overtime_hours: 0 }
+        ]
       }
       
       console.log('📊 TIMESHEETS: Successfully fetched', data?.length || 0, 'entries')
-      return data || []
+      return data?.map(entry => ({
+        id: entry.id,
+        user_id: entry.user_id,
+        campaign_id: entry.campaign_id,
+        hours: entry.regular_hours || 0,
+        regular_hours: entry.regular_hours || 0,
+        overtime_hours: entry.overtime_hours || 0,
+        date: entry.date,
+        time_in: entry.time_in,
+        time_out: entry.time_out,
+        break_duration: entry.break_duration,
+        total_hours: entry.total_hours,
+        users: entry.users
+      })) || []
       
     } catch (error) {
       console.error('📊 TIMESHEET FETCH CRITICAL ERROR:', error)
-      return generateFallbackTimesheetData(params)
+      return [
+        { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, overtime_hours: 0 },
+        { id: '2', user_id: '2', campaign_id: '1', regular_hours: 7.5, overtime_hours: 0 }
+      ]
     }
   },
 
-  // ENHANCED: Fixed campaign fetching for dropdowns
-  getCampaigns: async (params = {}) => {
-    try {
-      console.log('🎯 FETCHING CAMPAIGNS: Starting with params:', params)
-      
-      const isAuth = await supabaseApi.isAuthenticated()
-      if (!isAuth) {
-        console.warn('🎯 CAMPAIGNS: Not authenticated - using fallback data')
-        return generateFallbackCampaignData()
-      }
-
-      let query = supabase
-        .from('campaigns')
-        .select('*')
-        .order('name', { ascending: true })
-      
-      if (params.is_active !== undefined) {
-        query = query.eq('is_active', params.is_active)
-      }
-      
-      if (params.user_id) {
-        // If filtering by user, join with user_campaigns table
-        query = supabase
-          .from('campaigns')
-          .select(`
-            *,
-            user_campaigns!inner(user_id)
-          `)
-          .eq('user_campaigns.user_id', params.user_id)
-          .order('name', { ascending: true })
-      }
-      
-      const { data, error } = await query
-      
-      if (error) {
-        console.error('🎯 CAMPAIGN FETCH ERROR:', error)
-        return generateFallbackCampaignData()
-      }
-      
-      console.log('🎯 CAMPAIGNS: Successfully fetched', data?.length || 0, 'campaigns')
-      return data || []
-      
-    } catch (error) {
-      console.error('🎯 CAMPAIGN FETCH CRITICAL ERROR:', error)
-      return generateFallbackCampaignData()
-    }
-  },
-
-  // ENHANCED: Better user fetching with role information
-  getUsers: async () => {
-    try {
-      const isAuth = await supabaseApi.isAuthenticated()
-      if (!isAuth) {
-        console.warn('👥 USERS: Not authenticated - using fallback data')
-        return generateFallbackUserData()
-      }
-
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, email, full_name, role, employment_type, is_exempt, is_active')
-        .order('full_name', { ascending: true })
-      
-      if (error) {
-        console.error('👥 USER FETCH ERROR:', error)
-        return generateFallbackUserData()
-      }
-      
-      return data || []
-    } catch (error) {
-      console.error('👥 USER FETCH CRITICAL ERROR:', error)
-      return generateFallbackUserData()
-    }
-  },
-
-  // ENHANCED: Better member fetching for Who's In/Out panel
-  getMembers: async () => {
-    try {
-      const isAuth = await supabaseApi.isAuthenticated()
-      if (!isAuth) {
-        console.warn('👥 MEMBERS: Not authenticated - using fallback data')
-        return generateFallbackMemberData()
-      }
-
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, email, full_name, role, employment_type, is_active')
-        .eq('is_active', true)
-        .order('full_name', { ascending: true })
-      
-      if (error) {
-        console.error('👥 MEMBER FETCH ERROR:', error)
-        return generateFallbackMemberData()
-      }
-      
-      return data?.map(user => ({
-        id: user.id,
-        full_name: user.full_name,
-        email: user.email,
-        role: user.role,
-        employment_type: user.employment_type,
-        status: Math.random() > 0.5 ? 'in' : 'out', // Random status for demo
-        last_activity: new Date().toISOString()
-      })) || []
-    } catch (error) {
-      console.error('👥 MEMBER FETCH CRITICAL ERROR:', error)
-      return generateFallbackMemberData()
-    }
-  },
-
-  // ENHANCED: Better employee info fetching
-  getEmployeeInfo: async (userId) => {
-    try {
-      const isAuth = await supabaseApi.isAuthenticated()
-      if (!isAuth) {
-        console.warn('👤 EMPLOYEE INFO: Not authenticated - using fallback data')
-        return generateFallbackEmployeeInfo(userId)
-      }
-
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, email, full_name, role, employment_type, is_exempt, pay_rate_per_hour')
-        .eq('id', userId)
-        .single()
-      
-      if (error) {
-        console.error('👤 EMPLOYEE INFO FETCH ERROR:', error)
-        return generateFallbackEmployeeInfo(userId)
-      }
-      
-      return data
-    } catch (error) {
-      console.error('👤 EMPLOYEE INFO FETCH CRITICAL ERROR:', error)
-      return generateFallbackEmployeeInfo(userId)
-    }
-  },
-
-  // Existing login/logout functions (unchanged)
+  // Simple login without complex profile fetching
   login: async (email, password) => {
     try {
+      // Clear any existing invalid session first
       await supabase.auth.signOut()
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -333,125 +398,13 @@ export const supabaseApi = {
     }
   },
 
+  // Sign out
   logout: async () => {
     try {
       await supabase.auth.signOut()
     } catch (error) {
       console.error('Error signing out:', error)
     }
-  }
-}
-
-// FALLBACK DATA GENERATORS
-function generateFallbackTimesheetData(params = {}) {
-  const entries = []
-  const startDate = params.startDate ? new Date(params.startDate) : new Date()
-  
-  // Generate 7 days of sample data
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(startDate)
-    date.setDate(startDate.getDate() + i)
-    
-    entries.push({
-      id: `fallback-${i}`,
-      date: date.toISOString().split('T')[0],
-      user_id: params.user_id || 'sample-user',
-      regular_hours: Math.floor(Math.random() * 8) + 1,
-      overtime_hours: Math.random() > 0.7 ? Math.floor(Math.random() * 4) : 0,
-      total_hours: 8,
-      users: {
-        full_name: 'Sample User',
-        employment_type: 'full_time',
-        is_exempt: false
-      }
-    })
-  }
-  
-  return entries
-}
-
-function generateFallbackCampaignData() {
-  return [
-    { 
-      id: 'fallback-1', 
-      name: 'Sample Campaign A', 
-      description: 'Sample campaign for demo', 
-      is_active: true,
-      billing_rate_per_hour: 50,
-      client_name: 'Sample Client'
-    },
-    { 
-      id: 'fallback-2', 
-      name: 'Development Project', 
-      description: 'Software development project', 
-      is_active: true,
-      billing_rate_per_hour: 75,
-      client_name: 'Tech Corp'
-    },
-    { 
-      id: 'fallback-3', 
-      name: 'Marketing Campaign', 
-      description: 'Digital marketing initiative', 
-      is_active: false,
-      billing_rate_per_hour: 60,
-      client_name: 'Marketing Inc'
-    }
-  ]
-}
-
-function generateFallbackUserData() {
-  return [
-    { 
-      id: 'fallback-user-1', 
-      full_name: 'John Doe', 
-      email: 'john@example.com', 
-      role: 'team_member', 
-      employment_type: 'full_time',
-      is_active: true
-    },
-    { 
-      id: 'fallback-user-2', 
-      full_name: 'Jane Smith', 
-      email: 'jane@example.com', 
-      role: 'admin', 
-      employment_type: 'full_time',
-      is_active: true
-    }
-  ]
-}
-
-function generateFallbackMemberData() {
-  return [
-    { 
-      id: 'fallback-member-1', 
-      full_name: 'John Doe', 
-      email: 'john@example.com',
-      role: 'team_member',
-      employment_type: 'full_time',
-      status: 'in', 
-      last_activity: new Date().toISOString() 
-    },
-    { 
-      id: 'fallback-member-2', 
-      full_name: 'Jane Smith', 
-      email: 'jane@example.com',
-      role: 'admin',
-      employment_type: 'full_time',
-      status: 'out', 
-      last_activity: new Date().toISOString() 
-    }
-  ]
-}
-
-function generateFallbackEmployeeInfo(userId) {
-  return {
-    id: userId || 'fallback-employee',
-    full_name: 'Sample Employee',
-    email: 'employee@example.com',
-    role: 'team_member',
-    employment_type: 'full_time',
-    is_exempt: false,
-    pay_rate_per_hour: 25
   }
 }
 
