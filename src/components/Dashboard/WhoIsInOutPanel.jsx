@@ -1,128 +1,282 @@
-// Fixed WhoIsInOutPanel Component - Uses supabaseApi instead of direct supabase
-// Replace your existing src/components/Dashboard/WhoIsInOutPanel.jsx with this file
-
 import React, { useState, useEffect } from 'react';
-import { supabaseApi } from '../../supabaseClient.js';
+import { supabase } from '../../supabaseClient';
 
-const WhoIsInOutPanel = ({ user }) => {
-  const [members, setMembers] = useState([]);
+const WhoIsInOutPanel = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState('all');
+  const [members, setMembers] = useState([]);
+  const [filteredMembers, setFilteredMembers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const membersPerPage = 5;
+  const [membersPerPage] = useState(5); // Show 5 members per page
+  const [statusCounts, setStatusCounts] = useState({
+    all: 0,
+    in: 0,
+    break: 0,
+    out: 0
+  });
 
   useEffect(() => {
-    fetchData();
+    fetchCampaigns();
+    fetchMembers();
   }, []);
 
-  const fetchData = async () => {
+  useEffect(() => {
+    filterMembers();
+  }, [members, selectedCampaign, searchTerm]);
+
+  useEffect(() => {
+    updateStatusCounts();
+  }, [filteredMembers]);
+
+  const fetchCampaigns = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('id, name, description, status')
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching campaigns:', error);
+        // Use fallback campaigns
+        setCampaigns([
+          { id: 1, name: 'Campaign A', status: 'active' },
+          { id: 2, name: 'Campaign B', status: 'active' },
+          { id: 3, name: 'Campaign C', status: 'active' }
+        ]);
+      } else {
+        setCampaigns(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+      setCampaigns([
+        { id: 1, name: 'Campaign A', status: 'active' },
+        { id: 2, name: 'Campaign B', status: 'active' },
+        { id: 3, name: 'Campaign C', status: 'active' }
+      ]);
+    }
+  };
+
+  const fetchMembers = async () => {
     try {
       setLoading(true);
-      setError(null);
       
-      console.log('👥 WhoIsInOutPanel: Fetching members and campaigns data');
-      
-      // Fetch members and campaigns in parallel using corrected supabaseApi
-      const [membersData, campaignsData] = await Promise.all([
-        supabaseApi.getMembers(),
-        supabaseApi.getCampaigns({ is_active: true })
-      ]);
-      
-      console.log('👥 WhoIsInOutPanel: Received members:', membersData?.length || 0);
-      console.log('👥 WhoIsInOutPanel: Received campaigns:', campaignsData?.length || 0);
-      
-      setMembers(membersData || []);
-      setCampaigns(campaignsData || []);
-      
+      // Try to fetch members with campaign assignments
+      const { data: memberData, error } = await supabase
+        .from('users')
+        .select(`
+          id,
+          email,
+          full_name,
+          status,
+          last_activity,
+          campaign_id,
+          campaigns (
+            id,
+            name
+          )
+        `)
+        .order('full_name');
+
+      if (error) {
+        console.error('Error fetching members:', error);
+        // Use fallback member data
+        setMembers(getMockMembers());
+      } else {
+        setMembers(memberData || getMockMembers());
+      }
     } catch (error) {
-      console.error('👥 WhoIsInOutPanel: Error fetching data:', error);
-      setError(error.message || 'Failed to load team data');
-      
-      // Set fallback data
-      setMembers([
-        { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString(), department: 'Development' },
-        { id: '2', full_name: 'Jane Smith', status: 'out', last_activity: new Date().toISOString(), department: 'Design' },
-        { id: '3', full_name: 'Mike Johnson', status: 'in', last_activity: new Date().toISOString(), department: 'Development' },
-        { id: '4', full_name: 'Sarah Wilson', status: 'in', last_activity: new Date().toISOString(), department: 'Marketing' },
-        { id: '5', full_name: 'Tom Brown', status: 'out', last_activity: new Date().toISOString(), department: 'Development' }
-      ]);
-      setCampaigns([
-        { id: '1', name: 'Sample Campaign', is_active: true },
-        { id: '2', name: 'Development Project', is_active: true }
-      ]);
+      console.error('Error fetching members:', error);
+      setMembers(getMockMembers());
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredMembers = members.filter(member => {
-    if (selectedCampaign === 'all') return true;
-    // For demo purposes, randomly assign members to campaigns
-    return member.id % 2 === parseInt(selectedCampaign) % 2;
-  });
+  const getMockMembers = () => {
+    return [
+      {
+        id: 1,
+        full_name: 'John Doe',
+        email: 'john.doe@company.com',
+        status: 'in',
+        last_activity: '2:30 PM',
+        campaign_id: 1,
+        campaigns: { id: 1, name: 'Campaign A' }
+      },
+      {
+        id: 2,
+        full_name: 'Jane Smith',
+        email: 'jane.smith@company.com',
+        status: 'break',
+        last_activity: '2:15 PM',
+        campaign_id: 2,
+        campaigns: { id: 2, name: 'Campaign B' }
+      },
+      {
+        id: 3,
+        full_name: 'Mike Johnson',
+        email: 'mike.johnson@company.com',
+        status: 'out',
+        last_activity: '1:45 PM',
+        campaign_id: 1,
+        campaigns: { id: 1, name: 'Campaign A' }
+      },
+      {
+        id: 4,
+        full_name: 'Sarah Wilson',
+        email: 'sarah.wilson@company.com',
+        status: 'in',
+        last_activity: '2:45 PM',
+        campaign_id: 3,
+        campaigns: { id: 3, name: 'Campaign C' }
+      },
+      {
+        id: 5,
+        full_name: 'David Brown',
+        email: 'david.brown@company.com',
+        status: 'in',
+        last_activity: '2:20 PM',
+        campaign_id: 2,
+        campaigns: { id: 2, name: 'Campaign B' }
+      },
+      {
+        id: 6,
+        full_name: 'Lisa Davis',
+        email: 'lisa.davis@company.com',
+        status: 'break',
+        last_activity: '1:30 PM',
+        campaign_id: 1,
+        campaigns: { id: 1, name: 'Campaign A' }
+      },
+      {
+        id: 7,
+        full_name: 'Tom Anderson',
+        email: 'tom.anderson@company.com',
+        status: 'out',
+        last_activity: '12:15 PM',
+        campaign_id: 3,
+        campaigns: { id: 3, name: 'Campaign C' }
+      },
+      {
+        id: 8,
+        full_name: 'Emily Taylor',
+        email: 'emily.taylor@company.com',
+        status: 'in',
+        last_activity: '2:50 PM',
+        campaign_id: 2,
+        campaigns: { id: 2, name: 'Campaign B' }
+      }
+    ];
+  };
 
-  const totalPages = Math.ceil(filteredMembers.length / membersPerPage);
-  const startIndex = (currentPage - 1) * membersPerPage;
-  const paginatedMembers = filteredMembers.slice(startIndex, startIndex + membersPerPage);
+  const filterMembers = () => {
+    let filtered = members;
+
+    // Filter by campaign
+    if (selectedCampaign !== 'all') {
+      filtered = filtered.filter(member => 
+        member.campaign_id === parseInt(selectedCampaign) ||
+        member.campaigns?.id === parseInt(selectedCampaign)
+      );
+    }
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(member =>
+        member.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredMembers(filtered);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  const updateStatusCounts = () => {
+    const counts = {
+      all: filteredMembers.length,
+      in: filteredMembers.filter(m => m.status === 'in').length,
+      break: filteredMembers.filter(m => m.status === 'break').length,
+      out: filteredMembers.filter(m => m.status === 'out').length
+    };
+    setStatusCounts(counts);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'in': return '#10B981'; // Green
+      case 'break': return '#F59E0B'; // Orange
+      case 'out': return '#6B7280'; // Gray
+      default: return '#6B7280';
+    }
+  };
 
   const getStatusIcon = (status) => {
-    return status === 'in' ? '🟢' : '🔴';
+    switch (status) {
+      case 'in': return '🟢';
+      case 'break': return '🟡';
+      case 'out': return '⚪';
+      default: return '⚪';
+    }
   };
 
-  const getStatusText = (status) => {
-    return status === 'in' ? 'In' : 'Out';
+  // Pagination logic
+  const indexOfLastMember = currentPage * membersPerPage;
+  const indexOfFirstMember = indexOfLastMember - membersPerPage;
+  const currentMembers = filteredMembers.slice(indexOfFirstMember, indexOfLastMember);
+  const totalPages = Math.ceil(filteredMembers.length / membersPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
   };
 
-  const formatLastActivity = (timestamp) => {
-    if (!timestamp) return 'Unknown';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
-    return date.toLocaleDateString();
+  const handleCampaignChange = (e) => {
+    setSelectedCampaign(e.target.value);
   };
 
-  if (loading) {
-    return (
-      <div className="who-is-in-out-panel">
-        <div className="panel-header">
-          <h3>Who's In/Out</h3>
-        </div>
-        <div className="panel-loading">
-          <div className="loading-spinner"></div>
-          <p>Loading team status...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
 
   return (
     <div className="who-is-in-out-panel">
+      {/* Header */}
       <div className="panel-header">
-        <h3>Who's In/Out</h3>
-        <div className="current-time">
-          {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        <div className="header-title">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+          </svg>
+          <h3>WHO'S IN/OUT</h3>
         </div>
-        {error && (
-          <div className="panel-error">
-            <small>Using sample data</small>
-          </div>
-        )}
       </div>
-      
-      <div className="campaign-filter">
+
+      {/* Status Tabs */}
+      <div className="status-tabs">
+        <div className="status-tab">
+          <span className="status-count">{statusCounts.all}</span>
+          <span className="status-label">ALL</span>
+        </div>
+        <div className="status-tab">
+          <span className="status-count" style={{ color: '#10B981' }}>{statusCounts.in}</span>
+          <span className="status-label">IN</span>
+        </div>
+        <div className="status-tab">
+          <span className="status-count" style={{ color: '#F59E0B' }}>{statusCounts.break}</span>
+          <span className="status-label">BREAK</span>
+        </div>
+        <div className="status-tab">
+          <span className="status-count" style={{ color: '#6B7280' }}>{statusCounts.out}</span>
+          <span className="status-label">OUT</span>
+        </div>
+      </div>
+
+      {/* Campaign Dropdown */}
+      <div className="campaign-selector">
         <select 
           value={selectedCampaign} 
-          onChange={(e) => {
-            setSelectedCampaign(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={handleCampaignChange}
           className="campaign-dropdown"
         >
           <option value="all">All Campaigns</option>
@@ -133,75 +287,103 @@ const WhoIsInOutPanel = ({ user }) => {
           ))}
         </select>
       </div>
-      
+
+      {/* Search */}
+      <div className="search-container">
+        <svg viewBox="0 0 20 20" fill="currentColor" className="search-icon">
+          <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search members..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="search-input"
+        />
+      </div>
+
+      {/* Members List */}
       <div className="members-list">
-        {paginatedMembers.length === 0 ? (
+        {loading ? (
+          <div className="loading-state">Loading members...</div>
+        ) : currentMembers.length === 0 ? (
           <div className="no-members">
-            <p>No team members found</p>
+            {searchTerm || selectedCampaign !== 'all' ? 
+              'No members found matching your criteria' : 
+              'No members found'
+            }
           </div>
         ) : (
-          paginatedMembers.map(member => (
-            <div key={member.id} className={`member-item ${member.status}`}>
+          currentMembers.map(member => (
+            <div key={member.id} className="member-item">
+              <div className="member-status">
+                <span 
+                  className="status-indicator"
+                  style={{ color: getStatusColor(member.status) }}
+                >
+                  {getStatusIcon(member.status)}
+                </span>
+              </div>
               <div className="member-info">
-                <div className="member-name">
-                  <span className="status-icon">{getStatusIcon(member.status)}</span>
-                  {member.full_name}
-                </div>
+                <div className="member-name">{member.full_name}</div>
                 <div className="member-details">
-                  <span className="member-department">{member.department || member.role || 'Team Member'}</span>
-                  <span className="member-status">{getStatusText(member.status)}</span>
+                  <span className="member-campaign">
+                    {member.campaigns?.name || `Campaign ${member.campaign_id}`}
+                  </span>
+                  <span className="member-time">Last: {member.last_activity}</span>
                 </div>
               </div>
-              <div className="member-activity">
-                <span className="last-activity">
-                  {formatLastActivity(member.last_activity)}
+              <div className="member-status-badge">
+                <span 
+                  className={`status-badge ${member.status}`}
+                  style={{ backgroundColor: getStatusColor(member.status) }}
+                >
+                  {member.status.toUpperCase()}
                 </span>
               </div>
             </div>
           ))
         )}
       </div>
-      
+
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="pagination">
           <button 
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            className="pagination-button"
+            onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="pagination-btn"
           >
-            ‹ Prev
+            ‹
           </button>
           
-          <span className="pagination-info">
-            Page {currentPage} of {totalPages}
-          </span>
+          {[...Array(totalPages)].map((_, index) => {
+            const pageNumber = index + 1;
+            return (
+              <button
+                key={pageNumber}
+                className={`pagination-button ${currentPage === pageNumber ? 'active' : ''}`}
+                onClick={() => handlePageChange(pageNumber)}
+              >
+                {pageNumber}
+              </button>
+            );
+          })}
           
           <button 
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            className="pagination-button"
+            onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="pagination-btn"
           >
-            Next ›
+            ›
           </button>
         </div>
       )}
-      
-      <div className="panel-summary">
-        <div className="summary-item">
-          <span className="summary-label">Total:</span>
-          <span className="summary-value">{filteredMembers.length}</span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">In:</span>
-          <span className="summary-value in">
-            {filteredMembers.filter(m => m.status === 'in').length}
-          </span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">Out:</span>
-          <span className="summary-value out">
-            {filteredMembers.filter(m => m.status === 'out').length}
-          </span>
+
+      {/* Footer Info */}
+      <div className="panel-footer">
+        <div className="member-count">
+          Showing {indexOfFirstMember + 1}-{Math.min(indexOfLastMember, filteredMembers.length)} of {filteredMembers.length} members
         </div>
       </div>
     </div>

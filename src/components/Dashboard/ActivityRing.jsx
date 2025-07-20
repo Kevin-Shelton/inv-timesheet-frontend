@@ -1,205 +1,278 @@
-// Fixed ActivityRing Component - Uses supabaseApi instead of direct supabase
-// Replace your existing src/components/Dashboard/ActivityRing.jsx with this file
-
 import React, { useState, useEffect } from 'react';
-import { supabaseApi } from '../../supabaseClient.js';
+import { supabase } from '../../supabaseClient.js';
+import { useAuth } from '../../hooks/useAuth';
 
-const ActivityRing = ({ user }) => {
-  const [activityData, setActivityData] = useState({
-    hoursWorked: 0,
-    targetHours: 40,
-    completionPercentage: 0
-  });
+const ActivitiesChart = () => {
+  const { user, canViewAllTimesheets } = useAuth();
+  const [activitiesData, setActivitiesData] = useState([]);
+  const [totalHours, setTotalHours] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchActivityData();
+    fetchActivitiesData();
   }, [user]);
 
-  const fetchActivityData = async () => {
+  const fetchActivitiesData = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('🎯 ActivityRing: Fetching activity data for user:', user?.id);
-      
-      if (!user?.id) {
-        console.log('🎯 ActivityRing: No user ID, using sample data');
-        setSampleData();
-        return;
-      }
-      
-      // Calculate current week date range
+
+      console.log('📊 ACTIVITIES: Fetching activities data...');
+
+      // Get current week dates
       const today = new Date();
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay());
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      
-      const startDate = startOfWeek.toISOString().split('T')[0];
-      const endDate = endOfWeek.toISOString().split('T')[0];
-      
-      // Use corrected supabaseApi function
-      const timesheetData = await supabaseApi.getTimesheets({
-        user_id: user.id,
-        startDate: startDate,
-        endDate: endDate
-      });
-      
-      console.log('🎯 ActivityRing: Received timesheet data:', timesheetData?.length || 0, 'entries');
-      
-      if (!timesheetData || timesheetData.length === 0) {
-        console.log('🎯 ActivityRing: No timesheet data found, using sample data');
-        setSampleData();
-        return;
+      const currentDay = today.getDay();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - currentDay + 1);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+
+      const startDate = monday.toISOString().split('T')[0];
+      const endDate = sunday.toISOString().split('T')[0];
+
+      // Build query based on user permissions
+      let query = supabase
+        .from('timesheet_entries')
+        .select(`
+          activity_id,
+          hours_worked,
+          activities!inner(
+            id,
+            name,
+            description,
+            color
+          )
+        `)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .not('activity_id', 'is', null);
+
+      // If user can't view all timesheets, only show their own
+      if (!canViewAllTimesheets()) {
+        query = query.eq('user_id', user.id);
       }
-      
-      // Calculate total hours worked this week
-      const totalHours = timesheetData.reduce((sum, entry) => {
-        const hours = parseFloat(entry.hours_worked || entry.total_hours || entry.regular_hours || 0);
-        return sum + hours;
-      }, 0);
-      
-      // Get target hours (default to 40 for full-time, 20 for part-time)
-      const targetHours = user?.employment_type === 'part_time' ? 20 : 40;
-      const completionPercentage = Math.min((totalHours / targetHours) * 100, 100);
-      
-      setActivityData({
-        hoursWorked: totalHours,
-        targetHours: targetHours,
-        completionPercentage: completionPercentage
+
+      const { data: entries, error: fetchError } = await query;
+
+      if (fetchError) {
+        console.error('📊 ACTIVITIES ERROR:', fetchError);
+        throw fetchError;
+      }
+
+      console.log('📊 ACTIVITIES: Fetched entries:', entries?.length || 0);
+
+      // Aggregate activities data
+      const activityMap = new Map();
+      let total = 0;
+
+      entries?.forEach(entry => {
+        const hours = parseFloat(entry.hours_worked) || 0;
+        const activity = entry.activities;
+        
+        if (activity && hours > 0) {
+          const activityId = activity.id;
+          
+          if (activityMap.has(activityId)) {
+            activityMap.get(activityId).hours += hours;
+          } else {
+            activityMap.set(activityId, {
+              id: activityId,
+              name: activity.name,
+              description: activity.description,
+              color: activity.color || '#8884d8',
+              hours: hours
+            });
+          }
+          total += hours;
+        }
       });
-      
-      console.log('🎯 ActivityRing: Processed activity data:', {
-        hoursWorked: totalHours,
-        targetHours: targetHours,
-        completionPercentage: completionPercentage
-      });
-      
+
+      // Convert to array and sort by hours
+      const activitiesArray = Array.from(activityMap.values())
+        .sort((a, b) => b.hours - a.hours)
+        .slice(0, 10); // Top 10 activities
+
+      setActivitiesData(activitiesArray);
+      setTotalHours(total);
+      console.log('📊 ACTIVITIES: Processed data:', activitiesArray);
+
     } catch (error) {
-      console.error('🎯 ActivityRing: Error fetching activity data:', error);
-      setError(error.message || 'Failed to load activity data');
-      setSampleData();
+      console.error('📊 ACTIVITIES ERROR:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const setSampleData = () => {
-    const sampleHours = 32;
-    const targetHours = 40;
-    setActivityData({
-      hoursWorked: sampleHours,
-      targetHours: targetHours,
-      completionPercentage: (sampleHours / targetHours) * 100
+  const formatHours = (hours) => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
+  };
+
+  const getPercentage = (hours) => {
+    return totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
+  };
+
+  // Generate chart segments for donut chart
+  const generateChartSegments = () => {
+    if (activitiesData.length === 0) return [];
+
+    let cumulativePercentage = 0;
+    return activitiesData.map(activity => {
+      const percentage = parseFloat(getPercentage(activity.hours));
+      const startAngle = cumulativePercentage * 3.6; // Convert to degrees
+      const endAngle = (cumulativePercentage + percentage) * 3.6;
+      
+      cumulativePercentage += percentage;
+      
+      return {
+        ...activity,
+        percentage,
+        startAngle,
+        endAngle,
+        strokeDasharray: `${percentage} ${100 - percentage}`,
+        strokeDashoffset: -cumulativePercentage + percentage
+      };
     });
   };
 
-  const getStatusColor = () => {
-    if (activityData.completionPercentage >= 100) return '#4CAF50'; // Green
-    if (activityData.completionPercentage >= 80) return '#FF9800';  // Orange
-    return '#2196F3'; // Blue
-  };
-
-  const getStatusText = () => {
-    if (activityData.completionPercentage >= 100) return 'Target Reached!';
-    if (activityData.completionPercentage >= 80) return 'Almost There';
-    return 'In Progress';
-  };
+  const chartSegments = generateChartSegments();
 
   if (loading) {
     return (
-      <div className="activity-ring">
-        <div className="activity-header">
-          <h3>Weekly Progress</h3>
+      <div className="activities-chart">
+        <div className="chart-header">
+          <h3>ACTIVITIES</h3>
+          <a href="/activities" className="chart-link">Go to activities</a>
         </div>
-        <div className="activity-loading">
+        <div className="chart-loading">
           <div className="loading-spinner"></div>
-          <p>Loading activity...</p>
+          <p>Loading activities data...</p>
         </div>
       </div>
     );
   }
 
-  const circumference = 2 * Math.PI * 45; // radius = 45
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (activityData.completionPercentage / 100) * circumference;
+  if (error) {
+    return (
+      <div className="activities-chart">
+        <div className="chart-header">
+          <h3>ACTIVITIES</h3>
+          <a href="/activities" className="chart-link">Go to activities</a>
+        </div>
+        <div className="chart-error">
+          <p>Error loading data: {error}</p>
+          <button onClick={fetchActivitiesData} className="retry-button">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (activitiesData.length === 0) {
+    return (
+      <div className="activities-chart">
+        <div className="chart-header">
+          <h3>ACTIVITIES</h3>
+          <a href="/activities" className="chart-link">Go to activities</a>
+        </div>
+        <div className="chart-empty">
+          <div className="empty-donut-chart">
+            <div className="donut-center">
+              <div className="donut-label">No data</div>
+              <div className="donut-value">0h 0m</div>
+            </div>
+          </div>
+          <div className="activities-list">
+            <h4>Top 10 activities</h4>
+            <p>No activities tracked this week</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="activity-ring">
-      <div className="activity-header">
-        <h3>Weekly Progress</h3>
-        {error && (
-          <div className="activity-error">
-            <small>Using sample data</small>
-          </div>
-        )}
+    <div className="activities-chart">
+      <div className="chart-header">
+        <h3>ACTIVITIES</h3>
+        <a href="/activities" className="chart-link">Go to activities</a>
       </div>
-      
-      <div className="ring-container">
-        <svg className="progress-ring" width="120" height="120">
-          {/* Background circle */}
-          <circle
-            className="progress-ring-background"
-            stroke="#e0e0e0"
-            strokeWidth="8"
-            fill="transparent"
-            r="45"
-            cx="60"
-            cy="60"
-          />
-          {/* Progress circle */}
-          <circle
-            className="progress-ring-progress"
-            stroke={getStatusColor()}
-            strokeWidth="8"
-            fill="transparent"
-            r="45"
-            cx="60"
-            cy="60"
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            transform="rotate(-90 60 60)"
-          />
-        </svg>
-        
-        <div className="ring-content">
-          <div className="hours-worked">
-            {activityData.hoursWorked.toFixed(1)}h
-          </div>
-          <div className="target-hours">
-            of {activityData.targetHours}h
-          </div>
-          <div className="completion-percentage">
-            {activityData.completionPercentage.toFixed(0)}%
+
+      <div className="chart-content">
+        {/* Donut Chart */}
+        <div className="donut-chart-container">
+          <svg className="donut-chart" viewBox="0 0 100 100">
+            {/* Background circle */}
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="#f0f0f0"
+              strokeWidth="8"
+            />
+            
+            {/* Activity segments */}
+            {chartSegments.map((activity, index) => (
+              <circle
+                key={activity.id}
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                stroke={activity.color}
+                strokeWidth="8"
+                strokeDasharray={`${activity.percentage * 2.51} 251.2`}
+                strokeDashoffset={-activity.strokeDashoffset * 2.51}
+                transform="rotate(-90 50 50)"
+                className="donut-segment"
+                style={{
+                  transition: 'stroke-dasharray 0.3s ease, stroke-dashoffset 0.3s ease'
+                }}
+              />
+            ))}
+          </svg>
+          
+          {/* Center content */}
+          <div className="donut-center">
+            <div className="donut-label">clocked</div>
+            <div className="donut-value">{formatHours(totalHours)}</div>
           </div>
         </div>
-      </div>
-      
-      <div className="activity-status">
-        <div className="status-indicator" style={{ backgroundColor: getStatusColor() }}></div>
-        <span className="status-text">{getStatusText()}</span>
-      </div>
-      
-      <div className="activity-details">
-        <div className="detail-item">
-          <span className="detail-label">Remaining:</span>
-          <span className="detail-value">
-            {Math.max(0, activityData.targetHours - activityData.hoursWorked).toFixed(1)}h
-          </span>
-        </div>
-        <div className="detail-item">
-          <span className="detail-label">Daily Avg:</span>
-          <span className="detail-value">
-            {(activityData.hoursWorked / 7).toFixed(1)}h
-          </span>
+
+        {/* Activities List */}
+        <div className="activities-list">
+          <h4>Top 10 activities</h4>
+          <div className="activities-items">
+            {activitiesData.map((activity, index) => (
+              <div key={activity.id} className="activity-item">
+                <div className="activity-info">
+                  <div 
+                    className="activity-color" 
+                    style={{ backgroundColor: activity.color }}
+                  ></div>
+                  <div className="activity-details">
+                    <span className="activity-name">{activity.name}</span>
+                    <span className="activity-hours">{formatHours(activity.hours)}</span>
+                  </div>
+                </div>
+                <div className="activity-percentage">
+                  {getPercentage(activity.hours)}%
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default ActivityRing;
+export default ActivitiesChart;
 
