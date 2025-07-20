@@ -85,11 +85,11 @@ const ActivitiesChart = () => {
       // If no real data, create sample activities
       if (activityMap.size === 0) {
         const sampleActivities = [
-          { id: 'development', name: 'Development', description: 'Software development tasks', color: '#8884d8', hours: 25.5 },
-          { id: 'meetings', name: 'Meetings', description: 'Team meetings and calls', color: '#82ca9d', hours: 8.0 },
-          { id: 'testing', name: 'Testing', description: 'Quality assurance and testing', color: '#ffc658', hours: 6.5 },
-          { id: 'documentation', name: 'Documentation', description: 'Writing and updating docs', color: '#ff7300', hours: 4.0 },
-          { id: 'planning', name: 'Planning', description: 'Project planning and design', color: '#00ff00', hours: 3.5 }
+          { id: 'development', name: 'Development', description: 'Software development tasks', color: '#4F46E5', hours: 25.5 },
+          { id: 'meetings', name: 'Meetings', description: 'Team meetings and calls', color: '#10B981', hours: 8.0 },
+          { id: 'testing', name: 'Testing', description: 'Quality assurance and testing', color: '#F59E0B', hours: 6.5 },
+          { id: 'documentation', name: 'Documentation', description: 'Writing and updating docs', color: '#EF4444', hours: 4.0 },
+          { id: 'planning', name: 'Planning', description: 'Project planning and design', color: '#8B5CF6', hours: 3.5 }
         ];
 
         sampleActivities.forEach(activity => {
@@ -113,9 +113,9 @@ const ActivitiesChart = () => {
       
       // Set fallback sample data
       const sampleActivities = [
-        { id: 'development', name: 'Development', description: 'Software development tasks', color: '#8884d8', hours: 25.5 },
-        { id: 'meetings', name: 'Meetings', description: 'Team meetings and calls', color: '#82ca9d', hours: 8.0 },
-        { id: 'testing', name: 'Testing', description: 'Quality assurance and testing', color: '#ffc658', hours: 6.5 }
+        { id: 'development', name: 'Development', description: 'Software development tasks', color: '#4F46E5', hours: 25.5 },
+        { id: 'meetings', name: 'Meetings', description: 'Team meetings and calls', color: '#10B981', hours: 8.0 },
+        { id: 'testing', name: 'Testing', description: 'Quality assurance and testing', color: '#F59E0B', hours: 6.5 }
       ];
       setActivitiesData(sampleActivities);
       setTotalHours(40);
@@ -126,7 +126,7 @@ const ActivitiesChart = () => {
 
   // Generate consistent colors based on activity ID
   const getRandomColor = (id) => {
-    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#ff00ff', '#00ffff', '#ff0000', '#0000ff', '#ffff00'];
+    const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'];
     const hash = id.toString().split('').reduce((a, b) => {
       a = ((a << 5) - a) + b.charCodeAt(0);
       return a & a;
@@ -171,14 +171,34 @@ const ActivitiesChart = () => {
 
   if (loading) {
     return (
-      <div className="activities-chart">
-        <div className="chart-header">
-          <h3>ACTIVITIES</h3>
-          <a href="/activities" className="chart-link">Go to activities</a>
+      <div style={{ 
+        background: 'white', 
+        padding: '20px', 
+        borderRadius: '8px', 
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)' 
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '20px' 
+        }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>ACTIVITIES</h3>
+          <a href="/activities" style={{ 
+            fontSize: '14px', 
+            color: '#6B7280', 
+            textDecoration: 'none' 
+          }}>
+            Go to activities ↗
+          </a>
         </div>
-        <div className="chart-loading">
-          <div className="loading-spinner"></div>
-          <p>Loading activities data...</p>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          height: '120px' 
+        }}>
+          Loading activities data...
         </div>
       </div>
     );
@@ -186,14 +206,44 @@ const ActivitiesChart = () => {
 
   if (error) {
     return (
-      <div className="activities-chart">
-        <div className="chart-header">
-          <h3>ACTIVITIES</h3>
-          <a href="/activities" className="chart-link">Go to activities</a>
+      <div style={{ 
+        background: 'white', 
+        padding: '20px', 
+        borderRadius: '8px', 
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)' 
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '20px' 
+        }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>ACTIVITIES</h3>
+          <a href="/activities" style={{ 
+            fontSize: '14px', 
+            color: '#6B7280', 
+            textDecoration: 'none' 
+          }}>
+            Go to activities ↗
+          </a>
         </div>
-        <div className="chart-error">
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          height: '120px',
+          gap: '10px'
+        }}>
           <p>Error loading data: {error}</p>
-          <button onClick={fetchActivitiesData} className="retry-button">
+          <button onClick={fetchActivitiesData} style={{
+            padding: '8px 16px',
+            background: '#4F46E5',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}>
             Retry
           </button>
         </div>
@@ -201,99 +251,155 @@ const ActivitiesChart = () => {
     );
   }
 
-  if (activitiesData.length === 0) {
-    return (
-      <div className="activities-chart">
-        <div className="chart-header">
-          <h3>ACTIVITIES</h3>
-          <a href="/activities" className="chart-link">Go to activities</a>
-        </div>
-        <div className="chart-empty">
-          <div className="empty-donut-chart">
-            <div className="donut-center">
-              <div className="donut-label">No data</div>
-              <div className="donut-value">0h 0m</div>
-            </div>
-          </div>
-          <div className="activities-list">
-            <h4>Top 10 activities</h4>
-            <p>No activities tracked this week</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="activities-chart">
-      <div className="chart-header">
-        <h3>ACTIVITIES</h3>
-        <a href="/activities" className="chart-link">Go to activities</a>
+    <div style={{ 
+      background: 'white', 
+      padding: '20px', 
+      borderRadius: '8px', 
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)' 
+    }}>
+      {/* Header */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '20px' 
+      }}>
+        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>ACTIVITIES</h3>
+        <a href="/activities" style={{ 
+          fontSize: '14px', 
+          color: '#6B7280', 
+          textDecoration: 'none' 
+        }}>
+          Go to activities ↗
+        </a>
       </div>
 
-      <div className="chart-content">
-        {/* Donut Chart */}
-        <div className="donut-chart-container">
-          <svg className="donut-chart" viewBox="0 0 100 100">
+      {/* Content */}
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+        {/* FIXED: Properly sized donut chart */}
+        <div style={{ 
+          position: 'relative', 
+          width: '120px', 
+          height: '120px',
+          flexShrink: 0
+        }}>
+          <svg 
+            width="120" 
+            height="120" 
+            viewBox="0 0 120 120"
+            style={{ transform: 'rotate(-90deg)' }}
+          >
             {/* Background circle */}
             <circle
-              cx="50"
-              cy="50"
-              r="40"
+              cx="60"
+              cy="60"
+              r="45"
               fill="none"
-              stroke="#f0f0f0"
-              strokeWidth="8"
+              stroke="#E5E7EB"
+              strokeWidth="12"
             />
             
             {/* Activity segments */}
-            {chartSegments.map((activity, index) => (
-              <circle
-                key={activity.id}
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                stroke={activity.color}
-                strokeWidth="8"
-                strokeDasharray={`${activity.percentage * 2.51} 251.2`}
-                strokeDashoffset={-activity.strokeDashoffset * 2.51}
-                transform="rotate(-90 50 50)"
-                className="donut-segment"
-                style={{
-                  transition: 'stroke-dasharray 0.3s ease, stroke-dashoffset 0.3s ease'
-                }}
-              />
-            ))}
+            {chartSegments.map((activity, index) => {
+              const circumference = 2 * Math.PI * 45;
+              const strokeDasharray = `${(activity.percentage / 100) * circumference} ${circumference}`;
+              const strokeDashoffset = -((chartSegments.slice(0, index).reduce((sum, seg) => sum + seg.percentage, 0) / 100) * circumference);
+              
+              return (
+                <circle
+                  key={activity.id}
+                  cx="60"
+                  cy="60"
+                  r="45"
+                  fill="none"
+                  stroke={activity.color}
+                  strokeWidth="12"
+                  strokeDasharray={strokeDasharray}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                />
+              );
+            })}
           </svg>
           
           {/* Center content */}
-          <div className="donut-center">
-            <div className="donut-label">clocked</div>
-            <div className="donut-value">{formatHours(totalHours)}</div>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            textAlign: 'center'
+          }}>
+            <div style={{ 
+              fontSize: '12px', 
+              color: '#6B7280', 
+              marginBottom: '2px' 
+            }}>
+              clocked
+            </div>
+            <div style={{ 
+              fontSize: '16px', 
+              fontWeight: '600', 
+              color: '#111827' 
+            }}>
+              {formatHours(totalHours)}
+            </div>
           </div>
         </div>
 
         {/* Activities List */}
-        <div className="activities-list">
-          <h4>Top 10 activities</h4>
-          <div className="activities-items">
-            {activitiesData.map((activity, index) => (
-              <div key={activity.id} className="activity-item">
-                <div className="activity-info">
-                  <div 
-                    className="activity-color" 
-                    style={{ backgroundColor: activity.color }}
-                  ></div>
-                  <div className="activity-details">
-                    <span className="activity-name">{activity.name}</span>
-                    <span className="activity-hours">{formatHours(activity.hours)}</span>
-                  </div>
+        <div style={{ flex: 1 }}>
+          <h4 style={{ 
+            margin: '0 0 12px 0', 
+            fontSize: '14px', 
+            fontWeight: '500', 
+            color: '#6B7280' 
+          }}>
+            Top 10 activities
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {activitiesData.slice(0, 5).map((activity, index) => (
+              <div key={activity.id} style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px' 
+              }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: activity.color,
+                  flexShrink: 0
+                }} />
+                <div style={{ 
+                  flex: 1, 
+                  fontSize: '14px', 
+                  color: '#374151',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {activity.name}
                 </div>
-                <div className="activity-percentage">
-                  {getPercentage(activity.hours)}%
+                <div style={{ 
+                  fontSize: '12px', 
+                  color: '#6B7280',
+                  flexShrink: 0
+                }}>
+                  {formatHours(activity.hours)}
                 </div>
               </div>
             ))}
+            {activitiesData.length === 0 && (
+              <div style={{ 
+                fontSize: '14px', 
+                color: '#6B7280', 
+                fontStyle: 'italic' 
+              }}>
+                No activities tracked this week
+              </div>
+            )}
           </div>
         </div>
       </div>
