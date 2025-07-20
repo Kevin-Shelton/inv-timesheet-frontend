@@ -1,233 +1,134 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Download, Search, Filter, Plus, Users, Clock, BarChart3 } from 'lucide-react';
-import DailyTimesheetView from './DailyTimesheetView';
-import Enhanced_DailyTimesheetView from './Enhanced_DailyTimesheetView';
-import WeeklyTimesheetView from './WeeklyTimesheetView';
-import MonthlyTimesheetView from './MonthlyTimesheetView';
-import TimesheetEntryModal from './TimesheetEntryModal';
-import { TimesheetIndicators, StatusBadge } from './TimesheetIndicators';
-import { supabase } from "../../supabaseClient.js";
+import { supabaseApi } from "../../supabaseClient.js";
+import { useAuth } from '../../hooks/useAuth';
 
-const ComprehensiveTimesheetPage = () => {
+const TimesheetPage = () => {
   // State management
-  const [currentView, setCurrentView] = useState('weekly'); // daily, weekly, monthly
-  const [activeTab, setActiveTab] = useState('timesheets'); // timesheets, approvals
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { user, isAuthenticated } = useAuth();
+  const [currentView, setCurrentView] = useState('weekly');
+  const [activeTab, setActiveTab] = useState('timesheets');
   const [selectedWeek, setSelectedWeek] = useState(new Date());
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
-    campaign: 'all',
-    managedBy: 'me',
     payrollHours: 'all',
     groups: 'all',
     members: 'all',
     schedules: 'all'
   });
-  const [showEntryModal, setShowEntryModal] = useState(false);
+  const [timesheetData, setTimesheetData] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [authError, setAuthError] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  // Initialize user data
-  useEffect(() => {
-    const initializeUser = async () => {
-      console.log('🔍 TIMESHEET: Initializing user authentication...');
-      
-      try {
-        // Get current authenticated user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) {
-          console.error('❌ TIMESHEET: Authentication error:', userError);
-          setAuthError('Authentication failed: ' + userError.message);
-          setCurrentUser(null);
-          setLoading(false);
-          return;
-        }
-
-        if (!user) {
-          console.log('❌ TIMESHEET: No authenticated user found');
-          setAuthError('No authenticated user found');
-          setCurrentUser(null);
-          setLoading(false);
-          // Let ProtectedRoute handle the redirect to login
-          return;
-        }
-
-        console.log('✅ TIMESHEET: Authenticated user found:', user.email);
-
-        // Try to get user profile from database
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (profileError) {
-          console.warn('⚠️ TIMESHEET: Profile fetch error:', profileError);
-          // Use basic user info from auth if profile not found
-          const basicUser = {
-            id: user.id,
-            email: user.email,
-            full_name: user.user_metadata?.full_name || user.email,
-            role: 'Standard',
-            employee_type: 'Non-Exempt'
-          };
-          console.log('📊 TIMESHEET: Using basic user info:', basicUser);
-          setCurrentUser(basicUser);
-        } else {
-          console.log('✅ TIMESHEET: User profile loaded:', profile.full_name);
-          setCurrentUser(profile);
-        }
-
-        setAuthError(null);
-        setLoading(false);
-
-      } catch (error) {
-        console.error('❌ TIMESHEET: Initialization error:', error);
-        setAuthError('Failed to initialize user: ' + error.message);
-        setCurrentUser(null);
-        setLoading(false);
-      }
-    };
-
-    initializeUser();
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('🔄 TIMESHEET: Auth state changed:', event, session?.user?.email || 'no user');
-      
-      if (event === 'SIGNED_OUT' || !session) {
-        console.log('🚪 TIMESHEET: User signed out, clearing state');
-        setCurrentUser(null);
-        setAuthError(null);
-        setLoading(false);
-        // Let ProtectedRoute handle redirect
-      } else if (event === 'SIGNED_IN' && session) {
-        console.log('🔑 TIMESHEET: User signed in, reinitializing');
-        initializeUser();
-      }
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, []);
-
-  // Date navigation functions
-  const navigateDate = (direction) => {
-    const newDate = new Date(selectedDate);
-    if (currentView === 'daily') {
-      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
-      setSelectedDate(newDate);
-    } else if (currentView === 'weekly') {
-      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
-      setSelectedWeek(newDate);
-    } else if (currentView === 'monthly') {
-      newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
-      setSelectedMonth(newDate);
-    }
-  };
-
-  // Format date display based on current view
-  const formatDateDisplay = () => {
-    const date = currentView === 'weekly' ? selectedWeek : 
-                 currentView === 'monthly' ? selectedMonth : selectedDate;
+  // Get week dates
+  const getWeekDates = (weekStart) => {
+    const dates = [];
+    const start = new Date(weekStart);
+    // Get Monday of the week
+    const monday = new Date(start);
+    monday.setDate(start.getDate() - start.getDay() + 1);
     
-    if (currentView === 'daily') {
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    } else if (currentView === 'weekly') {
-      const startOfWeek = new Date(date);
-      startOfWeek.setDate(date.getDate() - date.getDay());
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      
-      return `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-    } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'long', 
-        year: 'numeric' 
-      });
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      dates.push(date);
     }
+    return dates;
   };
 
-  // Handle day click from weekly/monthly views
-  const handleDayClick = (date) => {
-    setSelectedDate(date);
-    setCurrentView('daily');
-  };
+  const weekDates = getWeekDates(selectedWeek);
 
-  // Export functionality
-  const handleExport = async () => {
-    if (!currentUser) {
-      console.error('❌ EXPORT: No user available for export');
-      return;
+  // Load data
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadTimesheetData();
+      loadUsers();
     }
+  }, [user, isAuthenticated, selectedWeek]);
 
+  const loadTimesheetData = async () => {
     try {
-      console.log('📊 EXPORT: Exporting timesheet data for user:', currentUser.id);
-      // Implement your export logic here
-      // Example: Generate CSV, PDF, or call export API
+      setLoading(true);
+      const startDate = weekDates[0].toISOString().split('T')[0];
+      const endDate = weekDates[6].toISOString().split('T')[0];
+
+      const entries = await supabaseApi.getTimesheets({
+        startDate: startDate,
+        endDate: endDate
+      });
+
+      setTimesheetData(entries || []);
     } catch (error) {
-      console.error('❌ EXPORT: Export error:', error);
+      console.error('Error loading timesheet data:', error);
+      setTimesheetData([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Filter change handlers
-  const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterType]: value
-    }));
+  const loadUsers = async () => {
+    try {
+      const usersData = await supabaseApi.getUsers();
+      setUsers(usersData || []);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      setUsers([]);
+    }
   };
 
-  // Handle view change
-  const handleViewChange = (newView) => {
-    console.log('🔄 TIMESHEET: Changing view from', currentView, 'to', newView);
-    setCurrentView(newView);
+  // Date navigation
+  const navigateWeek = (direction) => {
+    const newWeek = new Date(selectedWeek);
+    newWeek.setDate(newWeek.getDate() + (direction === 'next' ? 7 : -7));
+    setSelectedWeek(newWeek);
   };
 
-  // Loading state
-  if (loading) {
+  // Format week display
+  const formatWeekDisplay = () => {
+    const startOfWeek = weekDates[0];
+    const endOfWeek = weekDates[6];
+    
+    return `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  };
+
+  // Get hours for a specific user and date
+  const getHoursForUserAndDate = (userId, date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const dayEntries = timesheetData.filter(entry => 
+      entry.user_id === userId && entry.date === dateStr
+    );
+    
+    if (dayEntries.length === 0) return '-';
+    
+    const totalHours = dayEntries.reduce((sum, entry) => {
+      return sum + (parseFloat(entry.hours_worked) || parseFloat(entry.total_hours) || parseFloat(entry.regular_hours) || 0);
+    }, 0);
+    
+    return totalHours > 0 ? totalHours.toFixed(1) : '-';
+  };
+
+  // Get total hours for a user for the week
+  const getWeeklyTotalForUser = (userId) => {
+    const total = weekDates.reduce((sum, date) => {
+      const hours = getHoursForUserAndDate(userId, date);
+      return sum + (hours !== '-' ? parseFloat(hours) : 0);
+    }, 0);
+    
+    return total > 0 ? total.toFixed(1) : '-';
+  };
+
+  // Filter users based on search
+  const filteredUsers = users.filter(user => 
+    user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading timesheet...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Authentication error state
-  if (authError || !currentUser) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
-          <p className="text-gray-600 mb-4">
-            {authError || 'You need to be logged in to access the timesheet.'}
-          </p>
-          <div className="text-sm text-gray-500">
-            <p>If you're seeing this message, you may need to:</p>
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>Log in to your account</li>
-              <li>Check your internet connection</li>
-              <li>Contact support if the issue persists</li>
-            </ul>
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
-          >
-            Retry
-          </button>
+          <p className="text-gray-600">Please log in to access timesheets.</p>
         </div>
       </div>
     );
@@ -235,86 +136,65 @@ const ComprehensiveTimesheetPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Main Header with Tabs and Selectors */}
+      {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Left side - Tabs */}
-            <div className="flex space-x-8">
-              <button
-                onClick={() => setActiveTab('timesheets')}
-                className={`pb-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'timesheets'
-                    ? 'border-orange-500 text-orange-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Timesheets
-              </button>
-              <button
-                onClick={() => setActiveTab('approvals')}
-                className={`pb-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'approvals'
-                    ? 'border-orange-500 text-orange-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Approvals
-              </button>
-            </div>
+          <h1 className="text-2xl font-semibold text-gray-900">Timesheets</h1>
+        </div>
+      </div>
 
-            {/* Right side - User Info and Selectors */}
-            <div className="flex items-center space-x-4">
-              {/* User Info */}
-              <div className="text-sm text-gray-600">
-                Welcome, <span className="font-medium">{currentUser.full_name || currentUser.email}</span>
-              </div>
-
-              <select
-                value={filters.campaign}
-                onChange={(e) => handleFilterChange('campaign', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="all">All Campaigns</option>
-                <option value="potions">Potions</option>
-                <option value="divination">Divination Readings</option>
-                <option value="herbology">Herbology</option>
-              </select>
-
-              <select
-                value={filters.managedBy}
-                onChange={(e) => handleFilterChange('managedBy', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="me">Managed by me</option>
-                <option value="all">All managers</option>
-                <option value="team">Team leads</option>
-              </select>
-            </div>
+      {/* Tabs */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-6">
+          <div className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab('timesheets')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'timesheets'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Timesheets
+            </button>
+            <button
+              onClick={() => setActiveTab('approvals')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'approvals'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Approvals
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Secondary Header with View Selector and Date Navigation */}
+      {/* Controls */}
       <div className="bg-white border-b border-gray-200">
-        <div className="px-6 py-3">
+        <div className="px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Left side - View Selector */}
+            {/* Left side - Welcome and View Selector */}
             <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600">
+                Welcome, <span className="font-medium">{user.full_name || user.email}</span>
+              </div>
+              
               <select
                 value={currentView}
-                onChange={(e) => handleViewChange(e.target.value)}
+                onChange={(e) => setCurrentView(e.target.value)}
                 className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
-                <option value="daily">Daily Timesheets</option>
                 <option value="weekly">Weekly Timesheets</option>
+                <option value="daily">Daily Timesheets</option>
                 <option value="monthly">Monthly Timesheets</option>
               </select>
 
               {/* Date Navigation */}
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => navigateDate('prev')}
+                  onClick={() => navigateWeek('prev')}
                   className="p-1 hover:bg-gray-100 rounded"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -322,11 +202,11 @@ const ComprehensiveTimesheetPage = () => {
                 
                 <div className="flex items-center space-x-2 px-3 py-1 bg-gray-50 rounded-md">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium">{formatDateDisplay()}</span>
+                  <span className="text-sm font-medium">{formatWeekDisplay()}</span>
                 </div>
                 
                 <button
-                  onClick={() => navigateDate('next')}
+                  onClick={() => navigateWeek('next')}
                   className="p-1 hover:bg-gray-100 rounded"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -334,11 +214,8 @@ const ComprehensiveTimesheetPage = () => {
               </div>
             </div>
 
-            {/* Right side - Export Button */}
-            <button
-              onClick={handleExport}
-              className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
-            >
+            {/* Right side - Export */}
+            <button className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
               <Download className="h-4 w-4" />
               <span>Export</span>
             </button>
@@ -346,37 +223,35 @@ const ComprehensiveTimesheetPage = () => {
         </div>
       </div>
 
-      {/* Filters Section */}
+      {/* Filters */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-6 py-3">
           <div className="flex items-center justify-between">
-            {/* Left side - Filter Dropdowns */}
+            {/* Filter Dropdowns */}
             <div className="flex items-center space-x-4">
               <select
                 value={filters.payrollHours}
-                onChange={(e) => handleFilterChange('payrollHours', e.target.value)}
+                onChange={(e) => setFilters(prev => ({ ...prev, payrollHours: e.target.value }))}
                 className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 <option value="all">Payroll hours</option>
                 <option value="regular">Regular hours</option>
                 <option value="overtime">Overtime</option>
-                <option value="vacation">Vacation</option>
               </select>
 
               <select
                 value={filters.groups}
-                onChange={(e) => handleFilterChange('groups', e.target.value)}
+                onChange={(e) => setFilters(prev => ({ ...prev, groups: e.target.value }))}
                 className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 <option value="all">Groups</option>
                 <option value="development">Development</option>
                 <option value="marketing">Marketing</option>
-                <option value="sales">Sales</option>
               </select>
 
               <select
                 value={filters.members}
-                onChange={(e) => handleFilterChange('members', e.target.value)}
+                onChange={(e) => setFilters(prev => ({ ...prev, members: e.target.value }))}
                 className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 <option value="all">Members</option>
@@ -386,7 +261,7 @@ const ComprehensiveTimesheetPage = () => {
 
               <select
                 value={filters.schedules}
-                onChange={(e) => handleFilterChange('schedules', e.target.value)}
+                onChange={(e) => setFilters(prev => ({ ...prev, schedules: e.target.value }))}
                 className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 <option value="all">Schedules</option>
@@ -400,12 +275,12 @@ const ComprehensiveTimesheetPage = () => {
               </button>
             </div>
 
-            {/* Right side - Search */}
+            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search employees..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 w-64"
@@ -415,73 +290,98 @@ const ComprehensiveTimesheetPage = () => {
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1">
-        {currentView === 'daily' && (
-          <Enhanced_DailyTimesheetView
-            userId={currentUser?.id}
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-            searchQuery={searchQuery}
-            filters={filters}
-          />
-        )}
-
-        {currentView === 'weekly' && (
-          <WeeklyTimesheetView
-            userId={currentUser?.id}
-            selectedWeek={selectedWeek}
-            onWeekChange={setSelectedWeek}
-            onDayClick={handleDayClick}
-            searchQuery={searchQuery}
-            filters={filters}
-            onCreateEntry={(date) => {
-              setSelectedDate(date);
-              setShowEntryModal(true);
-            }}
-          />
-        )}
-
-        {currentView === 'monthly' && (
-          <MonthlyTimesheetView
-            userId={currentUser?.id}
-            selectedMonth={selectedMonth}
-            onMonthChange={setSelectedMonth}
-            onDayClick={handleDayClick}
-            searchQuery={searchQuery}
-            filters={filters}
-          />
-        )}
+      {/* Timesheet Table */}
+      <div className="bg-white">
+        <div className="px-6 py-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+              <span className="ml-2 text-gray-600">Loading timesheets...</span>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">
+                      {/* Empty header for user names */}
+                    </th>
+                    {weekDates.map((date, index) => (
+                      <th key={index} className="text-center py-3 px-4 font-medium text-gray-900 min-w-[80px]">
+                        <div className="flex flex-col items-center">
+                          <div className="text-xs text-gray-500 uppercase">
+                            {['M', 'T', 'W', 'T', 'F', 'S', 'S'][index]}
+                          </div>
+                          <div className="text-sm">
+                            {date.getDate()}
+                          </div>
+                        </div>
+                      </th>
+                    ))}
+                    <th className="text-center py-3 px-4 font-medium text-gray-900 min-w-[80px]">
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="text-center py-12 text-gray-500">
+                        {searchQuery ? 'No users found matching your search.' : 'No timesheet data for this week.'}
+                        <div className="mt-4">
+                          <button
+                            onClick={() => setShowAddModal(true)}
+                            className="inline-flex items-center px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Time Entry
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map((userData, userIndex) => (
+                      <tr key={userData.id || userIndex} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8">
+                              <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center">
+                                <span className="text-sm font-medium text-white">
+                                  {(userData.full_name || userData.email || 'U').charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900">
+                                {userData.full_name || userData.email || 'Unknown User'}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        {weekDates.map((date, dateIndex) => (
+                          <td key={dateIndex} className="text-center py-3 px-4">
+                            <div className="text-sm text-gray-900">
+                              {getHoursForUserAndDate(userData.id, date)}
+                            </div>
+                          </td>
+                        ))}
+                        <td className="text-center py-3 px-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {getWeeklyTotalForUser(userData.id)}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Add Entry Modal */}
-      {showEntryModal && (
-        <TimesheetEntryModal
-          isOpen={showEntryModal}
-          onClose={() => setShowEntryModal(false)}
-          userId={currentUser?.id}
-          selectedDate={selectedDate}
-          onSave={() => {
-            setShowEntryModal(false);
-            // Refresh current view data
-          }}
-        />
-      )}
-
-      {/* Floating Action Button for Adding Entries */}
-      <button
-        onClick={() => setShowEntryModal(true)}
-        className="fixed bottom-6 right-6 bg-orange-500 text-white p-4 rounded-full shadow-lg hover:bg-orange-600 transition-colors z-50"
-        title="Add new timesheet entry"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
     </div>
   );
 };
 
-export default ComprehensiveTimesheetPage;
-
-// Also export as TimesheetsPage for compatibility with existing imports
-export { ComprehensiveTimesheetPage as TimesheetsPage };
+export default TimesheetPage;
 
