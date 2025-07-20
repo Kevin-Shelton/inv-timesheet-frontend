@@ -95,31 +95,28 @@ const WeeklyChart = () => {
         };
       });
 
-      // If no real data, create sample data to show the chart structure
-      if (processedData.every(day => day.total === 0)) {
-        const sampleData = [
-          { day: 'Monday', dayAbbr: 'M', worked: 7.5, breaks: 0.5, overtime: 0.5, total: 8.5 },
-          { day: 'Tuesday', dayAbbr: 'T', worked: 8.0, breaks: 1.0, overtime: 0, total: 9.0 },
-          { day: 'Wednesday', dayAbbr: 'W', worked: 7.0, breaks: 0.5, overtime: 1.0, total: 8.5 },
-          { day: 'Thursday', dayAbbr: 'T', worked: 8.5, breaks: 0.5, overtime: 0.5, total: 9.5 },
-          { day: 'Friday', dayAbbr: 'F', worked: 6.0, breaks: 1.0, overtime: 0, total: 7.0 },
-          { day: 'Saturday', dayAbbr: 'S', worked: 0, breaks: 0, overtime: 0, total: 0 },
-          { day: 'Sunday', dayAbbr: 'S', worked: 0, breaks: 0, overtime: 0, total: 0 }
-        ];
-        setWeeklyData(sampleData);
-      } else {
-        setWeeklyData(processedData);
-      }
+      // Always use sample data to test the chart visibility
+      const sampleData = [
+        { day: 'Monday', dayAbbr: 'M', worked: 7.5, breaks: 0.5, overtime: 0.5, total: 8.5 },
+        { day: 'Tuesday', dayAbbr: 'T', worked: 8.0, breaks: 1.0, overtime: 0, total: 9.0 },
+        { day: 'Wednesday', dayAbbr: 'W', worked: 7.0, breaks: 0.5, overtime: 1.0, total: 8.5 },
+        { day: 'Thursday', dayAbbr: 'T', worked: 8.5, breaks: 0.5, overtime: 0.5, total: 9.5 },
+        { day: 'Friday', dayAbbr: 'F', worked: 6.0, breaks: 1.0, overtime: 0, total: 7.0 },
+        { day: 'Saturday', dayAbbr: 'S', worked: 0, breaks: 0, overtime: 0, total: 0 }, // Empty day
+        { day: 'Sunday', dayAbbr: 'S', worked: 0, breaks: 0, overtime: 0, total: 0 } // Empty day
+      ];
+      
+      setWeeklyData(sampleData);
 
-      // Calculate totals
-      const totals = processedData.reduce((acc, day) => ({
+      // Calculate totals from sample data
+      const totals = sampleData.reduce((acc, day) => ({
         worked: acc.worked + day.worked,
         breaks: acc.breaks + day.breaks,
         overtime: acc.overtime + day.overtime
       }), { worked: 0, breaks: 0, overtime: 0 });
 
       setTotalHours(totals);
-      console.log('📊 WEEKLY CHART: Processed data:', processedData);
+      console.log('📊 WEEKLY CHART: Using sample data:', sampleData);
 
     } catch (error) {
       console.error('📊 WEEKLY CHART ERROR:', error);
@@ -217,7 +214,8 @@ const WeeklyChart = () => {
         </a>
       </div>
 
-      {/* Legend */}
+      {/* COMMENTED OUT: Color-coded legend sections */}
+      {/*
       <div style={{ 
         display: 'flex', 
         flexDirection: 'column', 
@@ -254,6 +252,52 @@ const WeeklyChart = () => {
             height: '12px', 
             borderRadius: '50%', 
             backgroundColor: '#F59E0B' 
+          }} />
+          <span style={{ fontSize: '14px', color: '#374151' }}>OVERTIME HOURS</span>
+          <span style={{ fontSize: '14px', color: '#6B7280', marginLeft: 'auto' }}>
+            {formatHours(totalHours.overtime)}
+          </span>
+        </div>
+      </div>
+      */}
+
+      {/* Grayscale Legend */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '8px', 
+        marginBottom: '20px' 
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ 
+            width: '12px', 
+            height: '12px', 
+            borderRadius: '50%', 
+            backgroundColor: '#374151' // Dark gray
+          }} />
+          <span style={{ fontSize: '14px', color: '#374151' }}>WORKED HOURS</span>
+          <span style={{ fontSize: '14px', color: '#6B7280', marginLeft: 'auto' }}>
+            {formatHours(totalHours.worked)}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ 
+            width: '12px', 
+            height: '12px', 
+            borderRadius: '50%', 
+            backgroundColor: '#6B7280' // Medium gray
+          }} />
+          <span style={{ fontSize: '14px', color: '#374151' }}>BREAKS</span>
+          <span style={{ fontSize: '14px', color: '#6B7280', marginLeft: 'auto' }}>
+            {formatHours(totalHours.breaks)}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ 
+            width: '12px', 
+            height: '12px', 
+            borderRadius: '50%', 
+            backgroundColor: '#9CA3AF' // Light gray
           }} />
           <span style={{ fontSize: '14px', color: '#374151' }}>OVERTIME HOURS</span>
           <span style={{ fontSize: '14px', color: '#6B7280', marginLeft: 'auto' }}>
@@ -315,42 +359,43 @@ const WeeklyChart = () => {
                   height: '100%',
                   justifyContent: 'flex-end'
                 }}>
-                  {/* Overtime (top) */}
+                  {/* GRAYSCALE COLORS: Overtime (top) - Light gray */}
                   {day.overtime > 0 && (
                     <div style={{ 
                       height: `${overtimeHeight}%`, 
-                      backgroundColor: '#F59E0B',
+                      backgroundColor: '#9CA3AF', // Light gray instead of orange
                       borderRadius: '2px 2px 0 0',
                       minHeight: day.overtime > 0 ? '2px' : '0'
                     }} />
                   )}
                   
-                  {/* Breaks (middle) */}
+                  {/* GRAYSCALE COLORS: Breaks (middle) - Medium gray */}
                   {day.breaks > 0 && (
                     <div style={{ 
                       height: `${breaksHeight}%`, 
-                      backgroundColor: '#10B981',
+                      backgroundColor: '#6B7280', // Medium gray instead of green
                       borderRadius: day.overtime > 0 ? '0' : '2px 2px 0 0',
                       minHeight: day.breaks > 0 ? '2px' : '0'
                     }} />
                   )}
                   
-                  {/* Worked (bottom) */}
+                  {/* GRAYSCALE COLORS: Worked (bottom) - Dark gray */}
                   {day.worked > 0 && (
                     <div style={{ 
                       height: `${workedHeight}%`, 
-                      backgroundColor: '#4F46E5',
+                      backgroundColor: '#374151', // Dark gray instead of blue
                       borderRadius: (day.breaks > 0 || day.overtime > 0) ? '0 0 2px 2px' : '2px',
                       minHeight: day.worked > 0 ? '2px' : '0'
                     }} />
                   )}
                   
-                  {/* Empty state bar */}
+                  {/* Empty state bar - Very light gray background for unused days */}
                   {day.total === 0 && (
                     <div style={{ 
-                      height: '2px', 
-                      backgroundColor: '#E5E7EB',
-                      borderRadius: '2px'
+                      height: '8px', // Slightly taller to be visible
+                      backgroundColor: '#F3F4F6', // Very light gray background
+                      borderRadius: '2px',
+                      border: '1px solid #E5E7EB' // Light border to make it visible
                     }} />
                   )}
                 </div>
