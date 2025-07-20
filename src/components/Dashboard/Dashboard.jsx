@@ -1,4 +1,4 @@
-// Corrected Dashboard Component - Preserves existing structure, adds RLS functionality
+// Fixed Dashboard Component - Correct import path for supabaseClient.js
 // Replace src/components/Dashboard/Dashboard.jsx with this file
 
 import React, { useState, useEffect } from 'react';
@@ -14,12 +14,8 @@ import CurrentTime from './CurrentTime';
 // Centralized CSS import for the dashboard
 import './css/dashboard.css';
 
-// Import RLS client functions
-import { 
-  getCurrentUser, 
-  getUserProfile, 
-  isAuthenticated 
-} from '../../utils/supabase';
+// FIXED: Import from your actual supabaseClient.js location
+import { supabaseApi } from '../../supabaseClient.js';
 
 const Dashboard = ({ user: propUser }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -29,7 +25,7 @@ const Dashboard = ({ user: propUser }) => {
     overtime: '0h 0m'
   });
   
-  // RLS-enhanced user state
+  // Enhanced user state
   const [authenticatedUser, setAuthenticatedUser] = useState(propUser);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -44,7 +40,7 @@ const Dashboard = ({ user: propUser }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Load authenticated user data with RLS
+  // Load authenticated user data
   useEffect(() => {
     loadAuthenticatedUserData();
   }, [propUser]);
@@ -54,8 +50,8 @@ const Dashboard = ({ user: propUser }) => {
       setLoading(true);
       setError(null);
 
-      // Check if user is authenticated
-      const authenticated = await isAuthenticated();
+      // Check if user is authenticated using supabaseApi
+      const authenticated = await supabaseApi.isAuthenticated();
       if (!authenticated) {
         // If not authenticated, use prop user (fallback)
         setAuthenticatedUser(propUser);
@@ -63,14 +59,11 @@ const Dashboard = ({ user: propUser }) => {
         return;
       }
 
-      // Get current authenticated user
-      const currentUser = await getCurrentUser();
+      // Get current authenticated user using supabaseApi
+      const currentUser = await supabaseApi.getCurrentUser();
       if (currentUser) {
         setAuthenticatedUser(currentUser);
-        
-        // Get enhanced user profile
-        const profile = await getUserProfile(currentUser.id);
-        setUserProfile(profile);
+        setUserProfile(currentUser); // Enhanced API already includes profile data
       } else {
         // Fallback to prop user
         setAuthenticatedUser(propUser);
