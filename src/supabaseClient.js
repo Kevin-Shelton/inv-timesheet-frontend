@@ -1,4 +1,4 @@
-// Corrected Supabase Client - Uses ACTUAL database schema
+// Debug Supabase Client - Shows detailed error information
 // Replace your existing src/supabaseClient.js with this file
 
 import { createClient } from '@supabase/supabase-js'
@@ -15,204 +15,224 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', !!supabaseAnonKey)
 } else {
   console.log('✅ SUPABASE CONFIG: Environment variables loaded successfully')
+  console.log('🔗 SUPABASE URL:', supabaseUrl)
 }
 
 export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false, // Disable URL detection to prevent token issues
+    detectSessionInUrl: false,
     flowType: 'pkce'
   }
 })
 
-// Enhanced connection testing
+// Enhanced error logging function
+const logError = (context, error) => {
+  console.error(`🚨 ${context} ERROR:`)
+  console.error('- Message:', error.message)
+  console.error('- Code:', error.code)
+  console.error('- Details:', error.details)
+  console.error('- Hint:', error.hint)
+  console.error('- Full Error:', error)
+}
+
+// Test connection with detailed logging
 const testConnection = async () => {
   try {
+    console.log('🔍 Testing database connection...')
     const { data, error } = await supabase.from('users').select('count').limit(1)
     if (error) {
-      console.warn('⚠️ SUPABASE CONNECTION: Database connection test failed:', error.message)
+      logError('CONNECTION TEST', error)
     } else {
       console.log('✅ SUPABASE CONNECTION: Database connection successful')
     }
   } catch (error) {
-    console.warn('⚠️ SUPABASE CONNECTION: Connection test error:', error.message)
+    logError('CONNECTION TEST CRITICAL', error)
   }
 }
 
-// Clear any invalid tokens on startup
-const clearInvalidTokens = async () => {
+// Test authentication with detailed logging
+const testAuth = async () => {
   try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      // Clear any stored session data
-      await supabase.auth.signOut()
+    console.log('🔍 Testing authentication...')
+    const { data: { session }, error } = await supabase.auth.getSession()
+    if (error) {
+      logError('AUTH TEST', error)
+    } else if (session) {
+      console.log('✅ AUTH: User is authenticated:', session.user.email)
+    } else {
+      console.log('ℹ️ AUTH: No active session')
     }
   } catch (error) {
-    // Clear invalid tokens
-    await supabase.auth.signOut()
+    logError('AUTH TEST CRITICAL', error)
   }
 }
 
-// Initialize auth cleanup and connection test
-clearInvalidTokens()
+// Initialize with detailed testing
 testConnection()
+testAuth()
 
-// Corrected API functions using ACTUAL column names from your schema
+// Debug API functions with extensive logging
 export const supabaseApi = {
   // Check if user is authenticated
   isAuthenticated: async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      return !!session
+      console.log('🔍 Checking authentication...')
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) {
+        logError('AUTH CHECK', error)
+        return false
+      }
+      const isAuth = !!session
+      console.log('🔐 Authentication status:', isAuth)
+      return isAuth
     } catch (error) {
-      console.warn('Auth check failed:', error.message)
+      logError('AUTH CHECK CRITICAL', error)
       return false
     }
   },
 
-  // CORRECTED: Get current user using actual column names
+  // Get current user with detailed logging
   getCurrentUser: async () => {
     try {
+      console.log('🔍 Getting current user...')
       const { data: { user }, error } = await supabase.auth.getUser()
-      if (error || !user) {
-        console.log('👤 No authenticated user found')
+      if (error) {
+        logError('GET CURRENT USER', error)
+        return null
+      }
+      if (!user) {
+        console.log('ℹ️ No authenticated user found')
         return null
       }
       
       console.log('👤 Authenticated user:', user.email)
       
-      // Try to get profile from users table using ACTUAL columns
+      // Try to get profile with detailed logging
       try {
+        console.log('🔍 Fetching user profile for:', user.email)
         const { data: profiles, error: profileError } = await supabase
           .from('users')
-          .select('id, email, full_name, role, employment_type, is_active, pay_rate_per_hour, is_exempt, department, job_title')
+          .select('id, email, full_name, role, employment_type, is_active')
           .eq('email', user.email)
           .limit(1)
         
         if (profileError) {
-          console.warn('👤 Profile fetch error:', profileError.message)
-          return user // Return basic user without profile
+          logError('USER PROFILE FETCH', profileError)
+          return user
         }
         
         if (profiles && profiles.length > 0) {
-          console.log('👤 Found user profile:', profiles[0].full_name)
+          console.log('✅ Found user profile:', profiles[0].full_name)
           return { ...user, ...profiles[0] }
         } else {
-          console.log('👤 No profile found for user, using basic auth data')
+          console.log('ℹ️ No profile found for user, using basic auth data')
           return user
         }
         
       } catch (profileError) {
-        console.warn('👤 Profile fetch failed, using basic user data:', profileError.message)
+        logError('USER PROFILE FETCH CRITICAL', profileError)
         return user
       }
     } catch (error) {
-      console.error('👤 Get current user failed:', error.message)
+      logError('GET CURRENT USER CRITICAL', error)
       return null
     }
   },
 
-  // CORRECTED: Users fetching using actual column names
-  getUsers: async () => {
+  // Get campaigns with detailed logging
+  getCampaigns: async (params = {}) => {
     try {
+      console.log('🎯 FETCHING CAMPAIGNS: Starting with params:', params)
+      
       const isAuth = await supabaseApi.isAuthenticated()
       if (!isAuth) {
-        console.warn('👥 USERS: Not authenticated - using fallback data')
+        console.warn('🎯 CAMPAIGNS: Not authenticated - using fallback data')
         return [
-          { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member', employment_type: 'full_time' }
+          { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true, client_name: 'Sample Client' }
         ]
       }
 
+      console.log('🔍 Executing campaigns query...')
       const { data, error } = await supabase
-        .from('users')
-        .select('id, email, full_name, role, employment_type, is_exempt, is_active, department, job_title, pay_rate_per_hour')
-        .order('full_name', { ascending: true })
+        .from('campaigns')
+        .select('id, name, description, client_name, is_active')
+        .order('name', { ascending: true })
       
       if (error) {
-        console.error('👥 USER FETCH ERROR:', error.message, error.code)
+        logError('CAMPAIGNS FETCH', error)
         return [
-          { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member', employment_type: 'full_time' }
+          { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true, client_name: 'Sample Client' }
         ]
       }
       
-      if (!data || data.length === 0) {
-        console.log('👥 No users found in database, using fallback data')
-        return [
-          { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member', employment_type: 'full_time' }
-        ]
-      }
+      console.log('✅ CAMPAIGNS: Successfully fetched', data?.length || 0, 'campaigns')
+      console.log('📊 Campaign data:', data)
+      return data || []
       
-      console.log('👥 Successfully fetched', data.length, 'users')
-      return data
     } catch (error) {
-      console.error('👥 USER FETCH CRITICAL ERROR:', error.message)
+      logError('CAMPAIGNS FETCH CRITICAL', error)
       return [
-        { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member', employment_type: 'full_time' }
+        { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true, client_name: 'Sample Client' }
       ]
     }
   },
 
-  // CORRECTED: Members fetching using actual column names
+  // Get members with detailed logging
   getMembers: async () => {
     try {
+      console.log('👥 FETCHING MEMBERS: Starting...')
+      
       const isAuth = await supabaseApi.isAuthenticated()
       if (!isAuth) {
         console.warn('👥 MEMBERS: Not authenticated - using fallback data')
         return [
-          { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() },
-          { id: '2', full_name: 'Jane Smith', status: 'out', last_activity: new Date().toISOString() }
+          { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() }
         ]
       }
 
+      console.log('🔍 Executing members query...')
       const { data, error } = await supabase
         .from('users')
-        .select('id, email, full_name, role, employment_type, is_active, department, job_title')
+        .select('id, email, full_name, role, employment_type, is_active')
         .eq('is_active', true)
         .order('full_name', { ascending: true })
       
       if (error) {
-        console.error('👥 MEMBER FETCH ERROR:', error.message, error.code)
+        logError('MEMBERS FETCH', error)
         return [
-          { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() },
-          { id: '2', full_name: 'Jane Smith', status: 'out', last_activity: new Date().toISOString() }
+          { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() }
         ]
       }
       
-      if (!data || data.length === 0) {
-        console.log('👥 No members found in database, using fallback data')
-        return [
-          { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() },
-          { id: '2', full_name: 'Jane Smith', status: 'out', last_activity: new Date().toISOString() }
-        ]
-      }
+      console.log('✅ MEMBERS: Successfully fetched', data?.length || 0, 'members')
+      console.log('📊 Members data:', data)
       
-      const members = data.map(user => ({
+      const members = data?.map(user => ({
         id: user.id,
         full_name: user.full_name,
         email: user.email,
         role: user.role,
         employment_type: user.employment_type,
-        department: user.department,
-        job_title: user.job_title,
-        status: Math.random() > 0.5 ? 'in' : 'out', // Random status for demo
+        status: Math.random() > 0.5 ? 'in' : 'out',
         last_activity: new Date().toISOString()
-      }))
+      })) || []
       
-      console.log('👥 Successfully fetched', members.length, 'members')
       return members
     } catch (error) {
-      console.error('👥 MEMBER FETCH CRITICAL ERROR:', error.message)
+      logError('MEMBERS FETCH CRITICAL', error)
       return [
-        { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() },
-        { id: '2', full_name: 'Jane Smith', status: 'out', last_activity: new Date().toISOString() }
+        { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() }
       ]
     }
   },
 
-  // CORRECTED: Employee info using actual column names
+  // Get employee info with detailed logging
   getEmployeeInfo: async (userId) => {
     try {
+      console.log('👤 FETCHING EMPLOYEE INFO: Starting for user ID:', userId)
+      
       const isAuth = await supabaseApi.isAuthenticated()
       if (!isAuth) {
         console.warn('👤 EMPLOYEE INFO: Not authenticated - using fallback data')
@@ -225,14 +245,15 @@ export const supabaseApi = {
         }
       }
 
+      console.log('🔍 Executing employee info query...')
       const { data, error } = await supabase
         .from('users')
-        .select('id, email, full_name, role, employment_type, is_exempt, pay_rate_per_hour, department, job_title')
+        .select('id, email, full_name, role, employment_type, is_exempt')
         .eq('id', userId)
         .limit(1)
       
       if (error) {
-        console.error('👤 EMPLOYEE INFO FETCH ERROR:', error.message, error.code)
+        logError('EMPLOYEE INFO FETCH', error)
         return {
           id: userId || '1',
           full_name: 'Sample Employee',
@@ -241,9 +262,12 @@ export const supabaseApi = {
           employment_type: 'full_time'
         }
       }
+      
+      console.log('✅ EMPLOYEE INFO: Successfully fetched for user:', userId)
+      console.log('📊 Employee data:', data)
       
       if (!data || data.length === 0) {
-        console.log('👤 No employee found with ID:', userId, '- using fallback data')
+        console.log('ℹ️ No employee found with ID:', userId)
         return {
           id: userId || '1',
           full_name: 'Sample Employee',
@@ -253,10 +277,9 @@ export const supabaseApi = {
         }
       }
       
-      console.log('👤 Successfully fetched employee info for:', data[0].full_name)
       return data[0]
     } catch (error) {
-      console.error('👤 EMPLOYEE INFO FETCH CRITICAL ERROR:', error.message)
+      logError('EMPLOYEE INFO FETCH CRITICAL', error)
       return {
         id: userId || '1',
         full_name: 'Sample Employee',
@@ -267,61 +290,7 @@ export const supabaseApi = {
     }
   },
 
-  // CORRECTED: Campaign fetching using actual column names (NO billing_rate_per_hour!)
-  getCampaigns: async (params = {}) => {
-    try {
-      console.log('🎯 FETCHING CAMPAIGNS: Starting with params:', params)
-      
-      const isAuth = await supabaseApi.isAuthenticated()
-      if (!isAuth) {
-        console.warn('🎯 CAMPAIGNS: Not authenticated - using fallback data')
-        return [
-          { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true, client_name: 'Sample Client' },
-          { id: '2', name: 'Development Project', description: 'Software development project', is_active: true, client_name: 'Tech Corp' }
-        ]
-      }
-
-      // Using ACTUAL columns: id, name, description, client_name, start_date, end_date, is_active, created_at, updated_at
-      let query = supabase
-        .from('campaigns')
-        .select('id, name, description, client_name, start_date, end_date, is_active, created_at, updated_at')
-        .order('name', { ascending: true })
-      
-      if (params.is_active !== undefined) {
-        query = query.eq('is_active', params.is_active)
-      }
-      
-      const { data, error } = await query
-      
-      if (error) {
-        console.error('🎯 CAMPAIGN FETCH ERROR:', error.message, error.code)
-        return [
-          { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true, client_name: 'Sample Client' },
-          { id: '2', name: 'Development Project', description: 'Software development project', is_active: true, client_name: 'Tech Corp' }
-        ]
-      }
-      
-      if (!data || data.length === 0) {
-        console.log('🎯 No campaigns found in database, using fallback data')
-        return [
-          { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true, client_name: 'Sample Client' },
-          { id: '2', name: 'Development Project', description: 'Software development project', is_active: true, client_name: 'Tech Corp' }
-        ]
-      }
-      
-      console.log('🎯 CAMPAIGNS: Successfully fetched', data.length, 'campaigns')
-      return data
-      
-    } catch (error) {
-      console.error('🎯 CAMPAIGN FETCH CRITICAL ERROR:', error.message)
-      return [
-        { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true, client_name: 'Sample Client' },
-        { id: '2', name: 'Development Project', description: 'Software development project', is_active: true, client_name: 'Tech Corp' }
-      ]
-    }
-  },
-
-  // CORRECTED: Timesheet fetching using actual column names
+  // Get timesheets with detailed logging
   getTimesheets: async (params = {}) => {
     try {
       console.log('📊 FETCHING TIMESHEETS: Starting with params:', params)
@@ -330,52 +299,28 @@ export const supabaseApi = {
       if (!isAuth) {
         console.warn('📊 TIMESHEETS: Not authenticated - using fallback data')
         return [
-          { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, daily_overtime_hours: 0, hours_worked: 8 },
-          { id: '2', user_id: '2', campaign_id: '1', regular_hours: 7.5, daily_overtime_hours: 0, hours_worked: 7.5 }
+          { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, daily_overtime_hours: 0 }
         ]
       }
 
-      // Using ACTUAL columns from timesheet_entries table
+      console.log('🔍 Executing timesheets query...')
+      
+      // Start with basic query
       let query = supabase
         .from('timesheet_entries')
-        .select(`
-          id,
-          user_id,
-          campaign_id,
-          date,
-          clock_in_time,
-          clock_out_time,
-          break_duration,
-          hours_worked,
-          regular_hours,
-          daily_overtime_hours,
-          weekly_overtime_hours,
-          total_pay_hours,
-          calculation_method,
-          weekly_hours_at_calculation,
-          is_manual_override,
-          is_approved,
-          users!timesheet_entries_user_id_fkey(full_name, employment_type, is_exempt)
-        `)
+        .select('id, user_id, campaign_id, date, hours_worked, regular_hours, daily_overtime_hours')
         .order('date', { ascending: true })
       
       // Apply filters
       if (params.user_id) {
         query = query.eq('user_id', params.user_id)
       }
-      
       if (params.startDate) {
         query = query.gte('date', params.startDate)
       }
-      
       if (params.endDate) {
         query = query.lte('date', params.endDate)
       }
-      
-      if (params.campaign_id) {
-        query = query.eq('campaign_id', params.campaign_id)
-      }
-      
       if (params.limit) {
         query = query.limit(params.limit)
       }
@@ -383,56 +328,66 @@ export const supabaseApi = {
       const { data, error } = await query
       
       if (error) {
-        console.error('📊 TIMESHEET FETCH ERROR:', error.message, error.code)
+        logError('TIMESHEETS FETCH', error)
         return [
-          { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, daily_overtime_hours: 0, hours_worked: 8 },
-          { id: '2', user_id: '2', campaign_id: '1', regular_hours: 7.5, daily_overtime_hours: 0, hours_worked: 7.5 }
+          { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, daily_overtime_hours: 0 }
         ]
       }
       
-      if (!data || data.length === 0) {
-        console.log('📊 No timesheet entries found, using fallback data')
-        return [
-          { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, daily_overtime_hours: 0, hours_worked: 8 },
-          { id: '2', user_id: '2', campaign_id: '1', regular_hours: 7.5, daily_overtime_hours: 0, hours_worked: 7.5 }
-        ]
-      }
+      console.log('✅ TIMESHEETS: Successfully fetched', data?.length || 0, 'entries')
+      console.log('📊 Timesheet data sample:', data?.slice(0, 2))
       
-      console.log('📊 TIMESHEETS: Successfully fetched', data.length, 'entries')
-      return data.map(entry => ({
-        id: entry.id,
-        user_id: entry.user_id,
-        campaign_id: entry.campaign_id,
-        date: entry.date,
-        hours_worked: entry.hours_worked || 0,
-        regular_hours: entry.regular_hours || 0,
-        overtime_hours: entry.daily_overtime_hours || 0, // Map to expected field name
-        daily_overtime_hours: entry.daily_overtime_hours || 0,
-        weekly_overtime_hours: entry.weekly_overtime_hours || 0,
-        total_hours: entry.total_pay_hours || entry.hours_worked || 0,
-        clock_in_time: entry.clock_in_time,
-        clock_out_time: entry.clock_out_time,
-        break_duration: entry.break_duration,
-        calculation_method: entry.calculation_method,
-        weekly_hours_at_calculation: entry.weekly_hours_at_calculation,
-        is_manual_override: entry.is_manual_override,
-        is_approved: entry.is_approved,
-        users: entry.users
-      }))
+      return data || []
       
     } catch (error) {
-      console.error('📊 TIMESHEET FETCH CRITICAL ERROR:', error.message)
+      logError('TIMESHEETS FETCH CRITICAL', error)
       return [
-        { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, daily_overtime_hours: 0, hours_worked: 8 },
-        { id: '2', user_id: '2', campaign_id: '1', regular_hours: 7.5, daily_overtime_hours: 0, hours_worked: 7.5 }
+        { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, daily_overtime_hours: 0 }
       ]
     }
   },
 
-  // Simple login without complex profile fetching
+  // Get users with detailed logging
+  getUsers: async () => {
+    try {
+      console.log('👥 FETCHING USERS: Starting...')
+      
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        console.warn('👥 USERS: Not authenticated - using fallback data')
+        return [
+          { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member' }
+        ]
+      }
+
+      console.log('🔍 Executing users query...')
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, full_name, role, employment_type, is_active')
+        .order('full_name', { ascending: true })
+      
+      if (error) {
+        logError('USERS FETCH', error)
+        return [
+          { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member' }
+        ]
+      }
+      
+      console.log('✅ USERS: Successfully fetched', data?.length || 0, 'users')
+      console.log('📊 Users data sample:', data?.slice(0, 2))
+      return data || []
+    } catch (error) {
+      logError('USERS FETCH CRITICAL', error)
+      return [
+        { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member' }
+      ]
+    }
+  },
+
+  // Login function
   login: async (email, password) => {
     try {
-      // Clear any existing invalid session first
+      console.log('🔐 Attempting login for:', email)
       await supabase.auth.signOut()
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -440,8 +395,12 @@ export const supabaseApi = {
         password
       })
       
-      if (error) throw error
+      if (error) {
+        logError('LOGIN', error)
+        throw error
+      }
       
+      console.log('✅ Login successful for:', email)
       return {
         token: data.session.access_token,
         user: {
@@ -452,16 +411,19 @@ export const supabaseApi = {
         }
       }
     } catch (error) {
+      logError('LOGIN CRITICAL', error)
       throw new Error(error.message || 'Login failed')
     }
   },
 
-  // Sign out
+  // Logout function
   logout: async () => {
     try {
+      console.log('🔐 Signing out...')
       await supabase.auth.signOut()
+      console.log('✅ Signed out successfully')
     } catch (error) {
-      console.error('Error signing out:', error)
+      logError('LOGOUT', error)
     }
   }
 }
