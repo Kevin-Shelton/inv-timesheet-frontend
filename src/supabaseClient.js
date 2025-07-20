@@ -1,225 +1,264 @@
-// BULLETPROOF SINGLETON SUPABASE CLIENT
-// This prevents multiple GoTrueClient instances completely
-console.log('🔧 SUPABASE CLIENT: File loading started');
-console.log('🔧 ENV CHECK: URL =', import.meta.env.VITE_SUPABASE_URL ? 'SET' : 'MISSING');
-console.log('🔧 ENV CHECK: KEY =', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'MISSING');
+// Supabase Client - Fixed to match your actual database schema
+// Replace your existing supabase client file with this
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js'
 
-// Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
+// Use Vercel environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Global singleton instance
-let supabaseInstance = null;
-let isInitialized = false;
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables')
+}
 
-// Prevent multiple initialization
-const initializeSupabase = () => {
-  if (isInitialized && supabaseInstance) {
-    console.log('♻️ SINGLETON: Returning existing Supabase instance');
-    return supabaseInstance;
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
   }
+})
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('❌ SUPABASE CONFIG ERROR: Missing URL or Anon Key');
-    console.log('URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
-    console.log('Key:', supabaseAnonKey ? '✅ Set' : '❌ Missing');
-    throw new Error('Supabase configuration missing');
-  }
-
-  console.log('🚀 SINGLETON: Creating single Supabase client instance');
-  
-  try {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        // Use a consistent storage key
-        storageKey: 'sb-auth-token',
-        // Prevent multiple auth instances
-        persistSession: true,
-        detectSessionInUrl: true,
-        // Consistent auth settings
-        autoRefreshToken: true,
-        flowType: 'pkce'
-      },
-      // Consistent global settings
-      global: {
-        headers: {
-          'X-Client-Info': 'timesheet-portal-singleton'
-        }
-      }
-    });
-
-    isInitialized = true;
-    console.log('✅ SINGLETON: Supabase client initialized successfully');
-    
-    // Add auth state listener once
-    supabaseInstance.auth.onAuthStateChange((event, session) => {
-      console.log('🔐 SINGLETON AUTH:', event, session?.user?.email || 'no user');
-    });
-
-    return supabaseInstance;
-    
-  } catch (error) {
-    console.error('❌ SINGLETON ERROR: Failed to create Supabase client:', error);
-    throw error;
-  }
-};
-
-// Export the singleton instance
-export const supabase = initializeSupabase();
-
-// Prevent any other components from creating new instances
-export const createSupabaseClient = () => {
-  console.warn('⚠️ SINGLETON WARNING: Use the exported "supabase" instance instead of creating new clients');
-  return supabase;
-};
-
-// Helper functions that use the singleton
-export const authHelpers = {
-  // Get current user safely
-  getCurrentUser: async () => {
+// API functions that match your actual database schema
+export const supabaseApi = {
+  // Users API - matches your users table structure
+  getUsers: async () => {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) {
-        console.log('🔐 AUTH: No current user -', error.message);
-        return null;
-      }
-      console.log('🔐 AUTH: Current user -', user?.email);
-      return user;
-    } catch (err) {
-      console.error('❌ AUTH ERROR:', err);
-      return null;
-    }
-  },
-
-  // Get current session safely
-  getCurrentSession: async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.log('🔐 SESSION: No active session -', error.message);
-        return null;
-      }
-      console.log('🔐 SESSION:', session ? `Active for ${session.user.email}` : 'None');
-      return session;
-    } catch (err) {
-      console.error('❌ SESSION ERROR:', err);
-      return null;
-    }
-  },
-
-  // Sign out safely
-  signOut: async () => {
-    try {
-      console.log('🔐 SIGNOUT: Signing out user...');
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('❌ SIGNOUT ERROR:', error);
-        return false;
-      }
-      console.log('✅ SIGNOUT: User signed out successfully');
-      return true;
-    } catch (err) {
-      console.error('❌ SIGNOUT ERROR:', err);
-      return false;
-    }
-  },
-
-  // Check if user is authenticated
-  isAuthenticated: async () => {
-    const session = await authHelpers.getCurrentSession();
-    return !!session?.user;
-  }
-};
-
-// Database helpers that use the singleton
-export const dbHelpers = {
-  // Get user profile safely
-  getUserProfile: async (userId) => {
-    try {
-      console.log('📊 DB: Fetching user profile for:', userId);
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select('id, email, full_name, role, employment_type, is_exempt')
+        .order('full_name', { ascending: true })
+      
+      if (error) {
+        console.error('Error fetching users:', error)
+        return []
+      }
+      
+      return data || []
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      return []
+    }
+  },
+
+  // Members API for Who's In/Out panel
+  getMembers: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, full_name, role, employment_type')
+        .order('full_name', { ascending: true })
+      
+      if (error) {
+        console.error('Error fetching members:', error)
+        return []
+      }
+      
+      // Transform data for Who's In/Out display
+      return data?.map(user => ({
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        employment_type: user.employment_type,
+        status: 'out', // Default status
+        last_activity: new Date().toISOString()
+      })) || []
+    } catch (error) {
+      console.error('Error fetching members:', error)
+      return []
+    }
+  },
+
+  // Employee Info API
+  getEmployeeInfo: async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, full_name, role, employment_type, is_exempt')
         .eq('id', userId)
-        .single();
-
+        .single()
+      
       if (error) {
-        console.log('📊 DB: No user profile found -', error.message);
-        return null;
+        console.error('Error fetching employee info:', error)
+        return null
       }
-
-      console.log('📊 DB: User profile loaded -', data.full_name);
-      return data;
-    } catch (err) {
-      console.error('❌ DB ERROR:', err);
-      return null;
+      
+      return data
+    } catch (error) {
+      console.error('Error fetching employee info:', error)
+      return null
     }
   },
 
-  // Get user statuses safely
-  getUserStatuses: async () => {
+  // Campaigns API - matches your campaigns table structure
+  getCampaigns: async (params = {}) => {
     try {
-      console.log('📊 DB: Fetching user statuses...');
-      const { data, error } = await supabase
-        .from('current_user_status')
-        .select('*')
-        .order('timestamp', { ascending: false });
-
-      if (error) {
-        console.log('📊 DB: Error fetching user statuses -', error.message);
-        return [];
+      let query = supabase
+        .from('campaigns')
+        .select('id, name, description, is_active')
+        .order('name', { ascending: true })
+      
+      if (params.is_active !== undefined) {
+        query = query.eq('is_active', params.is_active)
       }
-
-      console.log('📊 DB: Fetched user statuses:', data?.length || 0, 'records');
-      return data || [];
-    } catch (err) {
-      console.error('❌ DB ERROR:', err);
-      return [];
+      
+      const { data, error } = await query
+      
+      if (error) {
+        console.error('Error fetching campaigns:', error)
+        return []
+      }
+      
+      return data || []
+    } catch (error) {
+      console.error('Error fetching campaigns:', error)
+      return []
     }
   },
 
-  // Get holidays safely
-  getHolidays: async () => {
+  // Timesheets API - matches your timesheet_entries table structure
+  getTimesheets: async (params = {}) => {
     try {
-      console.log('📊 DB: Fetching holidays...');
-      const { data, error } = await supabase
-        .from('holidays')
-        .select('*')
-        .order('date', { ascending: true });
-
-      if (error) {
-        console.log('📊 DB: Error fetching holidays -', error.message);
-        return [];
+      let query = supabase
+        .from('timesheet_entries')
+        .select('id, user_id, campaign_id, regular_hours')
+        .order('id', { ascending: false })
+      
+      if (params.user_id) {
+        query = query.eq('user_id', params.user_id)
       }
+      
+      if (params.campaign_id) {
+        query = query.eq('campaign_id', params.campaign_id)
+      }
+      
+      if (params.limit) {
+        query = query.limit(params.limit)
+      }
+      
+      const { data, error } = await query
+      
+      if (error) {
+        console.error('ENHANCED TRACKED HOURS ERROR:', error)
+        return []
+      }
+      
+      return data?.map(entry => ({
+        id: entry.id,
+        user_id: entry.user_id,
+        campaign_id: entry.campaign_id,
+        hours: entry.regular_hours || 0,
+        regular_hours: entry.regular_hours || 0,
+        overtime_hours: 0 // Default since not in your schema yet
+      })) || []
+    } catch (error) {
+      console.error('ENHANCED TRACKED HOURS ERROR:', error)
+      return []
+    }
+  },
 
-      console.log('📊 DB: Fetched holidays:', data?.length || 0, 'records');
-      return data || [];
-    } catch (err) {
-      console.error('❌ DB ERROR:', err);
-      return [];
+  // Authentication with your users table
+  login: async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      
+      if (error) throw error
+      
+      // Get user profile from your users table
+      try {
+        const { data: userProfile, error: profileError } = await supabase
+          .from('users')
+          .select('id, email, full_name, role, employment_type, is_exempt')
+          .eq('email', email)
+          .single()
+        
+        if (profileError) {
+          console.warn('No user profile found in users table')
+          return {
+            token: data.session.access_token,
+            user: {
+              id: data.user.id,
+              email: data.user.email,
+              full_name: data.user.user_metadata?.full_name || email,
+              role: 'team_member'
+            }
+          }
+        }
+        
+        return {
+          token: data.session.access_token,
+          user: {
+            id: userProfile.id,
+            email: userProfile.email,
+            full_name: userProfile.full_name,
+            role: userProfile.role,
+            employment_type: userProfile.employment_type,
+            is_exempt: userProfile.is_exempt
+          }
+        }
+      } catch (profileError) {
+        return {
+          token: data.session.access_token,
+          user: {
+            id: data.user.id,
+            email: data.user.email,
+            full_name: data.user.user_metadata?.full_name || email,
+            role: 'team_member'
+          }
+        }
+      }
+    } catch (error) {
+      throw new Error(error.message || 'Login failed')
+    }
+  },
+
+  // Create timesheet entry
+  createTimesheet: async (data) => {
+    try {
+      const { data: result, error } = await supabase
+        .from('timesheet_entries')
+        .insert([{
+          user_id: data.user_id,
+          campaign_id: data.campaign_id,
+          regular_hours: data.regular_hours || 0
+        }])
+        .select()
+        .single()
+      
+      if (error) throw error
+      return result
+    } catch (error) {
+      console.error('Error creating timesheet:', error)
+      throw error
+    }
+  },
+
+  // Update timesheet entry
+  updateTimesheet: async (id, data) => {
+    try {
+      const { data: result, error } = await supabase
+        .from('timesheet_entries')
+        .update({
+          user_id: data.user_id,
+          campaign_id: data.campaign_id,
+          regular_hours: data.regular_hours || 0
+        })
+        .eq('id', id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return result
+    } catch (error) {
+      console.error('Error updating timesheet:', error)
+      throw error
     }
   }
-};
-
-// Prevent window-level multiple instances
-if (typeof window !== 'undefined') {
-  if (window.__SUPABASE_SINGLETON__) {
-    console.warn('⚠️ SINGLETON: Multiple singleton attempts detected');
-  } else {
-    window.__SUPABASE_SINGLETON__ = supabase;
-    console.log('✅ SINGLETON: Registered global singleton');
-  }
 }
 
-// Development debugging
-if (process.env.NODE_ENV === 'development') {
-  console.log('🔧 DEV: Supabase singleton loaded');
-  console.log('🔧 DEV: URL configured:', !!supabaseUrl);
-  console.log('🔧 DEV: Key configured:', !!supabaseAnonKey);
-}
-
-// Export default for convenience
-export default supabase;
+export default supabase
 
