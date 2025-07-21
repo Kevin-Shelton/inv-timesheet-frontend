@@ -385,6 +385,3 @@ const TimesheetPage = () => {
 
 export default TimesheetPage;
 
-// Export both names for compatibility
-export { TimesheetPage as TimesheetsPage };
-
