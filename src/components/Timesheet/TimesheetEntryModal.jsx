@@ -18,14 +18,12 @@ const TimesheetEntryModal = ({
     isManualOverride: false,
     overrideReason: '',
     manualRegular: 0,
-    manualOvertime: 0,
-    manualDailyDouble: 0
+    manualOvertime: 0
   });
 
   const [calculatedHours, setCalculatedHours] = useState({
     regular: 0,
     overtime: 0,
-    dailyDoubleOvertime: 0,
     total: 0
   });
 
@@ -45,8 +43,7 @@ const TimesheetEntryModal = ({
           isManualOverride: entry.is_manual_override || false,
           overrideReason: entry.override_reason || '',
           manualRegular: parseFloat(entry.regular_hours) || 0,
-          manualOvertime: parseFloat(entry.overtime_hours) || 0,
-          manualDailyDouble: parseFloat(entry.daily_double_overtime) || 0
+          manualOvertime: parseFloat(entry.overtime_hours) || 0
         });
       } else {
         // Creating new entry
@@ -58,8 +55,7 @@ const TimesheetEntryModal = ({
           isManualOverride: false,
           overrideReason: '',
           manualRegular: 0,
-          manualOvertime: 0,
-          manualDailyDouble: 0
+          manualOvertime: 0
         });
       }
       setErrors({});
@@ -75,7 +71,7 @@ const TimesheetEntryModal = ({
 
   const calculateHours = () => {
     if (!formData.timeIn || !formData.timeOut) {
-      setCalculatedHours({ regular: 0, overtime: 0, dailyDoubleOvertime: 0, total: 0 });
+      setCalculatedHours({ regular: 0, overtime: 0, total: 0 });
       return;
     }
 
@@ -93,21 +89,18 @@ const TimesheetEntryModal = ({
       const workedMinutes = Math.max(0, totalMinutes - breakMinutes);
       const workedHours = workedMinutes / 60;
 
-      // Simple calculation - can be enhanced with more complex overtime rules
+      // Simple calculation - regular up to 8 hours, overtime after 8 hours
       let regular = Math.min(8, workedHours);
       let overtime = Math.max(0, workedHours - 8);
-      let dailyDouble = Math.max(0, workedHours - 12); // Double time after 12 hours
-      overtime = Math.max(0, overtime - dailyDouble); // Adjust overtime
 
       setCalculatedHours({
         regular: Math.round(regular * 4) / 4, // Round to quarter hours
         overtime: Math.round(overtime * 4) / 4,
-        dailyDoubleOvertime: Math.round(dailyDouble * 4) / 4,
         total: Math.round(workedHours * 4) / 4
       });
     } catch (error) {
       console.error('Error calculating hours:', error);
-      setCalculatedHours({ regular: 0, overtime: 0, dailyDoubleOvertime: 0, total: 0 });
+      setCalculatedHours({ regular: 0, overtime: 0, total: 0 });
     }
   };
 
@@ -144,7 +137,7 @@ const TimesheetEntryModal = ({
       if (!formData.overrideReason.trim()) {
         newErrors.overrideReason = 'Override reason is required';
       }
-      if (formData.manualRegular < 0 || formData.manualOvertime < 0 || formData.manualDailyDouble < 0) {
+      if (formData.manualRegular < 0 || formData.manualOvertime < 0) {
         newErrors.manualHours = 'Hours cannot be negative';
       }
     }
@@ -176,13 +169,11 @@ const TimesheetEntryModal = ({
         // Use manual values
         entryData.regular_hours = formData.manualRegular;
         entryData.overtime_hours = formData.manualOvertime;
-        entryData.daily_double_overtime = formData.manualDailyDouble;
-        entryData.hours_worked = formData.manualRegular + formData.manualOvertime + formData.manualDailyDouble;
+        entryData.hours_worked = formData.manualRegular + formData.manualOvertime;
       } else {
         // Use calculated values
         entryData.regular_hours = calculatedHours.regular;
         entryData.overtime_hours = calculatedHours.overtime;
-        entryData.daily_double_overtime = calculatedHours.dailyDoubleOvertime;
         entryData.hours_worked = calculatedHours.total;
       }
 
@@ -219,10 +210,9 @@ const TimesheetEntryModal = ({
       isManualOverride: false,
       overrideReason: '',
       manualRegular: 0,
-      manualOvertime: 0,
-      manualDailyDouble: 0
+      manualOvertime: 0
     });
-    setCalculatedHours({ regular: 0, overtime: 0, dailyDoubleOvertime: 0, total: 0 });
+    setCalculatedHours({ regular: 0, overtime: 0, total: 0 });
     setErrors({});
     setLoading(false);
     if (onClose) {
@@ -515,7 +505,7 @@ const TimesheetEntryModal = ({
                   
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
                     gap: '12px'
                   }}>
                     <div>
@@ -528,12 +518,6 @@ const TimesheetEntryModal = ({
                       <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '2px' }}>Overtime</div>
                       <div style={{ fontSize: '16px', fontWeight: '600', color: '#DC2626' }}>
                         {formatHours(calculatedHours.overtime)}h
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '2px' }}>Daily 2x</div>
-                      <div style={{ fontSize: '16px', fontWeight: '600', color: '#DC2626' }}>
-                        {formatHours(calculatedHours.dailyDoubleOvertime)}h
                       </div>
                     </div>
                     <div>
@@ -583,7 +567,7 @@ const TimesheetEntryModal = ({
                 {/* Manual Hours Input */}
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
                   gap: '16px',
                   marginBottom: '20px'
                 }}>
@@ -640,33 +624,6 @@ const TimesheetEntryModal = ({
                       }}
                     />
                   </div>
-
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#374151',
-                      marginBottom: '6px'
-                    }}>
-                      Daily Double Hours
-                    </label>
-                    <input
-                      type="number"
-                      step="0.25"
-                      min="0"
-                      max="24"
-                      value={formData.manualDailyDouble}
-                      onChange={(e) => handleInputChange('manualDailyDouble', parseFloat(e.target.value) || 0)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #D1D5DB',
-                        borderRadius: '6px',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </div>
                 </div>
 
                 {/* Manual Total Display */}
@@ -682,7 +639,7 @@ const TimesheetEntryModal = ({
                     fontWeight: '600',
                     color: '#92400E'
                   }}>
-                    Total Manual Hours: {formatHours(formData.manualRegular + formData.manualOvertime + formData.manualDailyDouble)}h
+                    Total Manual Hours: {formatHours(formData.manualRegular + formData.manualOvertime)}h
                   </div>
                 </div>
               </>

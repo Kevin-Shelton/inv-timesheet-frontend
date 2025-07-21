@@ -9,6 +9,152 @@ import { supabaseApi } from "../../supabaseClient.js";
 // Import the timesheet CSS
 import './timesheet-page.css';
 
+const TimesheetApprovalsView = ({ userId, searchQuery, filters }) => {
+  const [approvals, setApprovals] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadApprovals = async () => {
+      setLoading(true);
+      try {
+        // Load pending timesheet approvals
+        const pendingApprovals = await supabaseApi.getPendingApprovals(userId);
+        setApprovals(pendingApprovals || []);
+      } catch (error) {
+        console.error('Error loading approvals:', error);
+        setApprovals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId) {
+      loadApprovals();
+    }
+  }, [userId]);
+
+  const handleApprove = async (entryId) => {
+    try {
+      await supabaseApi.approveTimesheet(entryId);
+      // Refresh approvals list
+      const pendingApprovals = await supabaseApi.getPendingApprovals(userId);
+      setApprovals(pendingApprovals || []);
+    } catch (error) {
+      console.error('Error approving timesheet:', error);
+    }
+  };
+
+  const handleReject = async (entryId, reason) => {
+    try {
+      await supabaseApi.rejectTimesheet(entryId, reason);
+      // Refresh approvals list
+      const pendingApprovals = await supabaseApi.getPendingApprovals(userId);
+      setApprovals(pendingApprovals || []);
+    } catch (error) {
+      console.error('Error rejecting timesheet:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="timesheet-loading">
+        <div className="timesheet-loading-spinner"></div>
+        <p>Loading approvals...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '24px' }}>
+      <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>
+        Pending Approvals
+      </h3>
+      
+      {approvals.length === 0 ? (
+        <div className="timesheet-empty-state">
+          <p className="timesheet-empty-message">No pending approvals</p>
+        </div>
+      ) : (
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+          <table className="timesheet-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Date</th>
+                <th>Hours</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {approvals.map((approval) => (
+                <tr key={approval.id}>
+                  <td>
+                    <div className="timesheet-user-cell">
+                      <div className="timesheet-user-avatar">
+                        {approval.employee_name?.charAt(0) || 'U'}
+                      </div>
+                      <div className="timesheet-user-name">
+                        {approval.employee_name || 'Unknown User'}
+                      </div>
+                    </div>
+                  </td>
+                  <td>{approval.date}</td>
+                  <td>{approval.hours_worked || 0}h</td>
+                  <td>
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      backgroundColor: '#FEF3C7',
+                      color: '#92400E'
+                    }}>
+                      Pending
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => handleApprove(approval.id)}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#10B981',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReject(approval.id, 'Rejected by manager')}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#EF4444',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const TimesheetPage = () => {
   // State management
   const [currentView, setCurrentView] = useState('weekly'); // daily, weekly, monthly
@@ -17,6 +163,7 @@ const TimesheetPage = () => {
   const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [currentUser, setCurrentUser] = useState(null);
+  const [campaigns, setCampaigns] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     campaign: 'all',
@@ -30,10 +177,10 @@ const TimesheetPage = () => {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
 
-  // Initialize user data
+  // Initialize user data and campaigns
   useEffect(() => {
-    const initializeUser = async () => {
-      console.log('🔍 TIMESHEET: Initializing user authentication...');
+    const initializeData = async () => {
+      console.log('🔍 TIMESHEET: Initializing user authentication and campaigns...');
       
       try {
         // Use supabaseApi for consistent authentication
@@ -49,6 +196,17 @@ const TimesheetPage = () => {
 
         console.log('✅ TIMESHEET: Authenticated user found:', user.email);
         setCurrentUser(user);
+
+        // Load campaigns from database
+        try {
+          const campaignData = await supabaseApi.getCampaigns();
+          console.log('✅ CAMPAIGNS: Loaded campaigns:', campaignData);
+          setCampaigns(campaignData || []);
+        } catch (campaignError) {
+          console.warn('⚠️ CAMPAIGNS: Error loading campaigns:', campaignError);
+          setCampaigns([]);
+        }
+
         setAuthError(null);
         setLoading(false);
 
@@ -60,7 +218,7 @@ const TimesheetPage = () => {
       }
     };
 
-    initializeUser();
+    initializeData();
   }, []);
 
   // Date navigation functions
@@ -223,178 +381,192 @@ const TimesheetPage = () => {
         </div>
       </div>
 
-      {/* Controls Section */}
-      <div className="timesheet-controls">
-        <div className="timesheet-controls-row">
-          {/* Left side - Welcome, View Selector, Date Navigation */}
-          <div className="timesheet-controls-left">
-            <div className="timesheet-welcome">
-              Welcome, <span className="timesheet-welcome-name">{currentUser.full_name || currentUser.email}</span>
-            </div>
+      {/* Show different content based on active tab */}
+      {activeTab === 'timesheets' ? (
+        <>
+          {/* Controls Section */}
+          <div className="timesheet-controls">
+            <div className="timesheet-controls-row">
+              {/* Left side - Welcome, View Selector, Date Navigation */}
+              <div className="timesheet-controls-left">
+                <div className="timesheet-welcome">
+                  Welcome, <span className="timesheet-welcome-name">{currentUser.full_name || currentUser.email}</span>
+                </div>
 
-            <select
-              value={currentView}
-              onChange={(e) => handleViewChange(e.target.value)}
-              className="timesheet-view-selector"
-            >
-              <option value="daily">Daily Timesheets</option>
-              <option value="weekly">Weekly Timesheets</option>
-              <option value="monthly">Monthly Timesheets</option>
-            </select>
+                <select
+                  value={currentView}
+                  onChange={(e) => handleViewChange(e.target.value)}
+                  className="timesheet-view-selector"
+                >
+                  <option value="daily">Daily Timesheets</option>
+                  <option value="weekly">Weekly Timesheets</option>
+                  <option value="monthly">Monthly Timesheets</option>
+                </select>
 
-            {/* Date Navigation */}
-            <div className="timesheet-date-nav">
-              <button
-                onClick={() => navigateDate('prev')}
-                className="timesheet-date-btn"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              
-              <div className="timesheet-date-display">
-                <Calendar size={16} />
-                <span>{formatDateDisplay()}</span>
+                {/* Date Navigation */}
+                <div className="timesheet-date-nav">
+                  <button
+                    onClick={() => navigateDate('prev')}
+                    className="timesheet-date-btn"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  
+                  <div className="timesheet-date-display">
+                    <Calendar size={16} />
+                    <span>{formatDateDisplay()}</span>
+                  </div>
+                  
+                  <button
+                    onClick={() => navigateDate('next')}
+                    className="timesheet-date-btn"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
-              
-              <button
-                onClick={() => navigateDate('next')}
-                className="timesheet-date-btn"
-              >
-                <ChevronRight size={16} />
-              </button>
+
+              {/* Right side - Campaign and Management Selectors */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <select
+                  value={filters.campaign}
+                  onChange={(e) => handleFilterChange('campaign', e.target.value)}
+                  className="timesheet-filter-select"
+                >
+                  <option value="all">All Campaigns</option>
+                  {campaigns.map((campaign) => (
+                    <option key={campaign.id} value={campaign.id}>
+                      {campaign.name}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={filters.managedBy}
+                  onChange={(e) => handleFilterChange('managedBy', e.target.value)}
+                  className="timesheet-filter-select"
+                >
+                  <option value="me">Managed by me</option>
+                  <option value="all">All managers</option>
+                  <option value="team">Team leads</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* Right side - Campaign and Management Selectors */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <select
-              value={filters.campaign}
-              onChange={(e) => handleFilterChange('campaign', e.target.value)}
-              className="timesheet-filter-select"
-            >
-              <option value="all">All Campaigns</option>
-              <option value="potions">Potions</option>
-              <option value="divination">Divination Readings</option>
-              <option value="herbology">Herbology</option>
-            </select>
+          {/* Filters Section */}
+          <div className="timesheet-filters">
+            <div className="timesheet-filters-row">
+              {/* Left side - Filter Dropdowns */}
+              <div className="timesheet-filters-left">
+                <select
+                  value={filters.payrollHours}
+                  onChange={(e) => handleFilterChange('payrollHours', e.target.value)}
+                  className="timesheet-filter-select"
+                >
+                  <option value="all">Payroll hours</option>
+                  <option value="regular">Regular hours</option>
+                  <option value="overtime">Overtime</option>
+                  <option value="vacation">Vacation</option>
+                </select>
 
-            <select
-              value={filters.managedBy}
-              onChange={(e) => handleFilterChange('managedBy', e.target.value)}
-              className="timesheet-filter-select"
-            >
-              <option value="me">Managed by me</option>
-              <option value="all">All managers</option>
-              <option value="team">Team leads</option>
-            </select>
-          </div>
-        </div>
-      </div>
+                <select
+                  value={filters.groups}
+                  onChange={(e) => handleFilterChange('groups', e.target.value)}
+                  className="timesheet-filter-select"
+                >
+                  <option value="all">Groups</option>
+                  <option value="development">Development</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="sales">Sales</option>
+                </select>
 
-      {/* Filters Section */}
-      <div className="timesheet-filters">
-        <div className="timesheet-filters-row">
-          {/* Left side - Filter Dropdowns */}
-          <div className="timesheet-filters-left">
-            <select
-              value={filters.payrollHours}
-              onChange={(e) => handleFilterChange('payrollHours', e.target.value)}
-              className="timesheet-filter-select"
-            >
-              <option value="all">Payroll hours</option>
-              <option value="regular">Regular hours</option>
-              <option value="overtime">Overtime</option>
-              <option value="vacation">Vacation</option>
-            </select>
+                <select
+                  value={filters.members}
+                  onChange={(e) => handleFilterChange('members', e.target.value)}
+                  className="timesheet-filter-select"
+                >
+                  <option value="all">Members</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
 
-            <select
-              value={filters.groups}
-              onChange={(e) => handleFilterChange('groups', e.target.value)}
-              className="timesheet-filter-select"
-            >
-              <option value="all">Groups</option>
-              <option value="development">Development</option>
-              <option value="marketing">Marketing</option>
-              <option value="sales">Sales</option>
-            </select>
+                <select
+                  value={filters.schedules}
+                  onChange={(e) => handleFilterChange('schedules', e.target.value)}
+                  className="timesheet-filter-select"
+                >
+                  <option value="all">Schedules</option>
+                  <option value="standard">Standard</option>
+                  <option value="flexible">Flexible</option>
+                </select>
 
-            <select
-              value={filters.members}
-              onChange={(e) => handleFilterChange('members', e.target.value)}
-              className="timesheet-filter-select"
-            >
-              <option value="all">Members</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+                <button className="timesheet-add-filter">
+                  <Plus size={16} />
+                  <span>Add filter</span>
+                </button>
+              </div>
 
-            <select
-              value={filters.schedules}
-              onChange={(e) => handleFilterChange('schedules', e.target.value)}
-              className="timesheet-filter-select"
-            >
-              <option value="all">Schedules</option>
-              <option value="standard">Standard</option>
-              <option value="flexible">Flexible</option>
-            </select>
-
-            <button className="timesheet-add-filter">
-              <Plus size={16} />
-              <span>Add filter</span>
-            </button>
+              {/* Right side - Search */}
+              <div className="timesheet-search-container">
+                <Search className="timesheet-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search employees..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="timesheet-search"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Right side - Search */}
-          <div className="timesheet-search-container">
-            <Search className="timesheet-search-icon" />
-            <input
-              type="text"
-              placeholder="Search employees..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="timesheet-search"
-            />
+          {/* Main Content Area - Render Based on Current View */}
+          <div style={{ flex: 1 }}>
+            {currentView === 'daily' && (
+              <DailyTimesheetView
+                userId={currentUser?.id}
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+                searchQuery={searchQuery}
+                filters={filters}
+                onCreateEntry={handleCreateEntry}
+              />
+            )}
+
+            {currentView === 'weekly' && (
+              <WeeklyTimesheetView
+                userId={currentUser?.id}
+                selectedWeek={selectedWeek}
+                onWeekChange={setSelectedWeek}
+                onDayClick={handleDayClick}
+                searchQuery={searchQuery}
+                filters={filters}
+                onCreateEntry={handleCreateEntry}
+              />
+            )}
+
+            {currentView === 'monthly' && (
+              <MonthlyTimesheetView
+                userId={currentUser?.id}
+                selectedMonth={selectedMonth}
+                onMonthChange={setSelectedMonth}
+                onDayClick={handleDayClick}
+                searchQuery={searchQuery}
+                filters={filters}
+                onCreateEntry={handleCreateEntry}
+              />
+            )}
           </div>
-        </div>
-      </div>
-
-      {/* Main Content Area - Render Based on Current View */}
-      <div style={{ flex: 1 }}>
-        {currentView === 'daily' && (
-          <DailyTimesheetView
-            userId={currentUser?.id}
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-            searchQuery={searchQuery}
-            filters={filters}
-            onCreateEntry={handleCreateEntry}
-          />
-        )}
-
-        {currentView === 'weekly' && (
-          <WeeklyTimesheetView
-            userId={currentUser?.id}
-            selectedWeek={selectedWeek}
-            onWeekChange={setSelectedWeek}
-            onDayClick={handleDayClick}
-            searchQuery={searchQuery}
-            filters={filters}
-            onCreateEntry={handleCreateEntry}
-          />
-        )}
-
-        {currentView === 'monthly' && (
-          <MonthlyTimesheetView
-            userId={currentUser?.id}
-            selectedMonth={selectedMonth}
-            onMonthChange={setSelectedMonth}
-            onDayClick={handleDayClick}
-            searchQuery={searchQuery}
-            filters={filters}
-            onCreateEntry={handleCreateEntry}
-          />
-        )}
-      </div>
+        </>
+      ) : (
+        /* Approvals Tab Content */
+        <TimesheetApprovalsView
+          userId={currentUser?.id}
+          searchQuery={searchQuery}
+          filters={filters}
+        />
+      )}
 
       {/* Add Entry Modal */}
       {showEntryModal && (
@@ -410,29 +582,31 @@ const TimesheetPage = () => {
         />
       )}
 
-      {/* Floating Action Button for Adding Entries */}
-      <button
-        onClick={() => setShowEntryModal(true)}
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          backgroundColor: '#ea580c',
-          color: 'white',
-          padding: '16px',
-          borderRadius: '50%',
-          border: 'none',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-          cursor: 'pointer',
-          zIndex: 50,
-          transition: 'background-color 0.2s'
-        }}
-        onMouseEnter={(e) => e.target.style.backgroundColor = '#dc2626'}
-        onMouseLeave={(e) => e.target.style.backgroundColor = '#ea580c'}
-        title="Add new timesheet entry"
-      >
-        <Plus size={24} />
-      </button>
+      {/* Floating Action Button for Adding Entries - Only show on timesheets tab */}
+      {activeTab === 'timesheets' && (
+        <button
+          onClick={() => setShowEntryModal(true)}
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            backgroundColor: '#ea580c',
+            color: 'white',
+            padding: '16px',
+            borderRadius: '50%',
+            border: 'none',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            cursor: 'pointer',
+            zIndex: 50,
+            transition: 'background-color 0.2s'
+          }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = '#dc2626'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = '#ea580c'}
+          title="Add new timesheet entry"
+        >
+          <Plus size={24} />
+        </button>
+      )}
     </div>
   );
 };

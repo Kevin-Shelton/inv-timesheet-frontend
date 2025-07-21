@@ -62,8 +62,7 @@ const DailyTimesheetView = ({
           lastOut: entry.clock_out_time || entry.updated_at,
           regular: entry.hours_worked || entry.regular_hours || 0,
           overtime: entry.overtime_hours || 0,
-          dailyDoubleOvertime: entry.daily_double_overtime || 0,
-          tracked: (entry.hours_worked || entry.regular_hours || 0) + (entry.overtime_hours || 0) + (entry.daily_double_overtime || 0),
+          tracked: (entry.hours_worked || entry.regular_hours || 0) + (entry.overtime_hours || 0),
           breakDuration: entry.break_duration || 0,
           isManualOverride: entry.is_manual_override || false,
           overrideReason: entry.override_reason || null
@@ -134,10 +133,6 @@ const DailyTimesheetView = ({
 
   const getTotalOvertime = () => {
     return timesheetData.reduce((sum, entry) => sum + (entry.overtime || 0), 0);
-  };
-
-  const getTotalDailyDouble = () => {
-    return timesheetData.reduce((sum, entry) => sum + (entry.dailyDoubleOvertime || 0), 0);
   };
 
   const getTotalTracked = () => {
@@ -278,7 +273,7 @@ const DailyTimesheetView = ({
           <table style={{
             width: '100%',
             borderCollapse: 'collapse',
-            minWidth: '1000px'
+            minWidth: '800px'
           }}>
             <thead>
               <tr style={{ backgroundColor: '#F3F4F6' }}>
@@ -336,17 +331,6 @@ const DailyTimesheetView = ({
                   borderBottom: '1px solid #E5E7EB'
                 }}>
                   Overtime
-                </th>
-                <th style={{
-                  width: '120px',
-                  padding: '12px 16px',
-                  textAlign: 'center',
-                  fontWeight: '500',
-                  fontSize: '13px',
-                  color: '#6B7280',
-                  borderBottom: '1px solid #E5E7EB'
-                }}>
-                  Daily Double Overtime
                 </th>
                 <th style={{
                   width: '100px',
@@ -456,18 +440,6 @@ const DailyTimesheetView = ({
                       {formatHours(entry.overtime)}
                     </td>
                     
-                    {/* Daily Double Overtime */}
-                    <td style={{
-                      padding: '16px',
-                      textAlign: 'center',
-                      borderBottom: '1px solid #E5E7EB',
-                      fontSize: '14px',
-                      color: entry.dailyDoubleOvertime > 0 ? '#DC2626' : '#6B7280',
-                      fontWeight: entry.dailyDoubleOvertime > 0 ? '500' : '400'
-                    }}>
-                      {formatHours(entry.dailyDoubleOvertime)}
-                    </td>
-                    
                     {/* Tracked Hours */}
                     <td style={{
                       padding: '16px',
@@ -484,7 +456,7 @@ const DailyTimesheetView = ({
               ) : (
                 <tr>
                   <td 
-                    colSpan="7" 
+                    colSpan="6" 
                     style={{
                       padding: '48px 24px',
                       textAlign: 'center',
@@ -530,15 +502,6 @@ const DailyTimesheetView = ({
                     color: getTotalOvertime() > 0 ? '#DC2626' : '#111827'
                   }}>
                     {formatHours(getTotalOvertime())}
-                  </td>
-                  <td style={{
-                    padding: '16px',
-                    textAlign: 'center',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: getTotalDailyDouble() > 0 ? '#DC2626' : '#111827'
-                  }}>
-                    {formatHours(getTotalDailyDouble())}
                   </td>
                   <td style={{
                     padding: '16px',
@@ -623,30 +586,6 @@ const DailyTimesheetView = ({
                   letterSpacing: '0.5px'
                 }}>
                   Overtime
-                </div>
-              </div>
-              
-              <div style={{
-                textAlign: 'center',
-                padding: '12px',
-                backgroundColor: '#FEF2F2',
-                borderRadius: '6px'
-              }}>
-                <div style={{
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: '#DC2626',
-                  marginBottom: '4px'
-                }}>
-                  {formatHours(getTotalDailyDouble())}h
-                </div>
-                <div style={{
-                  fontSize: '11px',
-                  color: '#6B7280',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  Daily 2X
                 </div>
               </div>
               
