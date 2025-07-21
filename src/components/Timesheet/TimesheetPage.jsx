@@ -6,6 +6,9 @@ import MonthlyTimesheetView from './MonthlyTimesheetView';
 import TimesheetEntryModal from './TimesheetEntryModal';
 import { supabaseApi } from "../../supabaseClient.js";
 
+// Import the timesheet CSS
+import './timesheet-page.css';
+
 const TimesheetPage = () => {
   // State management
   const [currentView, setCurrentView] = useState('weekly'); // daily, weekly, monthly
@@ -159,10 +162,10 @@ const TimesheetPage = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading timesheet...</p>
+      <div className="timesheet-page">
+        <div className="timesheet-loading">
+          <div className="timesheet-loading-spinner"></div>
+          <p>Loading timesheet...</p>
         </div>
       </div>
     );
@@ -171,16 +174,16 @@ const TimesheetPage = () => {
   // Authentication error state
   if (authError || !currentUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
-          <p className="text-gray-600 mb-4">
+      <div className="timesheet-page">
+        <div className="timesheet-empty-state">
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+          <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>Authentication Required</h2>
+          <p style={{ color: '#6b7280', marginBottom: '16px' }}>
             {authError || 'You need to be logged in to access the timesheet.'}
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+            className="timesheet-add-entry-btn"
           >
             Retry
           </button>
@@ -190,192 +193,173 @@ const TimesheetPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="timesheet-page">
       {/* Main Header with Title and Export */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Timesheets</h1>
-            <button
-              onClick={handleExport}
-              className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
-            >
-              <Download className="h-4 w-4" />
-              <span>Export</span>
-            </button>
-          </div>
+      <div className="timesheet-header">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h1>Timesheets</h1>
+          <button onClick={handleExport} className="timesheet-export-btn">
+            <Download size={16} />
+            <span>Export</span>
+          </button>
         </div>
       </div>
 
       {/* Tabs Section */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-6">
-          <div className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('timesheets')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'timesheets'
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Timesheets
-            </button>
-            <button
-              onClick={() => setActiveTab('approvals')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'approvals'
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Approvals
-            </button>
-          </div>
+      <div className="timesheet-tabs">
+        <div className="timesheet-tabs-list">
+          <button
+            onClick={() => setActiveTab('timesheets')}
+            className={`timesheet-tab ${activeTab === 'timesheets' ? 'active' : ''}`}
+          >
+            Timesheets
+          </button>
+          <button
+            onClick={() => setActiveTab('approvals')}
+            className={`timesheet-tab ${activeTab === 'approvals' ? 'active' : ''}`}
+          >
+            Approvals
+          </button>
         </div>
       </div>
 
-      {/* Controls Section - Single Row Layout */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between">
-            {/* Left side - Welcome, View Selector, Date Navigation */}
-            <div className="flex items-center space-x-6">
-              <div className="text-sm text-gray-600">
-                Welcome, <span className="font-medium">{currentUser.full_name || currentUser.email}</span>
-              </div>
-
-              <select
-                value={currentView}
-                onChange={(e) => handleViewChange(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="daily">Daily Timesheets</option>
-                <option value="weekly">Weekly Timesheets</option>
-                <option value="monthly">Monthly Timesheets</option>
-              </select>
-
-              {/* Date Navigation */}
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => navigateDate('prev')}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                
-                <div className="flex items-center space-x-2 px-3 py-1 bg-gray-50 rounded-md">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium">{formatDateDisplay()}</span>
-                </div>
-                
-                <button
-                  onClick={() => navigateDate('next')}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
+      {/* Controls Section */}
+      <div className="timesheet-controls">
+        <div className="timesheet-controls-row">
+          {/* Left side - Welcome, View Selector, Date Navigation */}
+          <div className="timesheet-controls-left">
+            <div className="timesheet-welcome">
+              Welcome, <span className="timesheet-welcome-name">{currentUser.full_name || currentUser.email}</span>
             </div>
 
-            {/* Right side - Campaign and Management Selectors */}
-            <div className="flex items-center space-x-4">
-              <select
-                value={filters.campaign}
-                onChange={(e) => handleFilterChange('campaign', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="all">All Campaigns</option>
-                <option value="potions">Potions</option>
-                <option value="divination">Divination Readings</option>
-                <option value="herbology">Herbology</option>
-              </select>
+            <select
+              value={currentView}
+              onChange={(e) => handleViewChange(e.target.value)}
+              className="timesheet-view-selector"
+            >
+              <option value="daily">Daily Timesheets</option>
+              <option value="weekly">Weekly Timesheets</option>
+              <option value="monthly">Monthly Timesheets</option>
+            </select>
 
-              <select
-                value={filters.managedBy}
-                onChange={(e) => handleFilterChange('managedBy', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            {/* Date Navigation */}
+            <div className="timesheet-date-nav">
+              <button
+                onClick={() => navigateDate('prev')}
+                className="timesheet-date-btn"
               >
-                <option value="me">Managed by me</option>
-                <option value="all">All managers</option>
-                <option value="team">Team leads</option>
-              </select>
+                <ChevronLeft size={16} />
+              </button>
+              
+              <div className="timesheet-date-display">
+                <Calendar size={16} />
+                <span>{formatDateDisplay()}</span>
+              </div>
+              
+              <button
+                onClick={() => navigateDate('next')}
+                className="timesheet-date-btn"
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
+          </div>
+
+          {/* Right side - Campaign and Management Selectors */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <select
+              value={filters.campaign}
+              onChange={(e) => handleFilterChange('campaign', e.target.value)}
+              className="timesheet-filter-select"
+            >
+              <option value="all">All Campaigns</option>
+              <option value="potions">Potions</option>
+              <option value="divination">Divination Readings</option>
+              <option value="herbology">Herbology</option>
+            </select>
+
+            <select
+              value={filters.managedBy}
+              onChange={(e) => handleFilterChange('managedBy', e.target.value)}
+              className="timesheet-filter-select"
+            >
+              <option value="me">Managed by me</option>
+              <option value="all">All managers</option>
+              <option value="team">Team leads</option>
+            </select>
           </div>
         </div>
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between">
-            {/* Left side - Filter Dropdowns */}
-            <div className="flex items-center space-x-4">
-              <select
-                value={filters.payrollHours}
-                onChange={(e) => handleFilterChange('payrollHours', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="all">Payroll hours</option>
-                <option value="regular">Regular hours</option>
-                <option value="overtime">Overtime</option>
-                <option value="vacation">Vacation</option>
-              </select>
+      <div className="timesheet-filters">
+        <div className="timesheet-filters-row">
+          {/* Left side - Filter Dropdowns */}
+          <div className="timesheet-filters-left">
+            <select
+              value={filters.payrollHours}
+              onChange={(e) => handleFilterChange('payrollHours', e.target.value)}
+              className="timesheet-filter-select"
+            >
+              <option value="all">Payroll hours</option>
+              <option value="regular">Regular hours</option>
+              <option value="overtime">Overtime</option>
+              <option value="vacation">Vacation</option>
+            </select>
 
-              <select
-                value={filters.groups}
-                onChange={(e) => handleFilterChange('groups', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="all">Groups</option>
-                <option value="development">Development</option>
-                <option value="marketing">Marketing</option>
-                <option value="sales">Sales</option>
-              </select>
+            <select
+              value={filters.groups}
+              onChange={(e) => handleFilterChange('groups', e.target.value)}
+              className="timesheet-filter-select"
+            >
+              <option value="all">Groups</option>
+              <option value="development">Development</option>
+              <option value="marketing">Marketing</option>
+              <option value="sales">Sales</option>
+            </select>
 
-              <select
-                value={filters.members}
-                onChange={(e) => handleFilterChange('members', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="all">Members</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+            <select
+              value={filters.members}
+              onChange={(e) => handleFilterChange('members', e.target.value)}
+              className="timesheet-filter-select"
+            >
+              <option value="all">Members</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
 
-              <select
-                value={filters.schedules}
-                onChange={(e) => handleFilterChange('schedules', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="all">Schedules</option>
-                <option value="standard">Standard</option>
-                <option value="flexible">Flexible</option>
-              </select>
+            <select
+              value={filters.schedules}
+              onChange={(e) => handleFilterChange('schedules', e.target.value)}
+              className="timesheet-filter-select"
+            >
+              <option value="all">Schedules</option>
+              <option value="standard">Standard</option>
+              <option value="flexible">Flexible</option>
+            </select>
 
-              <button className="flex items-center space-x-1 px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50">
-                <Plus className="h-4 w-4" />
-                <span className="text-sm">Add filter</span>
-              </button>
-            </div>
+            <button className="timesheet-add-filter">
+              <Plus size={16} />
+              <span>Add filter</span>
+            </button>
+          </div>
 
-            {/* Right side - Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search employees..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 w-64"
-              />
-            </div>
+          {/* Right side - Search */}
+          <div className="timesheet-search-container">
+            <Search className="timesheet-search-icon" />
+            <input
+              type="text"
+              placeholder="Search employees..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="timesheet-search"
+            />
           </div>
         </div>
       </div>
 
       {/* Main Content Area - Render Based on Current View */}
-      <div className="flex-1">
+      <div style={{ flex: 1 }}>
         {currentView === 'daily' && (
           <DailyTimesheetView
             userId={currentUser?.id}
@@ -429,10 +413,25 @@ const TimesheetPage = () => {
       {/* Floating Action Button for Adding Entries */}
       <button
         onClick={() => setShowEntryModal(true)}
-        className="fixed bottom-6 right-6 bg-orange-500 text-white p-4 rounded-full shadow-lg hover:bg-orange-600 transition-colors z-50"
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          backgroundColor: '#ea580c',
+          color: 'white',
+          padding: '16px',
+          borderRadius: '50%',
+          border: 'none',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          cursor: 'pointer',
+          zIndex: 50,
+          transition: 'background-color 0.2s'
+        }}
+        onMouseEnter={(e) => e.target.style.backgroundColor = '#dc2626'}
+        onMouseLeave={(e) => e.target.style.backgroundColor = '#ea580c'}
         title="Add new timesheet entry"
       >
-        <Plus className="h-6 w-6" />
+        <Plus size={24} />
       </button>
     </div>
   );
