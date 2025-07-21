@@ -191,7 +191,7 @@ const TimesheetPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Section */}
+      {/* Main Header with Title and Export */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
@@ -235,12 +235,12 @@ const TimesheetPage = () => {
         </div>
       </div>
 
-      {/* Controls Section */}
+      {/* Controls Section - Single Row Layout */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-6 py-3">
           <div className="flex items-center justify-between">
             {/* Left side - Welcome, View Selector, Date Navigation */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               <div className="text-sm text-gray-600">
                 Welcome, <span className="font-medium">{currentUser.full_name || currentUser.email}</span>
               </div>
