@@ -260,9 +260,10 @@ const WorkSchedulesPage = () => {
   return (
     <div style={{
       display: 'flex',
-      minHeight: '100vh',
+      height: '100vh',
       backgroundColor: '#F9FAFB',
-      fontFamily: "'Inter', sans-serif"
+      fontFamily: "'Inter', sans-serif",
+      overflow: 'hidden' // Prevent overall page scroll
     }}>
       {/* Left Panel - Schedule List */}
       <div style={{
@@ -272,15 +273,15 @@ const WorkSchedulesPage = () => {
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        position: 'sticky',
-        top: 0
+        overflow: 'hidden' // Prevent this panel from scrolling the whole page
       }}>
         {/* Header */}
         <div style={{
           padding: '24px',
           borderBottom: '1px solid #E5E7EB',
           background: 'linear-gradient(135deg, #FB923C 0%, #EA580C 100%)',
-          color: 'white'
+          color: 'white',
+          flexShrink: 0 // Don't shrink this header
         }}>
           <div style={{
             display: 'flex',
@@ -356,7 +357,8 @@ const WorkSchedulesPage = () => {
         <div style={{
           padding: '16px 24px',
           borderBottom: '1px solid #E5E7EB',
-          backgroundColor: '#FAFAFA'
+          backgroundColor: '#FAFAFA',
+          flexShrink: 0 // Don't shrink this section
         }}>
           {/* Search */}
           <div style={{
@@ -595,7 +597,9 @@ const WorkSchedulesPage = () => {
       <div style={{
         flex: 1,
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        height: '100vh',
+        overflow: 'hidden' // Prevent this from scrolling the whole page
       }}>
         {selectedSchedule ? (
           <>
@@ -604,7 +608,8 @@ const WorkSchedulesPage = () => {
               backgroundColor: '#FFFFFF',
               borderBottom: '1px solid #E5E7EB',
               padding: '24px 32px',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+              flexShrink: 0 // Don't shrink this header
             }}>
               <div style={{
                 display: 'flex',
@@ -796,11 +801,12 @@ const WorkSchedulesPage = () => {
               </div>
             </div>
 
-            {/* Schedule Details Content */}
+            {/* Schedule Details Content - SCROLLABLE */}
             <div style={{
               flex: 1,
+              overflowY: 'auto', // This makes the content area scrollable
               padding: '32px',
-              overflowY: 'auto'
+              paddingBottom: '64px' // Extra padding at bottom to ensure content isn't cut off
             }}>
               {/* Schedule Overview Cards */}
               <div style={{
@@ -1092,7 +1098,8 @@ const WorkSchedulesPage = () => {
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
-                gap: '24px'
+                gap: '24px',
+                marginBottom: '32px' // Extra margin to ensure content isn't cut off
               }}>
                 {/* Breaks Section */}
                 {selectedSchedule.breaks && selectedSchedule.breaks.length > 0 && (
