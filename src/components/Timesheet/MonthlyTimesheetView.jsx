@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Plus } from 'lucide-react';
-import { supabase } from "../../supabaseClient.js";
+import { supabaseApi } from "../../supabaseClient.js";
 
-const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick, onCreateEntry }) => {
+const MonthlyTimesheetView = ({ 
+  userId, 
+  selectedMonth, 
+  onMonthChange, 
+  onDayClick, 
+  onCreateEntry,
+  searchQuery = '',
+  filters = {}
+}) => {
   const [monthlyData, setMonthlyData] = useState({});
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,9 +20,13 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) throw error;
-        setCurrentUser(user);
+        const user = await supabaseApi.getCurrentUser();
+        if (user) {
+          setCurrentUser(user);
+        } else {
+          console.error('No authenticated user found');
+          setCurrentUser(null);
+        }
       } catch (error) {
         console.error('Error loading user:', error);
         setCurrentUser(null);
@@ -36,18 +48,14 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
         const startDate = new Date(year, month, 1);
         const endDate = new Date(year, month + 1, 0);
         
-        // Direct Supabase query instead of enhancedSupabaseApi
-        const { data: entries, error } = await supabase
-          .from('timesheet_entries')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .gte('date', startDate.toISOString().split('T')[0])
-          .lte('date', endDate.toISOString().split('T')[0])
-          .order('date', { ascending: true });
+        console.log('📊 MONTHLY VIEW: Loading timesheet data for month:', startDate.toISOString().split('T')[0], 'to', endDate.toISOString().split('T')[0]);
 
-        if (error) {
-          throw error;
-        }
+        // Use supabaseApi for consistent data fetching
+        const entries = await supabaseApi.getTimesheets({
+          userId: currentUser.id,
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
+        });
         
         // Group entries by date
         const groupedData = {};
@@ -61,9 +69,13 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
               entries: []
             };
           }
-          groupedData[date].total_hours += (entry.regular_hours || 0) + (entry.overtime_hours || 0);
-          groupedData[date].regular_hours += (entry.regular_hours || 0);
-          groupedData[date].overtime_hours += (entry.overtime_hours || 0);
+          // Use correct column names
+          const regularHours = entry.hours_worked || entry.regular_hours || 0;
+          const overtimeHours = entry.overtime_hours || 0;
+          
+          groupedData[date].total_hours += regularHours + overtimeHours;
+          groupedData[date].regular_hours += regularHours;
+          groupedData[date].overtime_hours += overtimeHours;
           groupedData[date].entries.push(entry);
         });
         
@@ -76,7 +88,9 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
       }
     };
 
-    loadMonthlyData();
+    if (currentUser && selectedMonth) {
+      loadMonthlyData();
+    }
   }, [currentUser, selectedMonth]);
 
   // Navigate months
@@ -156,6 +170,18 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
   // Get total hours for the month
   const getMonthlyTotal = () => {
     return Object.values(monthlyData).reduce((sum, day) => sum + day.total_hours, 0).toFixed(1);
+  };
+
+  // Get working days count
+  const getWorkingDaysCount = () => {
+    return Object.keys(monthlyData).length;
+  };
+
+  // Get average hours per working day
+  const getAverageHoursPerDay = () => {
+    const workingDays = getWorkingDaysCount();
+    if (workingDays === 0) return '0.0';
+    return (parseFloat(getMonthlyTotal()) / workingDays).toFixed(1);
   };
 
   const calendarDays = getCalendarDays();
@@ -328,7 +354,7 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
                 fontWeight: '600',
                 fontSize: '16px'
               }}>
-                {currentUser.user_metadata?.full_name?.charAt(0) || currentUser.email?.charAt(0) || 'U'}
+                {currentUser.full_name?.charAt(0) || currentUser.email?.charAt(0) || 'U'}
               </div>
               <div>
                 <h2 style={{
@@ -337,7 +363,7 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
                   color: '#111827',
                   margin: '0 0 2px 0'
                 }}>
-                  {currentUser.user_metadata?.full_name || currentUser.email || 'User'}
+                  {currentUser.full_name || currentUser.email || 'User'}
                 </h2>
                 <p style={{
                   fontSize: '12px',
@@ -536,7 +562,7 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
                 color: '#111827',
                 marginBottom: '4px'
               }}>
-                {Object.keys(monthlyData).length}
+                {getWorkingDaysCount()}
               </div>
               <div style={{
                 fontSize: '12px',
@@ -560,10 +586,7 @@ const MonthlyTimesheetView = ({ userId, selectedMonth, onMonthChange, onDayClick
                 color: '#111827',
                 marginBottom: '4px'
               }}>
-                {Object.keys(monthlyData).length > 0 ? 
-                  (parseFloat(getMonthlyTotal()) / Object.keys(monthlyData).length).toFixed(1) : 
-                  '0.0'
-                }h
+                {getAverageHoursPerDay()}h
               </div>
               <div style={{
                 fontSize: '12px',

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from "../../supabaseClient.js";
+import { supabaseApi } from "../../supabaseClient.js";
 
 const WeeklyTimesheetView = ({ 
+  userId,
   selectedWeek, 
+  onWeekChange,
+  onDayClick,
   onCreateEntry, 
-  onEditEntry,
-  searchTerm = '',
+  searchQuery = '',
   filters = {}
 }) => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -17,24 +19,32 @@ const WeeklyTimesheetView = ({
   const getWeekDates = (weekStart) => {
     const dates = [];
     const start = new Date(weekStart);
+    // Start from Sunday (0) to Saturday (6)
+    const startOfWeek = new Date(start);
+    startOfWeek.setDate(start.getDate() - start.getDay());
+    
     for (let i = 0; i < 7; i++) {
-      const date = new Date(start);
-      date.setDate(start.getDate() + i);
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
       dates.push(date);
     }
     return dates;
   };
 
   const weekDates = getWeekDates(selectedWeek);
-  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sunday to Saturday
 
   // Load user data
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) throw error;
-        setCurrentUser(user);
+        const user = await supabaseApi.getCurrentUser();
+        if (user) {
+          setCurrentUser(user);
+        } else {
+          console.error('No authenticated user found');
+          setCurrentUser(null);
+        }
       } catch (error) {
         console.error('Error loading user:', error);
         setCurrentUser(null);
@@ -54,18 +64,14 @@ const WeeklyTimesheetView = ({
         const startDate = weekDates[0];
         const endDate = weekDates[6];
         
-        // Direct Supabase query instead of enhancedSupabaseApi
-        const { data: entries, error } = await supabase
-          .from('timesheet_entries')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .gte('date', startDate.toISOString().split('T')[0])
-          .lte('date', endDate.toISOString().split('T')[0])
-          .order('date', { ascending: true });
+        console.log('📊 WEEKLY VIEW: Loading timesheet data for week:', startDate.toISOString().split('T')[0], 'to', endDate.toISOString().split('T')[0]);
 
-        if (error) {
-          throw error;
-        }
+        // Use supabaseApi for consistent data fetching
+        const entries = await supabaseApi.getTimesheets({
+          userId: currentUser.id,
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
+        });
         
         setTimesheetData(entries || []);
       } catch (error) {
@@ -76,7 +82,9 @@ const WeeklyTimesheetView = ({
       }
     };
 
-    loadTimesheetData();
+    if (currentUser && weekDates.length > 0) {
+      loadTimesheetData();
+    }
   }, [currentUser, selectedWeek]);
 
   // Get hours for a specific date
@@ -89,7 +97,8 @@ const WeeklyTimesheetView = ({
     if (dayEntries.length === 0) return null;
     
     const totalHours = dayEntries.reduce((sum, entry) => {
-      return sum + (entry.regular_hours || 0) + (entry.overtime_hours || 0);
+      // Use the correct column names
+      return sum + (entry.hours_worked || entry.regular_hours || 0) + (entry.overtime_hours || 0);
     }, 0);
     
     return totalHours > 0 ? totalHours.toFixed(1) : null;
@@ -115,6 +124,9 @@ const WeeklyTimesheetView = ({
           userId: currentUser?.id
         });
       }
+    } else if (onDayClick) {
+      // Cell was clicked, switch to daily view
+      onDayClick(date);
     }
   };
 
@@ -124,10 +136,16 @@ const WeeklyTimesheetView = ({
     return date.toDateString() === today.toDateString();
   };
 
+  // Check if date is weekend
+  const isWeekend = (date) => {
+    const day = date.getDay();
+    return day === 0 || day === 6; // Sunday or Saturday
+  };
+
   // Get user initials
   const getUserInitials = (user) => {
     if (!user) return 'U';
-    const name = user.user_metadata?.full_name || user.email;
+    const name = user.full_name || user.email;
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
@@ -135,7 +153,7 @@ const WeeklyTimesheetView = ({
   // Get user display name
   const getUserDisplayName = (user) => {
     if (!user) return 'User';
-    return user.user_metadata?.full_name || user.email || 'User';
+    return user.full_name || user.email || 'User';
   };
 
   if (loading) {
@@ -195,7 +213,7 @@ const WeeklyTimesheetView = ({
             <input
               type="text"
               placeholder="Search..."
-              value={searchTerm}
+              value={searchQuery}
               readOnly
               style={{
                 width: '100%',
@@ -255,7 +273,7 @@ const WeeklyTimesheetView = ({
                     }}>
                       <div style={{
                         fontSize: '12px',
-                        color: isToday(date) ? '#FB923C' : '#6B7280',
+                        color: isToday(date) ? '#FB923C' : isWeekend(date) ? '#9CA3AF' : '#6B7280',
                         fontWeight: isToday(date) ? '600' : '400'
                       }}>
                         {dayLabels[index]}
@@ -263,7 +281,7 @@ const WeeklyTimesheetView = ({
                       <div style={{
                         fontSize: '14px',
                         fontWeight: '500',
-                        color: isToday(date) ? '#FB923C' : '#111827'
+                        color: isToday(date) ? '#FB923C' : isWeekend(date) ? '#9CA3AF' : '#111827'
                       }}>
                         {date.getDate()}
                       </div>
@@ -337,6 +355,7 @@ const WeeklyTimesheetView = ({
                   const hours = getHoursForDate(date);
                   const cellKey = `${date.toISOString().split('T')[0]}`;
                   const isHovered = hoveredCell === cellKey;
+                  const isWeekendDay = isWeekend(date);
                   
                   return (
                     <td 
@@ -347,7 +366,7 @@ const WeeklyTimesheetView = ({
                         borderBottom: '1px solid #E5E7EB',
                         position: 'relative',
                         cursor: 'pointer',
-                        backgroundColor: isHovered ? '#FEF3C7' : 'transparent'
+                        backgroundColor: isHovered ? '#FEF3C7' : isWeekendDay ? '#F9FAFB' : 'transparent'
                       }}
                       onMouseEnter={() => setHoveredCell(cellKey)}
                       onMouseLeave={() => setHoveredCell(null)}
@@ -356,7 +375,7 @@ const WeeklyTimesheetView = ({
                       {hours ? (
                         <div style={{
                           fontSize: '14px',
-                          color: '#111827',
+                          color: isWeekendDay ? '#6B7280' : '#111827',
                           fontWeight: '500'
                         }}>
                           {hours}h
@@ -455,6 +474,36 @@ const WeeklyTimesheetView = ({
             </button>
           </div>
         )}
+
+        {/* Week Summary */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          margin: '16px 24px',
+          borderRadius: '8px',
+          border: '1px solid #E5E7EB',
+          padding: '16px'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <h4 style={{
+              margin: '0',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#111827'
+            }}>
+              Week Summary
+            </h4>
+            <div style={{
+              fontSize: '14px',
+              color: '#6B7280'
+            }}>
+              Total: <span style={{ fontWeight: '600', color: '#111827' }}>{getWeeklyTotal()}h</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
