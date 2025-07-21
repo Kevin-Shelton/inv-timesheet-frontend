@@ -136,22 +136,14 @@ const TimesheetPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* FIXED HEADER SECTION */}
+      {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-gray-900">Timesheets</h1>
-            <div className="flex items-center space-x-4">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
-                <Download className="h-4 w-4" />
-                <span>Export</span>
-              </button>
-            </div>
-          </div>
+          <h1 className="text-2xl font-semibold text-gray-900">Timesheets</h1>
         </div>
       </div>
 
-      {/* FIXED TABS SECTION */}
+      {/* Tabs */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-6">
           <div className="flex space-x-8">
@@ -179,11 +171,11 @@ const TimesheetPage = () => {
         </div>
       </div>
 
-      {/* FIXED CONTROLS SECTION */}
+      {/* Controls */}
       <div className="bg-white border-b border-gray-200">
-        <div className="px-6 py-3">
+        <div className="px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Left side - Welcome, View Selector, Date Navigation */}
+            {/* Left side - Welcome and View Selector */}
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-600">
                 Welcome, <span className="font-medium">{user.full_name || user.email}</span>
@@ -192,7 +184,7 @@ const TimesheetPage = () => {
               <select
                 value={currentView}
                 onChange={(e) => setCurrentView(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 <option value="weekly">Weekly Timesheets</option>
                 <option value="daily">Daily Timesheets</option>
@@ -221,11 +213,17 @@ const TimesheetPage = () => {
                 </button>
               </div>
             </div>
+
+            {/* Right side - Export */}
+            <button className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
+              <Download className="h-4 w-4" />
+              <span>Export</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* FIXED FILTERS SECTION */}
+      {/* Filters */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-6 py-3">
           <div className="flex items-center justify-between">
@@ -292,7 +290,7 @@ const TimesheetPage = () => {
         </div>
       </div>
 
-      {/* EXISTING TABLE - UNCHANGED */}
+      {/* Timesheet Table */}
       <div className="bg-white">
         <div className="px-6 py-4">
           {loading ? (
@@ -386,7 +384,4 @@ const TimesheetPage = () => {
 };
 
 export default TimesheetPage;
-
-// Export both names for compatibility
-export { TimesheetPage as TimesheetsPage };
 
