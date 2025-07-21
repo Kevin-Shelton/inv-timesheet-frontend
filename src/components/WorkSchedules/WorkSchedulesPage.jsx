@@ -234,49 +234,169 @@ const WorkSchedulesPage = () => {
 
   if (loading) {
     return (
-      <div className="work-schedules-loading">
-        <div>
-          <div className="work-schedules-loading-spinner"></div>
-          <p className="work-schedules-loading-text">Loading Work Schedules...</p>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '400px',
+        backgroundColor: '#F9FAFB'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '4px solid #FB923C',
+            borderTop: '4px solid transparent',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }}></div>
+          <p style={{ color: '#6B7280', fontSize: '16px' }}>Loading Work Schedules...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="work-schedules-page">
-      {/* Sidebar */}
-      <div className="work-schedules-sidebar">
-        {/* Sidebar Header */}
-        <div className="work-schedules-sidebar-header">
-          <div className="work-schedules-logo">
-            <div className="work-schedules-logo-icon">
+    <div style={{
+      display: 'flex',
+      minHeight: '100vh',
+      backgroundColor: '#F9FAFB',
+      fontFamily: "'Inter', sans-serif"
+    }}>
+      {/* Left Panel - Schedule List */}
+      <div style={{
+        width: '350px',
+        backgroundColor: '#FFFFFF',
+        borderRight: '1px solid #E5E7EB',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        position: 'sticky',
+        top: 0
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '24px',
+          borderBottom: '1px solid #E5E7EB',
+          background: 'linear-gradient(135deg, #FB923C 0%, #EA580C 100%)',
+          color: 'white'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: '16px'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(10px)'
+            }}>
               <Calendar size={20} color="#FFFFFF" />
             </div>
             <div>
-              <h1 className="work-schedules-title">Work Schedules</h1>
-              <p className="work-schedules-subtitle">Manage team schedules</p>
+              <h1 style={{
+                fontSize: '20px',
+                fontWeight: '700',
+                margin: 0
+              }}>
+                Work Schedules
+              </h1>
+              <p style={{
+                fontSize: '14px',
+                opacity: 0.9,
+                margin: 0
+              }}>
+                Manage team schedules
+              </p>
             </div>
           </div>
 
           {/* Create Schedule Button */}
-          <button onClick={handleCreateSchedule} className="work-schedules-create-btn">
+          <button
+            onClick={handleCreateSchedule}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              padding: '12px 16px',
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              color: 'white',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              backdropFilter: 'blur(10px)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+              e.target.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+              e.target.style.transform = 'translateY(0)';
+            }}
+          >
             <Plus size={16} />
             Add New Schedule
           </button>
         </div>
 
         {/* Search and Filter */}
-        <div className="work-schedules-search-section">
+        <div style={{
+          padding: '16px 24px',
+          borderBottom: '1px solid #E5E7EB',
+          backgroundColor: '#FAFAFA'
+        }}>
           {/* Search */}
-          <div className="work-schedules-search-container">
-            <Search size={16} className="work-schedules-search-icon" />
+          <div style={{
+            position: 'relative',
+            marginBottom: '12px'
+          }}>
+            <Search 
+              size={16} 
+              style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#6B7280',
+                zIndex: 1
+              }}
+            />
             <input
               type="text"
               placeholder="Search schedules..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="work-schedules-search-input"
+              style={{
+                width: '100%',
+                padding: '10px 12px 10px 36px',
+                border: '1px solid #E5E7EB',
+                borderRadius: '6px',
+                fontSize: '14px',
+                backgroundColor: '#FFFFFF',
+                outline: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#FB923C';
+                e.target.style.boxShadow = '0 0 0 3px rgba(251, 146, 60, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#E5E7EB';
+                e.target.style.boxShadow = 'none';
+              }}
             />
           </div>
 
@@ -284,7 +404,25 @@ const WorkSchedulesPage = () => {
           <select
             value={filterBy}
             onChange={(e) => setFilterBy(e.target.value)}
-            className="work-schedules-filter-select"
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              border: '1px solid #E5E7EB',
+              borderRadius: '6px',
+              fontSize: '14px',
+              backgroundColor: '#FFFFFF',
+              outline: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#FB923C';
+              e.target.style.boxShadow = '0 0 0 3px rgba(251, 146, 60, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#E5E7EB';
+              e.target.style.boxShadow = 'none';
+            }}
           >
             <option value="all">All Schedules</option>
             <option value="active">Active Only</option>
@@ -294,7 +432,11 @@ const WorkSchedulesPage = () => {
         </div>
 
         {/* Schedules List */}
-        <div className="work-schedules-list">
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '16px 0'
+        }}>
           {Object.keys(groupedSchedules).length === 0 ? (
             <div style={{
               padding: '24px',
@@ -306,9 +448,19 @@ const WorkSchedulesPage = () => {
             </div>
           ) : (
             Object.entries(groupedSchedules).map(([groupName, groupSchedules]) => (
-              <div key={groupName} className="work-schedules-group">
+              <div key={groupName} style={{ marginBottom: '24px' }}>
                 {/* Group Header */}
-                <div className="work-schedules-group-header">
+                <div style={{
+                  padding: '0 24px 8px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#6B7280',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
                   <Building2 size={14} />
                   {groupName}
                 </div>
@@ -318,17 +470,64 @@ const WorkSchedulesPage = () => {
                   <div
                     key={schedule.id}
                     onClick={() => setSelectedSchedule(schedule)}
-                    className={`work-schedules-schedule-card ${selectedSchedule?.id === schedule.id ? 'selected' : ''}`}
+                    style={{
+                      margin: '0 16px 8px',
+                      padding: '16px',
+                      backgroundColor: selectedSchedule?.id === schedule.id ? '#FEF3C7' : '#FFFFFF',
+                      border: `1px solid ${selectedSchedule?.id === schedule.id ? '#F59E0B' : '#E5E7EB'}`,
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedSchedule?.id !== schedule.id) {
+                        e.target.style.backgroundColor = '#F9FAFB';
+                        e.target.style.transform = 'translateY(-1px)';
+                        e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedSchedule?.id !== schedule.id) {
+                        e.target.style.backgroundColor = '#FFFFFF';
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = 'none';
+                      }
+                    }}
                   >
                     {/* Schedule Header */}
-                    <div className="work-schedules-schedule-header">
-                      <div className="work-schedules-schedule-info">
-                        <h3 className="work-schedules-schedule-name">{schedule.name}</h3>
-                        <p className="work-schedules-schedule-description">{schedule.description}</p>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      marginBottom: '8px'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#111827',
+                          margin: '0 0 4px 0',
+                          lineHeight: '1.2'
+                        }}>
+                          {schedule.name}
+                        </h3>
+                        <p style={{
+                          fontSize: '12px',
+                          color: '#6B7280',
+                          margin: 0,
+                          lineHeight: '1.3'
+                        }}>
+                          {schedule.description}
+                        </p>
                       </div>
 
                       {/* Status Indicator */}
-                      <div className="work-schedules-status-indicator">
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        marginLeft: '8px'
+                      }}>
                         {schedule.is_active ? (
                           <CheckCircle2 size={14} color="#10B981" />
                         ) : (
@@ -338,20 +537,50 @@ const WorkSchedulesPage = () => {
                     </div>
 
                     {/* Schedule Details */}
-                    <div className="work-schedules-schedule-details">
-                      <div className="work-schedules-detail-item">
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      marginBottom: '8px'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
                         <Clock size={12} color="#6B7280" />
-                        <span>{formatScheduleType(schedule.schedule_type)}</span>
+                        <span style={{
+                          fontSize: '11px',
+                          color: '#6B7280'
+                        }}>
+                          {formatScheduleType(schedule.schedule_type)}
+                        </span>
                       </div>
 
-                      <div className="work-schedules-detail-item">
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
                         <Users size={12} color="#6B7280" />
-                        <span>{schedule.assigned_users} users</span>
+                        <span style={{
+                          fontSize: '11px',
+                          color: '#6B7280'
+                        }}>
+                          {schedule.assigned_users} users
+                        </span>
                       </div>
                     </div>
 
                     {/* Workdays */}
-                    <div className="work-schedules-workdays-badge">
+                    <div style={{
+                      fontSize: '11px',
+                      color: '#374151',
+                      backgroundColor: '#F3F4F6',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      display: 'inline-block'
+                    }}>
                       {formatWorkdays(schedule.workdays)}
                     </div>
                   </div>
@@ -363,38 +592,111 @@ const WorkSchedulesPage = () => {
       </div>
 
       {/* Main Content */}
-      <div className="work-schedules-main">
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
         {selectedSchedule ? (
           <>
             {/* Main Header */}
-            <div className="work-schedules-main-header">
-              <div className="work-schedules-header-content">
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderBottom: '1px solid #E5E7EB',
+              padding: '24px 32px',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
                 <div>
-                  <div className="work-schedules-header-info">
-                    <h1 className="work-schedules-main-title">{selectedSchedule.name}</h1>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '8px'
+                  }}>
+                    <h1 style={{
+                      fontSize: '28px',
+                      fontWeight: '700',
+                      color: '#111827',
+                      margin: 0
+                    }}>
+                      {selectedSchedule.name}
+                    </h1>
                     
                     {/* Status Badge */}
-                    <div className={`work-schedules-status-badge ${selectedSchedule.is_active ? 'active' : 'inactive'}`}>
+                    <div style={{
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      backgroundColor: selectedSchedule.is_active ? '#D1FAE5' : '#F3F4F6',
+                      color: selectedSchedule.is_active ? '#065F46' : '#6B7280'
+                    }}>
                       {selectedSchedule.is_active ? 'Active' : 'Inactive'}
                     </div>
 
                     {/* Multi-Campaign Badge */}
                     {selectedSchedule.campaigns && selectedSchedule.campaigns.length > 1 && (
-                      <div className="work-schedules-multi-campaign-badge">
+                      <div style={{
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        backgroundColor: '#FEF3C7',
+                        color: '#92400E',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
                         <AlertCircle size={12} />
                         Multi-Campaign
                       </div>
                     )}
                   </div>
                   
-                  <p className="work-schedules-main-description">{selectedSchedule.description}</p>
+                  <p style={{
+                    fontSize: '16px',
+                    color: '#6B7280',
+                    margin: 0
+                  }}>
+                    {selectedSchedule.description}
+                  </p>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="work-schedules-actions">
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
                   <button
                     onClick={() => handleToggleScheduleStatus(selectedSchedule.id)}
-                    className={`work-schedules-action-btn ${selectedSchedule.is_active ? 'danger' : 'success'}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 16px',
+                      backgroundColor: selectedSchedule.is_active ? '#FEE2E2' : '#D1FAE5',
+                      color: selectedSchedule.is_active ? '#DC2626' : '#065F46',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
                   >
                     {selectedSchedule.is_active ? <PauseCircle size={16} /> : <PlayCircle size={16} />}
                     {selectedSchedule.is_active ? 'Deactivate' : 'Activate'}
@@ -402,7 +704,30 @@ const WorkSchedulesPage = () => {
 
                   <button
                     onClick={() => handleCopySchedule(selectedSchedule)}
-                    className="work-schedules-action-btn secondary"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 16px',
+                      backgroundColor: '#F3F4F6',
+                      color: '#374151',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#E5E7EB';
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#F3F4F6';
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
                   >
                     <Copy size={16} />
                     Copy Schedule
@@ -410,7 +735,30 @@ const WorkSchedulesPage = () => {
 
                   <button
                     onClick={() => handleEditSchedule(selectedSchedule)}
-                    className="work-schedules-action-btn primary"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 16px',
+                      backgroundColor: '#FB923C',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#EA580C';
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#FB923C';
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
                   >
                     <Edit3 size={16} />
                     Edit Schedule
@@ -418,8 +766,30 @@ const WorkSchedulesPage = () => {
 
                   {/* More Actions Dropdown */}
                   <div style={{ position: 'relative' }}>
-                    <button className="work-schedules-action-btn secondary">
-                      <MoreVertical size={16} />
+                    <button
+                      style={{
+                        padding: '10px',
+                        backgroundColor: '#F9FAFB',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = '#F3F4F6';
+                        e.target.style.transform = 'translateY(-1px)';
+                        e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = '#F9FAFB';
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    >
+                      <MoreVertical size={16} color="#6B7280" />
                     </button>
                   </div>
                 </div>
@@ -427,84 +797,190 @@ const WorkSchedulesPage = () => {
             </div>
 
             {/* Schedule Details Content */}
-            <div className="work-schedules-content">
+            <div style={{
+              flex: 1,
+              padding: '32px',
+              overflowY: 'auto'
+            }}>
               {/* Schedule Overview Cards */}
-              <div className="work-schedules-overview-grid">
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '24px',
+                marginBottom: '32px'
+              }}>
                 {/* Basic Information Card */}
-                <div className="work-schedules-card">
-                  <div className="work-schedules-card-header">
-                    <div className="work-schedules-card-icon blue">
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
+                  padding: '24px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                  e.target.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.boxShadow = 'none';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      backgroundColor: '#EEF2FF',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
                       <Clock size={20} color="#6366F1" />
                     </div>
-                    <h3 className="work-schedules-card-title">Schedule Details</h3>
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#111827',
+                      margin: 0
+                    }}>
+                      Schedule Details
+                    </h3>
                   </div>
 
-                  <div className="work-schedules-card-content">
-                    <div className="work-schedules-detail-row">
-                      <span className="work-schedules-detail-label">Type:</span>
-                      <span className="work-schedules-detail-value">{formatScheduleType(selectedSchedule.schedule_type)}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '14px', color: '#6B7280' }}>Type:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                        {formatScheduleType(selectedSchedule.schedule_type)}
+                      </span>
                     </div>
 
                     {selectedSchedule.schedule_type === 'fixed' && (
                       <>
-                        <div className="work-schedules-detail-row">
-                          <span className="work-schedules-detail-label">Start Time:</span>
-                          <span className="work-schedules-detail-value">{selectedSchedule.start_time}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '14px', color: '#6B7280' }}>Start Time:</span>
+                          <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                            {selectedSchedule.start_time}
+                          </span>
                         </div>
-                        <div className="work-schedules-detail-row">
-                          <span className="work-schedules-detail-label">End Time:</span>
-                          <span className="work-schedules-detail-value">{selectedSchedule.end_time}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '14px', color: '#6B7280' }}>End Time:</span>
+                          <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                            {selectedSchedule.end_time}
+                          </span>
                         </div>
                       </>
                     )}
 
                     {selectedSchedule.hours_per_day && (
-                      <div className="work-schedules-detail-row">
-                        <span className="work-schedules-detail-label">Hours/Day:</span>
-                        <span className="work-schedules-detail-value">{selectedSchedule.hours_per_day}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '14px', color: '#6B7280' }}>Hours/Day:</span>
+                        <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                          {selectedSchedule.hours_per_day}
+                        </span>
                       </div>
                     )}
 
                     {selectedSchedule.hours_per_week && (
-                      <div className="work-schedules-detail-row">
-                        <span className="work-schedules-detail-label">Hours/Week:</span>
-                        <span className="work-schedules-detail-value">{selectedSchedule.hours_per_week}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '14px', color: '#6B7280' }}>Hours/Week:</span>
+                        <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                          {selectedSchedule.hours_per_week}
+                        </span>
                       </div>
                     )}
 
-                    <div className="work-schedules-detail-row">
-                      <span className="work-schedules-detail-label">Work Days:</span>
-                      <span className="work-schedules-detail-value">{formatWorkdays(selectedSchedule.workdays)}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '14px', color: '#6B7280' }}>Work Days:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                        {formatWorkdays(selectedSchedule.workdays)}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Team Assignment Card */}
-                <div className="work-schedules-card">
-                  <div className="work-schedules-card-header">
-                    <div className="work-schedules-card-icon green">
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
+                  padding: '24px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                  e.target.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.boxShadow = 'none';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      backgroundColor: '#F0FDF4',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
                       <Users size={20} color="#16A34A" />
                     </div>
-                    <h3 className="work-schedules-card-title">Team Assignment</h3>
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#111827',
+                      margin: 0
+                    }}>
+                      Team Assignment
+                    </h3>
                   </div>
 
-                  <div className="work-schedules-card-content">
-                    <div className="work-schedules-detail-row">
-                      <span className="work-schedules-detail-label">Assigned Users:</span>
-                      <span className="work-schedules-detail-value">{selectedSchedule.assigned_users}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '14px', color: '#6B7280' }}>Assigned Users:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                        {selectedSchedule.assigned_users}
+                      </span>
                     </div>
 
-                    <div className="work-schedules-detail-row">
-                      <span className="work-schedules-detail-label">Campaigns:</span>
-                      <span className="work-schedules-detail-value">{selectedSchedule.campaigns?.length || 0}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '14px', color: '#6B7280' }}>Campaigns:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                        {selectedSchedule.campaigns?.length || 0}
+                      </span>
                     </div>
 
                     {selectedSchedule.campaigns && selectedSchedule.campaigns.length > 0 && (
-                      <div className="work-schedules-campaign-list">
-                        <div className="work-schedules-campaign-list-title">Campaign List:</div>
-                        <div className="work-schedules-campaign-items">
-                          {selectedSchedule.campaigns.map((campaign) => (
-                            <div key={campaign.id} className="work-schedules-campaign-item">
+                      <div style={{ marginTop: '8px' }}>
+                        <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
+                          Campaign List:
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {selectedSchedule.campaigns.map((campaign, index) => (
+                            <div
+                              key={campaign.id}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#F3F4F6',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                color: '#374151'
+                              }}
+                            >
                               {campaign.name}
                             </div>
                           ))}
@@ -515,35 +991,84 @@ const WorkSchedulesPage = () => {
                 </div>
 
                 {/* Breaks & Rules Card */}
-                <div className="work-schedules-card">
-                  <div className="work-schedules-card-header">
-                    <div className="work-schedules-card-icon yellow">
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
+                  padding: '24px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                  e.target.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.boxShadow = 'none';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      backgroundColor: '#FEF3C7',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
                       <Settings size={20} color="#D97706" />
                     </div>
-                    <h3 className="work-schedules-card-title">Rules & Breaks</h3>
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#111827',
+                      margin: 0
+                    }}>
+                      Rules & Breaks
+                    </h3>
                   </div>
 
-                  <div className="work-schedules-card-content">
-                    <div className="work-schedules-detail-row">
-                      <span className="work-schedules-detail-label">Breaks:</span>
-                      <span className="work-schedules-detail-value">{selectedSchedule.breaks?.length || 0}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '14px', color: '#6B7280' }}>Breaks:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                        {selectedSchedule.breaks?.length || 0}
+                      </span>
                     </div>
 
-                    <div className="work-schedules-detail-row">
-                      <span className="work-schedules-detail-label">Overtime Rules:</span>
-                      <span className="work-schedules-detail-value">{selectedSchedule.overtime_rules?.length || 0}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '14px', color: '#6B7280' }}>Overtime Rules:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                        {selectedSchedule.overtime_rules?.length || 0}
+                      </span>
                     </div>
 
                     {selectedSchedule.breaks && selectedSchedule.breaks.length > 0 && (
-                      <div className="work-schedules-campaign-list">
-                        <div className="work-schedules-campaign-list-title">Break Schedule:</div>
-                        <div className="work-schedules-campaign-items">
+                      <div style={{ marginTop: '8px' }}>
+                        <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
+                          Break Schedule:
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           {selectedSchedule.breaks.map((breakItem, index) => (
-                            <div key={index} className="work-schedules-campaign-item" style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center'
-                            }}>
+                            <div
+                              key={index}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#F3F4F6',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                color: '#374151',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                              }}
+                            >
                               <span>{breakItem.name}</span>
                               <span style={{
                                 fontSize: '10px',
@@ -564,23 +1089,76 @@ const WorkSchedulesPage = () => {
               </div>
 
               {/* Detailed Sections */}
-              <div className="work-schedules-details-grid">
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '24px'
+              }}>
                 {/* Breaks Section */}
                 {selectedSchedule.breaks && selectedSchedule.breaks.length > 0 && (
-                  <div className="work-schedules-card">
-                    <h3 className="work-schedules-section-title">Break Schedule</h3>
+                  <div style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
+                    border: '1px solid #E5E7EB',
+                    padding: '24px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                    e.target.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.boxShadow = 'none';
+                    e.target.style.transform = 'translateY(0)';
+                  }}
+                  >
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#111827',
+                      margin: '0 0 16px 0'
+                    }}>
+                      Break Schedule
+                    </h3>
 
-                    <div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {selectedSchedule.breaks.map((breakItem, index) => (
-                        <div key={index} className="work-schedules-break-item">
-                          <div className="work-schedules-break-header">
-                            <h4 className="work-schedules-break-name">{breakItem.name}</h4>
-                            <div className={`work-schedules-break-badge ${breakItem.is_paid ? 'paid' : 'unpaid'}`}>
+                        <div
+                          key={index}
+                          style={{
+                            padding: '16px',
+                            backgroundColor: '#F9FAFB',
+                            borderRadius: '8px',
+                            border: '1px solid #E5E7EB'
+                          }}
+                        >
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '8px'
+                          }}>
+                            <h4 style={{
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              color: '#111827',
+                              margin: 0
+                            }}>
+                              {breakItem.name}
+                            </h4>
+                            <div style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: '500',
+                              backgroundColor: breakItem.is_paid ? '#D1FAE5' : '#FEE2E2',
+                              color: breakItem.is_paid ? '#065F46' : '#DC2626'
+                            }}>
                               {breakItem.is_paid ? 'Paid' : 'Unpaid'}
                             </div>
                           </div>
 
-                          <div className="work-schedules-break-time">
+                          <div style={{ fontSize: '14px', color: '#6B7280' }}>
                             {breakItem.start_time && breakItem.end_time ? (
                               `${breakItem.start_time} - ${breakItem.end_time}`
                             ) : breakItem.duration_minutes ? (
@@ -597,22 +1175,70 @@ const WorkSchedulesPage = () => {
 
                 {/* Overtime Rules Section */}
                 {selectedSchedule.overtime_rules && selectedSchedule.overtime_rules.length > 0 && (
-                  <div className="work-schedules-card">
-                    <h3 className="work-schedules-section-title">Overtime Rules</h3>
+                  <div style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
+                    border: '1px solid #E5E7EB',
+                    padding: '24px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                    e.target.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.boxShadow = 'none';
+                    e.target.style.transform = 'translateY(0)';
+                  }}
+                  >
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#111827',
+                      margin: '0 0 16px 0'
+                    }}>
+                      Overtime Rules
+                    </h3>
 
-                    <div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {selectedSchedule.overtime_rules.map((rule, index) => (
-                        <div key={index} className="work-schedules-rule-item">
-                          <div className="work-schedules-rule-header">
-                            <h4 className="work-schedules-rule-name">
+                        <div
+                          key={index}
+                          style={{
+                            padding: '16px',
+                            backgroundColor: '#F9FAFB',
+                            borderRadius: '8px',
+                            border: '1px solid #E5E7EB'
+                          }}
+                        >
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '8px'
+                          }}>
+                            <h4 style={{
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              color: '#111827',
+                              margin: 0,
+                              textTransform: 'capitalize'
+                            }}>
                               {rule.rule_type.replace('_', ' ')} Overtime
                             </h4>
-                            <div className={`work-schedules-rule-badge ${rule.is_active ? 'active' : 'inactive'}`}>
+                            <div style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: '500',
+                              backgroundColor: rule.is_active ? '#D1FAE5' : '#F3F4F6',
+                              color: rule.is_active ? '#065F46' : '#6B7280'
+                            }}>
                               {rule.is_active ? 'Active' : 'Inactive'}
                             </div>
                           </div>
 
-                          <div className="work-schedules-rule-details">
+                          <div style={{ fontSize: '14px', color: '#6B7280' }}>
                             {rule.threshold_hours && (
                               <div>After {rule.threshold_hours} hours</div>
                             )}
@@ -628,19 +1254,72 @@ const WorkSchedulesPage = () => {
           </>
         ) : (
           /* No Schedule Selected */
-          <div className="work-schedules-empty-state">
-            <div className="work-schedules-empty-content">
-              <div className="work-schedules-empty-icon">
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#F9FAFB'
+          }}>
+            <div style={{ textAlign: 'center', maxWidth: '400px' }}>
+              <div style={{
+                width: '80px',
+                height: '80px',
+                backgroundColor: '#FB923C',
+                borderRadius: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 24px'
+              }}>
                 <Calendar size={40} color="#FFFFFF" />
               </div>
               
-              <h2 className="work-schedules-empty-title">Select a Schedule</h2>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#111827',
+                margin: '0 0 12px 0'
+              }}>
+                Select a Schedule
+              </h2>
               
-              <p className="work-schedules-empty-description">
-                Choose a schedule from the sidebar to view its details, manage team assignments, and configure rules.
+              <p style={{
+                fontSize: '16px',
+                color: '#6B7280',
+                margin: '0 0 24px 0',
+                lineHeight: '1.5'
+              }}>
+                Choose a schedule from the left panel to view its details, manage team assignments, and configure rules.
               </p>
 
-              <button onClick={handleCreateSchedule} className="work-schedules-action-btn primary">
+              <button
+                onClick={handleCreateSchedule}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 24px',
+                  backgroundColor: '#FB923C',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#EA580C';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#FB923C';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
                 <Plus size={20} />
                 Create Your First Schedule
               </button>
@@ -648,6 +1327,14 @@ const WorkSchedulesPage = () => {
           </div>
         )}
       </div>
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
