@@ -1,4 +1,7 @@
-import { MapPin, Calendar, BarChart3, Settings, Users, Activity, Clock, Building, Zap } from 'lucide-react'
+import { MapPin, Calendar, BarChart3, Settings, Users, Activity, Clock, Building, Zap, FolderOpen } from 'lucide-react'
+
+// Import the real WorkSchedulesPage component
+import { WorkSchedulesPage as RealWorkSchedulesPage } from '../WorkSchedules'
 
 // Base page layout component
 const BasePage = ({ title, icon: Icon, children, description }) => {
@@ -324,48 +327,9 @@ export function TimeTrackingPage() {
   )
 }
 
-// Work Schedules Page
+// Export the real Work Schedules Page
 export function WorkSchedulesPage() {
-  return (
-    <BasePage 
-      title="Work Schedules" 
-      icon={Clock}
-      description="Manage employee work schedules and shifts"
-    >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '24px' }}>
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
-          <div key={day} style={{
-            padding: '12px 8px',
-            textAlign: 'center',
-            backgroundColor: index < 5 ? '#EBF8FF' : '#F7FAFC',
-            borderRadius: '8px',
-            border: '1px solid #E2E8F0'
-          }}>
-            <div style={{ fontSize: '12px', fontWeight: '600', color: '#2D3748', marginBottom: '4px' }}>
-              {day}
-            </div>
-            <div style={{ fontSize: '10px', color: '#718096' }}>
-              {index < 5 ? '9:00 - 17:00' : 'Off'}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div style={{ textAlign: 'center' }}>
-        <button style={{
-          backgroundColor: '#3B82F6',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          padding: '12px 24px',
-          fontSize: '14px',
-          fontWeight: '500',
-          cursor: 'pointer'
-        }}>
-          Edit Schedule
-        </button>
-      </div>
-    </BasePage>
-  )
+  return <RealWorkSchedulesPage />
 }
 
 // Time Off & Holidays Page
