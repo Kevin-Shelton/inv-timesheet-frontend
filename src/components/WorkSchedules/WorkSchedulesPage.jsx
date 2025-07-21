@@ -21,6 +21,7 @@ import {
   PauseCircle
 } from 'lucide-react';
 import { supabaseApi } from "../../supabaseClient.js";
+import ScheduleForm from './ScheduleForm.jsx';
 
 // Import the CSS file
 import './work-schedules.css';
@@ -34,6 +35,8 @@ const WorkSchedulesPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState('all'); // all, campaign, department, active, inactive
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -114,6 +117,16 @@ const WorkSchedulesPage = () => {
     }
   ];
 
+  // Mock campaigns data
+  const mockCampaigns = [
+    { id: '1', name: 'Customer Support' },
+    { id: '2', name: 'Sales Team' },
+    { id: '3', name: 'Product Development' },
+    { id: '4', name: 'Operations Support' },
+    { id: '5', name: 'Marketing' },
+    { id: '6', name: 'Quality Assurance' }
+  ];
+
   // Initialize data
   useEffect(() => {
     const initializeData = async () => {
@@ -124,8 +137,13 @@ const WorkSchedulesPage = () => {
         setCurrentUser(user);
 
         // Load campaigns
-        const campaignData = await supabaseApi.getCampaigns();
-        setCampaigns(campaignData || []);
+        try {
+          const campaignData = await supabaseApi.getCampaigns();
+          setCampaigns(campaignData || mockCampaigns);
+        } catch (error) {
+          console.warn('Failed to load campaigns from API, using mock data:', error);
+          setCampaigns(mockCampaigns);
+        }
 
         // For now, use mock data - will be replaced with API call
         setSchedules(mockSchedules);
@@ -204,8 +222,8 @@ const WorkSchedulesPage = () => {
   };
 
   const handleEditSchedule = (schedule) => {
-    setSelectedSchedule(schedule);
-    // Navigate to edit form - will be implemented in next phase
+    setEditingSchedule(schedule);
+    setShowEditModal(true);
   };
 
   const handleDeleteSchedule = async (scheduleId) => {
@@ -227,8 +245,57 @@ const WorkSchedulesPage = () => {
       setSchedules(prev => prev.map(s => 
         s.id === scheduleId ? { ...s, is_active: !s.is_active } : s
       ));
+      
+      // Update selected schedule if it's the one being toggled
+      if (selectedSchedule?.id === scheduleId) {
+        setSelectedSchedule(prev => ({ ...prev, is_active: !prev.is_active }));
+      }
     } catch (error) {
       console.error('Error toggling schedule status:', error);
+    }
+  };
+
+  // Handle schedule save (create or update)
+  const handleSaveSchedule = async (scheduleData) => {
+    try {
+      if (editingSchedule) {
+        // Update existing schedule
+        const updatedSchedule = {
+          ...editingSchedule,
+          ...scheduleData,
+          id: editingSchedule.id,
+          updated_at: new Date().toISOString()
+        };
+        
+        setSchedules(prev => prev.map(s => 
+          s.id === editingSchedule.id ? updatedSchedule : s
+        ));
+        
+        // Update selected schedule if it's the one being edited
+        if (selectedSchedule?.id === editingSchedule.id) {
+          setSelectedSchedule(updatedSchedule);
+        }
+        
+        setEditingSchedule(null);
+        setShowEditModal(false);
+      } else {
+        // Create new schedule
+        const newSchedule = {
+          ...scheduleData,
+          id: Date.now().toString(), // Temporary ID generation
+          assigned_users: 0,
+          created_at: new Date().toISOString(),
+          breaks: [],
+          overtime_rules: []
+        };
+        
+        setSchedules(prev => [newSchedule, ...prev]);
+        setSelectedSchedule(newSchedule);
+        setShowCreateModal(false);
+      }
+    } catch (error) {
+      console.error('Error saving schedule:', error);
+      throw error; // Re-throw to let the form handle the error
     }
   };
 
@@ -1334,6 +1401,26 @@ const WorkSchedulesPage = () => {
           </div>
         )}
       </div>
+
+      {/* Schedule Form Modals */}
+      <ScheduleForm
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        schedule={null}
+        onSave={handleSaveSchedule}
+        campaigns={campaigns}
+      />
+
+      <ScheduleForm
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingSchedule(null);
+        }}
+        schedule={editingSchedule}
+        onSave={handleSaveSchedule}
+        campaigns={campaigns}
+      />
 
       {/* CSS Animations */}
       <style jsx>{`
