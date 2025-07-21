@@ -10,7 +10,8 @@ import {
   CheckCircle2,
   Plus,
   Minus,
-  Info
+  Info,
+  Settings
 } from 'lucide-react';
 import { supabaseApi } from "../../supabaseClient.js";
 
