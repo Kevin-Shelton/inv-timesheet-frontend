@@ -95,7 +95,7 @@ export function AuthProvider({ children }) {
           setTimeout(() => reject(new Error('Profile fetch timeout')), 10000) // 10 second timeout
         })
         
-        // Create the database query promise
+        // CORRECTED: Use consistent variable names
         const queryPromise = supabase
           .from('users')
           .select(`
@@ -112,10 +112,10 @@ export function AuthProvider({ children }) {
             updated_at
           `)
           .eq('id', supabaseUser.id)
-          .single()
+          .limit(1)  // Use limit instead of single()
         
-        // Race between query and timeout
-        const { data: profile, error: profileError } = await Promise.race([
+        // Race between query and timeout - CORRECTED variable name
+        const { data: profiles, error: profileError } = await Promise.race([
           queryPromise,
           timeoutPromise
         ])
@@ -123,13 +123,13 @@ export function AuthProvider({ children }) {
         if (profileError) {
           console.warn('🔐 AUTH: Database profile query failed:', profileError.message)
           profileFetchError = profileError
-        } else if (profile) {
-          userProfile = profile
+        } else if (profiles && profiles.length > 0) {
+          userProfile = profiles[0]  // Take the first result from the array
           console.log('🔐 AUTH: Successfully fetched user profile:', {
-            full_name: profile.full_name,
-            role: profile.role,
-            employee_type: profile.employee_type,
-            is_active: profile.is_active
+            full_name: userProfile.full_name,
+            role: userProfile.role,
+            employee_type: userProfile.employee_type,
+            is_active: userProfile.is_active
           })
         } else {
           console.warn('🔐 AUTH: No profile found in database for user:', supabaseUser.email)
