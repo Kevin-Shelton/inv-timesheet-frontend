@@ -1,86 +1,69 @@
-// Supabase Client - Fixed Authentication & Database Queries
-// Replace your existing supabase client file with this
-
+// Enhanced Supabase Client with Authentication and Error Handling
 import { createClient } from '@supabase/supabase-js'
 
-// Use Vercel environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables')
-}
+export const supabase = createClient(supabaseUrl, supabaseKey)
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false, // Disable URL detection to prevent token issues
-    flowType: 'pkce'
-  }
-})
-
-// Clear any invalid tokens on startup
-const clearInvalidTokens = async () => {
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      // Clear any stored session data
-      await supabase.auth.signOut()
-    }
-  } catch (error) {
-    // Clear invalid tokens
-    await supabase.auth.signOut()
-  }
-}
-
-// Initialize auth cleanup
-clearInvalidTokens()
-
-// API functions with proper error handling and fallbacks
+// Enhanced API with authentication checks and fallbacks
 export const supabaseApi = {
-  // Check if user is authenticated
+  // Authentication helpers
   isAuthenticated: async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      return !!session
+      const { data: { user } } = await supabase.auth.getUser()
+      return !!user
     } catch (error) {
+      console.error('Error checking authentication:', error)
       return false
     }
   },
 
-  // Get current user
   getCurrentUser: async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser()
-      if (error || !user) return null
-      
-      // Try to get profile from users table
-      try {
-        const { data: profile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', user.email)
-          .single()
-        
-        return profile ? { ...user, ...profile } : user
-      } catch (profileError) {
-        return user
-      }
+      if (error) throw error
+      return user
     } catch (error) {
+      console.error('Error getting current user:', error)
       return null
     }
   },
 
-  // Users API with authentication check
+  // Authentication methods
+  signIn: async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+      return { user: data.user, session: data.session }
+    } catch (error) {
+      console.error('Error signing in:', error)
+      throw error
+    }
+  },
+
+  signOut: async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+    } catch (error) {
+      console.error('Error signing out:', error)
+      throw error
+    }
+  },
+
+  // Users API with fallback
   getUsers: async () => {
     try {
-      // Check if authenticated first
       const isAuth = await supabaseApi.isAuthenticated()
       if (!isAuth) {
-        console.warn('Not authenticated - using fallback data')
+        console.warn('Not authenticated - using fallback users')
         return [
-          { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member', employment_type: 'full_time' }
+          { id: '1', full_name: 'John Doe', email: 'john@example.com', role: 'team_member' },
+          { id: '2', full_name: 'Jane Smith', email: 'jane@example.com', role: 'admin' }
         ]
       }
 
@@ -92,7 +75,8 @@ export const supabaseApi = {
       if (error) {
         console.error('Error fetching users:', error)
         return [
-          { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member', employment_type: 'full_time' }
+          { id: '1', full_name: 'John Doe', email: 'john@example.com', role: 'team_member' },
+          { id: '2', full_name: 'Jane Smith', email: 'jane@example.com', role: 'admin' }
         ]
       }
       
@@ -100,20 +84,20 @@ export const supabaseApi = {
     } catch (error) {
       console.error('Error fetching users:', error)
       return [
-        { id: '1', full_name: 'Sample User', email: 'user@example.com', role: 'team_member', employment_type: 'full_time' }
+        { id: '1', full_name: 'John Doe', email: 'john@example.com', role: 'team_member' },
+        { id: '2', full_name: 'Jane Smith', email: 'jane@example.com', role: 'admin' }
       ]
     }
   },
 
-  // Members API with fallback
   getMembers: async () => {
     try {
       const isAuth = await supabaseApi.isAuthenticated()
       if (!isAuth) {
         console.warn('Not authenticated - using fallback members')
         return [
-          { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() },
-          { id: '2', full_name: 'Jane Smith', status: 'out', last_activity: new Date().toISOString() }
+          { id: '1', full_name: 'John Doe', email: 'john@example.com', role: 'team_member' },
+          { id: '2', full_name: 'Jane Smith', email: 'jane@example.com', role: 'admin' }
         ]
       }
 
@@ -125,30 +109,22 @@ export const supabaseApi = {
       if (error) {
         console.error('Error fetching members:', error)
         return [
-          { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() },
-          { id: '2', full_name: 'Jane Smith', status: 'out', last_activity: new Date().toISOString() }
+          { id: '1', full_name: 'John Doe', email: 'john@example.com', role: 'team_member' },
+          { id: '2', full_name: 'Jane Smith', email: 'jane@example.com', role: 'admin' }
         ]
       }
       
-      return data?.map(user => ({
-        id: user.id,
-        full_name: user.full_name,
-        email: user.email,
-        role: user.role,
-        employment_type: user.employment_type,
-        status: Math.random() > 0.5 ? 'in' : 'out', // Random status for demo
-        last_activity: new Date().toISOString()
-      })) || []
+      return data || []
     } catch (error) {
       console.error('Error fetching members:', error)
       return [
-        { id: '1', full_name: 'John Doe', status: 'in', last_activity: new Date().toISOString() },
-        { id: '2', full_name: 'Jane Smith', status: 'out', last_activity: new Date().toISOString() }
+        { id: '1', full_name: 'John Doe', email: 'john@example.com', role: 'team_member' },
+        { id: '2', full_name: 'Jane Smith', email: 'jane@example.com', role: 'admin' }
       ]
     }
   },
 
-  // Employee Info API with fallback
+  // FIXED: Employee Info API with proper error handling
   getEmployeeInfo: async (userId) => {
     try {
       const isAuth = await supabaseApi.isAuthenticated()
@@ -163,11 +139,11 @@ export const supabaseApi = {
         }
       }
 
+      // Don't use .single() - use regular query and handle the result
       const { data, error } = await supabase
         .from('users')
         .select('id, email, full_name, role, employment_type, is_exempt')
         .eq('id', userId)
-        .single()
       
       if (error) {
         console.error('Error fetching employee info:', error)
@@ -179,8 +155,25 @@ export const supabaseApi = {
           employment_type: 'full_time'
         }
       }
-      
-      return data
+
+      // Handle the case where no user is found or multiple users are found
+      if (!data || data.length === 0) {
+        console.warn(`No employee found with ID: ${userId}`)
+        return {
+          id: userId || '1',
+          full_name: 'Unknown Employee',
+          email: 'unknown@example.com',
+          role: 'team_member',
+          employment_type: 'full_time'
+        }
+      }
+
+      if (data.length > 1) {
+        console.warn(`Multiple employees found with ID: ${userId}, using first one`)
+      }
+
+      // Return the first (and hopefully only) result
+      return data[0]
     } catch (error) {
       console.error('Error fetching employee info:', error)
       return {
@@ -198,14 +191,10 @@ export const supabaseApi = {
     try {
       const isAuth = await supabaseApi.isAuthenticated()
       if (!isAuth) {
-        console.warn('Not authenticated - using fallback campaign data')
+        console.warn('Not authenticated - using fallback campaigns')
         return [
-          { id: '1', name: 'Customer Support', description: 'Customer service campaign', is_active: true },
-          { id: '2', name: 'Sales Team', description: 'Sales outreach campaign', is_active: true },
-          { id: '3', name: 'Product Development', description: 'Development team campaign', is_active: true },
-          { id: '4', name: 'Operations Support', description: 'Operations team campaign', is_active: true },
-          { id: '5', name: 'Marketing', description: 'Marketing campaign', is_active: true },
-          { id: '6', name: 'Quality Assurance', description: 'QA team campaign', is_active: true }
+          { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true },
+          { id: '2', name: 'Development Project', description: 'Software development project', is_active: true }
         ]
       }
 
@@ -214,8 +203,8 @@ export const supabaseApi = {
         .select('id, name, description, is_active')
         .order('name', { ascending: true })
       
-      if (params.active_only) {
-        query = query.eq('is_active', true)
+      if (params.is_active !== undefined) {
+        query = query.eq('is_active', params.is_active)
       }
       
       const { data, error } = await query
@@ -223,19 +212,12 @@ export const supabaseApi = {
       if (error) {
         console.error('Error fetching campaigns:', error)
         return [
-          { id: '1', name: 'Customer Support', description: 'Customer service campaign', is_active: true },
-          { id: '2', name: 'Sales Team', description: 'Sales outreach campaign', is_active: true },
-          { id: '3', name: 'Product Development', description: 'Development team campaign', is_active: true },
-          { id: '4', name: 'Operations Support', description: 'Operations team campaign', is_active: true },
-          { id: '5', name: 'Marketing', description: 'Marketing campaign', is_active: true },
-          { id: '6', name: 'Quality Assurance', description: 'QA team campaign', is_active: true }
+          { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true },
+          { id: '2', name: 'Development Project', description: 'Software development project', is_active: true }
         ]
       }
       
-      return data || [
-        { id: '1', name: 'Sample Campaign', description: 'Sample campaign for demo', is_active: true },
-        { id: '2', name: 'Development Project', description: 'Software development project', is_active: true }
-      ]
+      return data || []
     } catch (error) {
       console.error('Error fetching campaigns:', error)
       return [
@@ -259,41 +241,34 @@ export const supabaseApi = {
 
       let query = supabase
         .from('timesheet_entries')
-        .select('id, user_id, campaign_id, regular_hours')
-        .order('id', { ascending: false })
+        .select('*')
+        .order('date', { ascending: false })
       
       if (params.user_id) {
         query = query.eq('user_id', params.user_id)
       }
       
-      if (params.campaign_id) {
-        query = query.eq('campaign_id', params.campaign_id)
+      if (params.start_date) {
+        query = query.gte('date', params.start_date)
       }
       
-      if (params.limit) {
-        query = query.limit(params.limit)
+      if (params.end_date) {
+        query = query.lte('date', params.end_date)
       }
       
       const { data, error } = await query
       
       if (error) {
-        console.error('ENHANCED TRACKED HOURS ERROR:', error)
+        console.error('Error fetching timesheets:', error)
         return [
           { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, overtime_hours: 0 },
           { id: '2', user_id: '2', campaign_id: '1', regular_hours: 7.5, overtime_hours: 0 }
         ]
       }
       
-      return data?.map(entry => ({
-        id: entry.id,
-        user_id: entry.user_id,
-        campaign_id: entry.campaign_id,
-        hours: entry.regular_hours || 0,
-        regular_hours: entry.regular_hours || 0,
-        overtime_hours: 0 // Default since not in schema yet
-      })) || []
+      return data || []
     } catch (error) {
-      console.error('ENHANCED TRACKED HOURS ERROR:', error)
+      console.error('Error fetching timesheets:', error)
       return [
         { id: '1', user_id: '1', campaign_id: '1', regular_hours: 8, overtime_hours: 0 },
         { id: '2', user_id: '2', campaign_id: '1', regular_hours: 7.5, overtime_hours: 0 }
@@ -301,92 +276,56 @@ export const supabaseApi = {
     }
   },
 
-  // Simple login without complex profile fetching
-  login: async (email, password) => {
-    try {
-      // Clear any existing invalid session first
-      await supabase.auth.signOut()
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-      
-      if (error) throw error
-      
-      return {
-        token: data.session.access_token,
-        user: {
-          id: data.user.id,
-          email: data.user.email,
-          full_name: data.user.user_metadata?.full_name || email.split('@')[0],
-          role: 'team_member'
-        }
-      }
-    } catch (error) {
-      throw new Error(error.message || 'Login failed')
-    }
-  },
-
-  // Sign out
-  logout: async () => {
-    try {
-      await supabase.auth.signOut()
-    } catch (error) {
-      console.error('Error signing out:', error)
-    }
-  },
-
-  // Create timesheet entry
+  // FIXED: Create timesheet with proper validation
   createTimesheet: async (timesheetData) => {
     try {
       const isAuth = await supabaseApi.isAuthenticated()
       if (!isAuth) {
-        console.warn('Not authenticated - cannot create timesheet entry')
         throw new Error('Authentication required to create timesheet entries')
       }
 
       // Validate required fields
-      if (!timesheetData.user_id || !timesheetData.date) {
-        throw new Error('User ID and date are required for timesheet entries')
+      if (!timesheetData.user_id) {
+        throw new Error('User ID is required')
+      }
+      if (!timesheetData.date) {
+        throw new Error('Date is required')
       }
 
-      // Prepare the data for insertion
-      const entryData = {
+      // Map common field names to database column names
+      const dbData = {
         user_id: timesheetData.user_id,
-        date: timesheetData.date,
-        time_in: timesheetData.time_in || null,
-        time_out: timesheetData.time_out || null,
-        break_duration: timesheetData.break_duration || 0,
-        total_hours: timesheetData.total_hours || 0,
-        regular_hours: timesheetData.regular_hours || 0,
-        overtime_hours: timesheetData.overtime_hours || 0,
         campaign_id: timesheetData.campaign_id || null,
-        notes: timesheetData.notes || null,
+        activity_id: timesheetData.activity_id || null,
+        date: timesheetData.date,
+        clock_in_time: timesheetData.clock_in_time || timesheetData.time_in || null,
+        clock_out_time: timesheetData.clock_out_time || timesheetData.time_out || null,
+        break_duration: timesheetData.break_duration || 0,
+        lunch_duration: timesheetData.lunch_duration || 0,
+        hours_worked: timesheetData.hours_worked || timesheetData.total_hours || 0,
+        regular_hours: timesheetData.regular_hours || 0,
+        daily_overtime_hours: timesheetData.daily_overtime_hours || timesheetData.overtime_hours || 0,
+        weekly_overtime_hours: timesheetData.weekly_overtime_hours || 0,
+        description: timesheetData.description || timesheetData.notes || '',
         is_manual_override: timesheetData.is_manual_override || false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      console.log('📝 Creating timesheet entry:', entryData);
+        override_reason: timesheetData.override_reason || null,
+        calculation_method: timesheetData.calculation_method || 'automatic'
+      }
 
       const { data, error } = await supabase
         .from('timesheet_entries')
-        .insert([entryData])
+        .insert([dbData])
         .select()
-        .single();
-
+      
       if (error) {
-        console.error('❌ SAVE ERROR:', error);
-        throw error;
+        console.error('Error creating timesheet:', error)
+        throw error
       }
-
-      console.log('✅ Timesheet entry created successfully:', data);
-      return data;
-
+      
+      return data[0]
     } catch (error) {
-      console.error('❌ SAVE ERROR:', error);
-      throw new Error(error.message || 'Failed to create timesheet entry');
+      console.error('Error creating timesheet:', error)
+      throw error
     }
   },
 
@@ -395,36 +334,50 @@ export const supabaseApi = {
     try {
       const isAuth = await supabaseApi.isAuthenticated()
       if (!isAuth) {
-        console.warn('Not authenticated - cannot update timesheet entry')
         throw new Error('Authentication required to update timesheet entries')
       }
 
-      // Prepare the data for update
-      const updateData = {
-        ...timesheetData,
-        updated_at: new Date().toISOString()
-      };
+      // Map common field names to database column names
+      const dbData = {
+        campaign_id: timesheetData.campaign_id,
+        activity_id: timesheetData.activity_id,
+        date: timesheetData.date,
+        clock_in_time: timesheetData.clock_in_time || timesheetData.time_in,
+        clock_out_time: timesheetData.clock_out_time || timesheetData.time_out,
+        break_duration: timesheetData.break_duration,
+        lunch_duration: timesheetData.lunch_duration,
+        hours_worked: timesheetData.hours_worked || timesheetData.total_hours,
+        regular_hours: timesheetData.regular_hours,
+        daily_overtime_hours: timesheetData.daily_overtime_hours || timesheetData.overtime_hours,
+        weekly_overtime_hours: timesheetData.weekly_overtime_hours,
+        description: timesheetData.description || timesheetData.notes,
+        is_manual_override: timesheetData.is_manual_override,
+        override_reason: timesheetData.override_reason,
+        calculation_method: timesheetData.calculation_method
+      }
 
-      console.log('📝 Updating timesheet entry:', entryId, updateData);
+      // Remove undefined values
+      Object.keys(dbData).forEach(key => {
+        if (dbData[key] === undefined) {
+          delete dbData[key]
+        }
+      })
 
       const { data, error } = await supabase
         .from('timesheet_entries')
-        .update(updateData)
+        .update(dbData)
         .eq('id', entryId)
         .select()
-        .single();
-
+      
       if (error) {
-        console.error('❌ UPDATE ERROR:', error);
-        throw error;
+        console.error('Error updating timesheet:', error)
+        throw error
       }
-
-      console.log('✅ Timesheet entry updated successfully:', data);
-      return data;
-
+      
+      return data[0]
     } catch (error) {
-      console.error('❌ UPDATE ERROR:', error);
-      throw new Error(error.message || 'Failed to update timesheet entry');
+      console.error('Error updating timesheet:', error)
+      throw error
     }
   },
 
@@ -433,31 +386,111 @@ export const supabaseApi = {
     try {
       const isAuth = await supabaseApi.isAuthenticated()
       if (!isAuth) {
-        console.warn('Not authenticated - cannot delete timesheet entry')
         throw new Error('Authentication required to delete timesheet entries')
       }
-
-      console.log('🗑️ Deleting timesheet entry:', entryId);
 
       const { error } = await supabase
         .from('timesheet_entries')
         .delete()
-        .eq('id', entryId);
-
+        .eq('id', entryId)
+      
       if (error) {
-        console.error('❌ DELETE ERROR:', error);
-        throw error;
+        console.error('Error deleting timesheet:', error)
+        throw error
+      }
+      
+      return true
+    } catch (error) {
+      console.error('Error deleting timesheet:', error)
+      throw error
+    }
+  },
+
+  // Get pending approvals
+  getPendingApprovals: async () => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        console.warn('Not authenticated - using fallback approvals')
+        return []
       }
 
-      console.log('✅ Timesheet entry deleted successfully');
-      return true;
-
+      const { data, error } = await supabase
+        .from('timesheet_entries')
+        .select(`
+          *,
+          users!inner(id, full_name, email)
+        `)
+        .eq('status', 'pending')
+        .order('date', { ascending: false })
+      
+      if (error) {
+        console.error('Error fetching pending approvals:', error)
+        return []
+      }
+      
+      return data || []
     } catch (error) {
-      console.error('❌ DELETE ERROR:', error);
-      throw new Error(error.message || 'Failed to delete timesheet entry');
+      console.error('Error fetching pending approvals:', error)
+      return []
+    }
+  },
+
+  // Approve timesheet
+  approveTimesheet: async (entryId) => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        throw new Error('Authentication required to approve timesheet entries')
+      }
+
+      const { data, error } = await supabase
+        .from('timesheet_entries')
+        .update({ status: 'approved' })
+        .eq('id', entryId)
+        .select()
+      
+      if (error) {
+        console.error('Error approving timesheet:', error)
+        throw error
+      }
+      
+      return data[0]
+    } catch (error) {
+      console.error('Error approving timesheet:', error)
+      throw error
+    }
+  },
+
+  // Reject timesheet
+  rejectTimesheet: async (entryId, reason) => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        throw new Error('Authentication required to reject timesheet entries')
+      }
+
+      const { data, error } = await supabase
+        .from('timesheet_entries')
+        .update({ 
+          status: 'rejected',
+          rejection_reason: reason 
+        })
+        .eq('id', entryId)
+        .select()
+      
+      if (error) {
+        console.error('Error rejecting timesheet:', error)
+        throw error
+      }
+      
+      return data[0]
+    } catch (error) {
+      console.error('Error rejecting timesheet:', error)
+      throw error
     }
   }
 }
 
-export default supabase
+export default supabaseApi
 
