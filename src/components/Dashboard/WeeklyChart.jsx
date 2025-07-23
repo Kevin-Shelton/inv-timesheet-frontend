@@ -107,21 +107,18 @@ const TrackedHoursChart = () => {
       console.log('📊 ENHANCED TRACKED HOURS: Fetching data for week:', startDate, 'to', endDate);
 
       // Get employee information for overtime calculation context
-      const empInfo = await OvertimeCalculationEngine.getEmployeeInfo(user.id);
-      setEmployeeInfo(empInfo);
+      try {
+        const empInfo = await OvertimeCalculationEngine.getEmployeeInfo(user.id);
+        setEmployeeInfo(empInfo);
+      } catch (empError) {
+        console.warn('Could not fetch employee info:', empError);
+      }
 
-      // Fetch timesheet entries for the current week
+      // FIXED: Fetch timesheet entries with explicit relationship specification
+      // Instead of using nested select, we'll fetch data separately to avoid relationship ambiguity
       let query = supabase
         .from('timesheet_entries')
-        .select(`
-          *,
-          users (
-            id,
-            full_name,
-            employment_type,
-            hourly_rate
-          )
-        `)
+        .select('*') // Just select timesheet data first
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date', { ascending: true });
@@ -140,8 +137,25 @@ const TrackedHoursChart = () => {
 
       console.log('📊 ENHANCED TRACKED HOURS: Fetched entries:', entries?.length || 0);
 
+      // Fetch user data separately to avoid relationship conflicts
+      let userData = {};
+      if (entries && entries.length > 0) {
+        const userIds = [...new Set(entries.map(entry => entry.user_id))];
+        const { data: users, error: usersError } = await supabase
+          .from('users')
+          .select('id, full_name, employment_type, hourly_rate')
+          .in('id', userIds);
+
+        if (!usersError && users) {
+          userData = users.reduce((acc, user) => {
+            acc[user.id] = user;
+            return acc;
+          }, {});
+        }
+      }
+
       // Process data with enhanced overtime calculation
-      const processedData = await processTimesheetData(entries || [], validatedWeekDates);
+      const processedData = await processTimesheetData(entries || [], validatedWeekDates, userData);
       setChartData(processedData.chartData);
       setCalculationDetails(processedData.details);
 
@@ -153,7 +167,7 @@ const TrackedHoursChart = () => {
     }
   };
 
-  const processTimesheetData = async (entries, validatedWeekDates) => {
+  const processTimesheetData = async (entries, validatedWeekDates, userData) => {
     const chartData = {
       workedHours: { total: 0, daily: new Array(7).fill(0) },
       breaks: { total: 0, daily: new Array(7).fill(0) },
@@ -175,7 +189,7 @@ const TrackedHoursChart = () => {
 
     // Process each user's entries
     for (const [userId, userEntries] of Object.entries(entriesByUser)) {
-      const userEmployee = userEntries[0]?.users;
+      const userEmployee = userData[userId]; // Use separately fetched user data
       
       for (const entry of userEntries) {
         try {
@@ -206,7 +220,7 @@ const TrackedHoursChart = () => {
             if (entry.regular_hours !== null && entry.overtime_hours !== null && !entry.is_manual_override) {
               regular = parseFloat(entry.regular_hours) || 0;
               overtime = parseFloat(entry.overtime_hours) || 0;
-              dailyDoubleOvertime = parseFloat(entry.daily_double_overtime) || 0;
+              dailyDoubleOvertime = parseFloat(entry.daily_overtime_hours) || 0;
               calculationMethod = entry.calculation_method || 'existing';
             } else {
               // Recalculate using the overtime engine
@@ -214,8 +228,8 @@ const TrackedHoursChart = () => {
                 const calculationResult = await OvertimeCalculationEngine.calculateOvertimeEntry(
                   userId,
                   entry.date,
-                  entry.time_in,
-                  entry.time_out,
+                  entry.clock_in_time || entry.time_in,
+                  entry.clock_out_time || entry.time_out,
                   parseFloat(entry.break_duration) || 0,
                   entry.is_manual_override
                 );
@@ -229,7 +243,7 @@ const TrackedHoursChart = () => {
               } catch (calcError) {
                 console.error('❌ CALCULATION ERROR:', calcError);
                 // Fall back to existing values or total hours
-                regular = parseFloat(entry.total_hours) || 0;
+                regular = parseFloat(entry.total_hours || entry.hours_worked) || 0;
                 overtime = 0;
                 dailyDoubleOvertime = 0;
                 calculationMethod = 'fallback';
