@@ -1,393 +1,517 @@
-/* Weekly Chart - Tracked Hours Visualization */
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../supabaseClient.js';
+import { useAuth } from '../../hooks/useAuth';
 
-/* Chart Wrapper */
-.weekly-chart-wrapper {
-  background: var(--bg-secondary);
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-base);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  height: 100%;
-}
+const TrackedHoursChart = () => {
+  const { user, canViewAllTimesheets } = useAuth();
+  const [chartData, setChartData] = useState({
+    workedHours: { total: 0, daily: [] },
+    breaks: { total: 0, daily: [] },
+    overtimeHours: { total: 0, daily: [] }
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-/* Chart Container */
-.weekly-chart {
-  display: grid;
-  grid-template-columns: 40px 1fr;
-  grid-template-rows: auto 1fr auto;
-  height: 200px;
-  width: 100%;
-  position: relative;
-  min-width: 400px;
-}
+  // Get current week dates with proper validation
+  const getCurrentWeekDates = () => {
+    try {
+      const today = new Date();
+      
+      // Validate that today is a valid date
+      if (isNaN(today.getTime())) {
+        console.error('📊 WEEKLY CHART ERROR: Invalid current date');
+        // Fallback to a known good date
+        const fallbackDate = new Date('2025-01-20');
+        return getWeekDatesFromDate(fallbackDate);
+      }
+      
+      return getWeekDatesFromDate(today);
+    } catch (error) {
+      console.error('📊 WEEKLY CHART ERROR: Error getting current week dates:', error);
+      // Return a fallback week
+      const fallbackDate = new Date('2025-01-20');
+      return getWeekDatesFromDate(fallbackDate);
+    }
+  };
 
-/* Chart Header */
-.chart-header {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-4);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-gray-200);
-}
+  const getWeekDatesFromDate = (baseDate) => {
+    try {
+      const currentDay = baseDate.getDay();
+      const monday = new Date(baseDate);
+      
+      // Calculate Monday of the current week (Sunday = 0, Monday = 1)
+      const daysToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+      monday.setDate(baseDate.getDate() + daysToMonday);
+      
+      const weekDates = [];
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + i);
+        
+        // Validate each date before adding
+        if (isNaN(date.getTime())) {
+          console.error(`📊 WEEKLY CHART ERROR: Invalid date for day ${i}`);
+          // Create a fallback date
+          const fallbackDate = new Date(2025, 0, 20 + i); // January 20-26, 2025
+          weekDates.push(fallbackDate);
+        } else {
+          weekDates.push(date);
+        }
+      }
+      return weekDates;
+    } catch (error) {
+      console.error('📊 WEEKLY CHART ERROR: Error creating week dates:', error);
+      // Return a complete fallback week
+      return [
+        new Date(2025, 0, 20), // Monday
+        new Date(2025, 0, 21), // Tuesday
+        new Date(2025, 0, 22), // Wednesday
+        new Date(2025, 0, 23), // Thursday
+        new Date(2025, 0, 24), // Friday
+        new Date(2025, 0, 25), // Saturday
+        new Date(2025, 0, 26)  // Sunday
+      ];
+    }
+  };
 
-.chart-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-800);
-  margin: 0;
-}
+  const weekDates = getCurrentWeekDates();
+  const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-.chart-subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
-  margin: 0;
-}
+  useEffect(() => {
+    fetchTimesheetData();
+  }, [user]);
 
-/* Y-Axis */
-.chart-y-axis {
-  grid-column: 1;
-  grid-row: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  font-size: var(--font-size-xs);
-  color: var(--color-gray-600);
-  padding-right: var(--space-2);
-  text-align: right;
-}
+  const fetchTimesheetData = async () => {
+    if (!user) return;
 
-/* Bar Group Container */
-.chart-bar-group {
-  grid-column: 2;
-  grid-row: 2;
-  display: flex;
-  justify-content: space-around;
-  align-items: flex-end;
-  height: 100%;
-  gap: var(--chart-bar-gap);
-  width: 100%;
-  padding: 0 var(--space-2);
-}
+    try {
+      setLoading(true);
+      setError(null);
 
-/* Individual Bar Container */
-.chart-bar-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  max-width: 60px;
-}
+      // Validate weekDates before using toISOString
+      const validatedWeekDates = weekDates.map((date, index) => {
+        if (isNaN(date.getTime())) {
+          console.error(`📊 WEEKLY CHART ERROR: Invalid date at index ${index}:`, date);
+          // Return a fallback date
+          return new Date(2025, 0, 20 + index);
+        }
+        return date;
+      });
 
-/* Stacked Bar */
-.stacked-bar {
-  width: var(--chart-bar-width);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  position: relative;
-}
+      const startDate = validatedWeekDates[0].toISOString().split('T')[0];
+      const endDate = validatedWeekDates[6].toISOString().split('T')[0];
 
-.stacked-bar:hover {
-  transform: translateY(-2px);
-}
+      console.log('📊 WEEKLY CHART: Fetching data for week:', startDate, 'to', endDate);
 
-/* Bar Segments */
-.bar-segment {
-  width: 100%;
-  border-radius: 0;
-  transition: all var(--duration-chart) ease;
-  position: relative;
-}
+      // Fetch timesheet entries with explicit relationship specification
+      let query = supabase
+        .from('timesheet_entries')
+        .select('*') // Just select timesheet data first
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true });
 
-.bar-segment.worked {
-  background: linear-gradient(180deg, var(--color-chart-primary) 0%, #3a5fc7 100%);
-}
+      // If user can't view all timesheets, only show their own
+      if (!canViewAllTimesheets()) {
+        query = query.eq('user_id', user.id);
+      }
 
-.bar-segment.break {
-  background: linear-gradient(180deg, var(--color-chart-secondary) 0%, #17a673 100%);
-}
+      const { data: entries, error: fetchError } = await query;
 
-.bar-segment.overtime {
-  background: linear-gradient(180deg, var(--color-chart-tertiary) 0%, #2a9bb8 100%);
-}
+      if (fetchError) {
+        console.error('📊 WEEKLY CHART ERROR:', fetchError);
+        throw fetchError;
+      }
 
-/* First segment (bottom) gets bottom border radius */
-.bar-segment:first-child {
-  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-}
+      console.log('📊 WEEKLY CHART: Fetched entries:', entries?.length || 0);
 
-/* Last segment (top) gets top border radius */
-.bar-segment:last-child {
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-}
+      // Process data
+      const processedData = processTimesheetData(entries || [], validatedWeekDates);
+      setChartData(processedData);
 
-/* Single segment gets full border radius */
-.bar-segment:only-child {
-  border-radius: var(--radius-sm);
-}
+    } catch (error) {
+      console.error('📊 WEEKLY CHART ERROR:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-/* X-Axis */
-.chart-x-axis {
-  grid-column: 2;
-  grid-row: 3;
-  display: flex;
-  justify-content: space-around;
-  font-size: var(--font-size-xs);
-  color: var(--color-gray-700);
-  padding-top: var(--space-2);
-  font-weight: var(--font-weight-medium);
-}
+  const processTimesheetData = (entries, validatedWeekDates) => {
+    const chartData = {
+      workedHours: { total: 0, daily: new Array(7).fill(0) },
+      breaks: { total: 0, daily: new Array(7).fill(0) },
+      overtimeHours: { total: 0, daily: new Array(7).fill(0) }
+    };
 
-/* Chart Legend */
-.chart-legend {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-gray-200);
-}
+    entries.forEach(entry => {
+      try {
+        const entryDate = new Date(entry.date);
+        
+        // Validate entry date
+        if (isNaN(entryDate.getTime())) {
+          console.error('📊 WEEKLY CHART ERROR: Invalid entry date:', entry.date);
+          return; // Skip this entry
+        }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-sm);
-  color: var(--color-gray-700);
-}
+        const dayIndex = validatedWeekDates.findIndex(date => {
+          try {
+            return date.toDateString() === entryDate.toDateString();
+          } catch (error) {
+            console.error('📊 WEEKLY CHART ERROR: Error comparing dates:', error);
+            return false;
+          }
+        });
 
-.legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: var(--radius-sm);
-  flex-shrink: 0;
-}
+        if (dayIndex !== -1) {
+          // Use existing calculated values or fall back to total hours
+          const regular = parseFloat(entry.regular_hours) || 0;
+          const overtime = parseFloat(entry.overtime_hours) || parseFloat(entry.daily_overtime_hours) || 0;
+          const totalHours = parseFloat(entry.total_hours) || parseFloat(entry.hours_worked) || (regular + overtime);
+          const breakTime = parseFloat(entry.break_duration) || 0;
 
-.legend-color.worked {
-  background: var(--color-chart-primary);
-}
+          // Add to daily totals
+          chartData.workedHours.daily[dayIndex] += totalHours;
+          chartData.breaks.daily[dayIndex] += breakTime;
+          chartData.overtimeHours.daily[dayIndex] += overtime;
 
-.legend-color.break {
-  background: var(--color-chart-secondary);
-}
+          // Add to weekly totals
+          chartData.workedHours.total += totalHours;
+          chartData.breaks.total += breakTime;
+          chartData.overtimeHours.total += overtime;
+        }
+      } catch (entryError) {
+        console.error('📊 WEEKLY CHART ERROR: Error processing entry:', entryError, entry);
+      }
+    });
 
-.legend-color.overtime {
-  background: var(--color-chart-tertiary);
-}
+    console.log('📊 WEEKLY CHART: Final chart data:', chartData);
+    return chartData;
+  };
 
-/* Chart Tooltip */
-.chart-tooltip {
-  position: fixed;
-  background-color: var(--color-gray-900);
-  color: var(--color-white);
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  pointer-events: none;
-  z-index: var(--z-tooltip);
-  box-shadow: var(--shadow-lg);
-  white-space: nowrap;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: all var(--transition-base);
-}
+  // Inline styles for the chart
+  const styles = {
+    trackedHoursChart: {
+      backgroundColor: '#fff',
+      borderRadius: '8px',
+      padding: '20px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      marginBottom: '20px'
+    },
+    chartHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '20px'
+    },
+    chartTitle: {
+      fontSize: '18px',
+      fontWeight: '600',
+      color: '#333',
+      margin: 0
+    },
+    chartLegend: {
+      display: 'flex',
+      gap: '20px'
+    },
+    legendItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      fontSize: '14px',
+      color: '#666'
+    },
+    legendColor: {
+      width: '12px',
+      height: '12px',
+      borderRadius: '50%'
+    },
+    legendWorked: {
+      backgroundColor: '#3b82f6'
+    },
+    legendBreaks: {
+      backgroundColor: '#10b981'
+    },
+    legendOvertime: {
+      backgroundColor: '#f59e0b'
+    },
+    chartContainer: {
+      marginBottom: '20px'
+    },
+    chartBars: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'end',
+      height: '200px',
+      padding: '20px 0',
+      borderBottom: '2px solid #e5e7eb',
+      gap: '8px'
+    },
+    dayColumn: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      flex: 1,
+      height: '100%'
+    },
+    dayLabel: {
+      fontSize: '12px',
+      fontWeight: '500',
+      color: '#666',
+      marginBottom: '8px'
+    },
+    barContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'end',
+      height: '140px',
+      width: '100%',
+      position: 'relative',
+      gap: '2px'
+    },
+    bar: {
+      width: '100%',
+      maxWidth: '40px',
+      borderRadius: '4px 4px 0 0',
+      display: 'flex',
+      alignItems: 'end',
+      justifyContent: 'center',
+      color: '#fff',
+      fontSize: '10px',
+      fontWeight: '500',
+      minHeight: '4px',
+      position: 'relative'
+    },
+    barWorked: {
+      backgroundColor: '#3b82f6'
+    },
+    barBreaks: {
+      backgroundColor: '#10b981'
+    },
+    barOvertime: {
+      backgroundColor: '#f59e0b'
+    },
+    barValue: {
+      position: 'absolute',
+      bottom: '2px',
+      fontSize: '10px',
+      fontWeight: '500',
+      color: '#fff',
+      textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+    },
+    dayDetails: {
+      marginTop: '8px',
+      textAlign: 'center'
+    },
+    totalHours: {
+      fontSize: '12px',
+      fontWeight: '600',
+      color: '#333'
+    },
+    overtimeIndicator: {
+      fontSize: '10px',
+      color: '#f59e0b',
+      fontWeight: '500'
+    },
+    chartSummary: {
+      display: 'flex',
+      justifyContent: 'space-around',
+      padding: '16px',
+      backgroundColor: '#f9fafb',
+      borderRadius: '6px',
+      gap: '20px'
+    },
+    summaryItem: {
+      textAlign: 'center'
+    },
+    summaryLabel: {
+      display: 'block',
+      fontSize: '12px',
+      color: '#666',
+      marginBottom: '4px'
+    },
+    summaryValue: {
+      fontSize: '16px',
+      fontWeight: '600',
+      color: '#333'
+    },
+    summaryValueOvertime: {
+      color: '#f59e0b'
+    },
+    loading: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '200px',
+      color: '#666'
+    },
+    error: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '200px',
+      color: '#dc2626'
+    },
+    retryButton: {
+      marginTop: '10px',
+      padding: '8px 16px',
+      backgroundColor: '#3b82f6',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer'
+    }
+  };
 
-.chart-tooltip.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.tooltip-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.tooltip-day {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-white);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding-bottom: var(--space-1);
-  margin-bottom: var(--space-1);
-}
-
-.tooltip-item {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  font-size: var(--font-size-xs);
-}
-
-.tooltip-label {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.tooltip-value {
-  color: var(--color-white);
-  font-weight: var(--font-weight-medium);
-}
-
-/* Loading State */
-.chart-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: var(--color-gray-500);
-  font-size: var(--font-size-sm);
-}
-
-.chart-loading-spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--color-gray-300);
-  border-top: 2px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: var(--space-2);
-}
-
-/* Error State */
-.chart-error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: var(--color-error);
-  font-size: var(--font-size-sm);
-  text-align: center;
-  gap: var(--space-2);
-}
-
-.chart-error-icon {
-  font-size: var(--font-size-2xl);
-  margin-bottom: var(--space-2);
-}
-
-/* Empty State */
-.chart-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: var(--color-gray-500);
-  font-size: var(--font-size-sm);
-  text-align: center;
-  gap: var(--space-2);
-}
-
-.chart-empty-icon {
-  font-size: var(--font-size-3xl);
-  opacity: 0.5;
-  margin-bottom: var(--space-2);
-}
-
-/* Animations */
-.animated-bar {
-  transition: height var(--duration-chart) ease-in-out;
-}
-
-@keyframes chartFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+  if (loading) {
+    return (
+      <div style={{...styles.trackedHoursChart, ...styles.loading}}>
+        <div>Loading tracked hours...</div>
+      </div>
+    );
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-.chart-bar-container {
-  animation: chartFadeIn var(--duration-slow) ease-out;
-}
+  if (error) {
+    return (
+      <div style={{...styles.trackedHoursChart, ...styles.error}}>
+        <div>Error Loading Chart</div>
+        <div>{error}</div>
+        <button style={styles.retryButton} onClick={fetchTimesheetData}>
+          Retry
+        </button>
+      </div>
+    );
+  }
 
-.chart-bar-container:nth-child(1) { animation-delay: 0ms; }
-.chart-bar-container:nth-child(2) { animation-delay: 100ms; }
-.chart-bar-container:nth-child(3) { animation-delay: 200ms; }
-.chart-bar-container:nth-child(4) { animation-delay: 300ms; }
-.chart-bar-container:nth-child(5) { animation-delay: 400ms; }
-.chart-bar-container:nth-child(6) { animation-delay: 500ms; }
-.chart-bar-container:nth-child(7) { animation-delay: 600ms; }
+  // Calculate max value for chart scaling
+  const maxValue = Math.max(
+    ...chartData.workedHours.daily,
+    ...chartData.breaks.daily,
+    ...chartData.overtimeHours.daily,
+    1 // Minimum value to prevent division by zero
+  );
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .weekly-chart {
-    height: 180px;
-    min-width: 350px;
-  }
-  
-  .stacked-bar {
-    width: 24px;
-  }
-  
-  .chart-legend {
-    gap: var(--space-3);
-  }
-  
-  .legend-item {
-    font-size: var(--font-size-xs);
-  }
-}
+  return (
+    <div style={styles.trackedHoursChart}>
+      <div style={styles.chartHeader}>
+        <h3 style={styles.chartTitle}>Tracked Hours This Week</h3>
+        <div style={styles.chartLegend}>
+          <div style={styles.legendItem}>
+            <span style={{...styles.legendColor, ...styles.legendWorked}}></span>
+            <span>Worked Hours</span>
+          </div>
+          <div style={styles.legendItem}>
+            <span style={{...styles.legendColor, ...styles.legendBreaks}}></span>
+            <span>Break Time</span>
+          </div>
+          <div style={styles.legendItem}>
+            <span style={{...styles.legendColor, ...styles.legendOvertime}}></span>
+            <span>Overtime</span>
+          </div>
+        </div>
+      </div>
 
-@media (max-width: 480px) {
-  .weekly-chart-wrapper {
-    padding: var(--space-3);
-  }
-  
-  .weekly-chart {
-    height: 160px;
-    min-width: 300px;
-  }
-  
-  .stacked-bar {
-    width: 20px;
-  }
-  
-  .chart-legend {
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-}
+      <div style={styles.chartContainer}>
+        <div style={styles.chartBars}>
+          {dayLabels.map((day, index) => {
+            const workedHeight = maxValue > 0 ? Math.max((chartData.workedHours.daily[index] / maxValue) * 120, chartData.workedHours.daily[index] > 0 ? 8 : 0) : 0;
+            const breakHeight = maxValue > 0 ? Math.max((chartData.breaks.daily[index] / maxValue) * 120, chartData.breaks.daily[index] > 0 ? 4 : 0) : 0;
+            const overtimeHeight = maxValue > 0 ? Math.max((chartData.overtimeHours.daily[index] / maxValue) * 120, chartData.overtimeHours.daily[index] > 0 ? 6 : 0) : 0;
 
-/* High Contrast Mode */
-@media (prefers-contrast: high) {
-  .bar-segment {
-    border: 1px solid var(--color-gray-800);
-  }
-  
-  .chart-tooltip {
-    border: 1px solid var(--color-white);
-  }
-}
+            const hasOvertime = chartData.overtimeHours.daily[index] > 0;
 
-/* Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  .animated-bar,
-  .bar-segment,
-  .stacked-bar,
-  .chart-tooltip {
-    transition: none;
-    animation: none;
-  }
-  
-  .chart-bar-container {
-    animation: none;
-  }
-}
+            return (
+              <div key={day} style={styles.dayColumn}>
+                <div style={styles.dayLabel}>{day}</div>
+                <div style={styles.barContainer}>
+                  {/* Worked Hours Bar */}
+                  {chartData.workedHours.daily[index] > 0 && (
+                    <div 
+                      style={{
+                        ...styles.bar,
+                        ...styles.barWorked,
+                        height: `${workedHeight}px`
+                      }}
+                      title={`Worked: ${chartData.workedHours.daily[index].toFixed(1)}h`}
+                    >
+                      <span style={styles.barValue}>
+                        {chartData.workedHours.daily[index].toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Break Time Bar */}
+                  {chartData.breaks.daily[index] > 0 && (
+                    <div 
+                      style={{
+                        ...styles.bar,
+                        ...styles.barBreaks,
+                        height: `${breakHeight}px`
+                      }}
+                      title={`Breaks: ${chartData.breaks.daily[index].toFixed(1)}h`}
+                    >
+                      <span style={styles.barValue}>
+                        B: {chartData.breaks.daily[index].toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Overtime Bar */}
+                  {hasOvertime && (
+                    <div 
+                      style={{
+                        ...styles.bar,
+                        ...styles.barOvertime,
+                        height: `${overtimeHeight}px`
+                      }}
+                      title={`Overtime: ${chartData.overtimeHours.daily[index].toFixed(1)}h`}
+                    >
+                      <span style={styles.barValue}>
+                        OT: {chartData.overtimeHours.daily[index].toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Day Details */}
+                <div style={styles.dayDetails}>
+                  <div style={styles.totalHours}>
+                    {chartData.workedHours.daily[index].toFixed(1)}h
+                  </div>
+                  {hasOvertime && (
+                    <div style={styles.overtimeIndicator}>
+                      OT: {chartData.overtimeHours.daily[index].toFixed(1)}h
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={styles.chartSummary}>
+        <div style={styles.summaryItem}>
+          <span style={styles.summaryLabel}>Total Worked:</span>
+          <span style={styles.summaryValue}>{chartData.workedHours.total.toFixed(1)}h</span>
+        </div>
+        <div style={styles.summaryItem}>
+          <span style={styles.summaryLabel}>Total Breaks:</span>
+          <span style={styles.summaryValue}>{chartData.breaks.total.toFixed(1)}h</span>
+        </div>
+        <div style={styles.summaryItem}>
+          <span style={styles.summaryLabel}>Total Overtime:</span>
+          <span style={{...styles.summaryValue, ...styles.summaryValueOvertime}}>
+            {chartData.overtimeHours.total.toFixed(1)}h
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TrackedHoursChart;
 
