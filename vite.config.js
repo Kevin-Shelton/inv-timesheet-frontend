@@ -1,13 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react( ), tailwindcss()],
-  // Your resolve and alias configuration is already correct.
-  // This setup allows you to use "@" as a shortcut for the "/src" directory.
+  plugins: [react()],
+  // Remove the tailwindcss() plugin that was causing the parsing error
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -36,3 +34,4 @@ export default defineConfig({
     host: true
   }
 })
+
