@@ -439,6 +439,275 @@
   margin: 0;
 }
 
+/* ===== CAMPAIGN ASSIGNMENTS STYLES ===== */
+
+/* Main container */
+.campaign-assignments {
+  padding: 24px;
+  background-color: #F8FAFC;
+  min-height: 100vh;
+}
+
+/* Assignments header */
+.assignments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.assignments-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.assignments-title h2 {
+  margin: 0 0 4px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.campaign-name {
+  margin: 0;
+  color: #6B7280;
+  font-size: 16px;
+}
+
+.assignments-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Summary cards */
+.assignments-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.summary-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.summary-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-content .value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.summary-content .label {
+  font-size: 14px;
+  color: #6B7280;
+}
+
+/* Assignments filters */
+.assignments-filters {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Assignments table container */
+.assignments-table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Assignments table */
+.assignments-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.assignments-table thead {
+  background-color: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.assignments-table th {
+  padding: 16px 24px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.assignments-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid #E5E7EB;
+  vertical-align: middle;
+}
+
+.assignments-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* User info in table */
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #111827;
+}
+
+.user-email {
+  font-size: 14px;
+  color: #6B7280;
+}
+
+/* Role badge */
+.role-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.role-badge.admin {
+  background-color: #DBEAFE;
+  color: #1E40AF;
+}
+
+.role-badge.supervisor {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.role-badge.team-member {
+  background-color: #F3E8FF;
+  color: #7C3AED;
+}
+
+/* Hours display and input */
+.hours-display {
+  font-weight: 500;
+  color: #111827;
+}
+
+.hours-input {
+  width: 80px;
+  padding: 4px 8px;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.hours-input:focus {
+  outline: none;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Billable ratio preview */
+.billable-preview {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.billable-preview.high {
+  color: #059669;
+}
+
+.billable-preview.medium {
+  color: #D97706;
+}
+
+.billable-preview.low {
+  color: #DC2626;
+}
+
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Loading states */
+.assignments-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px;
+  text-align: center;
+  color: #6B7280;
+}
+
+/* Error states */
+.assignments-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px;
+  text-align: center;
+  color: #EF4444;
+  background-color: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+/* Empty state */
+.assignments-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  text-align: center;
+  color: #6B7280;
+}
+
+.assignments-empty h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+  margin: 16px 0 8px 0;
+}
+
+.assignments-empty p {
+  margin: 0 0 24px 0;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .campaign-header {
@@ -447,7 +716,8 @@
     align-items: stretch;
   }
   
-  .campaign-filters {
+  .campaign-filters,
+  .assignments-filters {
     flex-direction: column;
     align-items: stretch;
   }
@@ -456,7 +726,8 @@
     grid-template-columns: 1fr;
   }
   
-  .campaign-actions {
+  .campaign-actions,
+  .assignments-actions {
     flex-direction: column;
     align-items: stretch;
   }
@@ -465,6 +736,23 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .assignments-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .assignments-table {
+    font-size: 14px;
+  }
+
+  .assignments-table th,
+  .assignments-table td {
+    padding: 12px 16px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
   }
 }
 
