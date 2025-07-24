@@ -532,7 +532,7 @@ export function OrganizationPage() {
       </div>
     </BasePage>
   )
-
+}
 // Integrations Page
 export function IntegrationsPage() {
   return (
