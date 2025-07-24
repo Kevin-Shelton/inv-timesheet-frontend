@@ -1,299 +1,222 @@
 // Enhanced CampaignManagement.jsx with Team Assignment Functionality
 import React, { useState, useEffect } from 'react';
+import './campaign-management.css';
 import { 
   Plus, 
   Edit, 
   Trash2, 
-  Search, 
-  Filter, 
-  Calendar, 
   Users, 
-  DollarSign, 
-  Clock, 
-  Target, 
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Pause,
-  Play,
-  Eye,
-  Save,
-  X,
-  ChevronDown,
-  ChevronRight,
+  Search, 
+  Filter,
+  MoreHorizontal,
   Building,
-  User,
-  Mail,
-  Phone,
-  Briefcase,
-  RefreshCw,
-  UserPlus,
-  Settings
+  DollarSign,
+  Clock,
+  TrendingUp,
+  AlertCircle,
+  Check,
+  X
 } from 'lucide-react';
-
-// Import components
+import { supabaseApi } from '../../supabaseClient.js';
 import CampaignAssignments from './CampaignAssignments';
 
-// Import the enhanced supabase client
-import { supabaseApi } from '../supabaseClient.js';
-
-const CampaignManagement = ({ user }) => {
+const CampaignManagement = () => {
   const [campaigns, setCampaigns] = useState([]);
-  const [filteredCampaigns, setFilteredCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  
-  // Tab and view state
   const [activeTab, setActiveTab] = useState('campaigns');
-  const [viewingAssignments, setViewingAssignments] = useState(false);
-  const [assignmentCampaign, setAssignmentCampaign] = useState(null);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
+  const [editingCampaign, setEditingCampaign] = useState(null);
 
-  // Form state for campaign creation/editing
+  // Form state for campaign modal
   const [formData, setFormData] = useState({
     name: '',
-    billing_rate_per_hour: '',
-    client_name: '',
     description: '',
-    is_billable: true,
-    is_active: true,
-    crm_campaign_id: '',
-    crm_config: {}
+    client_name: '',
+    billing_rate: '',
+    is_active: true
   });
-  const [formErrors, setFormErrors] = useState([]);
-  const [saving, setSaving] = useState(false);
 
-  // Load campaigns using enhanced API
+  // Load campaigns on component mount
   useEffect(() => {
     loadCampaigns();
   }, []);
-
-  // Filter campaigns when search or filters change
-  useEffect(() => {
-    filterCampaigns();
-  }, [campaigns, searchTerm, statusFilter]);
 
   const loadCampaigns = async () => {
     try {
       setLoading(true);
       setError(null);
+      const campaignData = await supabaseApi.getCampaigns();
       
-      console.log('🎯 CAMPAIGN MANAGEMENT: Loading campaigns...');
+      // Get team sizes for each campaign
+      const campaignsWithTeamSizes = await Promise.all(
+        campaignData.map(async (campaign) => {
+          try {
+            const summary = await supabaseApi.getCampaignAssignmentSummary(campaign.id);
+            return {
+              ...campaign,
+              team_size: summary.total_team_members || 0
+            };
+          } catch (error) {
+            return {
+              ...campaign,
+              team_size: 0
+            };
+          }
+        })
+      );
       
-      // Use enhanced API that handles authentication and fallbacks
-      const data = await supabaseApi.getCampaigns();
-      
-      console.log('🎯 CAMPAIGN MANAGEMENT: Loaded', data.length, 'campaigns');
-      setCampaigns(data || []);
-      
-    } catch (error) {
-      console.error('🎯 CAMPAIGN MANAGEMENT ERROR:', error);
-      setError(error.message || 'Failed to load campaigns');
-      setCampaigns([]);
+      setCampaigns(campaignsWithTeamSizes);
+    } catch (err) {
+      console.error('Error loading campaigns:', err);
+      setError('Failed to load campaigns. Please try again.');
+      // Set fallback data
+      setCampaigns([
+        { 
+          id: '1', 
+          name: 'Sample Campaign', 
+          description: 'Sample campaign for demo', 
+          client_name: 'Sample Client',
+          billing_rate: 75.00,
+          is_active: true,
+          team_size: 2
+        }
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  const filterCampaigns = () => {
-    let filtered = campaigns;
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(campaign =>
-        campaign.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.crm_campaign_id?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Status filter
-    if (statusFilter === 'active') {
-      filtered = filtered.filter(campaign => campaign.is_active === true);
-    } else if (statusFilter === 'inactive') {
-      filtered = filtered.filter(campaign => campaign.is_active === false);
-    }
-
-    setFilteredCampaigns(filtered);
-  };
+  // Filter campaigns based on search and status
+  const filteredCampaigns = campaigns.filter(campaign => {
+    const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         campaign.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         campaign.client_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || 
+                         (statusFilter === 'active' && campaign.is_active) ||
+                         (statusFilter === 'inactive' && !campaign.is_active);
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const handleCreateCampaign = () => {
+    setModalMode('create');
     setFormData({
       name: '',
-      billing_rate_per_hour: '',
-      client_name: '',
       description: '',
-      is_billable: true,
-      is_active: true,
-      crm_campaign_id: '',
-      crm_config: {}
+      client_name: '',
+      billing_rate: '',
+      is_active: true
     });
-    setFormErrors([]);
-    setShowCreateModal(true);
+    setEditingCampaign(null);
+    setShowModal(true);
   };
 
   const handleEditCampaign = (campaign) => {
-    setSelectedCampaign(campaign);
+    setModalMode('edit');
     setFormData({
       name: campaign.name || '',
-      billing_rate_per_hour: campaign.billing_rate_per_hour?.toString() || '',
-      client_name: campaign.client_name || '',
       description: campaign.description || '',
-      is_billable: campaign.is_billable !== false,
-      is_active: campaign.is_active !== false,
-      crm_campaign_id: campaign.crm_campaign_id || '',
-      crm_config: campaign.crm_config || {}
+      client_name: campaign.client_name || '',
+      billing_rate: campaign.billing_rate || '',
+      is_active: campaign.is_active !== false
     });
-    setFormErrors([]);
-    setShowEditModal(true);
-  };
-
-  const handleDeleteCampaign = async (campaignId) => {
-    if (!window.confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      
-      // For now, just remove from local state since we don't have delete API
-      setCampaigns(prev => prev.filter(c => c.id !== campaignId));
-      
-      console.log('🎯 CAMPAIGN MANAGEMENT: Campaign deleted (local only)');
-      
-    } catch (error) {
-      console.error('🎯 CAMPAIGN DELETE ERROR:', error);
-      setError('Failed to delete campaign: ' + error.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleViewAssignments = (campaign) => {
-    setAssignmentCampaign(campaign);
-    setViewingAssignments(true);
-    setActiveTab('assignments');
-  };
-
-  const handleBackToCampaigns = () => {
-    setViewingAssignments(false);
-    setAssignmentCampaign(null);
-    setActiveTab('campaigns');
+    setEditingCampaign(campaign);
+    setShowModal(true);
   };
 
   const handleSaveCampaign = async () => {
     try {
-      setSaving(true);
-      setFormErrors([]);
-
-      // Basic validation
-      const errors = [];
-      if (!formData.name?.trim()) {
-        errors.push('Campaign name is required');
-      }
-      if (!formData.client_name?.trim()) {
-        errors.push('Client name is required');
-      }
-      if (formData.billing_rate_per_hour && isNaN(parseFloat(formData.billing_rate_per_hour))) {
-        errors.push('Billing rate must be a valid number');
-      }
-
-      if (errors.length > 0) {
-        setFormErrors(errors);
+      // Validate required fields
+      if (!formData.name.trim()) {
+        alert('Campaign name is required');
         return;
       }
 
-      // For now, just update local state since we don't have save API
-      const campaignData = {
-        ...formData,
-        billing_rate_per_hour: formData.billing_rate_per_hour ? parseFloat(formData.billing_rate_per_hour) : null,
-        id: selectedCampaign?.id || `temp-${Date.now()}`,
-        created_at: selectedCampaign?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      if (selectedCampaign) {
-        // Update existing
-        setCampaigns(prev => prev.map(c => c.id === selectedCampaign.id ? campaignData : c));
-        console.log('🎯 CAMPAIGN MANAGEMENT: Campaign updated (local only)');
+      // Here you would typically call an API to save the campaign
+      // For now, we'll just update the local state
+      if (modalMode === 'create') {
+        const newCampaign = {
+          id: Date.now().toString(),
+          ...formData,
+          team_size: 0
+        };
+        setCampaigns(prev => [...prev, newCampaign]);
       } else {
-        // Create new
-        setCampaigns(prev => [campaignData, ...prev]);
-        console.log('🎯 CAMPAIGN MANAGEMENT: Campaign created (local only)');
+        setCampaigns(prev => prev.map(campaign => 
+          campaign.id === editingCampaign.id 
+            ? { ...campaign, ...formData }
+            : campaign
+        ));
       }
 
-      // Close modals
-      setShowCreateModal(false);
-      setShowEditModal(false);
-      setSelectedCampaign(null);
-
+      setShowModal(false);
+      setFormData({
+        name: '',
+        description: '',
+        client_name: '',
+        billing_rate: '',
+        is_active: true
+      });
     } catch (error) {
-      console.error('🎯 CAMPAIGN SAVE ERROR:', error);
-      setFormErrors(['Failed to save campaign: ' + error.message]);
-    } finally {
-      setSaving(false);
+      console.error('Error saving campaign:', error);
+      alert('Failed to save campaign. Please try again.');
     }
   };
 
-  const handleCloseModal = () => {
-    setShowCreateModal(false);
-    setShowEditModal(false);
+  const handleDeleteCampaign = async (campaignId) => {
+    if (!confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // Here you would typically call an API to delete the campaign
+      setCampaigns(prev => prev.filter(campaign => campaign.id !== campaignId));
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      alert('Failed to delete campaign. Please try again.');
+    }
+  };
+
+  const handleManageTeam = (campaign) => {
+    setSelectedCampaign(campaign);
+    setActiveTab('assignments');
+  };
+
+  const handleBackToCampaigns = () => {
+    setActiveTab('campaigns');
     setSelectedCampaign(null);
-    setFormErrors([]);
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // If viewing assignments, show the assignments component
-  if (viewingAssignments && assignmentCampaign) {
+  // Render campaign assignments view
+  if (activeTab === 'assignments' && selectedCampaign) {
     return (
-      <CampaignAssignments
-        campaignId={assignmentCampaign.id}
-        campaignName={assignmentCampaign.name}
+      <CampaignAssignments 
+        campaign={selectedCampaign}
         onBack={handleBackToCampaigns}
       />
     );
   }
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="campaign-management">
-        <div className="campaign-header">
-          <h2>Campaign Management</h2>
-        </div>
-        <div className="campaign-loading">
-          <RefreshCw className="spin" size={24} />
-          <span>Loading campaigns...</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="campaign-management">
+      {/* Header */}
       <div className="campaign-header">
         <div className="campaign-title">
           <h2>Campaign Management</h2>
-          <span className="campaign-count">
+          <p className="campaign-count">
             {filteredCampaigns.length} campaign{filteredCampaigns.length !== 1 ? 's' : ''}
-          </span>
+          </p>
         </div>
-        
         <div className="campaign-actions">
           <button 
             className="btn btn-primary"
             onClick={handleCreateCampaign}
-            disabled={saving}
           >
             <Plus size={16} />
             New Campaign
@@ -301,160 +224,204 @@ const CampaignManagement = ({ user }) => {
         </div>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tabs */}
       <div className="campaign-tabs">
         <button 
           className={`tab ${activeTab === 'campaigns' ? 'active' : ''}`}
           onClick={() => setActiveTab('campaigns')}
         >
-          <Target size={16} />
+          <Building size={16} />
           All Campaigns
+          <span className="tab-subtitle">({campaigns.length})</span>
         </button>
         <button 
           className={`tab ${activeTab === 'assignments' ? 'active' : ''}`}
           onClick={() => setActiveTab('assignments')}
-          disabled={!assignmentCampaign}
+          disabled={!selectedCampaign}
         >
           <Users size={16} />
           Team Assignments
-          {assignmentCampaign && (
-            <span className="tab-subtitle">({assignmentCampaign.name})</span>
+          {selectedCampaign && (
+            <span className="tab-subtitle">({selectedCampaign.name})</span>
           )}
         </button>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="campaign-loading">
+          <div className="spin">⏳</div>
+          <span>Loading campaigns...</span>
+        </div>
+      )}
+
+      {/* Error State */}
       {error && (
         <div className="campaign-error">
           <AlertCircle size={16} />
           <span>{error}</span>
-          <button onClick={loadCampaigns} className="btn btn-sm">
-            <RefreshCw size={14} />
-            Retry
-          </button>
         </div>
       )}
 
-      <div className="campaign-filters">
-        <div className="search-box">
-          <Search size={16} />
-          <input
-            type="text"
-            placeholder="Search campaigns..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <div className="filter-box">
-          <Filter size={16} />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="all">All Campaigns</option>
-            <option value="active">Active Only</option>
-            <option value="inactive">Inactive Only</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="campaign-list">
-        {filteredCampaigns.length === 0 ? (
-          <div className="campaign-empty">
-            <Target size={48} />
-            <h3>No campaigns found</h3>
-            <p>
-              {campaigns.length === 0 
-                ? 'Create your first campaign to get started.'
-                : 'Try adjusting your search or filter criteria.'
-              }
-            </p>
-            {campaigns.length === 0 && (
-              <button 
-                className="btn btn-primary"
-                onClick={handleCreateCampaign}
-              >
-                <Plus size={16} />
-                Create Campaign
-              </button>
-            )}
-          </div>
-        ) : (
-          filteredCampaigns.map(campaign => (
-            <CampaignCard
-              key={campaign.id}
-              campaign={campaign}
-              onEdit={handleEditCampaign}
-              onDelete={handleDeleteCampaign}
-              onViewAssignments={handleViewAssignments}
-              saving={saving}
+      {/* Filters */}
+      {!loading && !error && (
+        <div className="campaign-filters">
+          <div className="search-box">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Search campaigns..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
-          ))
-        )}
-      </div>
+          </div>
+          <div className="filter-box">
+            <Filter size={16} />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+      )}
 
-      {/* Create/Edit Modal */}
-      {(showCreateModal || showEditModal) && (
-        <div className="modal-overlay">
-          <div className="modal">
+      {/* Campaign List */}
+      {!loading && !error && (
+        <div className="campaign-list">
+          {filteredCampaigns.length === 0 ? (
+            <div className="campaign-empty">
+              <Building size={48} />
+              <h3>No campaigns found</h3>
+              <p>
+                {searchTerm || statusFilter !== 'all' 
+                  ? 'Try adjusting your search or filters'
+                  : 'Get started by creating your first campaign'
+                }
+              </p>
+              {!searchTerm && statusFilter === 'all' && (
+                <button 
+                  className="btn btn-primary"
+                  onClick={handleCreateCampaign}
+                >
+                  <Plus size={16} />
+                  Create Campaign
+                </button>
+              )}
+            </div>
+          ) : (
+            filteredCampaigns.map((campaign) => (
+              <div key={campaign.id} className="campaign-card">
+                <div className="campaign-card-header">
+                  <div className="campaign-info">
+                    <h3>{campaign.name}</h3>
+                    <div className="campaign-meta">
+                      {campaign.client_name && (
+                        <span className="client-name">
+                          <Building size={14} />
+                          {campaign.client_name}
+                        </span>
+                      )}
+                      {campaign.billing_rate && (
+                        <span className="billing-rate">
+                          <DollarSign size={14} />
+                          ${campaign.billing_rate}/hr
+                        </span>
+                      )}
+                      <span className="team-size">
+                        <Users size={14} />
+                        {campaign.team_size} team member{campaign.team_size !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="campaign-actions">
+                    <span className={`status-badge ${campaign.is_active ? 'active' : 'inactive'}`}>
+                      {campaign.is_active ? (
+                        <>
+                          <Check size={12} />
+                          Active
+                        </>
+                      ) : (
+                        <>
+                          <X size={12} />
+                          Inactive
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                {campaign.description && (
+                  <div className="campaign-description">
+                    <p>{campaign.description}</p>
+                  </div>
+                )}
+
+                <div className="campaign-actions">
+                  <button 
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => handleManageTeam(campaign)}
+                  >
+                    <Users size={14} />
+                    Team ({campaign.team_size})
+                  </button>
+                  <button 
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => handleEditCampaign(campaign)}
+                  >
+                    <Edit size={14} />
+                    Edit
+                  </button>
+                  <button 
+                    className="btn btn-danger btn-sm"
+                    onClick={() => handleDeleteCampaign(campaign.id)}
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Campaign Modal */}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{selectedCampaign ? 'Edit Campaign' : 'Create New Campaign'}</h3>
-              <button className="modal-close" onClick={handleCloseModal}>
+              <h3>{modalMode === 'create' ? 'Create New Campaign' : 'Edit Campaign'}</h3>
+              <button 
+                className="modal-close"
+                onClick={() => setShowModal(false)}
+              >
                 <X size={20} />
               </button>
             </div>
-
+            
             <div className="modal-body">
-              {formErrors.length > 0 && (
-                <div className="form-errors">
-                  {formErrors.map((error, index) => (
-                    <div key={index} className="error-message">
-                      <AlertCircle size={14} />
-                      {error}
-                    </div>
-                  ))}
-                </div>
-              )}
-
               <div className="form-grid">
                 <div className="form-group">
                   <label>Campaign Name *</label>
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Enter campaign name"
                   />
                 </div>
-
+                
                 <div className="form-group">
-                  <label>Client Name *</label>
+                  <label>Client Name</label>
                   <input
                     type="text"
                     value={formData.client_name}
-                    onChange={(e) => handleInputChange('client_name', e.target.value)}
+                    onChange={(e) => setFormData(prev => ({ ...prev, client_name: e.target.value }))}
                     placeholder="Enter client name"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Billing Rate ($/hour)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.billing_rate_per_hour}
-                    onChange={(e) => handleInputChange('billing_rate_per_hour', e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>CRM Campaign ID</label>
-                  <input
-                    type="text"
-                    value={formData.crm_campaign_id}
-                    onChange={(e) => handleInputChange('crm_campaign_id', e.target.value)}
-                    placeholder="External campaign ID"
                   />
                 </div>
               </div>
@@ -463,162 +430,55 @@ const CampaignManagement = ({ user }) => {
                 <label>Description</label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Campaign description..."
-                  rows="3"
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Enter campaign description"
+                  rows={3}
                 />
+              </div>
+
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Billing Rate ($/hour)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.billing_rate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, billing_rate: e.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
 
               <div className="form-checkboxes">
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
-                    checked={formData.is_billable}
-                    onChange={(e) => handleInputChange('is_billable', e.target.checked)}
-                  />
-                  Billable Campaign
-                </label>
-
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
                     checked={formData.is_active}
-                    onChange={(e) => handleInputChange('is_active', e.target.checked)}
+                    onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
                   />
                   Active Campaign
                 </label>
               </div>
             </div>
-
+            
             <div className="modal-footer">
-              <button
+              <button 
                 className="btn btn-secondary"
-                onClick={handleCloseModal}
-                disabled={saving}
+                onClick={() => setShowModal(false)}
               >
                 Cancel
               </button>
-              
-              <button
+              <button 
                 className="btn btn-primary"
                 onClick={handleSaveCampaign}
-                disabled={saving}
               >
-                {saving ? (
-                  <>
-                    <RefreshCw size={14} className="spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save size={14} />
-                    {selectedCampaign ? 'Update' : 'Create'} Campaign
-                  </>
-                )}
+                {modalMode === 'create' ? 'Create Campaign' : 'Save Changes'}
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-// Enhanced Campaign Card Component
-const CampaignCard = ({ campaign, onEdit, onDelete, onViewAssignments, saving }) => {
-  const [teamSize, setTeamSize] = useState(0);
-  const [loadingTeamSize, setLoadingTeamSize] = useState(true);
-
-  useEffect(() => {
-    loadTeamSize();
-  }, [campaign.id]);
-
-  const loadTeamSize = async () => {
-    try {
-      const summary = await supabaseApi.getCampaignAssignmentSummary(campaign.id);
-      setTeamSize(summary.total_team_members);
-    } catch (error) {
-      console.error('Error loading team size:', error);
-      setTeamSize(0);
-    } finally {
-      setLoadingTeamSize(false);
-    }
-  };
-
-  return (
-    <div className="campaign-card">
-      <div className="campaign-card-header">
-        <div className="campaign-info">
-          <h3>{campaign.name}</h3>
-          <div className="campaign-meta">
-            <span className="client-name">
-              <Building size={14} />
-              {campaign.client_name || 'No client specified'}
-            </span>
-            {campaign.billing_rate_per_hour && (
-              <span className="billing-rate">
-                <DollarSign size={14} />
-                ${campaign.billing_rate_per_hour}/hr
-              </span>
-            )}
-            <span className="team-size">
-              <Users size={14} />
-              {loadingTeamSize ? '...' : `${teamSize} member${teamSize !== 1 ? 's' : ''}`}
-            </span>
-          </div>
-        </div>
-        
-        <div className="campaign-status">
-          <span className={`status-badge ${campaign.is_active ? 'active' : 'inactive'}`}>
-            {campaign.is_active ? (
-              <>
-                <CheckCircle size={14} />
-                Active
-              </>
-            ) : (
-              <>
-                <Pause size={14} />
-                Inactive
-              </>
-            )}
-          </span>
-        </div>
-      </div>
-
-      {campaign.description && (
-        <div className="campaign-description">
-          <p>{campaign.description}</p>
-        </div>
-      )}
-
-      <div className="campaign-actions">
-        <button
-          className="btn btn-sm btn-secondary"
-          onClick={() => onViewAssignments(campaign)}
-          disabled={saving}
-        >
-          <UserPlus size={14} />
-          Team ({teamSize})
-        </button>
-
-        <button
-          className="btn btn-sm btn-secondary"
-          onClick={() => onEdit(campaign)}
-          disabled={saving}
-        >
-          <Edit size={14} />
-          Edit
-        </button>
-        
-        <button
-          className="btn btn-sm btn-danger"
-          onClick={() => onDelete(campaign.id)}
-          disabled={saving}
-        >
-          <Trash2 size={14} />
-          Delete
-        </button>
-      </div>
     </div>
   );
 };
