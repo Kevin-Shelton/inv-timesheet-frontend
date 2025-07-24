@@ -89,7 +89,8 @@ const InvictusLogo = () => (
   </svg>
 )
 
-export default function AppLayout() {
+// FIXED: Changed from default export to named export
+export const AppLayout = () => {
   const { user, signOut } = useAuth()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
