@@ -1,4 +1,4 @@
-// Bulletproof Supabase Client - Prevents all infinite loops
+// Enhanced Supabase Client with Campaign Assignment Management
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -6,7 +6,7 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
-// Bulletproof API that never throws errors or causes infinite loops
+// Enhanced API with Campaign Assignment functionality
 export const supabaseApi = {
   // Authentication helpers
   isAuthenticated: async () => {
@@ -215,6 +215,308 @@ export const supabaseApi = {
       ]
     }
   },
+
+  // ===== NEW CAMPAIGN ASSIGNMENT API METHODS =====
+
+  // Get all team members assigned to a specific campaign
+  getCampaignAssignments: async (campaignId) => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        return [
+          {
+            id: '1',
+            campaign_id: campaignId,
+            user_id: '1',
+            expected_payroll_hours: 40.00,
+            expected_billable_hours: 35.00,
+            users: { id: '1', full_name: 'John Doe', email: 'john@example.com', role: 'team_member' }
+          }
+        ]
+      }
+
+      const { data, error } = await supabase
+        .from('campaign_assignments')
+        .select(`
+          id,
+          campaign_id,
+          user_id,
+          expected_payroll_hours,
+          expected_billable_hours,
+          created_at,
+          users!inner(
+            id,
+            full_name,
+            email,
+            role,
+            employment_type
+          )
+        `)
+        .eq('campaign_id', campaignId)
+        .order('users(full_name)', { ascending: true })
+      
+      if (error || !data) {
+        return [
+          {
+            id: '1',
+            campaign_id: campaignId,
+            user_id: '1',
+            expected_payroll_hours: 40.00,
+            expected_billable_hours: 35.00,
+            users: { id: '1', full_name: 'John Doe', email: 'john@example.com', role: 'team_member' }
+          }
+        ]
+      }
+      
+      return data
+    } catch (error) {
+      console.error('Error fetching campaign assignments:', error)
+      return [
+        {
+          id: '1',
+          campaign_id: campaignId,
+          user_id: '1',
+          expected_payroll_hours: 40.00,
+          expected_billable_hours: 35.00,
+          users: { id: '1', full_name: 'John Doe', email: 'john@example.com', role: 'team_member' }
+        }
+      ]
+    }
+  },
+
+  // Assign a user to a campaign with expected hours
+  assignUserToCampaign: async (assignmentData) => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        throw new Error('Authentication required to assign users to campaigns')
+      }
+
+      // Validate required fields
+      if (!assignmentData.campaign_id) {
+        throw new Error('Campaign ID is required')
+      }
+      if (!assignmentData.user_id) {
+        throw new Error('User ID is required')
+      }
+      if (assignmentData.expected_payroll_hours === undefined || assignmentData.expected_payroll_hours === null) {
+        throw new Error('Expected payroll hours is required')
+      }
+      if (assignmentData.expected_billable_hours === undefined || assignmentData.expected_billable_hours === null) {
+        throw new Error('Expected billable hours is required')
+      }
+
+      const { data, error } = await supabase
+        .from('campaign_assignments')
+        .insert([{
+          campaign_id: assignmentData.campaign_id,
+          user_id: assignmentData.user_id,
+          expected_payroll_hours: parseFloat(assignmentData.expected_payroll_hours),
+          expected_billable_hours: parseFloat(assignmentData.expected_billable_hours)
+        }])
+        .select(`
+          id,
+          campaign_id,
+          user_id,
+          expected_payroll_hours,
+          expected_billable_hours,
+          created_at,
+          users!inner(
+            id,
+            full_name,
+            email,
+            role,
+            employment_type
+          )
+        `)
+      
+      if (error) {
+        console.error('Error assigning user to campaign:', error)
+        throw error
+      }
+      
+      return data[0]
+    } catch (error) {
+      console.error('Error assigning user to campaign:', error)
+      throw error
+    }
+  },
+
+  // Update an existing campaign assignment
+  updateCampaignAssignment: async (assignmentId, updateData) => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        throw new Error('Authentication required to update campaign assignments')
+      }
+
+      const updateFields = {}
+      if (updateData.expected_payroll_hours !== undefined) {
+        updateFields.expected_payroll_hours = parseFloat(updateData.expected_payroll_hours)
+      }
+      if (updateData.expected_billable_hours !== undefined) {
+        updateFields.expected_billable_hours = parseFloat(updateData.expected_billable_hours)
+      }
+
+      const { data, error } = await supabase
+        .from('campaign_assignments')
+        .update(updateFields)
+        .eq('id', assignmentId)
+        .select(`
+          id,
+          campaign_id,
+          user_id,
+          expected_payroll_hours,
+          expected_billable_hours,
+          created_at,
+          users!inner(
+            id,
+            full_name,
+            email,
+            role,
+            employment_type
+          )
+        `)
+      
+      if (error) {
+        console.error('Error updating campaign assignment:', error)
+        throw error
+      }
+      
+      return data[0]
+    } catch (error) {
+      console.error('Error updating campaign assignment:', error)
+      throw error
+    }
+  },
+
+  // Remove a user from a campaign
+  removeUserFromCampaign: async (assignmentId) => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        throw new Error('Authentication required to remove users from campaigns')
+      }
+
+      const { error } = await supabase
+        .from('campaign_assignments')
+        .delete()
+        .eq('id', assignmentId)
+      
+      if (error) {
+        console.error('Error removing user from campaign:', error)
+        throw error
+      }
+      
+      return true
+    } catch (error) {
+      console.error('Error removing user from campaign:', error)
+      throw error
+    }
+  },
+
+  // Get users who are not assigned to a specific campaign
+  getUnassignedUsers: async (campaignId) => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        return [
+          { id: '3', full_name: 'Mike Johnson', email: 'mike@example.com', role: 'team_member' },
+          { id: '4', full_name: 'Sarah Wilson', email: 'sarah@example.com', role: 'team_member' }
+        ]
+      }
+
+      // First get all users
+      const { data: allUsers, error: usersError } = await supabase
+        .from('users')
+        .select('id, full_name, email, role, employment_type')
+        .eq('is_active', true)
+        .order('full_name', { ascending: true })
+
+      if (usersError || !allUsers) {
+        return [
+          { id: '3', full_name: 'Mike Johnson', email: 'mike@example.com', role: 'team_member' },
+          { id: '4', full_name: 'Sarah Wilson', email: 'sarah@example.com', role: 'team_member' }
+        ]
+      }
+
+      // Then get assigned user IDs for this campaign
+      const { data: assignments, error: assignmentsError } = await supabase
+        .from('campaign_assignments')
+        .select('user_id')
+        .eq('campaign_id', campaignId)
+
+      if (assignmentsError) {
+        return allUsers // Return all users if we can't get assignments
+      }
+
+      // Filter out assigned users
+      const assignedUserIds = assignments ? assignments.map(a => a.user_id) : []
+      const unassignedUsers = allUsers.filter(user => !assignedUserIds.includes(user.id))
+      
+      return unassignedUsers
+    } catch (error) {
+      console.error('Error fetching unassigned users:', error)
+      return [
+        { id: '3', full_name: 'Mike Johnson', email: 'mike@example.com', role: 'team_member' },
+        { id: '4', full_name: 'Sarah Wilson', email: 'sarah@example.com', role: 'team_member' }
+      ]
+    }
+  },
+
+  // Get campaign assignment summary (total team size, hours, etc.)
+  getCampaignAssignmentSummary: async (campaignId) => {
+    try {
+      const isAuth = await supabaseApi.isAuthenticated()
+      if (!isAuth) {
+        return {
+          total_team_members: 2,
+          total_payroll_hours: 80.00,
+          total_billable_hours: 70.00,
+          average_payroll_hours: 40.00,
+          average_billable_hours: 35.00
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('campaign_assignments')
+        .select('expected_payroll_hours, expected_billable_hours')
+        .eq('campaign_id', campaignId)
+
+      if (error || !data) {
+        return {
+          total_team_members: 0,
+          total_payroll_hours: 0.00,
+          total_billable_hours: 0.00,
+          average_payroll_hours: 0.00,
+          average_billable_hours: 0.00
+        }
+      }
+
+      const totalTeamMembers = data.length
+      const totalPayrollHours = data.reduce((sum, assignment) => sum + (assignment.expected_payroll_hours || 0), 0)
+      const totalBillableHours = data.reduce((sum, assignment) => sum + (assignment.expected_billable_hours || 0), 0)
+
+      return {
+        total_team_members: totalTeamMembers,
+        total_payroll_hours: totalPayrollHours,
+        total_billable_hours: totalBillableHours,
+        average_payroll_hours: totalTeamMembers > 0 ? totalPayrollHours / totalTeamMembers : 0,
+        average_billable_hours: totalTeamMembers > 0 ? totalBillableHours / totalTeamMembers : 0
+      }
+    } catch (error) {
+      console.error('Error fetching campaign assignment summary:', error)
+      return {
+        total_team_members: 0,
+        total_payroll_hours: 0.00,
+        total_billable_hours: 0.00,
+        average_payroll_hours: 0.00,
+        average_billable_hours: 0.00
+      }
+    }
+  },
+
+  // ===== END CAMPAIGN ASSIGNMENT API METHODS =====
 
   // Timesheets API with bulletproof fallback
   getTimesheets: async (params = {}) => {

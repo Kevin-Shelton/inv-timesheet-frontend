@@ -1,6 +1,4 @@
-// Fixed CampaignManagement.jsx - Removes supabase prop dependency
-// Replace your existing src/components/CampaignManagement.jsx with this file
-
+// Enhanced CampaignManagement.jsx with Team Assignment Functionality
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
@@ -28,8 +26,13 @@ import {
   Mail,
   Phone,
   Briefcase,
-  RefreshCw
+  RefreshCw,
+  UserPlus,
+  Settings
 } from 'lucide-react';
+
+// Import components
+import CampaignAssignments from './CampaignAssignments';
 
 // Import the enhanced supabase client
 import { supabaseApi } from '../supabaseClient.js';
@@ -44,6 +47,11 @@ const CampaignManagement = ({ user }) => {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  
+  // Tab and view state
+  const [activeTab, setActiveTab] = useState('campaigns');
+  const [viewingAssignments, setViewingAssignments] = useState(false);
+  const [assignmentCampaign, setAssignmentCampaign] = useState(null);
 
   // Form state for campaign creation/editing
   const [formData, setFormData] = useState({
@@ -165,6 +173,18 @@ const CampaignManagement = ({ user }) => {
     }
   };
 
+  const handleViewAssignments = (campaign) => {
+    setAssignmentCampaign(campaign);
+    setViewingAssignments(true);
+    setActiveTab('assignments');
+  };
+
+  const handleBackToCampaigns = () => {
+    setViewingAssignments(false);
+    setAssignmentCampaign(null);
+    setActiveTab('campaigns');
+  };
+
   const handleSaveCampaign = async () => {
     try {
       setSaving(true);
@@ -233,6 +253,17 @@ const CampaignManagement = ({ user }) => {
     }));
   };
 
+  // If viewing assignments, show the assignments component
+  if (viewingAssignments && assignmentCampaign) {
+    return (
+      <CampaignAssignments
+        campaignId={assignmentCampaign.id}
+        campaignName={assignmentCampaign.name}
+        onBack={handleBackToCampaigns}
+      />
+    );
+  }
+
   // Loading state
   if (loading) {
     return (
@@ -268,6 +299,28 @@ const CampaignManagement = ({ user }) => {
             New Campaign
           </button>
         </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="campaign-tabs">
+        <button 
+          className={`tab ${activeTab === 'campaigns' ? 'active' : ''}`}
+          onClick={() => setActiveTab('campaigns')}
+        >
+          <Target size={16} />
+          All Campaigns
+        </button>
+        <button 
+          className={`tab ${activeTab === 'assignments' ? 'active' : ''}`}
+          onClick={() => setActiveTab('assignments')}
+          disabled={!assignmentCampaign}
+        >
+          <Users size={16} />
+          Team Assignments
+          {assignmentCampaign && (
+            <span className="tab-subtitle">({assignmentCampaign.name})</span>
+          )}
+        </button>
       </div>
 
       {error && (
@@ -328,67 +381,14 @@ const CampaignManagement = ({ user }) => {
           </div>
         ) : (
           filteredCampaigns.map(campaign => (
-            <div key={campaign.id} className="campaign-card">
-              <div className="campaign-card-header">
-                <div className="campaign-info">
-                  <h3>{campaign.name}</h3>
-                  <div className="campaign-meta">
-                    <span className="client-name">
-                      <Building size={14} />
-                      {campaign.client_name || 'No client specified'}
-                    </span>
-                    {campaign.billing_rate_per_hour && (
-                      <span className="billing-rate">
-                        <DollarSign size={14} />
-                        ${campaign.billing_rate_per_hour}/hr
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="campaign-status">
-                  <span className={`status-badge ${campaign.is_active ? 'active' : 'inactive'}`}>
-                    {campaign.is_active ? (
-                      <>
-                        <CheckCircle size={14} />
-                        Active
-                      </>
-                    ) : (
-                      <>
-                        <Pause size={14} />
-                        Inactive
-                      </>
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              {campaign.description && (
-                <div className="campaign-description">
-                  <p>{campaign.description}</p>
-                </div>
-              )}
-
-              <div className="campaign-actions">
-                <button
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => handleEditCampaign(campaign)}
-                  disabled={saving}
-                >
-                  <Edit size={14} />
-                  Edit
-                </button>
-                
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => handleDeleteCampaign(campaign.id)}
-                  disabled={saving}
-                >
-                  <Trash2 size={14} />
-                  Delete
-                </button>
-              </div>
-            </div>
+            <CampaignCard
+              key={campaign.id}
+              campaign={campaign}
+              onEdit={handleEditCampaign}
+              onDelete={handleDeleteCampaign}
+              onViewAssignments={handleViewAssignments}
+              saving={saving}
+            />
           ))
         )}
       </div>
@@ -520,6 +520,105 @@ const CampaignManagement = ({ user }) => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// Enhanced Campaign Card Component
+const CampaignCard = ({ campaign, onEdit, onDelete, onViewAssignments, saving }) => {
+  const [teamSize, setTeamSize] = useState(0);
+  const [loadingTeamSize, setLoadingTeamSize] = useState(true);
+
+  useEffect(() => {
+    loadTeamSize();
+  }, [campaign.id]);
+
+  const loadTeamSize = async () => {
+    try {
+      const summary = await supabaseApi.getCampaignAssignmentSummary(campaign.id);
+      setTeamSize(summary.total_team_members);
+    } catch (error) {
+      console.error('Error loading team size:', error);
+      setTeamSize(0);
+    } finally {
+      setLoadingTeamSize(false);
+    }
+  };
+
+  return (
+    <div className="campaign-card">
+      <div className="campaign-card-header">
+        <div className="campaign-info">
+          <h3>{campaign.name}</h3>
+          <div className="campaign-meta">
+            <span className="client-name">
+              <Building size={14} />
+              {campaign.client_name || 'No client specified'}
+            </span>
+            {campaign.billing_rate_per_hour && (
+              <span className="billing-rate">
+                <DollarSign size={14} />
+                ${campaign.billing_rate_per_hour}/hr
+              </span>
+            )}
+            <span className="team-size">
+              <Users size={14} />
+              {loadingTeamSize ? '...' : `${teamSize} member${teamSize !== 1 ? 's' : ''}`}
+            </span>
+          </div>
+        </div>
+        
+        <div className="campaign-status">
+          <span className={`status-badge ${campaign.is_active ? 'active' : 'inactive'}`}>
+            {campaign.is_active ? (
+              <>
+                <CheckCircle size={14} />
+                Active
+              </>
+            ) : (
+              <>
+                <Pause size={14} />
+                Inactive
+              </>
+            )}
+          </span>
+        </div>
+      </div>
+
+      {campaign.description && (
+        <div className="campaign-description">
+          <p>{campaign.description}</p>
+        </div>
+      )}
+
+      <div className="campaign-actions">
+        <button
+          className="btn btn-sm btn-secondary"
+          onClick={() => onViewAssignments(campaign)}
+          disabled={saving}
+        >
+          <UserPlus size={14} />
+          Team ({teamSize})
+        </button>
+
+        <button
+          className="btn btn-sm btn-secondary"
+          onClick={() => onEdit(campaign)}
+          disabled={saving}
+        >
+          <Edit size={14} />
+          Edit
+        </button>
+        
+        <button
+          className="btn btn-sm btn-danger"
+          onClick={() => onDelete(campaign.id)}
+          disabled={saving}
+        >
+          <Trash2 size={14} />
+          Delete
+        </button>
+      </div>
     </div>
   );
 };
