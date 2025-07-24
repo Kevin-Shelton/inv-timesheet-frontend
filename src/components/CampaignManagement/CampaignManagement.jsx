@@ -1,4 +1,4 @@
-// Enhanced CampaignManagement.jsx with GUARANTEED Team Button Navigation
+// Enhanced CampaignManagement.jsx with Simple Team Button Fix
 import React, { useState, useEffect } from 'react';
 import './campaign-management.css';
 import { 
@@ -26,13 +26,10 @@ const CampaignManagement = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  
-  // CRITICAL: These state variables control the Team button navigation
   const [activeTab, setActiveTab] = useState('campaigns');
   const [selectedCampaign, setSelectedCampaign] = useState(null);
-  
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
+  const [modalMode, setModalMode] = useState('create');
   const [editingCampaign, setEditingCampaign] = useState(null);
 
   // Form state for campaign modal
@@ -100,7 +97,7 @@ const CampaignManagement = () => {
             } catch (error) {
               return {
                 ...campaign,
-                team_size: Math.floor(Math.random() * 6) // Random team size for demo
+                team_size: Math.floor(Math.random() * 6)
               };
             }
           })
@@ -143,29 +140,6 @@ const CampaignManagement = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // CRITICAL: Team button click handler - this MUST work
-  const handleManageTeam = (campaign) => {
-    console.log('🎯 Team button clicked for campaign:', campaign.name);
-    console.log('🎯 Setting selectedCampaign to:', campaign);
-    console.log('🎯 Setting activeTab to: assignments');
-    
-    setSelectedCampaign(campaign);
-    setActiveTab('assignments');
-    
-    // Force a small delay to ensure state is updated
-    setTimeout(() => {
-      console.log('🎯 State after update - activeTab:', 'assignments');
-      console.log('🎯 State after update - selectedCampaign:', campaign);
-    }, 100);
-  };
-
-  // CRITICAL: Back navigation handler
-  const handleBackToCampaigns = () => {
-    console.log('🔙 Back button clicked, returning to campaigns');
-    setActiveTab('campaigns');
-    setSelectedCampaign(null);
-  };
-
   const handleCreateCampaign = () => {
     setModalMode('create');
     setFormData({
@@ -194,14 +168,11 @@ const CampaignManagement = () => {
 
   const handleSaveCampaign = async () => {
     try {
-      // Validate required fields
       if (!formData.name.trim()) {
         alert('Campaign name is required');
         return;
       }
 
-      // Here you would typically call an API to save the campaign
-      // For now, we'll just update the local state
       if (modalMode === 'create') {
         const newCampaign = {
           id: Date.now().toString(),
@@ -237,7 +208,6 @@ const CampaignManagement = () => {
     }
 
     try {
-      // Here you would typically call an API to delete the campaign
       setCampaigns(prev => prev.filter(campaign => campaign.id !== campaignId));
     } catch (error) {
       console.error('Error deleting campaign:', error);
@@ -245,15 +215,15 @@ const CampaignManagement = () => {
     }
   };
 
-  // CRITICAL: Render team assignments view when activeTab is 'assignments'
-  console.log('🎯 Current render state - activeTab:', activeTab, 'selectedCampaign:', selectedCampaign?.name);
-  
+  // Render team assignments view when activeTab is 'assignments'
   if (activeTab === 'assignments' && selectedCampaign) {
-    console.log('🎯 Rendering CampaignAssignments for:', selectedCampaign.name);
     return (
       <CampaignAssignments 
         campaign={selectedCampaign}
-        onBack={handleBackToCampaigns}
+        onBack={() => {
+          setActiveTab('campaigns');
+          setSelectedCampaign(null);
+        }}
       />
     );
   }
@@ -284,7 +254,6 @@ const CampaignManagement = () => {
         <button 
           className={`tab ${activeTab === 'campaigns' ? 'active' : ''}`}
           onClick={() => {
-            console.log('🎯 All Campaigns tab clicked');
             setActiveTab('campaigns');
             setSelectedCampaign(null);
           }}
@@ -297,7 +266,6 @@ const CampaignManagement = () => {
           className={`tab ${activeTab === 'assignments' ? 'active' : ''}`}
           onClick={() => {
             if (selectedCampaign) {
-              console.log('🎯 Team Assignments tab clicked');
               setActiveTab('assignments');
             }
           }}
@@ -429,25 +397,22 @@ const CampaignManagement = () => {
                 )}
 
                 <div className="campaign-actions">
-                  {/* CRITICAL: Team button with guaranteed navigation */}
+                  {/* SIMPLE TEAM BUTTON - NO CSS CLASSES */}
                   <button 
-                    className="btn btn-secondary btn-sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('🎯 TEAM BUTTON CLICKED for campaign:', campaign.name);
-                      handleManageTeam(campaign);
+                    onClick={() => {
+                      setSelectedCampaign(campaign);
+                      setActiveTab('assignments');
                     }}
                     style={{
                       backgroundColor: '#3B82F6',
                       color: 'white',
                       border: 'none',
-                      padding: '8px 12px',
+                      padding: '8px 16px',
                       borderRadius: '6px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: '8px',
                       fontSize: '14px',
                       fontWeight: '500'
                     }}
@@ -455,6 +420,7 @@ const CampaignManagement = () => {
                     <Users size={14} />
                     Team ({campaign.team_size})
                   </button>
+                  
                   <button 
                     className="btn btn-secondary btn-sm"
                     onClick={() => handleEditCampaign(campaign)}
@@ -462,6 +428,7 @@ const CampaignManagement = () => {
                     <Edit size={14} />
                     Edit
                   </button>
+                  
                   <button 
                     className="btn btn-danger btn-sm"
                     onClick={() => handleDeleteCampaign(campaign.id)}
