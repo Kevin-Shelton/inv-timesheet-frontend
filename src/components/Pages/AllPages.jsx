@@ -532,11 +532,7 @@ export function OrganizationPage() {
       </div>
     </BasePage>
   )
-}
-// Add this export
-export const CampaignManagementPage = () => (
-  <CampaignManagement />
-);
+
 // Integrations Page
 export function IntegrationsPage() {
   return (
