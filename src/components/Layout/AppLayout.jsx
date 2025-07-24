@@ -95,7 +95,7 @@ export function AppLayout() {
     { path: '/time-off-holidays', icon: Calendar, label: 'Time Off & Holidays' },
     { path: '/locations', icon: MapPin, label: 'Locations' },
     { path: '/activities-projects', icon: FolderOpen, label: 'Activities & Projects' },
-    { path: '/organization', icon: Building, label: 'Organization' },
+    { path: '/campaigns', icon: Building, label: 'Campaign' },
     { path: '/integrations', icon: Zap, label: 'Integrations' }
   ]
 

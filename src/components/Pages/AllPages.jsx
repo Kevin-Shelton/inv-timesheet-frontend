@@ -1,7 +1,10 @@
-import { MapPin, Calendar, BarChart3, Settings, Users, Activity, Clock, Building, Zap, FolderOpen } from 'lucide-react'
+import { MapPin, Calendar, BarChart3, Settings, Users, Activity, Clock, Building, Zap, FolderOpen, Target } from 'lucide-react'
 
 // Import the real WorkSchedulesPage component
 import { WorkSchedulesPage as RealWorkSchedulesPage } from '../WorkSchedules'
+
+// Import the enhanced CampaignManagement component
+import CampaignManagement from '../CampaignManagement/CampaignManagement'
 
 // Base page layout component
 const BasePage = ({ title, icon: Icon, children, description }) => {
@@ -486,7 +489,12 @@ export function ActivitiesProjectsPage() {
   )
 }
 
-// Organization Page
+// Campaign Management Page - NEW!
+export function CampaignManagementPage() {
+  return <CampaignManagement />
+}
+
+// Organization Page - Keep for backward compatibility but redirect to campaigns
 export function OrganizationPage() {
   return (
     <BasePage 
@@ -525,7 +533,10 @@ export function OrganizationPage() {
     </BasePage>
   )
 }
-
+// Add this export
+export const CampaignManagementPage = () => (
+  <CampaignManagement />
+);
 // Integrations Page
 export function IntegrationsPage() {
   return (

@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/Auth/ProtectedRoute'
 import { PublicRoute } from './components/Auth/PublicRoute'
 import Dashboard from './components/Dashboard/Dashboard'
 import { TimesheetsPage } from './components/Timesheet/TimesheetPage'
+import { CampaignManagementPage } from './components/Pages/AllPages';
 
 // Import all the page components
 import { 
@@ -24,6 +25,7 @@ import {
 } from './components/Pages/AllPages'
 
 import './App.css'
+import CampaignManagement from './components/CampaignManagement/CampaignManagement'
 
 // Loading component
 function LoadingSpinner() {
@@ -117,7 +119,7 @@ function AppContent() {
           <Route path="activities-projects" element={<ActivitiesProjectsPage />} />
           
           {/* Organization */}
-          <Route path="organization" element={<OrganizationPage />} />
+          <Route path="campaigns" element={<CampaignManagementPage />} />
           
           {/* Integrations */}
           <Route path="integrations" element={<IntegrationsPage />} />
