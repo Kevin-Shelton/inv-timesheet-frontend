@@ -1,4 +1,4 @@
-// Enhanced CampaignManagement.jsx with Simple Team Button Fix
+// Enhanced CampaignManagement.jsx with Selectable Campaign Cards
 import React, { useState, useEffect } from 'react';
 import './campaign-management.css';
 import { 
@@ -15,7 +15,8 @@ import {
   TrendingUp,
   AlertCircle,
   Check,
-  X
+  X,
+  Info
 } from 'lucide-react';
 import { supabaseApi } from '../../supabaseClient.js';
 import CampaignAssignments from './CampaignAssignments';
@@ -140,6 +141,21 @@ const CampaignManagement = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Handle campaign card selection
+  const handleCampaignSelect = (campaign) => {
+    setSelectedCampaign(campaign);
+    console.log('Campaign selected:', campaign.name);
+  };
+
+  // Handle Team Assignments tab click
+  const handleTeamAssignmentsTabClick = () => {
+    if (!selectedCampaign) {
+      alert('Please select a campaign card first.');
+      return;
+    }
+    setActiveTab('assignments');
+  };
+
   const handleCreateCampaign = () => {
     setModalMode('create');
     setFormData({
@@ -153,7 +169,8 @@ const CampaignManagement = () => {
     setShowModal(true);
   };
 
-  const handleEditCampaign = (campaign) => {
+  const handleEditCampaign = (e, campaign) => {
+    e.stopPropagation(); // Prevent card selection when clicking edit
     setModalMode('edit');
     setFormData({
       name: campaign.name || '',
@@ -202,13 +219,19 @@ const CampaignManagement = () => {
     }
   };
 
-  const handleDeleteCampaign = async (campaignId) => {
+  const handleDeleteCampaign = async (e, campaignId) => {
+    e.stopPropagation(); // Prevent card selection when clicking delete
     if (!confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
       return;
     }
 
     try {
       setCampaigns(prev => prev.filter(campaign => campaign.id !== campaignId));
+      // Clear selection if deleted campaign was selected
+      if (selectedCampaign?.id === campaignId) {
+        setSelectedCampaign(null);
+        setActiveTab('campaigns');
+      }
     } catch (error) {
       console.error('Error deleting campaign:', error);
       alert('Failed to delete campaign. Please try again.');
@@ -222,7 +245,7 @@ const CampaignManagement = () => {
         campaign={selectedCampaign}
         onBack={() => {
           setActiveTab('campaigns');
-          setSelectedCampaign(null);
+          // Keep selectedCampaign so tab remains enabled
         }}
       />
     );
@@ -236,6 +259,11 @@ const CampaignManagement = () => {
           <h2>Campaign Management</h2>
           <p className="campaign-count">
             {filteredCampaigns.length} campaign{filteredCampaigns.length !== 1 ? 's' : ''}
+            {selectedCampaign && (
+              <span style={{ color: '#3B82F6', marginLeft: '8px' }}>
+                • {selectedCampaign.name} selected
+              </span>
+            )}
           </p>
         </div>
         <div className="campaign-actions">
@@ -255,7 +283,6 @@ const CampaignManagement = () => {
           className={`tab ${activeTab === 'campaigns' ? 'active' : ''}`}
           onClick={() => {
             setActiveTab('campaigns');
-            setSelectedCampaign(null);
           }}
         >
           <Building size={16} />
@@ -263,13 +290,8 @@ const CampaignManagement = () => {
           <span className="tab-subtitle">({campaigns.length})</span>
         </button>
         <button 
-          className={`tab ${activeTab === 'assignments' ? 'active' : ''}`}
-          onClick={() => {
-            if (selectedCampaign) {
-              setActiveTab('assignments');
-            }
-          }}
-          disabled={!selectedCampaign}
+          className={`tab ${activeTab === 'assignments' ? 'active' : ''} ${!selectedCampaign ? 'disabled' : ''}`}
+          onClick={handleTeamAssignmentsTabClick}
           style={{ 
             opacity: selectedCampaign ? 1 : 0.5,
             cursor: selectedCampaign ? 'pointer' : 'not-allowed'
@@ -350,7 +372,12 @@ const CampaignManagement = () => {
             </div>
           ) : (
             filteredCampaigns.map((campaign) => (
-              <div key={campaign.id} className="campaign-card">
+              <div 
+                key={campaign.id} 
+                className={`campaign-card ${selectedCampaign?.id === campaign.id ? 'selected' : ''}`}
+                onClick={() => handleCampaignSelect(campaign)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="campaign-card-header">
                   <div className="campaign-info">
                     <h3>{campaign.name}</h3>
@@ -397,33 +424,26 @@ const CampaignManagement = () => {
                 )}
 
                 <div className="campaign-actions">
-                  {/* SIMPLE TEAM BUTTON - NO CSS CLASSES */}
-                  <button 
-                    onClick={() => {
-                      setSelectedCampaign(campaign);
-                      setActiveTab('assignments');
-                    }}
+                  {/* Info icon to show team size */}
+                  <div 
                     style={{
-                      backgroundColor: '#3B82F6',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
+                      padding: '8px 12px',
+                      backgroundColor: '#F3F4F6',
+                      borderRadius: '6px',
                       fontSize: '14px',
-                      fontWeight: '500'
+                      color: '#6B7280'
                     }}
                   >
-                    <Users size={14} />
-                    Team ({campaign.team_size})
-                  </button>
+                    <Info size={14} />
+                    {campaign.team_size} team member{campaign.team_size !== 1 ? 's' : ''}
+                  </div>
                   
                   <button 
                     className="btn btn-secondary btn-sm"
-                    onClick={() => handleEditCampaign(campaign)}
+                    onClick={(e) => handleEditCampaign(e, campaign)}
                   >
                     <Edit size={14} />
                     Edit
@@ -431,7 +451,7 @@ const CampaignManagement = () => {
                   
                   <button 
                     className="btn btn-danger btn-sm"
-                    onClick={() => handleDeleteCampaign(campaign.id)}
+                    onClick={(e) => handleDeleteCampaign(e, campaign.id)}
                   >
                     <Trash2 size={14} />
                     Delete
