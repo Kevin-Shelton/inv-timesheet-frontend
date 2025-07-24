@@ -14,7 +14,7 @@ import {
   TimeOffPage,
   ReportsPage,
   SettingsPage,
-  MyTeamPage,
+  PeopleDirectoryPage, // Updated from MyTeamPage
   TimeTrackingPage,
   WorkSchedulesPage,
   TimeOffHolidaysPage,
@@ -104,8 +104,11 @@ function AppContent() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           
-          {/* Team Management */}
-          <Route path="my-team" element={<MyTeamPage />} />
+          {/* People Directory (Updated from My Team) */}
+          <Route path="people" element={<PeopleDirectoryPage />} />
+          
+          {/* Redirect old My Team route to People */}
+          <Route path="my-team" element={<Navigate to="/people" replace />} />
           
           {/* Time Management */}
           <Route path="time-tracking" element={<TimeTrackingPage />} />
@@ -118,7 +121,7 @@ function AppContent() {
           {/* Project Management */}
           <Route path="activities-projects" element={<ActivitiesProjectsPage />} />
           
-          {/* Organization */}
+          {/* Campaign Management */}
           <Route path="campaigns" element={<CampaignManagementPage />} />
           
           {/* Integrations */}
@@ -142,3 +145,4 @@ function App() {
 }
 
 export default App
+
