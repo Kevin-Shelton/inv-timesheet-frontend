@@ -53,55 +53,43 @@ const InvictusLogo = () => (
         fill="none"
       />
       
-      {/* Central connection point */}
-      <circle cx="40" cy="30" r="6" fill="url(#greenGradient)" />
-      
-      {/* End points */}
-      <circle cx="8" cy="30" r="4" fill="#6B7280" />
-      <circle cx="72" cy="30" r="4" fill="#6B7280" />
-      <circle cx="18" cy="42" r="4" fill="#6B7280" />
-      <circle cx="62" cy="42" r="4" fill="#6B7280" />
+      {/* Green connection points - larger */}
+      <circle cx="8" cy="30" r="6" fill="url(#greenGradient)" />
+      <circle cx="52" cy="30" r="6" fill="url(#greenGradient)" />
+      <circle cx="62" cy="42" r="6" fill="url(#greenGradient)" />
     </g>
     
-    {/* Company name - larger and more prominent */}
+    {/* Invictus text - larger and bolder */}
     <text 
-      x="100" 
-      y="45" 
-      fontFamily="Inter, system-ui, sans-serif" 
-      fontSize="28" 
+      x="95" 
+      y="58" 
+      fontFamily="Arial, sans-serif" 
+      fontSize="32" 
       fontWeight="700" 
-      fill="#111827"
+      fill="#374151"
     >
       invictus
-    </text>
-    
-    {/* Tagline - smaller but visible */}
-    <text 
-      x="100" 
-      y="65" 
-      fontFamily="Inter, system-ui, sans-serif" 
-      fontSize="12" 
-      fontWeight="400" 
-      fill="#6B7280"
-    >
-      Time Management Portal
     </text>
   </svg>
 )
 
-export default function AppLayout() {
-  const { user, signOut } = useAuth()
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+// Fixed AppLayout with larger logo, proper navigation, and reduced padding
+function AppLayoutComponent() {
+  const { user, logout } = useAuth()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Updated navigation items with "People" instead of "My Team"
+  if (!user) {
+    return null // This will be handled by ProtectedRoute
+  }
+
   const menuItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/timesheets', icon: Clock, label: 'Timesheets' },
     { path: '/live-locations', icon: MapPin, label: 'Live Locations' },
     { path: '/time-off', icon: Calendar, label: 'Time Off' },
     { path: '/reports', icon: BarChart3, label: 'Reports' },
     { path: '/settings', icon: Settings, label: 'Settings' },
-    { path: '/people', icon: Users, label: 'People' }, // Changed from 'My Team' to 'People'
+    { path: '/my-team', icon: Users, label: 'My Team' },
     { path: '/time-tracking', icon: Activity, label: 'Time Tracking' },
     { path: '/work-schedules', icon: Clock, label: 'Work Schedules' },
     { path: '/time-off-holidays', icon: Calendar, label: 'Time Off & Holidays' },
@@ -111,442 +99,335 @@ export default function AppLayout() {
     { path: '/integrations', icon: Zap, label: 'Integrations' }
   ]
 
-  const handleSignOut = async () => {
+  const handleLogout = async () => {
     try {
-      await signOut()
+      await logout()
     } catch (error) {
-      console.error('Error signing out:', error)
+      console.error('Logout error:', error)
     }
   }
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen)
+  // Inline styles to avoid CSS conflicts
+  const layoutStyle = {
+    display: 'flex',
+    height: '100vh',
+    backgroundColor: '#f9fafb',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+  }
+
+  const sidebarStyle = {
+    width: '260px',
+    minWidth: '260px',
+    height: '100vh',
+    background: '#ffffff',
+    borderRight: '1px solid #e5e7eb',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+    zIndex: 30,
+    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+  }
+
+  const mainContentStyle = {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    overflow: 'hidden',
+    minWidth: 0 // Important: allows flex item to shrink
+  }
+
+  const headerStyle = {
+    background: 'white',
+    borderBottom: '1px solid #e5e7eb',
+    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    zIndex: 20,
+    padding: '12px 16px', // Reduced padding
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '16px',
+    flexShrink: 0
+  }
+
+  // CRITICAL: Content area with MINIMAL constraints for full width usage
+  const contentStyle = {
+    flex: 1,
+    overflow: 'hidden',
+    background: 'transparent',
+    padding: 0, // NO padding
+    margin: 0,  // NO margin
+    width: '100%',
+    height: '100%',
+    position: 'relative'
+  }
+
+  const logoStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '20px 16px', // More padding for larger logo
+    borderBottom: '1px solid #f3f4f6',
+    justifyContent: 'center'
+  }
+
+  const navStyle = {
+    flex: 1,
+    padding: '16px 0',
+    overflowY: 'auto'
+  }
+
+  const navItemStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '10px 20px',
+    color: '#6b7280',
+    textDecoration: 'none',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'all 0.15s ease',
+    cursor: 'pointer',
+    borderRadius: '0 25px 25px 0',
+    marginRight: '12px'
+  }
+
+  const activeNavItemStyle = {
+    ...navItemStyle,
+    backgroundColor: '#f3f4f6',
+    color: '#374151',
+    fontWeight: '600'
+  }
+
+  const sidebarBottomStyle = {
+    padding: '16px 20px',
+    borderTop: '1px solid #f3f4f6',
+    marginTop: 'auto'
+  }
+
+  const userInfoStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '8px 0'
+  }
+
+  const userAvatarStyle = {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    background: '#f3f4f6',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#6b7280'
+  }
+
+  const userDetailsStyle = {
+    flex: 1,
+    minWidth: 0
+  }
+
+  const userNameStyle = {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#374151',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis'
+  }
+
+  const userCompanyStyle = {
+    fontSize: '11px',
+    color: '#6b7280'
+  }
+
+  const logoutBtnStyle = {
+    background: 'none',
+    border: 'none',
+    color: '#6b7280',
+    padding: '4px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'color 0.15s ease'
+  }
+
+  const headerLeftStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flex: 1
+  }
+
+  const pageTitleStyle = {
+    fontSize: '20px',
+    fontWeight: '600',
+    color: '#111827',
+    margin: 0
+  }
+
+  const headerCenterStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  }
+
+  const tabStyle = {
+    padding: '6px 12px',
+    background: 'none',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#6b7280',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease'
+  }
+
+  const activeTabStyle = {
+    ...tabStyle,
+    background: '#f97316',
+    color: 'white'
+  }
+
+  const headerRightStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  }
+
+  const filterStyle = {
+    padding: '6px 12px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '6px',
+    fontSize: '14px',
+    color: '#374151',
+    background: 'white',
+    cursor: 'pointer'
+  }
+
+  const actionBtnStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '8px',
+    background: 'none',
+    border: '1px solid #e5e7eb',
+    borderRadius: '6px',
+    color: '#6b7280',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease'
   }
 
   return (
-    <div className="app-layout">
-      {/* Mobile overlay */}
-      {isSidebarOpen && (
-        <div 
-          className="mobile-overlay"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
+    <div style={layoutStyle}>
       {/* Sidebar */}
-      <aside className={`sidebar ${isSidebarOpen ? 'sidebar-open' : ''}`}>
-        <div className="sidebar-header">
+      <div style={sidebarStyle}>
+        {/* Larger Invictus Logo */}
+        <div style={logoStyle}>
           <InvictusLogo />
-          <button 
-            className="mobile-close"
-            onClick={() => setIsSidebarOpen(false)}
-          >
-            <X size={20} />
-          </button>
         </div>
 
-        <nav className="sidebar-nav">
+        {/* Navigation with proper routing */}
+        <nav style={navStyle}>
           {menuItems.map((item) => {
             const Icon = item.icon
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) => 
-                  `nav-item ${isActive ? 'nav-item-active' : ''}`
-                }
-                onClick={() => setIsSidebarOpen(false)}
+                style={({ isActive }) => isActive ? activeNavItemStyle : navItemStyle}
+                onMouseEnter={(e) => {
+                  if (!e.target.closest('a').classList.contains('active')) {
+                    e.target.closest('a').style.backgroundColor = '#f9fafb'
+                    e.target.closest('a').style.color = '#374151'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!e.target.closest('a').classList.contains('active')) {
+                    e.target.closest('a').style.backgroundColor = 'transparent'
+                    e.target.closest('a').style.color = '#6b7280'
+                  }
+                }}
               >
-                <Icon size={20} />
+                <Icon size={16} />
                 <span>{item.label}</span>
               </NavLink>
             )
           })}
         </nav>
 
-        <div className="sidebar-footer">
-          <div className="user-info">
-            <div className="user-avatar">
+        {/* Bottom Section */}
+        <div style={sidebarBottomStyle}>
+          <div style={userInfoStyle}>
+            <div style={userAvatarStyle}>
               <User size={16} />
             </div>
-            <div className="user-details">
-              <div className="user-name">{user?.email || 'User'}</div>
-              <div className="user-role">Administrator</div>
+            <div style={userDetailsStyle}>
+              <div style={userNameStyle}>{user?.full_name || user?.email || 'User'}</div>
+              <div style={userCompanyStyle}>Invictus</div>
             </div>
-          </div>
-          <button className="sign-out-btn" onClick={handleSignOut}>
-            <LogOut size={16} />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <div className="main-content">
-        {/* Top bar */}
-        <header className="top-bar">
-          <div className="top-bar-left">
             <button 
-              className="mobile-menu-btn"
-              onClick={toggleSidebar}
+              onClick={handleLogout}
+              style={logoutBtnStyle}
+              title="Logout"
+              onMouseEnter={(e) => e.target.style.color = '#374151'}
+              onMouseLeave={(e) => e.target.style.color = '#6b7280'}
             >
-              <Menu size={20} />
+              <LogOut size={14} />
             </button>
-            <div className="search-bar">
-              <Search size={16} />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="search-input"
-              />
-            </div>
           </div>
-          <div className="top-bar-right">
-            <button className="notification-btn">
-              <Bell size={20} />
-              <span className="notification-badge">3</span>
+        </div>
+      </div>
+      
+      {/* Main Content */}
+      <div style={mainContentStyle}>
+        {/* Header */}
+        <header style={headerStyle}>
+          {/* Left - Title */}
+          <div style={headerLeftStyle}>
+            <h1 style={pageTitleStyle}>Dashboard</h1>
+          </div>
+
+          {/* Center - Tabs */}
+          <div style={headerCenterStyle}>
+            <button style={activeTabStyle}>Day</button>
+            <button style={tabStyle}>Week</button>
+            <button style={tabStyle}>Month</button>
+          </div>
+
+          {/* Right - Controls */}
+          <div style={headerRightStyle}>
+            <select style={filterStyle}>
+              <option>All locations</option>
+            </select>
+            <select style={filterStyle}>
+              <option>All groups</option>
+            </select>
+            <select style={filterStyle}>
+              <option>All schedules</option>
+            </select>
+
+            <button style={actionBtnStyle}>
+              <Bell size={18} />
             </button>
-            <div className="user-menu">
-              <button className="user-menu-btn">
-                <div className="user-avatar">
-                  <User size={16} />
-                </div>
-                <ChevronDown size={16} />
-              </button>
-            </div>
+
+            <button style={actionBtnStyle}>
+              <User size={18} />
+              <ChevronDown size={14} />
+            </button>
           </div>
         </header>
-
-        {/* Page content */}
-        <main className="page-content">
+        
+        {/* CRITICAL: Content area with NO constraints for full width */}
+        <main style={contentStyle}>
           <Outlet />
         </main>
       </div>
-
-      <style jsx>{`
-        .app-layout {
-          display: flex;
-          height: 100vh;
-          background-color: #F9FAFB;
-        }
-
-        .mobile-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(0, 0, 0, 0.5);
-          z-index: 998;
-          display: none;
-        }
-
-        .sidebar {
-          width: 280px;
-          background: white;
-          border-right: 1px solid #E5E7EB;
-          display: flex;
-          flex-direction: column;
-          position: fixed;
-          top: 0;
-          left: 0;
-          height: 100vh;
-          z-index: 999;
-          transform: translateX(-100%);
-          transition: transform 0.3s ease;
-        }
-
-        .sidebar-open {
-          transform: translateX(0);
-        }
-
-        .sidebar-header {
-          padding: 24px 20px;
-          border-bottom: 1px solid #E5E7EB;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .mobile-close {
-          display: none;
-          background: none;
-          border: none;
-          color: #6B7280;
-          cursor: pointer;
-          padding: 4px;
-          border-radius: 4px;
-        }
-
-        .mobile-close:hover {
-          background-color: #F3F4F6;
-        }
-
-        .sidebar-nav {
-          flex: 1;
-          padding: 16px 0;
-          overflow-y: auto;
-        }
-
-        .nav-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 20px;
-          color: #6B7280;
-          text-decoration: none;
-          font-size: 14px;
-          font-weight: 500;
-          transition: all 0.2s ease;
-          border-right: 3px solid transparent;
-        }
-
-        .nav-item:hover {
-          background-color: #F9FAFB;
-          color: #374151;
-        }
-
-        .nav-item-active {
-          background-color: #EFF6FF;
-          color: #2563EB;
-          border-right-color: #2563EB;
-        }
-
-        .sidebar-footer {
-          padding: 16px 20px;
-          border-top: 1px solid #E5E7EB;
-        }
-
-        .user-info {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 0;
-        }
-
-        .user-avatar {
-          width: 32px;
-          height: 32px;
-          background-color: #E5E7EB;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #6B7280;
-        }
-
-        .user-details {
-          flex: 1;
-        }
-
-        .user-name {
-          font-size: 14px;
-          font-weight: 500;
-          color: #111827;
-        }
-
-        .user-role {
-          font-size: 12px;
-          color: #6B7280;
-        }
-
-        .sign-out-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          width: 100%;
-          padding: 8px 12px;
-          background: none;
-          border: 1px solid #E5E7EB;
-          border-radius: 6px;
-          color: #6B7280;
-          font-size: 14px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .sign-out-btn:hover {
-          background-color: #F3F4F6;
-          color: #374151;
-        }
-
-        .main-content {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          margin-left: 280px;
-        }
-
-        .top-bar {
-          height: 64px;
-          background: white;
-          border-bottom: 1px solid #E5E7EB;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 24px;
-          position: sticky;
-          top: 0;
-          z-index: 100;
-        }
-
-        .top-bar-left {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .mobile-menu-btn {
-          display: none;
-          background: none;
-          border: none;
-          color: #6B7280;
-          cursor: pointer;
-          padding: 8px;
-          border-radius: 4px;
-        }
-
-        .mobile-menu-btn:hover {
-          background-color: #F3F4F6;
-        }
-
-        .search-bar {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: #F9FAFB;
-          border: 1px solid #E5E7EB;
-          border-radius: 8px;
-          padding: 8px 12px;
-          width: 300px;
-        }
-
-        .search-input {
-          border: none;
-          background: none;
-          outline: none;
-          flex: 1;
-          font-size: 14px;
-          color: #374151;
-        }
-
-        .search-input::placeholder {
-          color: #9CA3AF;
-        }
-
-        .top-bar-right {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .notification-btn {
-          position: relative;
-          background: none;
-          border: none;
-          color: #6B7280;
-          cursor: pointer;
-          padding: 8px;
-          border-radius: 4px;
-        }
-
-        .notification-btn:hover {
-          background-color: #F3F4F6;
-        }
-
-        .notification-badge {
-          position: absolute;
-          top: 4px;
-          right: 4px;
-          background: #EF4444;
-          color: white;
-          font-size: 10px;
-          font-weight: 600;
-          padding: 2px 6px;
-          border-radius: 10px;
-          min-width: 16px;
-          text-align: center;
-        }
-
-        .user-menu-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: none;
-          border: none;
-          color: #6B7280;
-          cursor: pointer;
-          padding: 4px;
-          border-radius: 4px;
-        }
-
-        .user-menu-btn:hover {
-          background-color: #F3F4F6;
-        }
-
-        .page-content {
-          flex: 1;
-          overflow: auto;
-        }
-
-        /* Mobile styles */
-        @media (max-width: 768px) {
-          .sidebar {
-            width: 280px;
-          }
-
-          .main-content {
-            margin-left: 0;
-          }
-
-          .mobile-overlay {
-            display: block;
-          }
-
-          .mobile-menu-btn {
-            display: block;
-          }
-
-          .mobile-close {
-            display: block;
-          }
-
-          .search-bar {
-            width: 200px;
-          }
-
-          .top-bar {
-            padding: 0 16px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .search-bar {
-            display: none;
-          }
-
-          .sidebar-header {
-            padding: 16px;
-          }
-
-          .top-bar {
-            padding: 0 12px;
-          }
-        }
-
-        /* Desktop styles */
-        @media (min-width: 769px) {
-          .sidebar {
-            position: static;
-            transform: none;
-          }
-
-          .mobile-overlay {
-            display: none !important;
-          }
-        }
-      `}</style>
     </div>
   )
 }
+
+// Export both named and default for maximum compatibility
+export const AppLayout = AppLayoutComponent
+export default AppLayoutComponent
 

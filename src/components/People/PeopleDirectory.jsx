@@ -32,7 +32,7 @@ import supabaseApi from '../../supabaseClient'
 import './people-directory.css'
 
 const PeopleDirectory = () => {
-  // ==================== STATE MANAGEMENT ====================
+  // ==================== STATE MANAGEMENT ===================
   const { user } = useAuth()
   const [employees, setEmployees] = useState([])
   const [filteredEmployees, setFilteredEmployees] = useState([])
