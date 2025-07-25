@@ -22,7 +22,10 @@ import {
   X,
   Save,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  ChevronDown,
+  Check,
+  Tag
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import supabaseApi from '../../supabaseClient'
@@ -35,6 +38,7 @@ const PeopleDirectory = () => {
   const [filteredEmployees, setFilteredEmployees] = useState([])
   const [departments, setDepartments] = useState([])
   const [managers, setManagers] = useState([])
+  const [campaigns, setCampaigns] = useState([]) // NEW: Campaign data
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   
@@ -56,6 +60,19 @@ const PeopleDirectory = () => {
   const [formData, setFormData] = useState({})
   const [formErrors, setFormErrors] = useState({})
   const [saving, setSaving] = useState(false)
+
+  // NEW: Custom dropdown states
+  const [customDropdowns, setCustomDropdowns] = useState({
+    department: { isOpen: false, customValue: '', showCustomInput: false },
+    role: { isOpen: false, customValue: '', showCustomInput: false },
+    employment_type: { isOpen: false, customValue: '', showCustomInput: false },
+    employment_status: { isOpen: false, customValue: '', showCustomInput: false },
+    time_zone: { isOpen: false, customValue: '', showCustomInput: false }
+  })
+
+  // NEW: Campaign assignment state
+  const [campaignDropdownOpen, setCampaignDropdownOpen] = useState(false)
+  const [selectedCampaigns, setSelectedCampaigns] = useState([])
 
   // ==================== USER PERMISSIONS ====================
   const userPermissions = useMemo(() => {
@@ -83,10 +100,11 @@ const PeopleDirectory = () => {
     setError(null)
     
     try {
-      const [employeesResult, departmentsResult, managersResult] = await Promise.all([
+      const [employeesResult, departmentsResult, managersResult, campaignsResult] = await Promise.all([
         supabaseApi.getAllEmployees(),
         supabaseApi.getDepartments(),
-        supabaseApi.getManagers()
+        supabaseApi.getManagers(),
+        supabaseApi.getCampaigns() // NEW: Load campaigns
       ])
 
       if (employeesResult.error) throw employeesResult.error
@@ -96,6 +114,7 @@ const PeopleDirectory = () => {
       setEmployees(employeesResult.data || [])
       setDepartments(departmentsResult.data || [])
       setManagers(managersResult.data || [])
+      setCampaigns(campaignsResult.data || []) // NEW: Set campaigns
     } catch (err) {
       console.error('Failed to load initial data:', err)
       setError('Failed to load employee data. Please try again.')
@@ -129,6 +148,183 @@ const PeopleDirectory = () => {
     setFilteredEmployees(filtered)
   }, [employees, searchTerm, filters])
 
+  // ==================== NEW: CUSTOM DROPDOWN FUNCTIONS ====================
+  const handleCustomDropdownToggle = (field) => {
+    setCustomDropdowns(prev => ({
+      ...prev,
+      [field]: { ...prev[field], isOpen: !prev[field].isOpen, showCustomInput: false }
+    }))
+  }
+
+  const handleCustomValueAdd = (field) => {
+    const customValue = customDropdowns[field].customValue.trim()
+    if (!customValue) return
+
+    // Add to form data
+    setFormData(prev => ({ ...prev, [field]: customValue }))
+    
+    // Add to options list if it's a department
+    if (field === 'department' && !departments.includes(customValue)) {
+      setDepartments(prev => [...prev, customValue])
+    }
+
+    // Reset custom dropdown state
+    setCustomDropdowns(prev => ({
+      ...prev,
+      [field]: { isOpen: false, customValue: '', showCustomInput: false }
+    }))
+  }
+
+  const renderCustomDropdown = (field, options, label, value) => {
+    const dropdown = customDropdowns[field]
+    
+    return (
+      <div className="custom-dropdown">
+        <div 
+          className="dropdown-trigger"
+          onClick={() => handleCustomDropdownToggle(field)}
+        >
+          <span>{value || `Select ${label}`}</span>
+          <ChevronDown size={16} />
+        </div>
+        
+        {dropdown.isOpen && (
+          <div className="dropdown-menu">
+            {options.map(option => (
+              <div
+                key={option}
+                className="dropdown-option"
+                onClick={() => {
+                  setFormData(prev => ({ ...prev, [field]: option }))
+                  setCustomDropdowns(prev => ({
+                    ...prev,
+                    [field]: { ...prev[field], isOpen: false }
+                  }))
+                }}
+              >
+                {option}
+              </div>
+            ))}
+            
+            {!dropdown.showCustomInput ? (
+              <div
+                className="dropdown-option add-custom"
+                onClick={() => setCustomDropdowns(prev => ({
+                  ...prev,
+                  [field]: { ...prev[field], showCustomInput: true }
+                }))}
+              >
+                <Plus size={14} />
+                Add Custom {label}
+              </div>
+            ) : (
+              <div className="custom-input-container">
+                <input
+                  type="text"
+                  placeholder={`Enter custom ${label.toLowerCase()}`}
+                  value={dropdown.customValue}
+                  onChange={(e) => setCustomDropdowns(prev => ({
+                    ...prev,
+                    [field]: { ...prev[field], customValue: e.target.value }
+                  }))}
+                  onKeyPress={(e) => e.key === 'Enter' && handleCustomValueAdd(field)}
+                  autoFocus
+                />
+                <button onClick={() => handleCustomValueAdd(field)}>
+                  <Check size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ==================== NEW: CAMPAIGN ASSIGNMENT FUNCTIONS ====================
+  const handleCampaignToggle = (campaignId) => {
+    setSelectedCampaigns(prev => 
+      prev.includes(campaignId)
+        ? prev.filter(id => id !== campaignId)
+        : [...prev, campaignId]
+    )
+  }
+
+  const clearAllCampaigns = () => {
+    setSelectedCampaigns([])
+  }
+
+  const renderCampaignDropdown = () => (
+    <div className="campaign-dropdown">
+      <div 
+        className="dropdown-trigger"
+        onClick={() => setCampaignDropdownOpen(!campaignDropdownOpen)}
+      >
+        <span>
+          {selectedCampaigns.length === 0 
+            ? 'Select Campaigns' 
+            : `${selectedCampaigns.length} campaign(s) selected`
+          }
+        </span>
+        <ChevronDown size={16} />
+      </div>
+      
+      {campaignDropdownOpen && (
+        <div className="dropdown-menu campaign-menu">
+          <div className="campaign-menu-header">
+            <span>Select Campaigns</span>
+            {selectedCampaigns.length > 0 && (
+              <button onClick={clearAllCampaigns} className="clear-all-btn">
+                Clear All
+              </button>
+            )}
+          </div>
+          
+          {campaigns.map(campaign => (
+            <div
+              key={campaign.id}
+              className="campaign-option"
+              onClick={() => handleCampaignToggle(campaign.id)}
+            >
+              <input
+                type="checkbox"
+                checked={selectedCampaigns.includes(campaign.id)}
+                onChange={() => {}} // Handled by onClick
+              />
+              <div className="campaign-info">
+                <div className="campaign-name">{campaign.name}</div>
+                <div className="campaign-client">{campaign.client_name}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
+  const renderSelectedCampaignTags = () => {
+    if (selectedCampaigns.length === 0) return null
+    
+    return (
+      <div className="selected-campaigns">
+        {selectedCampaigns.map(campaignId => {
+          const campaign = campaigns.find(c => c.id === campaignId)
+          if (!campaign) return null
+          
+          return (
+            <div key={campaignId} className="campaign-tag">
+              <Tag size={12} />
+              <span>{campaign.name}</span>
+              <button onClick={() => handleCampaignToggle(campaignId)}>
+                <X size={12} />
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
   // ==================== FORM HANDLING ====================
   const openModal = (mode, employee = null) => {
     setModalMode(mode)
@@ -136,6 +332,13 @@ const PeopleDirectory = () => {
     setFormData(employee ? { ...employee } : getDefaultFormData())
     setFormErrors({})
     setShowModal(true)
+    
+    // NEW: Set selected campaigns if editing
+    if (employee && employee.campaigns) {
+      setSelectedCampaigns(employee.campaigns.map(c => c.id))
+    } else {
+      setSelectedCampaigns([])
+    }
   }
 
   const closeModal = () => {
@@ -144,6 +347,8 @@ const PeopleDirectory = () => {
     setFormData({})
     setFormErrors({})
     setSaving(false)
+    setSelectedCampaigns([]) // NEW: Clear campaign selection
+    setCampaignDropdownOpen(false) // NEW: Close campaign dropdown
   }
 
   const getDefaultFormData = () => ({
@@ -191,11 +396,17 @@ const PeopleDirectory = () => {
     setError(null)
 
     try {
+      // NEW: Include campaign assignments in form data
+      const dataToSave = {
+        ...formData,
+        campaign_assignments: selectedCampaigns
+      }
+
       let result
       if (modalMode === 'create') {
-        result = await supabaseApi.createEmployee(formData)
+        result = await supabaseApi.createEmployee(dataToSave)
       } else {
-        result = await supabaseApi.updateEmployee(selectedEmployee.id, formData)
+        result = await supabaseApi.updateEmployee(selectedEmployee.id, dataToSave)
       }
 
       if (result.error) throw result.error
@@ -262,6 +473,29 @@ const PeopleDirectory = () => {
     return `${hours}h`
   }
 
+  // NEW: Render campaign tags for employee cards
+  const renderEmployeeCampaignTags = (employee) => {
+    if (!employee.campaigns || employee.campaigns.length === 0) return null
+    
+    const displayCampaigns = employee.campaigns.slice(0, 2)
+    const remainingCount = employee.campaigns.length - 2
+    
+    return (
+      <div className="employee-campaigns">
+        {displayCampaigns.map(campaign => (
+          <span key={campaign.id} className="campaign-tag small">
+            {campaign.name}
+          </span>
+        ))}
+        {remainingCount > 0 && (
+          <span className="campaign-tag small more">
+            +{remainingCount} more
+          </span>
+        )}
+      </div>
+    )
+  }
+
   // ==================== RENDER COMPONENTS ====================
   const renderEmployeeCard = (employee) => (
     <div key={employee.id} className="person-card">
@@ -285,6 +519,8 @@ const PeopleDirectory = () => {
           <h3>{employee.full_name}</h3>
           <p className="job-title">{employee.job_title}</p>
           <p className="department">{employee.department}</p>
+          {/* NEW: Campaign tags */}
+          {renderEmployeeCampaignTags(employee)}
         </div>
         
         <div className="card-actions">
@@ -378,6 +614,7 @@ const PeopleDirectory = () => {
             <th>Contact</th>
             <th>Employment</th>
             <th>Location</th>
+            <th>Campaigns</th> {/* NEW: Campaign column */}
             {userPermissions.canViewRates && showSensitiveData && <th>Rates</th>}
             <th>Actions</th>
           </tr>
@@ -425,6 +662,12 @@ const PeopleDirectory = () => {
                 <div>{employee.location || 'Not specified'}</div>
                 <div style={{ fontSize: '12px', color: '#6B7280' }}>
                   {employee.time_zone}
+                </div>
+              </td>
+              {/* NEW: Campaign cell */}
+              <td>
+                <div className="campaigns-cell">
+                  {renderEmployeeCampaignTags(employee)}
                 </div>
               </td>
               {userPermissions.canViewRates && showSensitiveData && (
@@ -558,61 +801,55 @@ const PeopleDirectory = () => {
               
               <div className="form-group">
                 <label>Department *</label>
-                <select
-                  value={formData.department || ''}
-                  onChange={e => setFormData({...formData, department: e.target.value})}
-                  disabled={isReadOnly}
-                  className={formErrors.department ? 'error' : ''}
-                >
-                  <option value="">Select Department</option>
-                  {departments.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
+                {isReadOnly ? (
+                  <input
+                    type="text"
+                    value={formData.department || ''}
+                    disabled
+                  />
+                ) : (
+                  renderCustomDropdown('department', departments, 'Department', formData.department)
+                )}
                 {formErrors.department && <span className="error-text">{formErrors.department}</span>}
               </div>
               
               <div className="form-group">
                 <label>Role</label>
-                <select
-                  value={formData.role || 'team_member'}
-                  onChange={e => setFormData({...formData, role: e.target.value})}
-                  disabled={isReadOnly || !userPermissions.isAdmin}
-                >
-                  <option value="team_member">Team Member</option>
-                  <option value="supervisor">Supervisor</option>
-                  <option value="manager">Manager</option>
-                  {userPermissions.isAdmin && <option value="admin">Admin</option>}
-                </select>
+                {isReadOnly || !userPermissions.isAdmin ? (
+                  <input
+                    type="text"
+                    value={formData.role || 'team_member'}
+                    disabled
+                  />
+                ) : (
+                  renderCustomDropdown('role', ['team_member', 'supervisor', 'manager', 'admin'], 'Role', formData.role)
+                )}
               </div>
               
               <div className="form-group">
                 <label>Employment Type</label>
-                <select
-                  value={formData.employment_type || 'full_time'}
-                  onChange={e => setFormData({...formData, employment_type: e.target.value})}
-                  disabled={isReadOnly}
-                >
-                  <option value="full_time">Full Time</option>
-                  <option value="part_time">Part Time</option>
-                  <option value="contractor">Contractor</option>
-                  <option value="intern">Intern</option>
-                  <option value="temporary">Temporary</option>
-                </select>
+                {isReadOnly ? (
+                  <input
+                    type="text"
+                    value={formData.employment_type || 'full_time'}
+                    disabled
+                  />
+                ) : (
+                  renderCustomDropdown('employment_type', ['full_time', 'part_time', 'contractor', 'intern', 'temporary'], 'Employment Type', formData.employment_type)
+                )}
               </div>
               
               <div className="form-group">
                 <label>Employment Status</label>
-                <select
-                  value={formData.employment_status || 'active'}
-                  onChange={e => setFormData({...formData, employment_status: e.target.value})}
-                  disabled={isReadOnly}
-                >
-                  <option value="active">Active</option>
-                  <option value="on_leave">On Leave</option>
-                  <option value="terminated">Terminated</option>
-                  <option value="inactive">Inactive</option>
-                </select>
+                {isReadOnly ? (
+                  <input
+                    type="text"
+                    value={formData.employment_status || 'active'}
+                    disabled
+                  />
+                ) : (
+                  renderCustomDropdown('employment_status', ['active', 'on_leave', 'terminated', 'inactive'], 'Employment Status', formData.employment_status)
+                )}
               </div>
               
               <div className="form-group">
@@ -655,6 +892,25 @@ const PeopleDirectory = () => {
                   disabled={isReadOnly}
                   placeholder="e.g., Main Office - Floor 2"
                 />
+              </div>
+              
+              {/* NEW: Campaign Assignment Section */}
+              <div className="form-group full-width">
+                <label>Assigned Campaigns</label>
+                {isReadOnly ? (
+                  <div className="readonly-campaigns">
+                    {selectedCampaigns.length === 0 ? (
+                      <span>No campaigns assigned</span>
+                    ) : (
+                      renderSelectedCampaignTags()
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    {renderCampaignDropdown()}
+                    {renderSelectedCampaignTags()}
+                  </div>
+                )}
               </div>
               
               {userPermissions.canViewRates && (
@@ -721,16 +977,20 @@ const PeopleDirectory = () => {
               
               <div className="form-group">
                 <label>Time Zone</label>
-                <select
-                  value={formData.time_zone || 'America/New_York'}
-                  onChange={e => setFormData({...formData, time_zone: e.target.value})}
-                  disabled={isReadOnly}
-                >
-                  <option value="America/New_York">Eastern Time</option>
-                  <option value="America/Chicago">Central Time</option>
-                  <option value="America/Denver">Mountain Time</option>
-                  <option value="America/Los_Angeles">Pacific Time</option>
-                </select>
+                {isReadOnly ? (
+                  <input
+                    type="text"
+                    value={formData.time_zone || 'America/New_York'}
+                    disabled
+                  />
+                ) : (
+                  renderCustomDropdown('time_zone', [
+                    'America/New_York',
+                    'America/Chicago', 
+                    'America/Denver',
+                    'America/Los_Angeles'
+                  ], 'Time Zone', formData.time_zone)
+                )}
               </div>
             </div>
             
