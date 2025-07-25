@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './hooks/useAuth'
-import AppLayout from './components/Layout/AppLayout'  // Fixed: Changed to default import
+import { AppLayout } from './components/Layout/AppLayout'
 import { LoginPage } from './components/Auth/LoginPage'
 import { ProtectedRoute } from './components/Auth/ProtectedRoute'
 import { PublicRoute } from './components/Auth/PublicRoute'
 import Dashboard from './components/Dashboard/Dashboard'
 import { TimesheetsPage } from './components/Timesheet/TimesheetPage'
+import { CampaignManagementPage } from './components/Pages/AllPages';
 
 // Import all the page components
 import { 
@@ -13,17 +14,18 @@ import {
   TimeOffPage,
   ReportsPage,
   SettingsPage,
-  PeopleDirectoryPage,  // Updated from MyTeamPage
+  PeopleDirectoryPage, // Updated from MyTeamPage
   TimeTrackingPage,
   WorkSchedulesPage,
   TimeOffHolidaysPage,
   LocationsPage,
   ActivitiesProjectsPage,
-  CampaignManagementPage,  // Updated from OrganizationPage
+  OrganizationPage,
   IntegrationsPage
 } from './components/Pages/AllPages'
 
 import './App.css'
+import CampaignManagement from './components/CampaignManagement/CampaignManagement'
 
 // Loading component
 function LoadingSpinner() {
@@ -104,6 +106,8 @@ function AppContent() {
           
           {/* People Directory (Updated from My Team) */}
           <Route path="people" element={<PeopleDirectoryPage />} />
+          
+          {/* Redirect old My Team route to People */}
           <Route path="my-team" element={<Navigate to="/people" replace />} />
           
           {/* Time Management */}
@@ -117,9 +121,8 @@ function AppContent() {
           {/* Project Management */}
           <Route path="activities-projects" element={<ActivitiesProjectsPage />} />
           
-          {/* Campaign Management - Updated from Organization */}
+          {/* Campaign Management */}
           <Route path="campaigns" element={<CampaignManagementPage />} />
-          <Route path="organization" element={<Navigate to="/campaigns" replace />} />
           
           {/* Integrations */}
           <Route path="integrations" element={<IntegrationsPage />} />
@@ -142,5 +145,4 @@ function App() {
 }
 
 export default App
-// Cache bust - People Directory Update
 
