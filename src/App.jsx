@@ -6,7 +6,6 @@ import { ProtectedRoute } from './components/Auth/ProtectedRoute'
 import { PublicRoute } from './components/Auth/PublicRoute'
 import Dashboard from './components/Dashboard/Dashboard'
 import { TimesheetsPage } from './components/Timesheet/TimesheetPage'
-import { CampaignManagementPage } from './components/Pages/AllPages';
 
 // Import all the page components
 import { 
@@ -14,18 +13,71 @@ import {
   TimeOffPage,
   ReportsPage,
   SettingsPage,
-  PeopleDirectoryPage, // Updated from MyTeamPage
+  MyTeamPage,
+  PeopleDirectoryPage,  // NEW: Added PeopleDirectory
   TimeTrackingPage,
   WorkSchedulesPage,
   TimeOffHolidaysPage,
   LocationsPage,
   ActivitiesProjectsPage,
-  OrganizationPage,
+  CampaignManagementPage,  // Updated from OrganizationPage
   IntegrationsPage
 } from './components/Pages/AllPages'
 
 import './App.css'
-import CampaignManagement from './components/CampaignManagement/CampaignManagement'
+
+// Error Boundary Component for safer rendering
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('App Error Boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          backgroundColor: '#f9fafb',
+          padding: '20px',
+          textAlign: 'center'
+        }}>
+          <h2 style={{ color: '#ef4444', marginBottom: '16px' }}>Something went wrong</h2>
+          <p style={{ color: '#6b7280', marginBottom: '24px' }}>
+            We're sorry, but there was an error loading this page.
+          </p>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px 24px',
+              cursor: 'pointer'
+            }}
+          >
+            Reload Page
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 // Loading component
 function LoadingSpinner() {
@@ -104,11 +156,15 @@ function AppContent() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           
-          {/* People Directory (Updated from My Team) */}
-          <Route path="people" element={<PeopleDirectoryPage />} />
-          
-          {/* Redirect old My Team route to People */}
-          <Route path="my-team" element={<Navigate to="/people" replace />} />
+          {/* Team Management - FIXED: Added both routes */}
+          <Route path="my-team" element={<MyTeamPage />} />
+          <Route path="people-directory" element={
+            <ErrorBoundary>
+              <PeopleDirectoryPage />
+            </ErrorBoundary>
+          } />
+          {/* Redirect /people to /people-directory for consistency */}
+          <Route path="people" element={<Navigate to="/people-directory" replace />} />
           
           {/* Time Management */}
           <Route path="time-tracking" element={<TimeTrackingPage />} />
@@ -121,8 +177,9 @@ function AppContent() {
           {/* Project Management */}
           <Route path="activities-projects" element={<ActivitiesProjectsPage />} />
           
-          {/* Campaign Management */}
+          {/* Campaign Management - Updated from Organization */}
           <Route path="campaigns" element={<CampaignManagementPage />} />
+          <Route path="organization" element={<Navigate to="/campaigns" replace />} />
           
           {/* Integrations */}
           <Route path="integrations" element={<IntegrationsPage />} />
@@ -138,11 +195,14 @@ function AppContent() {
 // Root App component with AuthProvider
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
 export default App
+// Cache bust - People Directory Integration
 

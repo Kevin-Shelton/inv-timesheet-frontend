@@ -6,8 +6,16 @@ import { WorkSchedulesPage as RealWorkSchedulesPage } from '../WorkSchedules'
 // Import the enhanced CampaignManagement component
 import CampaignManagement from '../CampaignManagement/CampaignManagement'
 
-// Import the new PeopleDirectory component
-import PeopleDirectory from '../People/PeopleDirectory'
+// Import PeopleDirectory component (if it exists in the components directory)
+// If not, we'll use the MyTeamPage as fallback
+let PeopleDirectoryComponent;
+try {
+  // Try to import from People directory first
+  PeopleDirectoryComponent = require('../People/PeopleDirectory').default;
+} catch (e) {
+  // Fallback to MyTeamPage if PeopleDirectory doesn't exist
+  PeopleDirectoryComponent = null;
+}
 
 // Base page layout component
 const BasePage = ({ title, icon: Icon, children, description }) => {
@@ -64,208 +72,34 @@ const BasePage = ({ title, icon: Icon, children, description }) => {
   )
 }
 
-// Dashboard Page
-export function DashboardPage() {
-  return (
-    <BasePage 
-      title="Dashboard" 
-      icon={BarChart3}
-      description="Overview of your time management and team performance"
-    >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        {[
-          { title: 'Total Hours This Week', value: '42.5h', change: '+5.2%', color: '#10B981' },
-          { title: 'Team Members Active', value: '24', change: '+2', color: '#3B82F6' },
-          { title: 'Projects in Progress', value: '8', change: '+1', color: '#F59E0B' },
-          { title: 'Overtime Hours', value: '12.3h', change: '-2.1h', color: '#EF4444' }
-        ].map((stat, index) => (
-          <div key={index} style={{
-            padding: '20px',
-            border: '1px solid #E5E7EB',
-            borderRadius: '8px',
-            textAlign: 'center'
-          }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '500', color: '#6B7280', margin: '0 0 8px 0' }}>
-              {stat.title}
-            </h3>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827', margin: '0 0 4px 0' }}>
-              {stat.value}
-            </div>
-            <div style={{ fontSize: '12px', color: stat.color }}>
-              {stat.change}
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 16px 0' }}>
-            Recent Activity
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              { user: 'John Doe', action: 'clocked in', time: '9:00 AM' },
-              { user: 'Jane Smith', action: 'submitted timesheet', time: '8:45 AM' },
-              { user: 'Mike Johnson', action: 'requested time off', time: '8:30 AM' },
-              { user: 'Sarah Wilson', action: 'completed project task', time: '8:15 AM' }
-            ].map((activity, index) => (
-              <div key={index} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '12px',
-                border: '1px solid #E5E7EB',
-                borderRadius: '6px'
-              }}>
-                <span style={{ fontSize: '14px', color: '#111827' }}>
-                  <strong>{activity.user}</strong> {activity.action}
-                </span>
-                <span style={{ fontSize: '12px', color: '#6B7280' }}>
-                  {activity.time}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 16px 0' }}>
-            Quick Actions
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {[
-              { label: 'Clock In/Out', icon: '⏰' },
-              { label: 'View Timesheet', icon: '📊' },
-              { label: 'Request Time Off', icon: '🏖️' },
-              { label: 'Generate Report', icon: '📈' }
-            ].map((action, index) => (
-              <button key={index} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px',
-                border: '1px solid #E5E7EB',
-                borderRadius: '6px',
-                background: 'white',
-                cursor: 'pointer',
-                fontSize: '14px',
-                color: '#374151'
-              }}>
-                <span>{action.icon}</span>
-                {action.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </BasePage>
-  )
-}
-
-// Timesheets Page
-export function TimesheetsPage() {
-  return (
-    <BasePage 
-      title="Timesheets" 
-      icon={Clock}
-      description="Track and manage your working hours"
-    >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        {[
-          { day: 'Monday', hours: '8.0h', status: 'Complete' },
-          { day: 'Tuesday', hours: '7.5h', status: 'Complete' },
-          { day: 'Wednesday', hours: '8.2h', status: 'Complete' },
-          { day: 'Thursday', hours: '6.0h', status: 'In Progress' },
-          { day: 'Friday', hours: '0.0h', status: 'Pending' }
-        ].map((day, index) => (
-          <div key={index} style={{
-            padding: '16px',
-            border: '1px solid #E5E7EB',
-            borderRadius: '8px',
-            textAlign: 'center'
-          }}>
-            <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: '0 0 8px 0' }}>
-              {day.day}
-            </h4>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#3B82F6', margin: '0 0 4px 0' }}>
-              {day.hours}
-            </div>
-            <div style={{ 
-              fontSize: '12px', 
-              color: day.status === 'Complete' ? '#10B981' : day.status === 'In Progress' ? '#F59E0B' : '#6B7280'
-            }}>
-              {day.status}
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      <div style={{ marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 16px 0' }}>
-          This Week's Summary
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>29.7h</div>
-            <div style={{ fontSize: '14px', color: '#6B7280' }}>Total Hours</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#10B981' }}>40.0h</div>
-            <div style={{ fontSize: '14px', color: '#6B7280' }}>Target Hours</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#EF4444' }}>-10.3h</div>
-            <div style={{ fontSize: '14px', color: '#6B7280' }}>Remaining</div>
-          </div>
-        </div>
-      </div>
-    </BasePage>
-  )
-}
-
 // Live Locations Page
 export function LiveLocationsPage() {
   return (
     <BasePage 
       title="Live Locations" 
       icon={MapPin}
-      description="Track team member locations and check-ins"
+      description="Track employee locations and manage location-based attendance"
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-        {[
-          { name: 'John Doe', location: 'Main Office - Floor 3', status: 'Checked In', time: '9:00 AM' },
-          { name: 'Jane Smith', location: 'Remote - Home Office', status: 'Working', time: '8:30 AM' },
-          { name: 'Mike Johnson', location: 'Client Site - Downtown', status: 'On Site', time: '10:15 AM' },
-          { name: 'Sarah Wilson', location: 'Main Office - Conference Room B', status: 'In Meeting', time: '11:00 AM' }
-        ].map((member, index) => (
-          <div key={index} style={{
-            padding: '16px',
-            border: '1px solid #E5E7EB',
-            borderRadius: '8px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: 0 }}>
-                {member.name}
-              </h4>
-              <span style={{ 
-                fontSize: '12px', 
-                padding: '4px 8px', 
-                borderRadius: '12px',
-                backgroundColor: '#EFF6FF',
-                color: '#2563EB'
-              }}>
-                {member.status}
-              </span>
-            </div>
-            <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 8px 0' }}>
-              📍 {member.location}
-            </p>
-            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>
-              Last updated: {member.time}
-            </p>
-          </div>
-        ))}
+      <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <MapPin size={64} color="#6B7280" style={{ marginBottom: '16px' }} />
+        <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+          Location Tracking
+        </h3>
+        <p style={{ color: '#6B7280', marginBottom: '24px' }}>
+          Monitor employee locations in real-time and set up geofenced work areas.
+        </p>
+        <button style={{
+          backgroundColor: '#3B82F6',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          padding: '12px 24px',
+          fontSize: '14px',
+          fontWeight: '500',
+          cursor: 'pointer'
+        }}>
+          Enable Location Tracking
+        </button>
       </div>
     </BasePage>
   )
@@ -277,88 +111,29 @@ export function TimeOffPage() {
     <BasePage 
       title="Time Off" 
       icon={Calendar}
-      description="Manage vacation days, sick leave, and other time off requests"
+      description="Manage vacation requests, sick leave, and other time off requests"
     >
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 16px 0' }}>
-            Your Balance
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              { type: 'Vacation Days', available: 15, used: 5, total: 20 },
-              { type: 'Sick Days', available: 8, used: 2, total: 10 },
-              { type: 'Personal Days', available: 3, used: 0, total: 3 }
-            ].map((balance, index) => (
-              <div key={index} style={{
-                padding: '16px',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: 0 }}>
-                    {balance.type}
-                  </h4>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#3B82F6' }}>
-                    {balance.available} available
-                  </span>
-                </div>
-                <div style={{ 
-                  width: '100%', 
-                  height: '8px', 
-                  backgroundColor: '#E5E7EB', 
-                  borderRadius: '4px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    width: `${(balance.used / balance.total) * 100}%`,
-                    height: '100%',
-                    backgroundColor: '#3B82F6'
-                  }}></div>
-                </div>
-                <p style={{ fontSize: '12px', color: '#6B7280', margin: '8px 0 0 0' }}>
-                  {balance.used} used of {balance.total} total days
-                </p>
-              </div>
-            ))}
-          </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <Calendar size={48} color="#10B981" style={{ marginBottom: '12px' }} />
+          <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+            Pending Requests
+          </h4>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#10B981' }}>3</div>
         </div>
-        
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 16px 0' }}>
-            Recent Requests
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              { dates: 'Dec 23-27, 2024', type: 'Vacation', status: 'Approved', days: 5 },
-              { dates: 'Nov 15, 2024', type: 'Sick Day', status: 'Approved', days: 1 },
-              { dates: 'Jan 2, 2025', type: 'Personal', status: 'Pending', days: 1 }
-            ].map((request, index) => (
-              <div key={index} style={{
-                padding: '16px',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: 0 }}>
-                    {request.dates}
-                  </h4>
-                  <span style={{ 
-                    fontSize: '12px', 
-                    padding: '4px 8px', 
-                    borderRadius: '12px',
-                    backgroundColor: request.status === 'Approved' ? '#D1FAE5' : '#FEF3C7',
-                    color: request.status === 'Approved' ? '#065F46' : '#92400E'
-                  }}>
-                    {request.status}
-                  </span>
-                </div>
-                <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
-                  {request.type} • {request.days} day{request.days > 1 ? 's' : ''}
-                </p>
-              </div>
-            ))}
-          </div>
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <Calendar size={48} color="#F59E0B" style={{ marginBottom: '12px' }} />
+          <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+            Approved This Month
+          </h4>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#F59E0B' }}>12</div>
+        </div>
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <Calendar size={48} color="#EF4444" style={{ marginBottom: '12px' }} />
+          <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+            Days Remaining
+          </h4>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#EF4444' }}>18</div>
         </div>
       </div>
     </BasePage>
@@ -371,31 +146,28 @@ export function ReportsPage() {
     <BasePage 
       title="Reports" 
       icon={BarChart3}
-      description="Generate and view detailed time tracking reports"
+      description="Generate detailed reports on attendance, productivity, and time tracking"
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
         {[
-          { title: 'Weekly Summary', description: 'Hours worked by day and week', icon: '📊' },
-          { title: 'Team Performance', description: 'Compare team member productivity', icon: '👥' },
-          { title: 'Project Time', description: 'Time allocation across projects', icon: '📁' },
-          { title: 'Overtime Analysis', description: 'Overtime trends and patterns', icon: '⏰' },
-          { title: 'Attendance Report', description: 'Check-in/out patterns and punctuality', icon: '📅' },
-          { title: 'Custom Report', description: 'Build your own custom report', icon: '🔧' }
+          { name: 'Attendance Report', description: 'Daily and weekly attendance summaries' },
+          { name: 'Time Tracking Report', description: 'Detailed time tracking analytics' },
+          { name: 'Productivity Report', description: 'Employee productivity metrics' },
+          { name: 'Overtime Report', description: 'Overtime hours and costs analysis' },
+          { name: 'Department Report', description: 'Department-wise performance data' },
+          { name: 'Custom Report', description: 'Create custom reports with filters' }
         ].map((report, index) => (
           <div key={index} style={{
-            padding: '20px',
+            padding: '16px',
             border: '1px solid #E5E7EB',
             borderRadius: '8px',
             cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.15s ease'
           }}>
-            <div style={{ fontSize: '32px', marginBottom: '12px' }}>
-              {report.icon}
-            </div>
-            <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: '0 0 8px 0' }}>
-              {report.title}
+            <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
+              {report.name}
             </h4>
-            <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+            <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
               {report.description}
             </p>
           </div>
@@ -411,72 +183,163 @@ export function SettingsPage() {
     <BasePage 
       title="Settings" 
       icon={Settings}
-      description="Configure your account and application preferences"
+      description="Configure application settings and preferences"
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 16px 0' }}>
-            Account Settings
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              { label: 'Profile Information', description: 'Update your personal details' },
-              { label: 'Password & Security', description: 'Change password and security settings' },
-              { label: 'Email Preferences', description: 'Manage notification settings' },
-              { label: 'Privacy Settings', description: 'Control your data and privacy' }
-            ].map((setting, index) => (
-              <div key={index} style={{
-                padding: '16px',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px',
-                cursor: 'pointer'
-              }}>
-                <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: '0 0 4px 0' }}>
-                  {setting.label}
-                </h4>
-                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
-                  {setting.description}
-                </p>
-              </div>
-            ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {[
+          { title: 'General Settings', description: 'Basic application configuration' },
+          { title: 'User Management', description: 'Manage user accounts and permissions' },
+          { title: 'Time Tracking', description: 'Configure time tracking rules and policies' },
+          { title: 'Notifications', description: 'Set up email and push notifications' },
+          { title: 'Integrations', description: 'Connect with third-party applications' },
+          { title: 'Security', description: 'Security settings and access controls' }
+        ].map((setting, index) => (
+          <div key={index} style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '16px',
+            border: '1px solid #E5E7EB',
+            borderRadius: '8px'
+          }}>
+            <div>
+              <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
+                {setting.title}
+              </h4>
+              <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+                {setting.description}
+              </p>
+            </div>
+            <button style={{
+              backgroundColor: '#F3F4F6',
+              color: '#374151',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              cursor: 'pointer'
+            }}>
+              Configure
+            </button>
           </div>
-        </div>
-        
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 16px 0' }}>
-            Application Settings
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              { label: 'Time Zone', description: 'Set your local time zone' },
-              { label: 'Date Format', description: 'Choose date display format' },
-              { label: 'Theme Preferences', description: 'Light or dark mode' },
-              { label: 'Language', description: 'Select your preferred language' }
-            ].map((setting, index) => (
-              <div key={index} style={{
-                padding: '16px',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px',
-                cursor: 'pointer'
-              }}>
-                <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: '0 0 4px 0' }}>
-                  {setting.label}
-                </h4>
-                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
-                  {setting.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
     </BasePage>
   )
 }
 
-// People Directory Page - NEW! (Replaces My Team)
+// My Team Page (Fallback)
+export function MyTeamPage() {
+  return (
+    <BasePage 
+      title="My Team" 
+      icon={Users}
+      description="Manage your team members and their performance"
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+        {[
+          { name: 'John Doe', role: 'Senior Developer', status: 'Online', hours: '40h' },
+          { name: 'Jane Smith', role: 'Project Manager', status: 'Away', hours: '38h' },
+          { name: 'Mike Johnson', role: 'Designer', status: 'Online', hours: '42h' },
+          { name: 'Sarah Wilson', role: 'QA Engineer', status: 'Offline', hours: '35h' }
+        ].map((member, index) => (
+          <div key={index} style={{
+            padding: '16px',
+            border: '1px solid #E5E7EB',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: '#F3F4F6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#6B7280'
+            }}>
+              {member.name.split(' ').map(n => n[0]).join('')}
+            </div>
+            <div style={{ flex: 1 }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: '0 0 4px 0' }}>
+                {member.name}
+              </h4>
+              <p style={{ fontSize: '12px', color: '#6B7280', margin: '0 0 4px 0' }}>
+                {member.role}
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{
+                  fontSize: '12px',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  backgroundColor: member.status === 'Online' ? '#D1FAE5' : member.status === 'Away' ? '#FEF3C7' : '#FEE2E2',
+                  color: member.status === 'Online' ? '#065F46' : member.status === 'Away' ? '#92400E' : '#991B1B'
+                }}>
+                  {member.status}
+                </span>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>
+                  {member.hours}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </BasePage>
+  )
+}
+
+// People Directory Page - Enhanced version or fallback to MyTeamPage
 export function PeopleDirectoryPage() {
-  return <PeopleDirectory />
+  // If PeopleDirectory component exists, use it; otherwise fallback to MyTeamPage
+  if (PeopleDirectoryComponent) {
+    return <PeopleDirectoryComponent />;
+  }
+  
+  // Fallback to MyTeamPage with enhanced title
+  return (
+    <BasePage 
+      title="People Directory" 
+      icon={Users}
+      description="Manage your team members and their information"
+    >
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '40px 0',
+        backgroundColor: '#F9FAFB',
+        borderRadius: '8px',
+        border: '2px dashed #D1D5DB'
+      }}>
+        <Users size={64} color="#6B7280" style={{ marginBottom: '16px' }} />
+        <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+          People Directory Coming Soon
+        </h3>
+        <p style={{ color: '#6B7280', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>
+          The enhanced People Directory with advanced features is being prepared for deployment.
+        </p>
+        <button 
+          onClick={() => window.location.href = '/my-team'}
+          style={{
+            backgroundColor: '#3B82F6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '12px 24px',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer'
+          }}
+        >
+          View Team Members
+        </button>
+      </div>
+    </BasePage>
+  )
 }
 
 // Time Tracking Page
@@ -485,86 +348,48 @@ export function TimeTrackingPage() {
     <BasePage 
       title="Time Tracking" 
       icon={Activity}
-      description="Real-time tracking and monitoring of work activities"
+      description="Track time spent on projects and activities"
     >
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 16px 0' }}>
-            Current Session
-          </h3>
-          <div style={{
-            padding: '24px',
-            border: '2px solid #3B82F6',
-            borderRadius: '12px',
-            textAlign: 'center',
-            backgroundColor: '#EFF6FF'
+      <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <Activity size={64} color="#6B7280" style={{ marginBottom: '16px' }} />
+        <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+          Start Tracking Time
+        </h3>
+        <p style={{ color: '#6B7280', marginBottom: '24px' }}>
+          Begin tracking your work time and activities for accurate reporting.
+        </p>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <button style={{
+            backgroundColor: '#10B981',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '12px 24px',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer'
           }}>
-            <div style={{ fontSize: '36px', fontWeight: '700', color: '#1E40AF', margin: '0 0 8px 0' }}>
-              03:42:15
-            </div>
-            <p style={{ fontSize: '16px', color: '#3B82F6', margin: '0 0 16px 0' }}>
-              Currently tracking
-            </p>
-            <button style={{
-              padding: '12px 24px',
-              backgroundColor: '#EF4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}>
-              Stop Tracking
-            </button>
-          </div>
-        </div>
-        
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 16px 0' }}>
-            Today's Summary
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              { project: 'Website Redesign', time: '2:15:30', status: 'Active' },
-              { project: 'Mobile App', time: '1:27:45', status: 'Paused' },
-              { project: 'Database Migration', time: '0:45:20', status: 'Completed' }
-            ].map((session, index) => (
-              <div key={index} style={{
-                padding: '16px',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: '0 0 4px 0' }}>
-                    {session.project}
-                  </h4>
-                  <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
-                    {session.time}
-                  </p>
-                </div>
-                <span style={{ 
-                  fontSize: '12px', 
-                  padding: '4px 8px', 
-                  borderRadius: '12px',
-                  backgroundColor: session.status === 'Active' ? '#D1FAE5' : session.status === 'Paused' ? '#FEF3C7' : '#E5E7EB',
-                  color: session.status === 'Active' ? '#065F46' : session.status === 'Paused' ? '#92400E' : '#374151'
-                }}>
-                  {session.status}
-                </span>
-              </div>
-            ))}
-          </div>
+            Start Timer
+          </button>
+          <button style={{
+            backgroundColor: '#F3F4F6',
+            color: '#374151',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '12px 24px',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer'
+          }}>
+            Manual Entry
+          </button>
         </div>
       </div>
     </BasePage>
   )
 }
 
-// Work Schedules Page - Use the real component
+// Export the real Work Schedules Page
 export function WorkSchedulesPage() {
   return <RealWorkSchedulesPage />
 }
@@ -575,74 +400,47 @@ export function TimeOffHolidaysPage() {
     <BasePage 
       title="Time Off & Holidays" 
       icon={Calendar}
-      description="Manage company holidays and time off policies"
+      description="Manage holidays and time off policies"
     >
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
         <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 16px 0' }}>
+          <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '12px' }}>
             Upcoming Holidays
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              { name: 'New Year\'s Day', date: 'January 1, 2025', type: 'Federal Holiday' },
-              { name: 'Martin Luther King Jr. Day', date: 'January 20, 2025', type: 'Federal Holiday' },
-              { name: 'Presidents\' Day', date: 'February 17, 2025', type: 'Federal Holiday' },
-              { name: 'Memorial Day', date: 'May 26, 2025', type: 'Federal Holiday' }
-            ].map((holiday, index) => (
-              <div key={index} style={{
-                padding: '16px',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: 0 }}>
-                    {holiday.name}
-                  </h4>
-                  <span style={{ 
-                    fontSize: '12px', 
-                    padding: '4px 8px', 
-                    borderRadius: '12px',
-                    backgroundColor: '#EFF6FF',
-                    color: '#2563EB'
-                  }}>
-                    {holiday.type}
-                  </span>
-                </div>
-                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
-                  {holiday.date}
-                </p>
+          </h4>
+          {[
+            { name: 'Independence Day', date: 'July 4, 2024' },
+            { name: 'Labor Day', date: 'September 2, 2024' },
+            { name: 'Thanksgiving', date: 'November 28, 2024' }
+          ].map((holiday, index) => (
+            <div key={index} style={{
+              padding: '12px',
+              border: '1px solid #E5E7EB',
+              borderRadius: '6px',
+              marginBottom: '8px'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                {holiday.name}
               </div>
-            ))}
-          </div>
+              <div style={{ fontSize: '12px', color: '#6B7280' }}>
+                {holiday.date}
+              </div>
+            </div>
+          ))}
         </div>
-        
         <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 16px 0' }}>
+          <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '12px' }}>
             Time Off Policies
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              { policy: 'Vacation Days', allocation: '20 days per year', accrual: 'Monthly' },
-              { policy: 'Sick Leave', allocation: '10 days per year', accrual: 'Monthly' },
-              { policy: 'Personal Days', allocation: '3 days per year', accrual: 'Annual' },
-              { policy: 'Bereavement', allocation: '5 days per occurrence', accrual: 'As needed' }
-            ].map((policy, index) => (
-              <div key={index} style={{
-                padding: '16px',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px'
-              }}>
-                <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: '0 0 8px 0' }}>
-                  {policy.policy}
-                </h4>
-                <p style={{ fontSize: '12px', color: '#6B7280', margin: '0 0 4px 0' }}>
-                  Allocation: {policy.allocation}
-                </p>
-                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
-                  Accrual: {policy.accrual}
-                </p>
-              </div>
-            ))}
+          </h4>
+          <div style={{ padding: '16px', backgroundColor: '#F9FAFB', borderRadius: '8px' }}>
+            <p style={{ fontSize: '14px', color: '#374151', margin: '0 0 8px 0' }}>
+              Annual Leave: 20 days
+            </p>
+            <p style={{ fontSize: '14px', color: '#374151', margin: '0 0 8px 0' }}>
+              Sick Leave: 10 days
+            </p>
+            <p style={{ fontSize: '14px', color: '#374151', margin: 0 }}>
+              Personal Days: 5 days
+            </p>
           </div>
         </div>
       </div>
@@ -656,72 +454,28 @@ export function LocationsPage() {
     <BasePage 
       title="Locations" 
       icon={MapPin}
-      description="Manage office locations and remote work settings"
+      description="Manage work locations and geofenced areas"
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
         {[
-          { 
-            name: 'Main Office', 
-            address: '123 Business Ave, Suite 100, New York, NY 10001',
-            employees: 45,
-            status: 'Active'
-          },
-          { 
-            name: 'West Coast Branch', 
-            address: '456 Tech Blvd, San Francisco, CA 94105',
-            employees: 28,
-            status: 'Active'
-          },
-          { 
-            name: 'Remote Workers', 
-            address: 'Various locations worldwide',
-            employees: 12,
-            status: 'Active'
-          },
-          { 
-            name: 'Client Site - Downtown', 
-            address: '789 Corporate Dr, Chicago, IL 60601',
-            employees: 8,
-            status: 'Temporary'
-          }
+          { name: 'Main Office', address: '123 Business St, City, State', employees: 25 },
+          { name: 'Remote Work', address: 'Various Locations', employees: 12 },
+          { name: 'Client Site A', address: '456 Client Ave, City, State', employees: 8 },
+          { name: 'Warehouse', address: '789 Industrial Blvd, City, State', employees: 15 }
         ].map((location, index) => (
           <div key={index} style={{
-            padding: '20px',
+            padding: '16px',
             border: '1px solid #E5E7EB',
             borderRadius: '8px'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: 0 }}>
-                {location.name}
-              </h4>
-              <span style={{ 
-                fontSize: '12px', 
-                padding: '4px 8px', 
-                borderRadius: '12px',
-                backgroundColor: location.status === 'Active' ? '#D1FAE5' : '#FEF3C7',
-                color: location.status === 'Active' ? '#065F46' : '#92400E'
-              }}>
-                {location.status}
-              </span>
-            </div>
-            <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 12px 0' }}>
-              📍 {location.address}
+            <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+              {location.name}
+            </h4>
+            <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
+              {location.address}
             </p>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '14px', color: '#111827' }}>
-                👥 {location.employees} employees
-              </span>
-              <button style={{
-                padding: '6px 12px',
-                backgroundColor: '#3B82F6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '12px',
-                cursor: 'pointer'
-              }}>
-                View Details
-              </button>
+            <div style={{ fontSize: '12px', color: '#374151' }}>
+              {location.employees} employees
             </div>
           </div>
         ))}
@@ -754,32 +508,32 @@ export function ActivitiesProjectsPage() {
               <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: 0 }}>
                 {project.name}
               </h4>
-              <span style={{ 
-                fontSize: '12px', 
-                padding: '4px 8px', 
+              <span style={{
+                fontSize: '12px',
+                padding: '2px 8px',
                 borderRadius: '12px',
-                backgroundColor: project.status === 'Completed' ? '#D1FAE5' : project.status === 'In Progress' ? '#FEF3C7' : '#E5E7EB',
-                color: project.status === 'Completed' ? '#065F46' : project.status === 'In Progress' ? '#92400E' : '#374151'
+                backgroundColor: project.status === 'Completed' ? '#D1FAE5' : project.status === 'In Progress' ? '#DBEAFE' : '#FEF3C7',
+                color: project.status === 'Completed' ? '#065F46' : project.status === 'In Progress' ? '#1E40AF' : '#92400E'
               }}>
                 {project.status}
               </span>
             </div>
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <span style={{ fontSize: '12px', color: '#6B7280' }}>Progress</span>
-                <span style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>{project.completion}%</span>
+                <span style={{ fontSize: '12px', color: '#6B7280' }}>{project.completion}%</span>
               </div>
-              <div style={{ 
-                width: '100%', 
-                height: '8px', 
-                backgroundColor: '#E5E7EB', 
-                borderRadius: '4px',
+              <div style={{
+                width: '100%',
+                height: '6px',
+                backgroundColor: '#E5E7EB',
+                borderRadius: '3px',
                 overflow: 'hidden'
               }}>
                 <div style={{
                   width: `${project.completion}%`,
                   height: '100%',
-                  backgroundColor: project.completion === 100 ? '#10B981' : '#3B82F6',
+                  backgroundColor: '#3B82F6',
                   borderRadius: '3px'
                 }}></div>
               </div>
@@ -797,6 +551,46 @@ export function ActivitiesProjectsPage() {
 // Campaign Management Page - NEW!
 export function CampaignManagementPage() {
   return <CampaignManagement />
+}
+
+// Organization Page - Keep for backward compatibility but redirect to campaigns
+export function OrganizationPage() {
+  return (
+    <BasePage 
+      title="Organization" 
+      icon={Building}
+      description="Manage organizational structure and departments"
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+        {[
+          { name: 'Engineering', employees: 15, manager: 'John Smith' },
+          { name: 'Sales', employees: 8, manager: 'Sarah Johnson' },
+          { name: 'Marketing', employees: 6, manager: 'Mike Wilson' },
+          { name: 'HR', employees: 3, manager: 'Lisa Brown' },
+          { name: 'Finance', employees: 4, manager: 'David Lee' },
+          { name: 'Operations', employees: 10, manager: 'Emma Davis' }
+        ].map((dept, index) => (
+          <div key={index} style={{
+            padding: '16px',
+            border: '1px solid #E5E7EB',
+            borderRadius: '8px',
+            textAlign: 'center'
+          }}>
+            <Building size={32} color="#6B7280" style={{ marginBottom: '8px' }} />
+            <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
+              {dept.name}
+            </h4>
+            <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>
+              {dept.employees} employees
+            </p>
+            <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
+              Manager: {dept.manager}
+            </p>
+          </div>
+        ))}
+      </div>
+    </BasePage>
+  )
 }
 
 // Integrations Page
@@ -817,38 +611,32 @@ export function IntegrationsPage() {
           { name: 'QuickBooks', description: 'Accounting and payroll integration', connected: false }
         ].map((integration, index) => (
           <div key={index} style={{
-            padding: '20px',
+            padding: '16px',
             border: '1px solid #E5E7EB',
-            borderRadius: '8px'
+            borderRadius: '8px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: 0 }}>
+            <div style={{ flex: 1 }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
                 {integration.name}
               </h4>
-              <span style={{ 
-                fontSize: '12px', 
-                padding: '4px 8px', 
-                borderRadius: '12px',
-                backgroundColor: integration.connected ? '#D1FAE5' : '#FEE2E2',
-                color: integration.connected ? '#065F46' : '#991B1B'
-              }}>
-                {integration.connected ? 'Connected' : 'Not Connected'}
-              </span>
+              <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
+                {integration.description}
+              </p>
             </div>
-            <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 16px 0' }}>
-              {integration.description}
-            </p>
             <button style={{
-              width: '100%',
-              padding: '8px 16px',
-              backgroundColor: integration.connected ? '#F3F4F6' : '#3B82F6',
-              color: integration.connected ? '#374151' : 'white',
-              border: integration.connected ? '1px solid #D1D5DB' : 'none',
+              backgroundColor: integration.connected ? '#EF4444' : '#10B981',
+              color: 'white',
+              border: 'none',
               borderRadius: '6px',
-              fontSize: '14px',
+              padding: '6px 12px',
+              fontSize: '12px',
+              fontWeight: '500',
               cursor: 'pointer'
             }}>
-              {integration.connected ? 'Configure' : 'Connect'}
+              {integration.connected ? 'Disconnect' : 'Connect'}
             </button>
           </div>
         ))}
