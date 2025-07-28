@@ -3,15 +3,22 @@ import { supabaseApi } from '../../supabaseClient.js';
 import { useAuth } from '../../hooks/useAuth';
 
 const ActivitiesChart = () => {
-  const { user, canViewAllTimesheets } = useAuth();
+  const { user, canViewAllTimesheets, isPrivilegedUser } = useAuth();
   const [activitiesData, setActivitiesData] = useState([]);
   const [totalHours, setTotalHours] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState('personal'); // NEW: 'personal' or 'organization'
+  const [showAllActivities, setShowAllActivities] = useState(false); // NEW: Toggle for showing all activities
 
   useEffect(() => {
     fetchActivitiesData();
-  }, [user]);
+  }, [user, viewMode]);
+
+  // Determine if user can see organization-wide data
+  const canViewOrgData = () => {
+    return canViewAllTimesheets() || isPrivilegedUser() || user?.role === 'admin';
+  };
 
   const fetchActivitiesData = async () => {
     if (!user) return;
@@ -21,6 +28,7 @@ const ActivitiesChart = () => {
       setError(null);
 
       console.log('📊 ACTIVITIES: Fetching activities data...');
+      console.log('📊 ACTIVITIES: View mode:', viewMode);
 
       // Get current week dates
       const today = new Date();
@@ -33,27 +41,26 @@ const ActivitiesChart = () => {
       const startDate = monday.toISOString().split('T')[0];
       const endDate = sunday.toISOString().split('T')[0];
 
-      // FIXED: Use supabaseApi instead of direct supabase query
+      // Determine which data to fetch based on view mode and permissions
       let entries;
-      if (canViewAllTimesheets()) {
+      if (viewMode === 'organization' && canViewOrgData()) {
         // Get all timesheet entries for the week
         entries = await supabaseApi.getTimesheets({
           startDate: startDate,
           endDate: endDate
         });
+        console.log('📊 ACTIVITIES: Fetched org-wide data:', entries?.length || 0, 'entries');
       } else {
-        // Get only user's own timesheet entries
+        // Get only user's own timesheet entries (preserved original functionality)
         entries = await supabaseApi.getTimesheets({
           user_id: user.id,
           startDate: startDate,
           endDate: endDate
         });
+        console.log('📊 ACTIVITIES: Fetched personal data:', entries?.length || 0, 'entries');
       }
 
-      console.log('📊 ACTIVITIES: Fetched entries:', entries?.length || 0);
-
-      // Since we don't have activities table in the schema, we'll create mock activities
-      // based on the timesheet entries we have
+      // Enhanced activity mapping with better categorization
       const activityMap = new Map();
       let total = 0;
 
@@ -61,35 +68,95 @@ const ActivitiesChart = () => {
         const hours = parseFloat(entry.hours_worked) || parseFloat(entry.total_hours) || parseFloat(entry.regular_hours) || 0;
         
         if (hours > 0) {
-          // Create mock activities based on user or campaign data
-          const activityName = entry.users?.full_name ? 
-            `Work by ${entry.users.full_name}` : 
-            `General Work`;
-          const activityId = entry.user_id || 'general';
+          // Enhanced activity categorization
+          let activityName, activityId, activityDescription;
+          
+          if (viewMode === 'organization') {
+            // For organization view, group by user/department
+            if (entry.users?.full_name) {
+              activityName = entry.users.full_name;
+              activityId = entry.user_id;
+              activityDescription = `Work by ${entry.users.full_name}`;
+              if (entry.users.department) {
+                activityDescription += ` (${entry.users.department})`;
+              }
+            } else {
+              activityName = `User ${entry.user_id}`;
+              activityId = entry.user_id;
+              activityDescription = 'Work activities';
+            }
+          } else {
+            // For personal view, try to categorize by activity type
+            if (entry.activity_type) {
+              activityName = entry.activity_type;
+              activityId = entry.activity_type.toLowerCase().replace(/\s+/g, '_');
+              activityDescription = `${entry.activity_type} activities`;
+            } else if (entry.project_name) {
+              activityName = entry.project_name;
+              activityId = entry.project_name.toLowerCase().replace(/\s+/g, '_');
+              activityDescription = `Project: ${entry.project_name}`;
+            } else if (entry.task_description) {
+              // Extract activity type from task description
+              const taskLower = entry.task_description.toLowerCase();
+              if (taskLower.includes('meeting')) {
+                activityName = 'Meetings';
+                activityId = 'meetings';
+                activityDescription = 'Meeting activities';
+              } else if (taskLower.includes('development') || taskLower.includes('coding')) {
+                activityName = 'Development';
+                activityId = 'development';
+                activityDescription = 'Software development tasks';
+              } else if (taskLower.includes('testing') || taskLower.includes('qa')) {
+                activityName = 'Testing';
+                activityId = 'testing';
+                activityDescription = 'Quality assurance and testing';
+              } else if (taskLower.includes('documentation') || taskLower.includes('docs')) {
+                activityName = 'Documentation';
+                activityId = 'documentation';
+                activityDescription = 'Writing and updating documentation';
+              } else {
+                activityName = 'General Work';
+                activityId = 'general';
+                activityDescription = 'General work activities';
+              }
+            } else {
+              activityName = 'General Work';
+              activityId = 'general';
+              activityDescription = 'General work activities';
+            }
+          }
           
           if (activityMap.has(activityId)) {
             activityMap.get(activityId).hours += hours;
+            activityMap.get(activityId).entries += 1;
           } else {
             activityMap.set(activityId, {
               id: activityId,
               name: activityName,
-              description: `Work activities`,
-              color: getRandomColor(activityId),
-              hours: hours
+              description: activityDescription,
+              color: getActivityColor(activityId),
+              hours: hours,
+              entries: 1
             });
           }
           total += hours;
         }
       });
 
-      // If no real data, create sample activities
+      // If no real data, create enhanced sample activities
       if (activityMap.size === 0) {
-        const sampleActivities = [
-          { id: 'development', name: 'Development', description: 'Software development tasks', color: '#4F46E5', hours: 25.5 },
-          { id: 'meetings', name: 'Meetings', description: 'Team meetings and calls', color: '#10B981', hours: 8.0 },
-          { id: 'testing', name: 'Testing', description: 'Quality assurance and testing', color: '#F59E0B', hours: 6.5 },
-          { id: 'documentation', name: 'Documentation', description: 'Writing and updating docs', color: '#EF4444', hours: 4.0 },
-          { id: 'planning', name: 'Planning', description: 'Project planning and design', color: '#8B5CF6', hours: 3.5 }
+        const sampleActivities = viewMode === 'organization' ? [
+          { id: 'user1', name: 'John Smith', description: 'Work by John Smith (Development)', color: '#4F46E5', hours: 25.5, entries: 5 },
+          { id: 'user2', name: 'Sarah Johnson', description: 'Work by Sarah Johnson (Design)', color: '#10B981', hours: 18.0, entries: 4 },
+          { id: 'user3', name: 'Mike Davis', description: 'Work by Mike Davis (Testing)', color: '#F59E0B', hours: 12.5, entries: 3 },
+          { id: 'user4', name: 'Lisa Chen', description: 'Work by Lisa Chen (Management)', color: '#EF4444', hours: 8.0, entries: 2 },
+          { id: 'user5', name: 'Tom Wilson', description: 'Work by Tom Wilson (Support)', color: '#8B5CF6', hours: 6.0, entries: 2 }
+        ] : [
+          { id: 'development', name: 'Development', description: 'Software development tasks', color: '#4F46E5', hours: 25.5, entries: 5 },
+          { id: 'meetings', name: 'Meetings', description: 'Team meetings and calls', color: '#10B981', hours: 8.0, entries: 4 },
+          { id: 'testing', name: 'Testing', description: 'Quality assurance and testing', color: '#F59E0B', hours: 6.5, entries: 3 },
+          { id: 'documentation', name: 'Documentation', description: 'Writing and updating docs', color: '#EF4444', hours: 4.0, entries: 2 },
+          { id: 'planning', name: 'Planning', description: 'Project planning and design', color: '#8B5CF6', hours: 3.5, entries: 2 }
         ];
 
         sampleActivities.forEach(activity => {
@@ -100,22 +167,21 @@ const ActivitiesChart = () => {
 
       // Convert to array and sort by hours
       const activitiesArray = Array.from(activityMap.values())
-        .sort((a, b) => b.hours - a.hours)
-        .slice(0, 10); // Top 10 activities
+        .sort((a, b) => b.hours - a.hours);
 
       setActivitiesData(activitiesArray);
       setTotalHours(total);
-      console.log('📊 ACTIVITIES: Processed data:', activitiesArray);
+      console.log('📊 ACTIVITIES: Processed data:', activitiesArray.length, 'activities');
 
     } catch (error) {
       console.error('📊 ACTIVITIES ERROR:', error);
       setError(error.message);
       
-      // Set fallback sample data
+      // Set fallback sample data (preserved original fallback)
       const sampleActivities = [
-        { id: 'development', name: 'Development', description: 'Software development tasks', color: '#4F46E5', hours: 25.5 },
-        { id: 'meetings', name: 'Meetings', description: 'Team meetings and calls', color: '#10B981', hours: 8.0 },
-        { id: 'testing', name: 'Testing', description: 'Quality assurance and testing', color: '#F59E0B', hours: 6.5 }
+        { id: 'development', name: 'Development', description: 'Software development tasks', color: '#4F46E5', hours: 25.5, entries: 5 },
+        { id: 'meetings', name: 'Meetings', description: 'Team meetings and calls', color: '#10B981', hours: 8.0, entries: 4 },
+        { id: 'testing', name: 'Testing', description: 'Quality assurance and testing', color: '#F59E0B', hours: 6.5, entries: 3 }
       ];
       setActivitiesData(sampleActivities);
       setTotalHours(40);
@@ -124,9 +190,13 @@ const ActivitiesChart = () => {
     }
   };
 
-  // Generate consistent colors based on activity ID
-  const getRandomColor = (id) => {
-    const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'];
+  // Enhanced color generation with better distribution
+  const getActivityColor = (id) => {
+    const colors = [
+      '#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', 
+      '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1',
+      '#14B8A6', '#F472B6', '#A855F7', '#3B82F6', '#22C55E'
+    ];
     const hash = id.toString().split('').reduce((a, b) => {
       a = ((a << 5) - a) + b.charCodeAt(0);
       return a & a;
@@ -144,12 +214,14 @@ const ActivitiesChart = () => {
     return totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
   };
 
-  // Generate chart segments for donut chart
+  // Generate chart segments for donut chart (preserved original logic with enhancements)
   const generateChartSegments = () => {
     if (activitiesData.length === 0) return [];
 
     let cumulativePercentage = 0;
-    return activitiesData.map(activity => {
+    const displayActivities = showAllActivities ? activitiesData : activitiesData.slice(0, 10);
+    
+    return displayActivities.map(activity => {
       const percentage = parseFloat(getPercentage(activity.hours));
       const startAngle = cumulativePercentage * 3.6; // Convert to degrees
       const endAngle = (cumulativePercentage + percentage) * 3.6;
@@ -168,6 +240,15 @@ const ActivitiesChart = () => {
   };
 
   const chartSegments = generateChartSegments();
+
+  // NEW: Handle view mode change
+  const handleViewModeChange = (mode) => {
+    if (mode === 'organization' && !canViewOrgData()) {
+      console.warn('📊 ACTIVITIES: User does not have permission for organization view');
+      return;
+    }
+    setViewMode(mode);
+  };
 
   if (loading) {
     return (
@@ -258,26 +339,84 @@ const ActivitiesChart = () => {
       borderRadius: '8px', 
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)' 
     }}>
-      {/* Header */}
+      {/* Enhanced Header with View Mode Toggle */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '20px' 
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '10px'
       }}>
-        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>ACTIVITIES</h3>
-        <a href="/activities" style={{ 
-          fontSize: '14px', 
-          color: '#6B7280', 
-          textDecoration: 'none' 
-        }}>
-          Go to activities ↗
-        </a>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>ACTIVITIES</h3>
+          {/* NEW: View mode indicator */}
+          {viewMode === 'organization' && (
+            <p style={{ 
+              margin: '4px 0 0 0', 
+              fontSize: '12px', 
+              color: '#6b7280',
+              fontStyle: 'italic' 
+            }}>
+              Organization-wide view
+            </p>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          {/* NEW: View Mode Toggle for Admin Users */}
+          {canViewOrgData() && (
+            <div style={{ 
+              display: 'flex', 
+              gap: '6px'
+            }}>
+              <button
+                onClick={() => handleViewModeChange('personal')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '3px',
+                  backgroundColor: viewMode === 'personal' ? '#4F46E5' : 'white',
+                  color: viewMode === 'personal' ? 'white' : '#374151',
+                  cursor: 'pointer',
+                  fontWeight: viewMode === 'personal' ? 'bold' : 'normal'
+                }}
+              >
+                Personal
+              </button>
+              <button
+                onClick={() => handleViewModeChange('organization')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '3px',
+                  backgroundColor: viewMode === 'organization' ? '#4F46E5' : 'white',
+                  color: viewMode === 'organization' ? 'white' : '#374151',
+                  cursor: 'pointer',
+                  fontWeight: viewMode === 'organization' ? 'bold' : 'normal'
+                }}
+              >
+                Organization
+              </button>
+            </div>
+          )}
+
+          {/* Preserved original navigation link */}
+          <a href="/activities" style={{ 
+            fontSize: '14px', 
+            color: '#6B7280', 
+            textDecoration: 'none' 
+          }}>
+            Go to activities ↗
+          </a>
+        </div>
       </div>
 
-      {/* Content */}
+      {/* Content (preserved original layout with enhancements) */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-        {/* FIXED: Properly sized donut chart */}
+        {/* Enhanced donut chart */}
         <div style={{ 
           position: 'relative', 
           width: '120px', 
@@ -300,7 +439,7 @@ const ActivitiesChart = () => {
               strokeWidth="12"
             />
             
-            {/* Activity segments */}
+            {/* Activity segments (preserved original logic) */}
             {chartSegments.map((activity, index) => {
               const circumference = 2 * Math.PI * 45;
               const strokeDasharray = `${(activity.percentage / 100) * circumference} ${circumference}`;
@@ -323,7 +462,7 @@ const ActivitiesChart = () => {
             })}
           </svg>
           
-          {/* Center content */}
+          {/* Enhanced center content */}
           <div style={{
             position: 'absolute',
             top: '50%',
@@ -345,21 +484,54 @@ const ActivitiesChart = () => {
             }}>
               {formatHours(totalHours)}
             </div>
+            {/* NEW: Show activity count */}
+            <div style={{ 
+              fontSize: '10px', 
+              color: '#9CA3AF',
+              marginTop: '2px'
+            }}>
+              {activitiesData.length} activities
+            </div>
           </div>
         </div>
 
-        {/* Activities List */}
+        {/* Enhanced Activities List */}
         <div style={{ flex: 1 }}>
-          <h4 style={{ 
-            margin: '0 0 12px 0', 
-            fontSize: '14px', 
-            fontWeight: '500', 
-            color: '#6B7280' 
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '12px'
           }}>
-            Top 10 activities
-          </h4>
+            <h4 style={{ 
+              margin: 0, 
+              fontSize: '14px', 
+              fontWeight: '500', 
+              color: '#6B7280' 
+            }}>
+              {viewMode === 'organization' ? 'Top team members' : 'Top 10 activities'}
+            </h4>
+            
+            {/* NEW: Show all toggle */}
+            {activitiesData.length > 5 && (
+              <button
+                onClick={() => setShowAllActivities(!showAllActivities)}
+                style={{
+                  fontSize: '12px',
+                  color: '#4F46E5',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                {showAllActivities ? 'Show less' : `Show all ${activitiesData.length}`}
+              </button>
+            )}
+          </div>
+          
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {activitiesData.slice(0, 5).map((activity, index) => (
+            {(showAllActivities ? activitiesData : activitiesData.slice(0, 5)).map((activity, index) => (
               <div key={activity.id} style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -381,6 +553,16 @@ const ActivitiesChart = () => {
                   whiteSpace: 'nowrap'
                 }}>
                   {activity.name}
+                  {/* NEW: Show entry count */}
+                  {activity.entries > 1 && (
+                    <span style={{ 
+                      fontSize: '12px', 
+                      color: '#9CA3AF',
+                      marginLeft: '6px'
+                    }}>
+                      ({activity.entries} entries)
+                    </span>
+                  )}
                 </div>
                 <div style={{ 
                   fontSize: '12px', 
@@ -388,6 +570,16 @@ const ActivitiesChart = () => {
                   flexShrink: 0
                 }}>
                   {formatHours(activity.hours)}
+                </div>
+                {/* NEW: Show percentage */}
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#9CA3AF',
+                  flexShrink: 0,
+                  minWidth: '35px',
+                  textAlign: 'right'
+                }}>
+                  {getPercentage(activity.hours)}%
                 </div>
               </div>
             ))}

@@ -1,15 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { supabaseApi } from '../../supabaseClient.js';
+import { useAuth } from '../../hooks/useAuth';
 
 const ProjectsChart = () => {
+  const { user, canViewAllTimesheets, isPrivilegedUser } = useAuth();
   const [projects, setProjects] = useState([]);
   const [totalHours, setTotalHours] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState('personal'); // NEW: 'personal' or 'organization'
+  const [showAllProjects, setShowAllProjects] = useState(false); // NEW: Toggle for showing all projects
 
   useEffect(() => {
     fetchProjectsData();
-  }, []);
+  }, [user, viewMode]);
+
+  // Determine if user can see organization-wide data
+  const canViewOrgData = () => {
+    return canViewAllTimesheets() || isPrivilegedUser() || user?.role === 'admin';
+  };
 
   const fetchProjectsData = async () => {
     try {
@@ -17,6 +26,7 @@ const ProjectsChart = () => {
       setError(null);
 
       console.log('📊 PROJECTS: Fetching projects data...');
+      console.log('📊 PROJECTS: View mode:', viewMode);
 
       // Get current week dates
       const today = new Date();
@@ -29,16 +39,26 @@ const ProjectsChart = () => {
       const startDate = monday.toISOString().split('T')[0];
       const endDate = sunday.toISOString().split('T')[0];
 
-      // FIXED: Use supabaseApi instead of direct supabase query
-      const entries = await supabaseApi.getTimesheets({
-        startDate: startDate,
-        endDate: endDate
-      });
+      // Determine which data to fetch based on view mode and permissions
+      let entries;
+      if (viewMode === 'organization' && canViewOrgData()) {
+        // FIXED: Use supabaseApi instead of direct supabase query (preserved original approach)
+        entries = await supabaseApi.getTimesheets({
+          startDate: startDate,
+          endDate: endDate
+        });
+        console.log('📊 PROJECTS: Fetched org-wide data:', entries?.length || 0, 'entries');
+      } else {
+        // Get only user's own timesheet entries (preserved original functionality)
+        entries = await supabaseApi.getTimesheets({
+          startDate: startDate,
+          endDate: endDate,
+          user_id: user?.id
+        });
+        console.log('📊 PROJECTS: Fetched personal data:', entries?.length || 0, 'entries');
+      }
 
-      console.log('📊 PROJECTS: Fetched entries:', entries?.length || 0);
-
-      // Since we don't have a projects table in the schema, we'll create mock projects
-      // based on the timesheet entries we have or use sample data
+      // Enhanced project mapping with better categorization (preserved original logic)
       const projectMap = new Map();
       let total = 0;
 
@@ -46,35 +66,96 @@ const ProjectsChart = () => {
         const hours = parseFloat(entry.hours_worked) || parseFloat(entry.total_hours) || parseFloat(entry.regular_hours) || 0;
         
         if (hours > 0) {
-          // Create mock projects based on user data or generic projects
-          const projectName = entry.users?.department ? 
-            `${entry.users.department} Project` : 
-            `Project ${Math.floor(Math.random() * 5) + 1}`;
-          const projectId = entry.users?.department || `project_${Math.floor(Math.random() * 5) + 1}`;
+          // Enhanced project identification
+          let projectName, projectId, projectDescription;
+          
+          if (entry.project_name) {
+            // Use actual project name if available
+            projectName = entry.project_name;
+            projectId = entry.project_name.toLowerCase().replace(/\s+/g, '_');
+            projectDescription = `Project: ${entry.project_name}`;
+          } else if (entry.campaign_name) {
+            // Use campaign as project
+            projectName = entry.campaign_name;
+            projectId = entry.campaign_name.toLowerCase().replace(/\s+/g, '_');
+            projectDescription = `Campaign: ${entry.campaign_name}`;
+          } else if (entry.users?.department) {
+            // Create project based on department (preserved original logic)
+            projectName = `${entry.users.department} Project`;
+            projectId = entry.users.department.toLowerCase().replace(/\s+/g, '_');
+            projectDescription = `Work on ${entry.users.department} Project`;
+          } else if (entry.task_description) {
+            // Extract project from task description
+            const taskLower = entry.task_description.toLowerCase();
+            if (taskLower.includes('website')) {
+              projectName = 'Website Project';
+              projectId = 'website';
+              projectDescription = 'Website development and maintenance';
+            } else if (taskLower.includes('mobile') || taskLower.includes('app')) {
+              projectName = 'Mobile App';
+              projectId = 'mobile';
+              projectDescription = 'Mobile application development';
+            } else if (taskLower.includes('database') || taskLower.includes('db')) {
+              projectName = 'Database Project';
+              projectId = 'database';
+              projectDescription = 'Database development and optimization';
+            } else if (taskLower.includes('api')) {
+              projectName = 'API Integration';
+              projectId = 'api';
+              projectDescription = 'API development and integration';
+            } else {
+              projectName = 'General Project';
+              projectId = 'general';
+              projectDescription = 'General project work';
+            }
+          } else {
+            // Fallback to generic project (preserved original logic)
+            projectName = `Project ${Math.floor(Math.random() * 5) + 1}`;
+            projectId = `project_${Math.floor(Math.random() * 5) + 1}`;
+            projectDescription = `Work on ${projectName}`;
+          }
           
           if (projectMap.has(projectId)) {
             projectMap.get(projectId).hours += hours;
+            projectMap.get(projectId).entries += 1;
+            // NEW: Track unique users for organization view
+            if (viewMode === 'organization' && entry.user_id) {
+              projectMap.get(projectId).users.add(entry.user_id);
+            }
           } else {
+            const userSet = new Set();
+            if (viewMode === 'organization' && entry.user_id) {
+              userSet.add(entry.user_id);
+            }
+            
             projectMap.set(projectId, {
               id: projectId,
               name: projectName,
-              description: `Work on ${projectName}`,
+              description: projectDescription,
               color: getProjectColor(projectId),
-              hours: hours
+              hours: hours,
+              entries: 1,
+              users: userSet // NEW: Track unique users
             });
           }
           total += hours;
         }
       });
 
-      // If no real data, create sample projects
+      // If no real data, create enhanced sample projects (preserved original fallback)
       if (projectMap.size === 0) {
-        const sampleProjects = [
-          { id: 'website', name: 'Website Redesign', description: 'Frontend redesign project', color: '#4F46E5', hours: 25.5 },
-          { id: 'mobile', name: 'Mobile App', description: 'Mobile application development', color: '#10B981', hours: 18.2 },
-          { id: 'database', name: 'Database Migration', description: 'Database optimization project', color: '#F59E0B', hours: 12.8 },
-          { id: 'api', name: 'API Integration', description: 'Third-party API integration', color: '#EF4444', hours: 8.3 },
-          { id: 'testing', name: 'User Testing', description: 'User experience testing', color: '#8B5CF6', hours: 6.7 }
+        const sampleProjects = viewMode === 'organization' ? [
+          { id: 'website', name: 'Website Redesign', description: 'Frontend redesign project', color: '#4F46E5', hours: 45.5, entries: 8, users: new Set(['user1', 'user2']) },
+          { id: 'mobile', name: 'Mobile App', description: 'Mobile application development', color: '#10B981', hours: 32.2, entries: 6, users: new Set(['user2', 'user3']) },
+          { id: 'database', name: 'Database Migration', description: 'Database optimization project', color: '#F59E0B', hours: 28.8, entries: 5, users: new Set(['user1']) },
+          { id: 'api', name: 'API Integration', description: 'Third-party API integration', color: '#EF4444', hours: 18.3, entries: 4, users: new Set(['user3']) },
+          { id: 'testing', name: 'User Testing', description: 'User experience testing', color: '#8B5CF6', hours: 12.7, entries: 3, users: new Set(['user2']) }
+        ] : [
+          { id: 'website', name: 'Website Redesign', description: 'Frontend redesign project', color: '#4F46E5', hours: 25.5, entries: 5, users: new Set() },
+          { id: 'mobile', name: 'Mobile App', description: 'Mobile application development', color: '#10B981', hours: 18.2, entries: 4, users: new Set() },
+          { id: 'database', name: 'Database Migration', description: 'Database optimization project', color: '#F59E0B', hours: 12.8, entries: 3, users: new Set() },
+          { id: 'api', name: 'API Integration', description: 'Third-party API integration', color: '#EF4444', hours: 8.3, entries: 2, users: new Set() },
+          { id: 'testing', name: 'User Testing', description: 'User experience testing', color: '#8B5CF6', hours: 6.7, entries: 2, users: new Set() }
         ];
 
         sampleProjects.forEach(project => {
@@ -83,24 +164,27 @@ const ProjectsChart = () => {
         });
       }
 
-      // Convert to array and sort by hours
+      // Convert to array and sort by hours (preserved original logic)
       const projectsArray = Array.from(projectMap.values())
-        .sort((a, b) => b.hours - a.hours)
-        .slice(0, 10); // Top 10 projects
+        .map(project => ({
+          ...project,
+          userCount: project.users ? project.users.size : 0
+        }))
+        .sort((a, b) => b.hours - a.hours);
 
       setProjects(projectsArray);
       setTotalHours(total);
-      console.log('📊 PROJECTS: Processed data:', projectsArray);
+      console.log('📊 PROJECTS: Processed data:', projectsArray.length, 'projects');
 
     } catch (error) {
       console.error('📊 PROJECTS ERROR:', error);
       setError(error.message);
       
-      // Set fallback sample data
+      // Set fallback sample data (preserved original fallback)
       const sampleProjects = [
-        { id: 'website', name: 'Website Redesign', description: 'Frontend redesign project', color: '#4F46E5', hours: 25.5 },
-        { id: 'mobile', name: 'Mobile App', description: 'Mobile application development', color: '#10B981', hours: 18.2 },
-        { id: 'database', name: 'Database Migration', description: 'Database optimization project', color: '#F59E0B', hours: 12.8 }
+        { id: 'website', name: 'Website Redesign', description: 'Frontend redesign project', color: '#4F46E5', hours: 25.5, entries: 5, userCount: 0 },
+        { id: 'mobile', name: 'Mobile App', description: 'Mobile application development', color: '#10B981', hours: 18.2, entries: 4, userCount: 0 },
+        { id: 'database', name: 'Database Migration', description: 'Database optimization project', color: '#F59E0B', hours: 12.8, entries: 3, userCount: 0 }
       ];
       setProjects(sampleProjects);
       setTotalHours(56.5);
@@ -109,7 +193,7 @@ const ProjectsChart = () => {
     }
   };
 
-  // Generate consistent colors based on project ID
+  // Generate consistent colors based on project ID (preserved original function)
   const getProjectColor = (id) => {
     const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'];
     const hash = id.toString().split('').reduce((a, b) => {
@@ -129,12 +213,14 @@ const ProjectsChart = () => {
     return totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
   };
 
-  // Generate chart segments for donut chart
+  // Generate chart segments for donut chart (preserved original logic)
   const generateChartSegments = () => {
     if (projects.length === 0) return [];
 
     let cumulativePercentage = 0;
-    return projects.map(project => {
+    const displayProjects = showAllProjects ? projects : projects.slice(0, 10);
+    
+    return displayProjects.map(project => {
       const percentage = parseFloat(getPercentage(project.hours));
       const startAngle = cumulativePercentage * 3.6; // Convert to degrees
       const endAngle = (cumulativePercentage + percentage) * 3.6;
@@ -153,6 +239,15 @@ const ProjectsChart = () => {
   };
 
   const chartSegments = generateChartSegments();
+
+  // NEW: Handle view mode change
+  const handleViewModeChange = (mode) => {
+    if (mode === 'organization' && !canViewOrgData()) {
+      console.warn('📊 PROJECTS: User does not have permission for organization view');
+      return;
+    }
+    setViewMode(mode);
+  };
 
   if (loading) {
     return (
@@ -243,26 +338,84 @@ const ProjectsChart = () => {
       borderRadius: '8px', 
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)' 
     }}>
-      {/* Header */}
+      {/* Enhanced Header with View Mode Toggle */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '20px' 
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '10px'
       }}>
-        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>PROJECTS</h3>
-        <a href="/projects" style={{ 
-          fontSize: '14px', 
-          color: '#6B7280', 
-          textDecoration: 'none' 
-        }}>
-          Go to projects ↗
-        </a>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>PROJECTS</h3>
+          {/* NEW: View mode indicator */}
+          {viewMode === 'organization' && (
+            <p style={{ 
+              margin: '4px 0 0 0', 
+              fontSize: '12px', 
+              color: '#6b7280',
+              fontStyle: 'italic' 
+            }}>
+              Organization-wide view
+            </p>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          {/* NEW: View Mode Toggle for Admin Users */}
+          {canViewOrgData() && (
+            <div style={{ 
+              display: 'flex', 
+              gap: '6px'
+            }}>
+              <button
+                onClick={() => handleViewModeChange('personal')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '3px',
+                  backgroundColor: viewMode === 'personal' ? '#4F46E5' : 'white',
+                  color: viewMode === 'personal' ? 'white' : '#374151',
+                  cursor: 'pointer',
+                  fontWeight: viewMode === 'personal' ? 'bold' : 'normal'
+                }}
+              >
+                Personal
+              </button>
+              <button
+                onClick={() => handleViewModeChange('organization')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '3px',
+                  backgroundColor: viewMode === 'organization' ? '#4F46E5' : 'white',
+                  color: viewMode === 'organization' ? 'white' : '#374151',
+                  cursor: 'pointer',
+                  fontWeight: viewMode === 'organization' ? 'bold' : 'normal'
+                }}
+              >
+                Organization
+              </button>
+            </div>
+          )}
+
+          {/* Preserved original navigation link */}
+          <a href="/projects" style={{ 
+            fontSize: '14px', 
+            color: '#6B7280', 
+            textDecoration: 'none' 
+          }}>
+            Go to projects ↗
+          </a>
+        </div>
       </div>
 
-      {/* Content */}
+      {/* Content (preserved original layout) */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-        {/* FIXED: Properly sized donut chart */}
+        {/* FIXED: Properly sized donut chart (preserved original) */}
         <div style={{ 
           position: 'relative', 
           width: '120px', 
@@ -285,7 +438,7 @@ const ProjectsChart = () => {
               strokeWidth="12"
             />
             
-            {/* Project segments */}
+            {/* Project segments (preserved original logic) */}
             {chartSegments.map((project, index) => {
               const circumference = 2 * Math.PI * 45;
               const strokeDasharray = `${(project.percentage / 100) * circumference} ${circumference}`;
@@ -308,7 +461,7 @@ const ProjectsChart = () => {
             })}
           </svg>
           
-          {/* Center content */}
+          {/* Enhanced center content */}
           <div style={{
             position: 'absolute',
             top: '50%',
@@ -330,21 +483,54 @@ const ProjectsChart = () => {
             }}>
               {formatHours(totalHours)}
             </div>
+            {/* NEW: Show project count */}
+            <div style={{ 
+              fontSize: '10px', 
+              color: '#9CA3AF',
+              marginTop: '2px'
+            }}>
+              {projects.length} projects
+            </div>
           </div>
         </div>
 
-        {/* Projects List */}
+        {/* Enhanced Projects List */}
         <div style={{ flex: 1 }}>
-          <h4 style={{ 
-            margin: '0 0 12px 0', 
-            fontSize: '14px', 
-            fontWeight: '500', 
-            color: '#6B7280' 
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '12px'
           }}>
-            Top 10 projects
-          </h4>
+            <h4 style={{ 
+              margin: 0, 
+              fontSize: '14px', 
+              fontWeight: '500', 
+              color: '#6B7280' 
+            }}>
+              Top {showAllProjects ? projects.length : Math.min(projects.length, 5)} projects
+            </h4>
+            
+            {/* NEW: Show all toggle */}
+            {projects.length > 5 && (
+              <button
+                onClick={() => setShowAllProjects(!showAllProjects)}
+                style={{
+                  fontSize: '12px',
+                  color: '#4F46E5',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                {showAllProjects ? 'Show less' : `Show all ${projects.length}`}
+              </button>
+            )}
+          </div>
+          
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {projects.slice(0, 5).map((project, index) => (
+            {(showAllProjects ? projects : projects.slice(0, 5)).map((project, index) => (
               <div key={project.id} style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -366,6 +552,19 @@ const ProjectsChart = () => {
                   whiteSpace: 'nowrap'
                 }}>
                   {project.name}
+                  {/* NEW: Show additional info */}
+                  {(project.entries > 1 || (viewMode === 'organization' && project.userCount > 0)) && (
+                    <span style={{ 
+                      fontSize: '12px', 
+                      color: '#9CA3AF',
+                      marginLeft: '6px'
+                    }}>
+                      ({project.entries} entries
+                      {viewMode === 'organization' && project.userCount > 0 && 
+                        `, ${project.userCount} users`
+                      })
+                    </span>
+                  )}
                 </div>
                 <div style={{ 
                   fontSize: '12px', 
@@ -373,6 +572,16 @@ const ProjectsChart = () => {
                   flexShrink: 0
                 }}>
                   {formatHours(project.hours)}
+                </div>
+                {/* NEW: Show percentage */}
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#9CA3AF',
+                  flexShrink: 0,
+                  minWidth: '35px',
+                  textAlign: 'right'
+                }}>
+                  {getPercentage(project.hours)}%
                 </div>
               </div>
             ))}

@@ -1,37 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import { supabaseApi } from '../../supabaseClient';
+import { useAuth } from '../../hooks/useAuth';
 
 const WeeklyChart = () => {
+  const { user, canViewAllTimesheets, isPrivilegedUser } = useAuth();
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState('personal'); // 'personal' or 'organization'
 
   useEffect(() => {
     fetchWeeklyData();
-  }, []);
+  }, [user, viewMode]);
+
+  // Determine if user can see organization-wide data
+  const canViewOrgData = canViewAllTimesheets() || isPrivilegedUser() || user?.role === 'admin';
 
   const fetchWeeklyData = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      console.log('📊 WEEKLY CHART: Fetching weekly data...');
+      console.log('📊 WEEKLY CHART: View mode:', viewMode);
+      console.log('📊 WEEKLY CHART: Can view org data:', canViewOrgData);
+
       // Get current week dates
       const currentWeekDates = getCurrentWeekDates();
       
-      // Fetch timesheet data for current week
-      const timesheetData = await supabaseApi.getTimesheets({
-        start_date: currentWeekDates[0].toISOString().split('T')[0],
-        end_date: currentWeekDates[6].toISOString().split('T')[0]
-      });
+      // Determine which data to fetch based on view mode and permissions
+      let timesheetData;
+      if (viewMode === 'organization' && canViewOrgData) {
+        // Fetch organization-wide data
+        timesheetData = await supabaseApi.getTimesheets({
+          start_date: currentWeekDates[0].toISOString().split('T')[0],
+          end_date: currentWeekDates[6].toISOString().split('T')[0]
+        });
+        console.log('📊 WEEKLY CHART: Fetched org-wide data:', timesheetData?.length || 0, 'entries');
+      } else {
+        // Fetch personal data (original functionality)
+        timesheetData = await supabaseApi.getTimesheets({
+          start_date: currentWeekDates[0].toISOString().split('T')[0],
+          end_date: currentWeekDates[6].toISOString().split('T')[0],
+          user_id: user?.id
+        });
+        console.log('📊 WEEKLY CHART: Fetched personal data:', timesheetData?.length || 0, 'entries');
+      }
 
-      // Process data for chart
+      // Process data for chart (preserving original logic)
       const processedData = processWeeklyData(timesheetData, currentWeekDates);
       setChartData(processedData);
 
     } catch (error) {
       console.error('📊 WEEKLY CHART ERROR:', error);
       setError('Failed to load chart data');
-      // Set fallback data to show the chart structure
+      // Set fallback data to show the chart structure (preserving original fallback)
       setChartData(getFallbackData());
     } finally {
       setLoading(false);
@@ -93,13 +116,19 @@ const WeeklyChart = () => {
         return sum + (parseFloat(entry.daily_overtime_hours) || parseFloat(entry.overtime_hours) || 0);
       }, 0);
 
+      // NEW: Calculate unique users for organization view
+      const uniqueUsers = viewMode === 'organization' ? 
+        new Set(dayEntries.map(entry => entry.user_id)).size : 
+        (dayEntries.length > 0 ? 1 : 0);
+
       return {
         day: dayNames[index],
         date: date,
         workedHours: Math.round(workedHours * 10) / 10,
         breakTime: Math.round(breakTime * 10) / 10,
         overtimeHours: Math.round(overtimeHours * 10) / 10,
-        entries: dayEntries.length
+        entries: dayEntries.length,
+        uniqueUsers: uniqueUsers // NEW: Track unique users
       };
     });
   };
@@ -114,7 +143,8 @@ const WeeklyChart = () => {
       workedHours: index === 2 ? 3.5 : 0, // Show 3.5h on Tuesday
       breakTime: 0,
       overtimeHours: index === 2 ? 3.5 : 0, // Show 3.5h overtime on Tuesday
-      entries: index === 2 ? 1 : 0
+      entries: index === 2 ? 1 : 0,
+      uniqueUsers: index === 2 ? 1 : 0 // NEW: Fallback unique users
     }));
   };
 
@@ -131,6 +161,30 @@ const WeeklyChart = () => {
       ...chartData.map(day => day.workedHours + day.overtimeHours),
       8 // Minimum scale of 8 hours
     );
+  };
+
+  // NEW: Get organization stats
+  const getOrgStats = () => {
+    if (viewMode !== 'organization') return null;
+    
+    const totalUsers = Math.max(...chartData.map(day => day.uniqueUsers));
+    const totalEntries = chartData.reduce((sum, day) => sum + day.entries, 0);
+    const avgHoursPerUser = totalUsers > 0 ? 
+      getTotalHours().worked / totalUsers : 0;
+
+    return {
+      totalUsers,
+      totalEntries,
+      avgHoursPerUser: Math.round(avgHoursPerUser * 10) / 10
+    };
+  };
+
+  const handleViewModeChange = (mode) => {
+    if (mode === 'organization' && !canViewOrgData) {
+      console.warn('📊 WEEKLY CHART: User does not have permission for organization view');
+      return;
+    }
+    setViewMode(mode);
   };
 
   if (loading) {
@@ -152,6 +206,7 @@ const WeeklyChart = () => {
 
   const totals = getTotalHours();
   const maxHours = getMaxHours();
+  const orgStats = getOrgStats();
 
   return (
     <div style={{ 
@@ -161,50 +216,105 @@ const WeeklyChart = () => {
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       fontFamily: 'Arial, sans-serif'
     }}>
-      {/* Header */}
+      {/* Header with View Mode Toggle */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
         marginBottom: '20px' 
       }}>
-        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>
-          Tracked Hours This Week
-        </h3>
-        
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: '20px', fontSize: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>
+            Tracked Hours This Week
+          </h3>
+          {/* NEW: View mode indicator */}
+          {viewMode === 'organization' && (
+            <p style={{ 
+              margin: '4px 0 0 0', 
+              fontSize: '14px', 
+              color: '#6b7280',
+              fontStyle: 'italic' 
+            }}>
+              Organization-wide view • {orgStats?.totalUsers || 0} users
+            </p>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          {/* NEW: View Mode Toggle for Admin Users */}
+          {canViewOrgData && (
             <div style={{ 
-              width: '12px', 
-              height: '12px', 
-              backgroundColor: '#3b82f6', 
-              borderRadius: '50%' 
-            }}></div>
-            <span>Worked Hours</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ 
-              width: '12px', 
-              height: '12px', 
-              backgroundColor: '#10b981', 
-              borderRadius: '50%' 
-            }}></div>
-            <span>Break Time</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ 
-              width: '12px', 
-              height: '12px', 
-              backgroundColor: '#f59e0b', 
-              borderRadius: '50%' 
-            }}></div>
-            <span>Overtime</span>
+              display: 'flex', 
+              gap: '8px',
+              marginRight: '20px'
+            }}>
+              <button
+                onClick={() => handleViewModeChange('personal')}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  backgroundColor: viewMode === 'personal' ? '#3b82f6' : 'white',
+                  color: viewMode === 'personal' ? 'white' : '#374151',
+                  cursor: 'pointer',
+                  fontWeight: viewMode === 'personal' ? 'bold' : 'normal'
+                }}
+              >
+                Personal
+              </button>
+              <button
+                onClick={() => handleViewModeChange('organization')}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  backgroundColor: viewMode === 'organization' ? '#3b82f6' : 'white',
+                  color: viewMode === 'organization' ? 'white' : '#374151',
+                  cursor: 'pointer',
+                  fontWeight: viewMode === 'organization' ? 'bold' : 'normal'
+                }}
+              >
+                Organization
+              </button>
+            </div>
+          )}
+
+          {/* Legend (preserved original) */}
+          <div style={{ display: 'flex', gap: '20px', fontSize: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <div style={{ 
+                width: '12px', 
+                height: '12px', 
+                backgroundColor: '#3b82f6', 
+                borderRadius: '50%' 
+              }}></div>
+              <span>Worked Hours</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <div style={{ 
+                width: '12px', 
+                height: '12px', 
+                backgroundColor: '#10b981', 
+                borderRadius: '50%' 
+              }}></div>
+              <span>Break Time</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <div style={{ 
+                width: '12px', 
+                height: '12px', 
+                backgroundColor: '#f59e0b', 
+                borderRadius: '50%' 
+              }}></div>
+              <span>Overtime</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Chart */}
+      {/* Chart (preserved original with enhancements) */}
       <div style={{ 
         display: 'flex', 
         alignItems: 'flex-end', 
@@ -263,7 +373,7 @@ const WeeklyChart = () => {
                       fontSize: '10px',
                       fontWeight: 'bold'
                     }}
-                    title={`Worked: ${dayData.workedHours}h`}
+                    title={`Worked: ${dayData.workedHours}h${viewMode === 'organization' ? ` (${dayData.uniqueUsers} users)` : ''}`}
                   >
                     {dayData.workedHours > 0 && dayData.workedHours}
                   </div>
@@ -286,7 +396,7 @@ const WeeklyChart = () => {
                       fontWeight: 'bold',
                       marginTop: dayData.workedHours > 0 ? '1px' : '0'
                     }}
-                    title={`Overtime: ${dayData.overtimeHours}h`}
+                    title={`Overtime: ${dayData.overtimeHours}h${viewMode === 'organization' ? ` (${dayData.uniqueUsers} users)` : ''}`}
                   >
                     {dayData.overtimeHours > 0 && `OT: ${dayData.overtimeHours}`}
                   </div>
@@ -302,12 +412,12 @@ const WeeklyChart = () => {
                       borderRadius: '0 0 4px 4px',
                       marginTop: '1px'
                     }}
-                    title={`Break: ${dayData.breakTime}h`}
+                    title={`Break: ${dayData.breakTime}h${viewMode === 'organization' ? ` (${dayData.uniqueUsers} users)` : ''}`}
                   />
                 )}
               </div>
 
-              {/* Hours text */}
+              {/* Hours text with user count for org view */}
               <div style={{ 
                 fontSize: '12px', 
                 color: '#6b7280',
@@ -320,20 +430,28 @@ const WeeklyChart = () => {
                     OT: {dayData.overtimeHours}h
                   </div>
                 )}
+                {/* NEW: Show user count in organization view */}
+                {viewMode === 'organization' && dayData.uniqueUsers > 0 && (
+                  <div style={{ fontSize: '10px', color: '#6b7280' }}>
+                    {dayData.uniqueUsers} user{dayData.uniqueUsers !== 1 ? 's' : ''}
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Summary */}
+      {/* Summary (enhanced with organization stats) */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between',
         fontSize: '14px',
         color: '#374151',
         borderTop: '1px solid #e5e7eb',
-        paddingTop: '15px'
+        paddingTop: '15px',
+        flexWrap: 'wrap',
+        gap: '10px'
       }}>
         <div>
           <strong>Total Worked: {totals.worked.toFixed(1)}h</strong>
@@ -344,6 +462,18 @@ const WeeklyChart = () => {
         <div style={{ color: '#f59e0b' }}>
           <strong>Total Overtime: {totals.overtime.toFixed(1)}h</strong>
         </div>
+        
+        {/* NEW: Organization stats */}
+        {orgStats && (
+          <>
+            <div style={{ color: '#6b7280' }}>
+              Active Users: {orgStats.totalUsers}
+            </div>
+            <div style={{ color: '#6b7280' }}>
+              Avg per User: {orgStats.avgHoursPerUser}h
+            </div>
+          </>
+        )}
       </div>
 
       {error && (
