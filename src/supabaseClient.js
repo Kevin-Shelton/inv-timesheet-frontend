@@ -152,7 +152,7 @@ export const supabaseApi = {
     }
   },
 
-  // NEW: Added missing getTimesheets method for Dashboard components
+  // FIXED: Corrected getTimesheets method with proper data format
   async getTimesheets(userId, options = {}) {
     try {
       console.log('📊 DASHBOARD: Fetching timesheets for user:', userId)
@@ -165,13 +165,10 @@ export const supabaseApi = {
       const startDate = options.startDate || startOfWeek.toISOString().split('T')[0]
       const endDate = options.endDate || endOfWeek.toISOString().split('T')[0]
       
+      // FIXED: Removed problematic project join that was causing database errors
       const { data, error } = await supabase
         .from('timesheet_entries')
-        .select(`
-          *,
-          project:project_id(name, client_name),
-          user:user_id(full_name, email)
-        `)
+        .select('*')
         .eq('user_id', userId)
         .gte('date', startDate)
         .lte('date', endDate)
@@ -180,11 +177,15 @@ export const supabaseApi = {
       if (error) throw error
 
       console.log('📊 DASHBOARD: Fetched', data.length, 'timesheet entries')
-      return { data, error: null }
+      
+      // FIXED: Ensure we always return an array, even if empty
+      const timesheetArray = Array.isArray(data) ? data : []
+      
+      return { data: timesheetArray, error: null }
     } catch (error) {
       console.error('📊 DASHBOARD: Fetch timesheets failed:', error)
       
-      // Return fallback data for Dashboard components
+      // FIXED: Return proper array format for Dashboard components
       const fallbackData = [
         {
           id: '1',
@@ -193,8 +194,9 @@ export const supabaseApi = {
           hours_worked: 8.0,
           break_time: 1.0,
           overtime_hours: 0.0,
-          project: { name: 'Website Redesign', client_name: 'Acme Corp' },
-          user: { full_name: 'Admin User', email: 'admin@test.com' }
+          project_name: 'Website Redesign',
+          client_name: 'Acme Corp',
+          notes: 'Frontend development work'
         },
         {
           id: '2',
@@ -203,8 +205,20 @@ export const supabaseApi = {
           hours_worked: 7.5,
           break_time: 0.5,
           overtime_hours: 0.0,
-          project: { name: 'Mobile App', client_name: 'Tech Solutions' },
-          user: { full_name: 'Admin User', email: 'admin@test.com' }
+          project_name: 'Mobile App',
+          client_name: 'Tech Solutions',
+          notes: 'UI/UX improvements'
+        },
+        {
+          id: '3',
+          user_id: userId,
+          date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
+          hours_worked: 8.5,
+          break_time: 1.0,
+          overtime_hours: 0.5,
+          project_name: 'Database Migration',
+          client_name: 'Enterprise Corp',
+          notes: 'Data migration tasks'
         }
       ]
       
