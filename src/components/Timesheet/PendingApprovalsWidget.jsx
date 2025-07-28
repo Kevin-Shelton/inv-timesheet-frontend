@@ -1,241 +1,129 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient.js';
+import { supabaseApi } from '../../supabaseClient.js';
 import { useAuth } from '../../hooks/useAuth';
 
-const PendingApprovalsWidget = ({ onApprovalAction }) => {
-  const { user, isAdmin, isManager } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [pendingData, setPendingData] = useState({
+const PendingApprovalsWidget = () => {
+  const { user, canApproveTimesheets } = useAuth();
+  const [approvalStats, setApprovalStats] = useState({
     totalPending: 0,
     totalHours: 0,
-    byStatus: {},
-    recentEntries: [],
-    byUser: {}
+    oldestSubmission: null
   });
-  const [expanded, setExpanded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (user && (isAdmin() || isManager())) {
-      fetchPendingApprovals();
+    if (canApproveTimesheets()) {
+      fetchApprovalStats();
+      // Refresh every 30 seconds
+      const interval = setInterval(fetchApprovalStats, 30000);
+      return () => clearInterval(interval);
     }
   }, [user]);
 
-  const fetchPendingApprovals = async () => {
-    if (!user || (!isAdmin() && !isManager())) return;
-
+  const fetchApprovalStats = async () => {
     try {
-      setLoading(true);
       setError(null);
+      console.log('📊 PENDING APPROVALS: Fetching stats...');
 
-      console.log('📋 PENDING APPROVALS: Fetching data for role:', user.role);
-
-      let query = supabase
+      // FIXED: Use direct query instead of RPC to avoid recursion issues
+      const { data: entries, error: fetchError } = await supabaseApi.supabase
         .from('timesheet_entries')
         .select(`
           id,
           user_id,
-          date,
           hours_worked,
-          status,
+          total_hours,
+          submitted_at,
           created_at,
-          created_by_admin,
-          admin_user_id,
-          users!inner(
+          status,
+          users!timesheet_entries_user_id_fkey (
             id,
-            full_name,
-            email,
-            department,
-            manager_id
+            manager_id,
+            role
           )
         `)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+        .in('status', ['pending', 'submitted']);
 
-      // Apply role-based filtering
-      if (isAdmin()) {
-        console.log('📋 PENDING APPROVALS: Admin view - all pending entries');
-        // Admins see all pending entries
-      } else if (isManager()) {
-        console.log('📋 PENDING APPROVALS: Manager view - team pending entries');
-        // Managers see their direct reports' pending entries + their own
-        query = query.or(`user_id.eq.${user.id},users.manager_id.eq.${user.id}`);
+      if (fetchError) {
+        console.error('📊 PENDING APPROVALS: Fetch error:', fetchError);
+        throw new Error(`Failed to fetch approval stats: ${fetchError.message}`);
       }
 
-      const { data: pendingEntries, error: fetchError } = await query;
-
-      if (fetchError) throw fetchError;
-
-      console.log('📋 PENDING APPROVALS: Fetched entries:', pendingEntries?.length);
-
-      if (!pendingEntries || pendingEntries.length === 0) {
-        setPendingData({
-          totalPending: 0,
-          totalHours: 0,
-          byStatus: {},
-          recentEntries: [],
-          byUser: {}
-        });
-        return;
+      // FIXED: Filter based on user permissions without causing RLS recursion
+      let filteredEntries = entries || [];
+      
+      if (user?.role !== 'admin') {
+        // For non-admin users, only show entries from their direct reports
+        filteredEntries = filteredEntries.filter(entry => 
+          entry.users?.manager_id === user?.id
+        );
       }
 
       // Calculate statistics
-      const totalPending = pendingEntries.length;
-      const totalHours = pendingEntries.reduce((sum, entry) => 
-        sum + (parseFloat(entry.hours_worked) || 0), 0);
+      const totalPending = filteredEntries.length;
+      const totalHours = filteredEntries.reduce((sum, entry) => {
+        return sum + (entry.hours_worked || entry.total_hours || 0);
+      }, 0);
 
-      // Group by status (should all be pending, but good for future expansion)
-      const byStatus = pendingEntries.reduce((acc, entry) => {
-        acc[entry.status] = (acc[entry.status] || 0) + 1;
-        return acc;
-      }, {});
+      // Find oldest submission
+      const oldestSubmission = filteredEntries.length > 0 
+        ? filteredEntries.reduce((oldest, entry) => {
+            const submissionDate = new Date(entry.submitted_at || entry.created_at);
+            return !oldest || submissionDate < oldest ? submissionDate : oldest;
+          }, null)
+        : null;
 
-      // Group by user for summary
-      const byUser = pendingEntries.reduce((acc, entry) => {
-        const userId = entry.user_id;
-        const userName = entry.users?.full_name || 'Unknown User';
-        
-        if (!acc[userId]) {
-          acc[userId] = {
-            name: userName,
-            email: entry.users?.email,
-            department: entry.users?.department,
-            count: 0,
-            hours: 0,
-            entries: []
-          };
-        }
-        
-        acc[userId].count += 1;
-        acc[userId].hours += parseFloat(entry.hours_worked) || 0;
-        acc[userId].entries.push(entry);
-        
-        return acc;
-      }, {});
-
-      // Get recent entries (last 10)
-      const recentEntries = pendingEntries.slice(0, 10);
-
-      const newPendingData = {
+      setApprovalStats({
         totalPending,
         totalHours,
-        byStatus,
-        recentEntries,
-        byUser
-      };
+        oldestSubmission
+      });
 
-      setPendingData(newPendingData);
-      console.log('📋 PENDING APPROVALS: Data processed:', newPendingData);
+      console.log('📊 PENDING APPROVALS: Stats updated:', { totalPending, totalHours });
 
     } catch (error) {
-      console.error('📋 PENDING APPROVALS ERROR:', error);
-      setError(`Failed to load pending approvals: ${error.message}`);
+      console.error('📊 PENDING APPROVALS: Failed to fetch stats:', error);
+      setError(error.message);
+      setApprovalStats({
+        totalPending: 0,
+        totalHours: 0,
+        oldestSubmission: null
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprovalAction = async (entryId, action, reason = '') => {
-    try {
-      console.log(`📋 PENDING APPROVALS: ${action.toUpperCase()} entry:`, entryId);
-
-      const updateData = {
-        status: action, // 'approved' or 'rejected'
-        approved_by: user.id,
-        approved_at: new Date().toISOString(),
-        approval_reason: reason || null,
-        updated_at: new Date().toISOString()
-      };
-
-      const { error: updateError } = await supabase
-        .from('timesheet_entries')
-        .update(updateData)
-        .eq('id', entryId);
-
-      if (updateError) throw updateError;
-
-      // Log the approval action for audit
-      await logApprovalAction(entryId, action, reason);
-
-      // Refresh the pending approvals data
-      await fetchPendingApprovals();
-
-      // Notify parent component
-      onApprovalAction && onApprovalAction({
-        entryId,
-        action,
-        reason,
-        success: true
-      });
-
-      console.log(`📋 PENDING APPROVALS: ${action.toUpperCase()} successful`);
-
-    } catch (error) {
-      console.error(`📋 PENDING APPROVALS ${action.toUpperCase()} ERROR:`, error);
-      
-      // Notify parent component of error
-      onApprovalAction && onApprovalAction({
-        entryId,
-        action,
-        reason,
-        success: false,
-        error: error.message
-      });
-    }
-  };
-
-  const logApprovalAction = async (entryId, action, reason) => {
-    try {
-      const auditEntry = {
-        admin_user_id: user.id,
-        action: `timesheet_${action}`,
-        timesheet_entry_id: entryId,
-        details: {
-          action,
-          reason: reason || null,
-          timestamp: new Date().toISOString()
-        },
-        timestamp: new Date().toISOString()
-      };
-
-      const { error: auditError } = await supabase
-        .from('admin_audit_log')
-        .insert([auditEntry]);
-
-      if (auditError) {
-        console.error('📋 AUDIT LOG ERROR:', auditError);
-        // Don't fail the main operation if audit logging fails
-      } else {
-        console.log('📋 AUDIT LOG: Approval action logged');
-      }
-    } catch (error) {
-      console.error('📋 AUDIT LOG ERROR:', error);
-    }
-  };
-
   const formatHours = (hours) => {
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    return `${h}h ${m}m`;
+    const h = Math.floor(hours || 0);
+    const m = Math.round(((hours || 0) - h) * 60);
+    return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}` : `${m}m`;
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
+  const formatTimeAgo = (date) => {
+    if (!date) return 'N/A';
+    
+    const now = new Date();
+    const diffMs = now - new Date(date);
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+    if (diffDays > 0) {
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    } else if (diffHours > 0) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else if (diffMinutes > 0) {
+      return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+    } else {
+      return 'Just now';
+    }
   };
 
-  const getUrgencyClass = (createdAt) => {
-    const daysSinceCreated = (new Date() - new Date(createdAt)) / (1000 * 60 * 60 * 24);
-    if (daysSinceCreated > 7) return 'urgent';
-    if (daysSinceCreated > 3) return 'warning';
-    return 'normal';
-  };
-
-  if (!user || (!isAdmin() && !isManager())) {
-    return null; // Don't show for regular employees
+  // Don't show widget if user can't approve timesheets
+  if (!canApproveTimesheets()) {
+    return null;
   }
 
   if (loading) {
@@ -244,9 +132,9 @@ const PendingApprovalsWidget = ({ onApprovalAction }) => {
         <div className="widget-header">
           <h3>Pending Approvals</h3>
         </div>
-        <div className="widget-loading">
+        <div className="widget-content">
           <div className="loading-spinner"></div>
-          <span>Loading pending approvals...</span>
+          <p>Loading...</p>
         </div>
       </div>
     );
@@ -258,10 +146,9 @@ const PendingApprovalsWidget = ({ onApprovalAction }) => {
         <div className="widget-header">
           <h3>Pending Approvals</h3>
         </div>
-        <div className="widget-error">
-          <span className="error-icon">⚠️</span>
-          <p>{error}</p>
-          <button onClick={fetchPendingApprovals} className="retry-button">
+        <div className="widget-content error">
+          <p>Error loading approvals</p>
+          <button onClick={fetchApprovalStats} className="retry-button">
             Retry
           </button>
         </div>
@@ -273,154 +160,193 @@ const PendingApprovalsWidget = ({ onApprovalAction }) => {
     <div className="pending-approvals-widget">
       <div className="widget-header">
         <h3>Pending Approvals</h3>
-        <div className="header-actions">
-          <button 
-            onClick={() => setExpanded(!expanded)}
-            className="expand-button"
-          >
-            {expanded ? '▼' : '▶'}
-          </button>
-          <button onClick={fetchPendingApprovals} className="refresh-button">
-            🔄
-          </button>
-        </div>
+        <button onClick={fetchApprovalStats} className="refresh-button" title="Refresh">
+          🔄
+        </button>
       </div>
-
-      {/* Summary Stats */}
-      <div className="approval-summary">
-        <div className="summary-stat">
-          <span className="stat-number">{pendingData.totalPending}</span>
-          <span className="stat-label">Pending Entries</span>
-        </div>
-        <div className="summary-stat">
-          <span className="stat-number">{formatHours(pendingData.totalHours)}</span>
-          <span className="stat-label">Total Hours</span>
-        </div>
-        <div className="summary-stat">
-          <span className="stat-number">{Object.keys(pendingData.byUser).length}</span>
-          <span className="stat-label">Team Members</span>
-        </div>
-      </div>
-
-      {pendingData.totalPending === 0 ? (
-        <div className="no-pending">
-          <div className="no-pending-icon">✅</div>
-          <p>No pending approvals</p>
-          <small>All timesheets are up to date!</small>
-        </div>
-      ) : (
-        <>
-          {/* User Summary */}
-          {!expanded && Object.keys(pendingData.byUser).length > 0 && (
-            <div className="user-summary">
-              <h4>By Team Member:</h4>
-              <div className="user-summary-list">
-                {Object.entries(pendingData.byUser).slice(0, 5).map(([userId, userData]) => (
-                  <div key={userId} className="user-summary-item">
-                    <div className="user-info">
-                      <span className="user-name">{userData.name}</span>
-                      <span className="user-department">{userData.department}</span>
-                    </div>
-                    <div className="user-stats">
-                      <span className="entry-count">{userData.count} entries</span>
-                      <span className="hours-total">{formatHours(userData.hours)}</span>
-                    </div>
-                  </div>
-                ))}
-                {Object.keys(pendingData.byUser).length > 5 && (
-                  <div className="more-users">
-                    +{Object.keys(pendingData.byUser).length - 5} more users
-                  </div>
-                )}
+      
+      <div className="widget-content">
+        {approvalStats.totalPending === 0 ? (
+          <div className="no-approvals">
+            <p>✅ No pending approvals</p>
+          </div>
+        ) : (
+          <div className="approval-stats">
+            <div className="stat-item primary">
+              <div className="stat-number">{approvalStats.totalPending}</div>
+              <div className="stat-label">
+                {approvalStats.totalPending === 1 ? 'Entry' : 'Entries'} Pending
               </div>
             </div>
-          )}
-
-          {/* Expanded View */}
-          {expanded && (
-            <div className="expanded-approvals">
-              <h4>Recent Pending Entries:</h4>
-              <div className="pending-entries-list">
-                {pendingData.recentEntries.map((entry) => (
-                  <div 
-                    key={entry.id} 
-                    className={`pending-entry ${getUrgencyClass(entry.created_at)}`}
-                  >
-                    <div className="entry-info">
-                      <div className="entry-header">
-                        <span className="user-name">{entry.users?.full_name}</span>
-                        <span className="entry-date">{formatDate(entry.date)}</span>
-                        <span className="entry-hours">{formatHours(entry.hours_worked)}</span>
-                      </div>
-                      <div className="entry-details">
-                        <span className="department">{entry.users?.department}</span>
-                        {entry.created_by_admin && (
-                          <span className="admin-created">Admin Created</span>
-                        )}
-                        <span className="created-date">
-                          Submitted {formatDate(entry.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="entry-actions">
-                      <button 
-                        onClick={() => handleApprovalAction(entry.id, 'approved')}
-                        className="approve-button"
-                        title="Approve"
-                      >
-                        ✓
-                      </button>
-                      <button 
-                        onClick={() => {
-                          const reason = prompt('Reason for rejection (optional):');
-                          if (reason !== null) { // User didn't cancel
-                            handleApprovalAction(entry.id, 'rejected', reason);
-                          }
-                        }}
-                        className="reject-button"
-                        title="Reject"
-                      >
-                        ✗
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            
+            <div className="stat-item">
+              <div className="stat-number">{formatHours(approvalStats.totalHours)}</div>
+              <div className="stat-label">Total Hours</div>
             </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className="quick-actions">
-            <button 
-              onClick={() => setExpanded(!expanded)}
-              className="view-all-button"
-            >
-              {expanded ? 'Show Less' : 'View All Pending'}
-            </button>
-            {pendingData.totalPending > 0 && (
-              <button 
-                onClick={() => {
-                  if (confirm(`Approve all ${pendingData.totalPending} pending entries?`)) {
-                    // Bulk approve functionality could be added here
-                    console.log('Bulk approve requested');
-                  }
-                }}
-                className="bulk-approve-button"
-              >
-                Bulk Approve All
-              </button>
+            
+            {approvalStats.oldestSubmission && (
+              <div className="stat-item">
+                <div className="stat-number">{formatTimeAgo(approvalStats.oldestSubmission)}</div>
+                <div className="stat-label">Oldest Pending</div>
+              </div>
             )}
           </div>
-        </>
-      )}
-
-      {/* Widget Footer */}
-      <div className="widget-footer">
-        <small>
-          Showing {isAdmin() ? 'organization' : 'team'} pending approvals
-          • Last updated: {new Date().toLocaleTimeString()}
-        </small>
+        )}
+        
+        {approvalStats.totalPending > 0 && (
+          <div className="widget-actions">
+            <button 
+              onClick={() => {
+                // This would typically navigate to the approval system
+                // For now, just refresh the data
+                fetchApprovalStats();
+              }}
+              className="view-approvals-button"
+            >
+              View All Approvals
+            </button>
+          </div>
+        )}
       </div>
+      
+      <style jsx>{`
+        .pending-approvals-widget {
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
+        }
+        
+        .widget-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 20px;
+          background: #f8f9fa;
+          border-bottom: 1px solid #e9ecef;
+        }
+        
+        .widget-header h3 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #495057;
+        }
+        
+        .refresh-button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+        
+        .refresh-button:hover {
+          background: #e9ecef;
+        }
+        
+        .widget-content {
+          padding: 20px;
+        }
+        
+        .widget-content.error {
+          text-align: center;
+          color: #dc3545;
+        }
+        
+        .loading-spinner {
+          width: 20px;
+          height: 20px;
+          border: 2px solid #f3f3f3;
+          border-top: 2px solid #007bff;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .no-approvals {
+          text-align: center;
+          color: #28a745;
+          font-weight: 500;
+        }
+        
+        .approval-stats {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        
+        .stat-item {
+          text-align: center;
+          padding: 12px;
+          border-radius: 6px;
+          background: #f8f9fa;
+        }
+        
+        .stat-item.primary {
+          background: #e3f2fd;
+          border: 1px solid #bbdefb;
+        }
+        
+        .stat-number {
+          font-size: 24px;
+          font-weight: bold;
+          color: #495057;
+          margin-bottom: 4px;
+        }
+        
+        .stat-item.primary .stat-number {
+          color: #1976d2;
+        }
+        
+        .stat-label {
+          font-size: 12px;
+          color: #6c757d;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        .widget-actions {
+          margin-top: 16px;
+          text-align: center;
+        }
+        
+        .view-approvals-button {
+          background: #007bff;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: background-color 0.2s;
+        }
+        
+        .view-approvals-button:hover {
+          background: #0056b3;
+        }
+        
+        .retry-button {
+          background: #dc3545;
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+          margin-top: 8px;
+        }
+        
+        .retry-button:hover {
+          background: #c82333;
+        }
+      `}</style>
     </div>
   );
 };
