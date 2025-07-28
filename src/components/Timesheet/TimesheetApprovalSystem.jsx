@@ -4,22 +4,15 @@ import { useAuth } from '../../hooks/useAuth';
 import './TimesheetApprovalSystem.css';
 
 const TimesheetApprovalSystem = () => {
-  const { user, canApproveTimesheets } = useAuth();
+  const { user } = useAuth();
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [processingIds, setProcessingIds] = useState(new Set());
-  const [filters, setFilters] = useState({
-    dateRange: 'all',
-    employee: 'all',
-    sortBy: 'oldest'
-  });
 
   useEffect(() => {
-    if (canApproveTimesheets()) {
-      fetchPendingApprovals();
-    }
-  }, [user, filters]);
+    fetchPendingApprovals();
+  }, []);
 
   const fetchPendingApprovals = async () => {
     try {
@@ -28,78 +21,17 @@ const TimesheetApprovalSystem = () => {
 
       console.log('📋 APPROVALS: Fetching pending approvals...');
 
-      // FIXED: Use direct Supabase query instead of supabaseApi to avoid RLS issues
-      const { data: entries, error: fetchError } = await supabaseApi.supabase
-        .from('timesheet_entries')
-        .select(`
-          id,
-          user_id,
-          date,
-          hours_worked,
-          total_hours,
-          regular_hours,
-          description,
-          status,
-          submitted_at,
-          submitted_by,
-          created_at,
-          users!timesheet_entries_user_id_fkey (
-            id,
-            full_name,
-            email,
-            department,
-            manager_id
-          )
-        `)
-        .in('status', ['pending', 'submitted'])
-        .order('submitted_at', { ascending: filters.sortBy === 'oldest' });
+      // SIMPLIFIED: Use the simple function we created
+      const { data, error: fetchError } = await supabaseApi.supabase
+        .rpc('get_pending_approvals_simple');
 
       if (fetchError) {
         console.error('📋 APPROVALS: Fetch error:', fetchError);
         throw new Error(`Failed to fetch pending approvals: ${fetchError.message}`);
       }
 
-      // FIXED: Filter based on user permissions without causing RLS recursion
-      let filteredEntries = entries || [];
-      
-      if (user?.role !== 'admin') {
-        // For non-admin users, only show entries from their direct reports
-        filteredEntries = filteredEntries.filter(entry => 
-          entry.users?.manager_id === user?.id
-        );
-      }
-
-      // Apply additional filters
-      if (filters.employee !== 'all') {
-        filteredEntries = filteredEntries.filter(entry => 
-          entry.user_id === filters.employee
-        );
-      }
-
-      if (filters.dateRange !== 'all') {
-        const now = new Date();
-        let cutoffDate;
-        
-        switch (filters.dateRange) {
-          case 'week':
-            cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            break;
-          case 'month':
-            cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            break;
-          default:
-            cutoffDate = null;
-        }
-        
-        if (cutoffDate) {
-          filteredEntries = filteredEntries.filter(entry => 
-            new Date(entry.date) >= cutoffDate
-          );
-        }
-      }
-
-      setPendingApprovals(filteredEntries);
-      console.log('📋 APPROVALS: Fetched entries:', filteredEntries.length);
+      setPendingApprovals(data || []);
+      console.log('📋 APPROVALS: Fetched entries:', data?.length || 0);
 
     } catch (error) {
       console.error('📋 APPROVALS: Fetch pending approvals failed:', error);
@@ -112,20 +44,19 @@ const TimesheetApprovalSystem = () => {
 
   const approveTimesheet = async (entryId) => {
     try {
-      // FIXED: Validate UUID format before processing
-      if (!entryId || typeof entryId !== 'string' || !isValidUUID(entryId)) {
-        throw new Error(`Invalid entry ID format: ${entryId}`);
+      // SIMPLIFIED: Just validate it's a string, don't worry about UUID format for now
+      if (!entryId || typeof entryId !== 'string') {
+        throw new Error(`Invalid entry ID: ${entryId}`);
       }
 
       setProcessingIds(prev => new Set([...prev, entryId]));
       console.log('✅ APPROVALS: Approving timesheet:', entryId);
 
-      // FIXED: Use the helper function we created
+      // SIMPLIFIED: Use the simple approval function
       const { data, error } = await supabaseApi.supabase
-        .rpc('approve_timesheet_entry', {
+        .rpc('approve_timesheet_entry_simple', {
           p_entry_id: entryId,
-          p_approved_by: user.id,
-          p_notes: 'Approved via admin dashboard'
+          p_approved_by: user.id
         });
 
       if (error) {
@@ -133,21 +64,8 @@ const TimesheetApprovalSystem = () => {
         throw new Error(`Failed to approve timesheet: ${error.message}`);
       }
 
-      // Create audit log entry
-      try {
-        await supabaseApi.supabase
-          .rpc('create_audit_log_enhanced', {
-            p_acting_admin_id: user.id,
-            p_acting_admin_name: user.full_name || user.email,
-            p_target_user_id: pendingApprovals.find(entry => entry.id === entryId)?.user_id,
-            p_action_type: 'timesheet_approved',
-            p_action_description: 'Timesheet entry approved',
-            p_affected_table: 'timesheet_entries',
-            p_affected_record_id: entryId
-          });
-      } catch (auditError) {
-        console.warn('Audit log creation failed:', auditError);
-        // Don't fail the approval if audit logging fails
+      if (!data) {
+        throw new Error('Timesheet entry not found or could not be approved');
       }
 
       // Refresh the list
@@ -169,9 +87,9 @@ const TimesheetApprovalSystem = () => {
 
   const rejectTimesheet = async (entryId, reason) => {
     try {
-      // FIXED: Validate UUID format before processing
-      if (!entryId || typeof entryId !== 'string' || !isValidUUID(entryId)) {
-        throw new Error(`Invalid entry ID format: ${entryId}`);
+      // SIMPLIFIED: Just validate it's a string
+      if (!entryId || typeof entryId !== 'string') {
+        throw new Error(`Invalid entry ID: ${entryId}`);
       }
 
       if (!reason || reason.trim().length === 0) {
@@ -181,9 +99,9 @@ const TimesheetApprovalSystem = () => {
       setProcessingIds(prev => new Set([...prev, entryId]));
       console.log('❌ APPROVALS: Rejecting timesheet:', entryId);
 
-      // FIXED: Use the helper function we created
+      // SIMPLIFIED: Use the simple rejection function
       const { data, error } = await supabaseApi.supabase
-        .rpc('reject_timesheet_entry', {
+        .rpc('reject_timesheet_entry_simple', {
           p_entry_id: entryId,
           p_rejected_by: user.id,
           p_rejection_reason: reason.trim()
@@ -194,21 +112,8 @@ const TimesheetApprovalSystem = () => {
         throw new Error(`Failed to reject timesheet: ${error.message}`);
       }
 
-      // Create audit log entry
-      try {
-        await supabaseApi.supabase
-          .rpc('create_audit_log_enhanced', {
-            p_acting_admin_id: user.id,
-            p_acting_admin_name: user.full_name || user.email,
-            p_target_user_id: pendingApprovals.find(entry => entry.id === entryId)?.user_id,
-            p_action_type: 'timesheet_rejected',
-            p_action_description: `Timesheet entry rejected: ${reason}`,
-            p_affected_table: 'timesheet_entries',
-            p_affected_record_id: entryId
-          });
-      } catch (auditError) {
-        console.warn('Audit log creation failed:', auditError);
-        // Don't fail the rejection if audit logging fails
+      if (!data) {
+        throw new Error('Timesheet entry not found or could not be rejected');
       }
 
       // Refresh the list
@@ -226,12 +131,6 @@ const TimesheetApprovalSystem = () => {
         return newSet;
       });
     }
-  };
-
-  // FIXED: Add UUID validation function
-  const isValidUUID = (str) => {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(str);
   };
 
   const formatDate = (dateString) => {
@@ -256,8 +155,8 @@ const TimesheetApprovalSystem = () => {
     }
   };
 
-  // Check permissions
-  if (!canApproveTimesheets()) {
+  // SIMPLIFIED: Basic permission check
+  if (!user || !['admin', 'campaign_lead', 'manager'].includes(user.role)) {
     return (
       <div className="approval-system">
         <div className="approval-header">
@@ -315,25 +214,6 @@ const TimesheetApprovalSystem = () => {
       </div>
 
       <div className="approval-filters">
-        <select 
-          value={filters.dateRange} 
-          onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
-          className="filter-select"
-        >
-          <option value="all">All Time</option>
-          <option value="week">Past Week</option>
-          <option value="month">Past Month</option>
-        </select>
-
-        <select 
-          value={filters.sortBy} 
-          onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
-          className="filter-select"
-        >
-          <option value="oldest">Oldest First</option>
-          <option value="newest">Newest First</option>
-        </select>
-
         <button onClick={fetchPendingApprovals} className="refresh-button">
           Refresh
         </button>
@@ -349,11 +229,8 @@ const TimesheetApprovalSystem = () => {
             <div key={entry.id} className="approval-item">
               <div className="approval-info">
                 <div className="employee-info">
-                  <h4>{entry.users?.full_name || 'Unknown Employee'}</h4>
-                  <p className="employee-email">{entry.users?.email}</p>
-                  {entry.users?.department && (
-                    <p className="employee-department">{entry.users.department}</p>
-                  )}
+                  <h4>{entry.user_name || 'Unknown Employee'}</h4>
+                  <p className="employee-email">{entry.user_email}</p>
                 </div>
                 
                 <div className="timesheet-details">
@@ -366,6 +243,7 @@ const TimesheetApprovalSystem = () => {
                   <p className="submitted-info">
                     Submitted: {formatDate(entry.submitted_at || entry.created_at)}
                   </p>
+                  <p className="entry-id">ID: {entry.id}</p>
                 </div>
               </div>
 
