@@ -474,7 +474,73 @@ export function SettingsPage() {
   )
 }
 
-// People Directory Page - NEW! (Replaces My Team)
+// My Team Page - RESTORED! (This was missing and causing the build error)
+export function MyTeamPage() {
+  return (
+    <BasePage 
+      title="My Team" 
+      icon={Users}
+      description="Manage your team members and their performance"
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+        {[
+          { name: 'John Doe', role: 'Senior Developer', status: 'Online', hours: '40h' },
+          { name: 'Jane Smith', role: 'Project Manager', status: 'Away', hours: '38h' },
+          { name: 'Mike Johnson', role: 'Designer', status: 'Online', hours: '42h' },
+          { name: 'Sarah Wilson', role: 'QA Engineer', status: 'Offline', hours: '35h' }
+        ].map((member, index) => (
+          <div key={index} style={{
+            padding: '16px',
+            border: '1px solid #E5E7EB',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: '#F3F4F6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#6B7280'
+            }}>
+              {member.name.split(' ').map(n => n[0]).join('')}
+            </div>
+            <div style={{ flex: 1 }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: '0 0 4px 0' }}>
+                {member.name}
+              </h4>
+              <p style={{ fontSize: '12px', color: '#6B7280', margin: '0 0 4px 0' }}>
+                {member.role}
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{
+                  fontSize: '12px',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  backgroundColor: member.status === 'Online' ? '#D1FAE5' : member.status === 'Away' ? '#FEF3C7' : '#FEE2E2',
+                  color: member.status === 'Online' ? '#065F46' : member.status === 'Away' ? '#92400E' : '#991B1B'
+                }}>
+                  {member.status}
+                </span>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>
+                  {member.hours}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </BasePage>
+  )
+}
+
+// People Directory Page - NEW! (Enhanced version)
 export function PeopleDirectoryPage() {
   return <PeopleDirectory />
 }
