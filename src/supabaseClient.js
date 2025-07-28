@@ -20,6 +20,18 @@ export const supabaseApi = {
     }
   },
 
+  // NEW: Added missing isAuthenticated method for Dashboard
+  async isAuthenticated() {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error) throw error
+      return user !== null
+    } catch (error) {
+      console.error('🔐 AUTH: Check authentication failed:', error)
+      return false
+    }
+  },
+
   async signIn(email, password) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -111,6 +123,90 @@ export const supabaseApi = {
         sick_balance: 10.0,
         is_active: true
       }
+      
+      return { data: fallbackData, error }
+    }
+  },
+
+  // ==================== TIMESHEET METHODS ====================
+  
+  async getTimesheetEntries(userId, startDate, endDate) {
+    try {
+      console.log('⏰ TIMESHEET: Fetching entries for user:', userId, 'from', startDate, 'to', endDate)
+      
+      const { data, error } = await supabase
+        .from('timesheet_entries')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true })
+
+      if (error) throw error
+
+      console.log('⏰ TIMESHEET: Fetched', data.length, 'entries')
+      return { data, error: null }
+    } catch (error) {
+      console.error('⏰ TIMESHEET: Fetch entries failed:', error)
+      return { data: [], error }
+    }
+  },
+
+  // NEW: Added missing getTimesheets method for Dashboard components
+  async getTimesheets(userId, options = {}) {
+    try {
+      console.log('📊 DASHBOARD: Fetching timesheets for user:', userId)
+      
+      // Default to current week if no date range provided
+      const now = new Date()
+      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()))
+      const endOfWeek = new Date(now.setDate(startOfWeek.getDate() + 6))
+      
+      const startDate = options.startDate || startOfWeek.toISOString().split('T')[0]
+      const endDate = options.endDate || endOfWeek.toISOString().split('T')[0]
+      
+      const { data, error } = await supabase
+        .from('timesheet_entries')
+        .select(`
+          *,
+          project:project_id(name, client_name),
+          user:user_id(full_name, email)
+        `)
+        .eq('user_id', userId)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true })
+
+      if (error) throw error
+
+      console.log('📊 DASHBOARD: Fetched', data.length, 'timesheet entries')
+      return { data, error: null }
+    } catch (error) {
+      console.error('📊 DASHBOARD: Fetch timesheets failed:', error)
+      
+      // Return fallback data for Dashboard components
+      const fallbackData = [
+        {
+          id: '1',
+          user_id: userId,
+          date: new Date().toISOString().split('T')[0],
+          hours_worked: 8.0,
+          break_time: 1.0,
+          overtime_hours: 0.0,
+          project: { name: 'Website Redesign', client_name: 'Acme Corp' },
+          user: { full_name: 'Admin User', email: 'admin@test.com' }
+        },
+        {
+          id: '2',
+          user_id: userId,
+          date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+          hours_worked: 7.5,
+          break_time: 0.5,
+          overtime_hours: 0.0,
+          project: { name: 'Mobile App', client_name: 'Tech Solutions' },
+          user: { full_name: 'Admin User', email: 'admin@test.com' }
+        }
+      ]
       
       return { data: fallbackData, error }
     }
@@ -482,77 +578,6 @@ export const supabaseApi = {
     }
   },
 
-  // ==================== HELPER METHODS ====================
-  
-  calculatePresenceStatus(lastLoginAt) {
-    if (!lastLoginAt) return 'offline'
-    
-    const now = new Date()
-    const lastLogin = new Date(lastLoginAt)
-    const diffMinutes = (now - lastLogin) / (1000 * 60)
-    
-    if (diffMinutes <= 15) return 'online'
-    if (diffMinutes <= 60) return 'away'
-    return 'offline'
-  },
-
-  calculateYearsOfService(hireDate) {
-    if (!hireDate) return 0
-    
-    const now = new Date()
-    const hire = new Date(hireDate)
-    const diffYears = now.getFullYear() - hire.getFullYear()
-    
-    return diffYears
-  },
-
-  getInitials(fullName) {
-    if (!fullName) return '??'
-    
-    return fullName
-      .split(' ')
-      .map(name => name.charAt(0).toUpperCase())
-      .slice(0, 2)
-      .join('')
-  },
-
-  // ==================== EXISTING METHODS (PRESERVED) ====================
-  
-  // Keep all existing methods for backward compatibility
-  async getUsers() {
-    return this.getAllEmployees()
-  },
-
-  async getMembers() {
-    return this.getAllEmployees()
-  },
-
-  // ... (include all other existing methods from the original supabaseClient)
-  
-  // ==================== TIMESHEET METHODS ====================
-  
-  async getTimesheetEntries(userId, startDate, endDate) {
-    try {
-      console.log('⏰ TIMESHEET: Fetching entries for user:', userId, 'from', startDate, 'to', endDate)
-      
-      const { data, error } = await supabase
-        .from('timesheet_entries')
-        .select('*')
-        .eq('user_id', userId)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: true })
-
-      if (error) throw error
-
-      console.log('⏰ TIMESHEET: Fetched', data.length, 'entries')
-      return { data, error: null }
-    } catch (error) {
-      console.error('⏰ TIMESHEET: Fetch entries failed:', error)
-      return { data: [], error }
-    }
-  },
-
   // ==================== CAMPAIGN METHODS ====================
   
   async getCampaigns() {
@@ -601,6 +626,51 @@ export const supabaseApi = {
       console.error('🎯 CAMPAIGNS: Fetch assignments failed:', error)
       return { data: [], error }
     }
+  },
+
+  // ==================== HELPER METHODS ====================
+  
+  calculatePresenceStatus(lastLoginAt) {
+    if (!lastLoginAt) return 'offline'
+    
+    const now = new Date()
+    const lastLogin = new Date(lastLoginAt)
+    const diffMinutes = (now - lastLogin) / (1000 * 60)
+    
+    if (diffMinutes <= 15) return 'online'
+    if (diffMinutes <= 60) return 'away'
+    return 'offline'
+  },
+
+  calculateYearsOfService(hireDate) {
+    if (!hireDate) return 0
+    
+    const now = new Date()
+    const hire = new Date(hireDate)
+    const diffYears = now.getFullYear() - hire.getFullYear()
+    
+    return diffYears
+  },
+
+  getInitials(fullName) {
+    if (!fullName) return '??'
+    
+    return fullName
+      .split(' ')
+      .map(name => name.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('')
+  },
+
+  // ==================== EXISTING METHODS (PRESERVED) ====================
+  
+  // Keep all existing methods for backward compatibility
+  async getUsers() {
+    return this.getAllEmployees()
+  },
+
+  async getMembers() {
+    return this.getAllEmployees()
   }
 }
 
