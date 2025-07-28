@@ -7,7 +7,8 @@ import { WorkSchedulesPage as RealWorkSchedulesPage } from '../WorkSchedules'
 import CampaignManagement from '../CampaignManagement/CampaignManagement'
 
 // Import the new PeopleDirectory component
-import PeopleDirectory from '../People/PeopleDirectory'
+// TEMPORARILY COMMENTED OUT - Will add back once component exists
+// import PeopleDirectory from '../People/PeopleDirectory'
 
 // Base page layout component
 const BasePage = ({ title, icon: Icon, children, description }) => {
@@ -540,9 +541,34 @@ export function MyTeamPage() {
   )
 }
 
-// People Directory Page - NEW! (Enhanced version)
+// People Directory Page - TEMPORARILY DISABLED until component exists
 export function PeopleDirectoryPage() {
-  return <PeopleDirectory />
+  return (
+    <BasePage 
+      title="People Directory" 
+      icon={Users}
+      description="Enhanced team directory with advanced features"
+    >
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '40px 20px',
+        backgroundColor: '#FEF3C7',
+        borderRadius: '8px',
+        border: '1px solid #F59E0B'
+      }}>
+        <Users size={64} color="#F59E0B" style={{ marginBottom: '16px' }} />
+        <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#92400E', marginBottom: '8px' }}>
+          People Directory Coming Soon
+        </h3>
+        <p style={{ color: '#92400E', marginBottom: '16px' }}>
+          The enhanced People Directory component is being developed. For now, please use the "My Team" page.
+        </p>
+        <p style={{ fontSize: '12px', color: '#92400E' }}>
+          This page will include editable dropdowns, multiple campaign assignments, and enhanced employee management features.
+        </p>
+      </div>
+    </BasePage>
+  )
 }
 
 // Time Tracking Page
