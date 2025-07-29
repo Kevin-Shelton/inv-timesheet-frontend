@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../../utils/supabase.js'
+import { supabase } from '../../utils/supabase'
 
 // Dashboard component with REAL DATA from database
 export function Dashboard() {
@@ -57,7 +57,7 @@ export function Dashboard() {
         }
       }
 
-      // Get recent timesheet data
+      // Get recent timesheet data - ONLY select columns that exist
       const { data: timesheetData, error: timesheetError } = await supabase
         .from('timesheet_entries')
         .select(`
@@ -65,8 +65,6 @@ export function Dashboard() {
           hours_worked,
           total_hours,
           regular_hours,
-          break_hours,
-          overtime_hours,
           status,
           user_id,
           users!timesheet_entries_user_id_fkey (
@@ -161,6 +159,7 @@ export function Dashboard() {
           approvedHours += hours
         }
         
+        // These columns might not exist, so use 0 as fallback
         overtimeHours += entry.overtime_hours || 0
         breakHours += entry.break_hours || 0
       }
