@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/supabaseClient'
 
-// Dashboard component with REAL DATA from database
 export function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [dashboardData, setDashboardData] = useState({
@@ -27,7 +26,6 @@ export function Dashboard() {
     const timer = setInterval(() => {
       setCurrentTime(new Date())
     }, 1000)
-
     return () => clearInterval(timer)
   }, [])
 
@@ -194,7 +192,7 @@ export function Dashboard() {
       })
 
       weeklyChart.push({
-        day: days[i].substring(0, 1), // M, T, W, etc.
+        day: days[i].substring(0, 1), // S, M, T, W, T, F, S
         date: currentDate.getDate(),
         hours: dayHours,
         overtime: dayOvertime,
@@ -239,7 +237,7 @@ export function Dashboard() {
     return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}` : `${m}m`
   }
 
-  // FULL WIDTH STYLES - NO CONSTRAINTS
+  // ORIGINAL STYLING - PRESERVED FROM YOUR DESIGN
   const outerWrapperStyle = {
     width: '100%',
     height: '100%',
@@ -273,8 +271,8 @@ export function Dashboard() {
   }
 
   const headingStyle = {
-    fontSize: '24px',
-    fontWeight: '700',
+    fontSize: '18px',
+    fontWeight: '600',
     color: '#111827',
     margin: '0 0 8px 0'
   }
@@ -290,243 +288,323 @@ export function Dashboard() {
     color: '#9CA3AF'
   }
 
-  // Welcome Header - Full Width with REAL DATA
+  // ORIGINAL PURPLE GRADIENT HEADER WITH REAL DATA
   const WelcomeHeader = () => (
     <div style={{
-      ...cardStyle,
       gridColumn: '1 / -1',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      borderRadius: '16px',
+      padding: '32px',
+      color: 'white',
+      marginBottom: '24px'
     }}>
-      <div>
-        <h1 style={headingStyle}>
-          Hello {dashboardData.user?.full_name || dashboardData.user?.email || 'User'}
-        </h1>
-        <p style={subheadingStyle}>Here's what's happening at your organization</p>
-        
-        {/* REAL STATISTICS */}
-        <div style={{ display: 'flex', gap: '24px', marginTop: '16px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827' }}>
-              {formatHours(dashboardData.weeklyStats.totalHours)}
-            </div>
-            <div style={{ fontSize: '12px', color: '#6B7280' }}>Total Hours</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827' }}>
-              {formatHours(dashboardData.weeklyStats.approvedHours)}
-            </div>
-            <div style={{ fontSize: '12px', color: '#6B7280' }}>Approved</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827' }}>
-              {dashboardData.weeklyStats.activeUsers}
-            </div>
-            <div style={{ fontSize: '12px', color: '#6B7280' }}>Active Users</div>
-          </div>
+      {/* Top Row - Filters */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '24px'
+      }}>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <select style={{
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            color: 'white',
+            fontSize: '14px'
+          }}>
+            <option>📅 Day</option>
+          </select>
+          <select style={{
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            color: 'white',
+            fontSize: '14px'
+          }}>
+            <option>👥 All campaigns</option>
+          </select>
+          <select style={{
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            color: 'white',
+            fontSize: '14px'
+          }}>
+            <option>📍 All locations</option>
+          </select>
+          <select style={{
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            color: 'white',
+            fontSize: '14px'
+          }}>
+            <option>👥 All groups</option>
+          </select>
+          <select style={{
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            color: 'white',
+            fontSize: '14px'
+          }}>
+            <option>🕐 All schedules</option>
+          </select>
         </div>
-        
-        <div style={{ marginTop: '8px', fontSize: '12px', color: '#6B7280' }}>
-          Week of {dashboardData.weeklyStats.weekRange}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button style={{
+            backgroundColor: '#F97316',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            color: 'white',
+            fontSize: '14px',
+            fontWeight: '500'
+          }}>
+            Day
+          </button>
+          <button style={{
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            color: 'white',
+            fontSize: '14px'
+          }}>
+            Week
+          </button>
+          <button style={{
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            color: 'white',
+            fontSize: '14px'
+          }}>
+            Month
+          </button>
         </div>
       </div>
+
+      {/* Stats Cards */}
       <div style={{
-        width: '120px',
-        height: '80px',
-        backgroundColor: '#FEF3C7',
+        backgroundColor: 'rgba(255,255,255,0.95)',
         borderRadius: '12px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '32px'
+        padding: '24px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '24px',
+        color: '#111827'
       }}>
-        👋
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '32px', fontWeight: '700', color: '#3B82F6', marginBottom: '4px' }}>
+            {formatHours(dashboardData.weeklyStats.totalHours)}
+          </div>
+          <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '2px' }}>Your Hours</div>
+          <div style={{ fontSize: '32px', fontWeight: '700', color: '#10B981', marginBottom: '4px' }}>
+            {formatHours(dashboardData.weeklyStats.approvedHours)}
+          </div>
+          <div style={{ fontSize: '14px', color: '#6B7280' }}>Avg per User</div>
+        </div>
+        
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '32px', fontWeight: '700', color: '#10B981', marginBottom: '4px' }}>
+            {formatHours(dashboardData.weeklyStats.approvedHours)}
+          </div>
+          <div style={{ fontSize: '14px', color: '#6B7280' }}>Org Total</div>
+        </div>
+        
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '32px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
+            {dashboardData.weeklyStats.activeUsers}
+          </div>
+          <div style={{ fontSize: '14px', color: '#6B7280' }}>Active Users</div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div style={{
+        display: 'flex',
+        gap: '12px',
+        marginTop: '24px'
+      }}>
+        <button style={{
+          backgroundColor: 'rgba(255,255,255,0.2)',
+          border: '1px solid rgba(255,255,255,0.3)',
+          borderRadius: '8px',
+          padding: '12px 20px',
+          color: 'white',
+          fontSize: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          📊 View Timesheet
+        </button>
+        <button style={{
+          backgroundColor: 'rgba(255,255,255,0.2)',
+          border: '1px solid rgba(255,255,255,0.3)',
+          borderRadius: '8px',
+          padding: '12px 20px',
+          color: 'white',
+          fontSize: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          ⏰ Quick Clock In
+        </button>
+      </div>
+
+      {/* Auth Status */}
+      <div style={{
+        marginTop: '16px',
+        fontSize: '14px',
+        opacity: 0.8
+      }}>
+        💚 Auth Status: authenticated | Client: {dashboardData.user?.role || 'Admin'}
       </div>
     </div>
   )
 
-  // Tracked Hours with REAL DATA
+  // TRACKED HOURS WITH REAL DATA
   const TrackedHours = () => {
     const maxHours = Math.max(...dashboardData.weeklyChart.map(day => day.hours), 8)
     
     return (
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={headingStyle}>TRACKED HOURS</h3>
-          <a href="#" style={{ color: '#3B82F6', fontSize: '14px', textDecoration: 'none' }}>
-            Go to timesheets
-          </a>
-        </div>
-        
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981' }}></div>
-            <span style={{ fontSize: '12px', color: '#6B7280' }}>WORKED HOURS</span>
-            <span style={{ fontSize: '12px', color: '#111827', marginLeft: 'auto' }}>
-              {formatHours(dashboardData.weeklyStats.totalHours)}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#6B7280' }}></div>
-            <span style={{ fontSize: '12px', color: '#6B7280' }}>BREAK TIME</span>
-            <span style={{ fontSize: '12px', color: '#111827', marginLeft: 'auto' }}>
-              {formatHours(dashboardData.weeklyStats.breakHours)}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#FBBF24' }}></div>
-            <span style={{ fontSize: '12px', color: '#6B7280' }}>OVERTIME HOURS</span>
-            <span style={{ fontSize: '12px', color: '#111827', marginLeft: 'auto' }}>
-              {formatHours(dashboardData.weeklyStats.overtimeHours)}
-            </span>
-          </div>
-        </div>
-
-        {/* REAL Weekly Chart */}
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            {dashboardData.weeklyChart.map((day, index) => (
-              <div key={index} style={{ textAlign: 'center', flex: 1 }}>
-                <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>{day.day}</div>
-                <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
-                  {day.date}
-                </div>
-                <div style={{
-                  height: '60px',
-                  backgroundColor: day.hours > 0 ? '#10B981' : '#D1D5DB',
-                  borderRadius: '4px',
-                  margin: '0 2px',
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'flex-end'
-                }}>
-                  {day.hours > 0 && (
-                    <div style={{
-                      height: `${(day.hours / maxHours) * 100}%`,
-                      backgroundColor: '#10B981',
-                      borderRadius: '4px',
-                      minHeight: '4px'
-                    }}></div>
-                  )}
-                </div>
-                <div style={{ fontSize: '10px', color: '#6B7280', marginTop: '4px' }}>
-                  {formatHours(day.hours)}
-                </div>
-              </div>
-            ))}
-          </div>
-          <p style={captionStyle}>Real timesheet data from database</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Activities with REAL DATA
-  const Activities = () => (
-    <div style={cardStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={headingStyle}>ACTIVITIES</h3>
-        <a href="#" style={{ color: '#3B82F6', fontSize: '14px', textDecoration: 'none' }}>
-          Go to activities
-        </a>
-      </div>
-
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: '16px'
-      }}>
-        <div style={{
-          width: '120px',
-          height: '120px',
-          borderRadius: '50%',
-          background: dashboardData.activities.totalClocked > 0 
-            ? 'conic-gradient(#10B981 0deg 270deg, #E5E7EB 270deg 360deg)'
-            : 'conic-gradient(#E5E7EB 0deg 360deg)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative'
-        }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            backgroundColor: 'white',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <div style={{ fontSize: '12px', color: '#6B7280' }}>clocked</div>
-            <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
-              {formatHours(dashboardData.activities.totalClocked)}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: '0 0 4px 0' }}>
-          {dashboardData.weeklyStats.activeUsers} active team member{dashboardData.weeklyStats.activeUsers !== 1 ? 's' : ''}
-        </p>
-        <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
-          {formatHours(dashboardData.weeklyStats.totalHours)} total hours this week
-        </p>
-      </div>
-    </div>
-  )
-
-  // Upcoming Holidays (unchanged)
-  const UpcomingHolidays = () => (
-    <div style={cardStyle}>
-      <h3 style={headingStyle}>UPCOMING HOLIDAYS AND TIME OFF</h3>
-      <div style={{
-        backgroundColor: '#FEF3C7',
-        borderRadius: '8px',
-        padding: '16px',
-        marginTop: '16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px'
-      }}>
-        <div style={{ fontSize: '24px' }}>🏖️</div>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: '14px', color: '#92400E' }}>
-            Add your holiday calendar for reminders and overtime calculations.
-          </p>
-          <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+          <h3 style={headingStyle}>Tracked Hours This Week</h3>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button style={{
-              backgroundColor: '#F59E0B',
-              color: 'white',
+              backgroundColor: '#F3F4F6',
               border: 'none',
               borderRadius: '6px',
               padding: '6px 12px',
               fontSize: '12px',
-              cursor: 'pointer'
+              color: '#6B7280'
             }}>
-              Set up Holidays
+              Personal
             </button>
             <button style={{
-              backgroundColor: 'transparent',
-              color: '#F59E0B',
-              border: '1px solid #F59E0B',
+              backgroundColor: '#3B82F6',
+              border: 'none',
               borderRadius: '6px',
               padding: '6px 12px',
               fontSize: '12px',
-              cursor: 'pointer'
+              color: 'white'
             }}>
-              No, thanks
+              Organization
             </button>
           </div>
         </div>
+        
+        <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '16px' }}>
+          Organization-wide view • {dashboardData.weeklyStats.activeUsers} users
+        </div>
+
+        {/* Weekly Chart */}
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            {dashboardData.weeklyChart.map((day, index) => (
+              <div key={index} style={{ textAlign: 'center', flex: 1 }}>
+                <div style={{ fontSize: '14px', fontWeight: '500', color: '#111827', marginBottom: '4px' }}>
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][index]}
+                </div>
+                <div style={{
+                  height: '120px',
+                  backgroundColor: '#F3F4F6',
+                  borderRadius: '8px',
+                  margin: '0 4px',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'flex-end',
+                  overflow: 'hidden'
+                }}>
+                  {day.hours > 0 && (
+                    <div style={{
+                      height: `${Math.max((day.hours / maxHours) * 100, 5)}%`,
+                      backgroundColor: '#3B82F6',
+                      borderRadius: '8px 8px 0 0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      {day.hours.toFixed(1)}
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '8px' }}>
+                  {formatHours(day.hours)}
+                </div>
+                <div style={{ fontSize: '10px', color: '#9CA3AF' }}>
+                  {day.userCount} user{day.userCount !== 1 ? 's' : ''}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Summary Stats */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          paddingTop: '16px',
+          borderTop: '1px solid #E5E7EB',
+          fontSize: '14px'
+        }}>
+          <div>
+            <span style={{ fontWeight: '600', color: '#111827' }}>Total Worked: </span>
+            <span style={{ color: '#111827' }}>{formatHours(dashboardData.weeklyStats.totalHours)}</span>
+          </div>
+          <div>
+            <span style={{ fontWeight: '600', color: '#111827' }}>Total Breaks: </span>
+            <span style={{ color: '#111827' }}>{formatHours(dashboardData.weeklyStats.breakHours)}</span>
+          </div>
+          <div>
+            <span style={{ fontWeight: '600', color: '#F59E0B' }}>Total Overtime: </span>
+            <span style={{ color: '#F59E0B' }}>{formatHours(dashboardData.weeklyStats.overtimeHours)}</span>
+          </div>
+          <div>
+            <span style={{ fontWeight: '600', color: '#111827' }}>Active Users: </span>
+            <span style={{ color: '#111827' }}>{dashboardData.weeklyStats.activeUsers}</span>
+          </div>
+          <div>
+            <span style={{ fontWeight: '600', color: '#111827' }}>Avg per User: </span>
+            <span style={{ color: '#111827' }}>
+              {formatHours(dashboardData.weeklyStats.activeUsers > 0 ? dashboardData.weeklyStats.totalHours / dashboardData.weeklyStats.activeUsers : 0)}
+            </span>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#3B82F6' }}></div>
+            <span style={{ color: '#6B7280' }}>Worked Hours</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#10B981' }}></div>
+            <span style={{ color: '#6B7280' }}>Break Time</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#F59E0B' }}></div>
+            <span style={{ color: '#6B7280' }}>Overtime</span>
+          </div>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   if (dashboardData.loading) {
     return (
@@ -573,8 +651,6 @@ export function Dashboard() {
         <div style={gridStyle}>
           <WelcomeHeader />
           <TrackedHours />
-          <Activities />
-          <UpcomingHolidays />
         </div>
       </div>
     </div>
