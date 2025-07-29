@@ -1,421 +1,410 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, supabaseApi } from '../../supabaseClient';
+import { supabaseApi } from '../../supabaseClient.js';
 import { useAuth } from '../../hooks/useAuth';
 
 const WelcomeCard = () => {
-  const { user, canViewAllTimesheets, isPrivilegedUser } = useAuth();
-  const [currentImage, setCurrentImage] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [orgStats, setOrgStats] = useState(null);
-  const [personalStats, setPersonalStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(false);
+  const { user } = useAuth();
+  const [imageError, setImageError] = useState(false);
+  const [currentImage, setCurrentImage] = useState('');
+  const [weeklyStats, setWeeklyStats] = useState({
+    userHours: 0,
+    orgTotal: 0,
+    activeUsers: 0,
+    avgPerUser: 0,
+    weekRange: ''
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Image rotation logic (preserved from original)
+  useEffect(() => {
+    const images = [
+      '/assets/Team Work Tries to Get The Top position.png',
+      '/assets/Woman works with computer.png'
+    ];
+    
+    const sessionKey = 'welcomeCardImage';
+    let savedImage = sessionStorage.getItem(sessionKey);
+    
+    if (!savedImage) {
+      savedImage = images[Math.floor(Math.random() * images.length)];
+      sessionStorage.setItem(sessionKey, savedImage);
+    }
+    
+    setCurrentImage(savedImage);
+  }, []);
 
   useEffect(() => {
-    fetchUserData();
-    loadRandomImage();
-    if (canViewOrgData()) {
-      fetchOrganizationStats();
+    if (user) {
+      fetchWeeklyStats();
     }
-    fetchPersonalStats();
   }, [user]);
 
-  // Determine if user can see organization-wide data
-  const canViewOrgData = () => {
-    return canViewAllTimesheets() || isPrivilegedUser() || user?.role === 'admin';
-  };
-
-  const fetchUserData = async () => {
+  const fetchWeeklyStats = async () => {
     try {
-      // Get basic auth user data without additional database queries (preserved original logic)
-      const { data: { user: authUser }, error } = await supabase.auth.getUser();
-      
-      if (error) {
-        console.log('🔐 AUTH: Using fallback user data due to auth error:', error.message);
-      } else if (authUser) {
-        console.log('🔐 AUTH: Successfully loaded user from auth');
-      } else {
-        console.log('🔐 AUTH: No authenticated user, using fallback');
+      setLoading(true);
+
+      // FIXED: Get data from the most recent week with timesheet entries
+      // instead of forcing current week
+      const { data: recentData, error: recentError } = await supabaseApi.supabase
+        .from('timesheet_entries')
+        .select(`
+          date,
+          hours_worked,
+          total_hours,
+          regular_hours,
+          status,
+          user_id,
+          users!timesheet_entries_user_id_fkey (
+            id,
+            full_name,
+            role
+          )
+        `)
+        .order('date', { ascending: false })
+        .limit(200); // Get recent entries to find the latest week with data
+
+      if (recentError) {
+        console.error('Error fetching recent timesheet data:', recentError);
+        return;
       }
-    } catch (error) {
-      console.error('🔐 AUTH ERROR:', error);
-    }
-  };
 
-  // NEW: Fetch organization-wide statistics for admin users
-  const fetchOrganizationStats = async () => {
-    try {
-      setStatsLoading(true);
-      console.log('📊 WELCOME CARD: Fetching organization stats...');
-
-      // Get current week dates
-      const today = new Date();
-      const currentDay = today.getDay();
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - currentDay + 1);
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-
-      const startDate = monday.toISOString().split('T')[0];
-      const endDate = sunday.toISOString().split('T')[0];
-
-      // Fetch all timesheet entries for the week
-      const entries = await supabaseApi.getTimesheets({
-        startDate: startDate,
-        endDate: endDate
-      });
-
-      if (entries && entries.length > 0) {
-        // Calculate organization-wide statistics
-        const totalHours = entries.reduce((sum, entry) => {
-          return sum + (parseFloat(entry.hours_worked) || parseFloat(entry.regular_hours) || 0);
-        }, 0);
-
-        const totalOvertime = entries.reduce((sum, entry) => {
-          return sum + (parseFloat(entry.daily_overtime_hours) || parseFloat(entry.overtime_hours) || 0);
-        }, 0);
-
-        const uniqueUsers = new Set(entries.map(entry => entry.user_id)).size;
-        const totalEntries = entries.length;
-
-        setOrgStats({
-          totalHours: Math.round(totalHours * 10) / 10,
-          totalOvertime: Math.round(totalOvertime * 10) / 10,
-          activeUsers: uniqueUsers,
-          totalEntries: totalEntries,
-          avgHoursPerUser: uniqueUsers > 0 ? Math.round((totalHours / uniqueUsers) * 10) / 10 : 0
-        });
-
-        console.log('📊 WELCOME CARD: Organization stats calculated:', {
-          totalHours: Math.round(totalHours * 10) / 10,
-          activeUsers: uniqueUsers,
-          totalEntries: totalEntries
-        });
-      } else {
-        setOrgStats({
-          totalHours: 0,
-          totalOvertime: 0,
+      if (!recentData || recentData.length === 0) {
+        setWeeklyStats({
+          userHours: 0,
+          orgTotal: 0,
           activeUsers: 0,
-          totalEntries: 0,
-          avgHoursPerUser: 0
+          avgPerUser: 0,
+          weekRange: 'No data available'
         });
+        return;
       }
-    } catch (error) {
-      console.error('📊 WELCOME CARD: Error fetching organization stats:', error);
-      setOrgStats(null);
-    } finally {
-      setStatsLoading(false);
-    }
-  };
 
-  // NEW: Fetch personal statistics
-  const fetchPersonalStats = async () => {
-    if (!user?.id) return;
+      // Find the most recent week with data
+      const latestDate = new Date(recentData[0].date);
+      const weekStart = new Date(latestDate);
+      weekStart.setDate(latestDate.getDate() - latestDate.getDay()); // Start of week (Sunday)
+      
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
 
-    try {
-      console.log('📊 WELCOME CARD: Fetching personal stats...');
-
-      // Get current week dates
-      const today = new Date();
-      const currentDay = today.getDay();
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - currentDay + 1);
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-
-      const startDate = monday.toISOString().split('T')[0];
-      const endDate = sunday.toISOString().split('T')[0];
-
-      // Fetch user's personal timesheet entries for the week
-      const entries = await supabaseApi.getTimesheets({
-        user_id: user.id,
-        startDate: startDate,
-        endDate: endDate
+      // Filter data for the most recent week with entries
+      const weekData = recentData.filter(entry => {
+        const entryDate = new Date(entry.date);
+        return entryDate >= weekStart && entryDate <= weekEnd;
       });
 
-      if (entries && entries.length > 0) {
-        const totalHours = entries.reduce((sum, entry) => {
-          return sum + (parseFloat(entry.hours_worked) || parseFloat(entry.regular_hours) || 0);
-        }, 0);
+      // FIXED: Use COALESCE logic to get actual hours from any field
+      const calculateHours = (entry) => {
+        return entry.hours_worked || entry.total_hours || entry.regular_hours || 0;
+      };
 
-        const totalOvertime = entries.reduce((sum, entry) => {
-          return sum + (parseFloat(entry.daily_overtime_hours) || parseFloat(entry.overtime_hours) || 0);
-        }, 0);
+      // Calculate statistics
+      const uniqueUsers = new Set();
+      let totalOrgHours = 0;
+      let approvedOrgHours = 0;
+      let userPersonalHours = 0;
 
-        setPersonalStats({
-          totalHours: Math.round(totalHours * 10) / 10,
-          totalOvertime: Math.round(totalOvertime * 10) / 10,
-          totalEntries: entries.length
-        });
-      } else {
-        setPersonalStats({
-          totalHours: 0,
-          totalOvertime: 0,
-          totalEntries: 0
-        });
-      }
-    } catch (error) {
-      console.error('📊 WELCOME CARD: Error fetching personal stats:', error);
-      setPersonalStats(null);
-    }
-  };
+      weekData.forEach(entry => {
+        const hours = calculateHours(entry);
+        
+        // Track unique users
+        if (hours > 0) {
+          uniqueUsers.add(entry.user_id);
+        }
 
-  const loadRandomImage = async () => {
-    try {
-      // Skip database image queries to avoid errors, go straight to assets (preserved original logic)
-      const assetImages = [
-        'employee-award-1.jpg',
-        'employee-award-2.jpg', 
-        'employee-award-3.jpg',
-        'team-photo-1.jpg',
-        'team-photo-2.jpg',
-        'team-photo-3.jpg',
-        'office-1.jpg',
-        'office-2.jpg',
-        'office-3.jpg',
-        'company-event-1.jpg',
-        'company-event-2.jpg',
-        'workplace-1.jpg',
-        'workplace-2.jpg',
-        'award-ceremony-1.jpg',
-        'award-ceremony-2.jpg',
-        'meeting-1.jpg',
-        'meeting-2.jpg',
-        'celebration-1.jpg',
-        'celebration-2.jpg',
-        'group-photo-1.jpg'
-      ];
+        // Total org hours (all statuses for admin view)
+        totalOrgHours += hours;
 
-      // Test which images actually exist by trying to load them (preserved original logic)
-      const imagePromises = assetImages.map(async (filename) => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve({ 
-            image_url: `/src/assets/${filename}`, 
-            alt_text: 'Employee Award',
-            exists: true 
-          });
-          img.onerror = () => resolve({ 
-            image_url: `/src/assets/${filename}`, 
-            alt_text: 'Employee Award',
-            exists: false 
-          });
-          img.src = `/src/assets/${filename}`;
-        });
+        // Approved hours only
+        if (entry.status === 'approved') {
+          approvedOrgHours += hours;
+        }
+
+        // User's personal hours (if not admin viewing org-wide)
+        if (entry.user_id === user?.id) {
+          userPersonalHours += hours;
+        }
       });
 
-      const imageResults = await Promise.all(imagePromises);
-      const availableImages = imageResults.filter(img => img.exists);
+      const activeUsers = uniqueUsers.size;
+      
+      // FIXED: Admin sees org-wide totals, regular users see personal hours
+      const displayUserHours = user?.role === 'admin' ? totalOrgHours : userPersonalHours;
+      const avgPerUser = activeUsers > 0 ? totalOrgHours / activeUsers : 0;
 
-      console.log('🖼️ Found', availableImages.length, 'images in assets directory');
+      // Format week range
+      const formatDate = (date) => {
+        return date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric'
+        });
+      };
 
-      if (availableImages.length > 0) {
-        // Select random image
-        const randomIndex = Math.floor(Math.random() * availableImages.length);
-        const selectedImage = availableImages[randomIndex];
-        setCurrentImage(selectedImage);
-        console.log('🎲 Selected random image:', selectedImage.image_url);
-      } else {
-        console.log('❌ No images found in assets directory');
-        setCurrentImage(null);
-      }
+      const weekRange = `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
+
+      setWeeklyStats({
+        userHours: Math.round(displayUserHours * 10) / 10, // Round to 1 decimal
+        orgTotal: Math.round(approvedOrgHours * 10) / 10,
+        activeUsers,
+        avgPerUser: Math.round(avgPerUser * 10) / 10,
+        weekRange
+      });
+
+      console.log('📊 WELCOME CARD: Stats calculated', {
+        weekRange,
+        totalEntries: weekData.length,
+        totalOrgHours,
+        approvedOrgHours,
+        activeUsers,
+        displayUserHours,
+        userRole: user?.role
+      });
+
     } catch (error) {
-      console.error('💥 Error loading images:', error);
-      setCurrentImage(null);
+      console.error('Error fetching weekly stats:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  // Preserved original event handlers
-  const handleViewTimesheet = () => {
-    window.location.href = '/timesheets';
+  const handleImageError = () => {
+    setImageError(true);
   };
 
-  const handleQuickClockIn = () => {
-    console.log('Quick clock in clicked');
-  };
-
-  const handleImageError = (e) => {
-    console.log('❌ Image failed to load:', e.target.src);
-    // Hide the image container if image fails to load
-    e.target.parentElement.style.display = 'none';
-  };
-
-  const handleImageLoad = (e) => {
-    console.log('✅ Image loaded successfully:', e.target.src);
-  };
-
-  // NEW: Format hours display
   const formatHours = (hours) => {
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
-    return `${h}h ${m}m`;
+    return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}` : `${m}m`;
   };
 
+  if (!user) {
+    return (
+      <div style={{ 
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '12px',
+        padding: '24px',
+        color: 'white',
+        textAlign: 'center'
+      }}>
+        <h2>Loading...</h2>
+      </div>
+    );
+  }
+
   return (
-    <div className="welcome-card">
-      <div className="welcome-card-content">
-        <div className="welcome-content">
-          <div className="welcome-header">
-            <h2>Hello, {user?.user_metadata?.full_name || user?.full_name || 'Admin User'}! 👋</h2>
-            <p className="welcome-subtitle">Welcome to the Invictus Time Management Portal</p>
-          </div>
+    <div style={{
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      borderRadius: '12px',
+      padding: '24px',
+      color: 'white',
+      position: 'relative',
+      overflow: 'hidden',
+      minHeight: '200px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between'
+    }}>
+      {/* Background Image */}
+      {!imageError && currentImage && (
+        <img
+          src={currentImage}
+          alt="Welcome background"
+          onError={handleImageError}
+          style={{
+            position: 'absolute',
+            right: '20px',
+            top: '20px',
+            width: '120px',
+            height: '120px',
+            objectFit: 'contain',
+            opacity: 0.3,
+            zIndex: 1
+          }}
+        />
+      )}
 
-          <div className="user-info">
-            <div className="user-detail">
-              <svg viewBox="0 0 20 20" fill="currentColor">
-                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-              </svg>
-              <span>Email: {user?.email || 'admin@test.com'}</span>
-            </div>
-            <div className="user-detail">
-              <svg viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-              </svg>
-              <span>Role: {user?.user_metadata?.role || user?.role || 'admin'}</span>
-            </div>
-          </div>
-
-          {/* NEW: Statistics Section */}
-          {(personalStats || orgStats) && (
-            <div style={{ 
-              margin: '20px 0',
-              padding: '15px',
-              backgroundColor: '#f8fafc',
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0'
-            }}>
-              <h4 style={{ 
+      {/* Content */}
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        <div style={{ marginBottom: '20px' }}>
+          <h2 style={{ 
+            margin: '0 0 8px 0', 
+            fontSize: '24px', 
+            fontWeight: '600' 
+          }}>
+            Welcome back, {user.full_name || user.email}!
+          </h2>
+          
+          {/* Weekly Statistics Summary */}
+          {loading ? (
+            <p style={{ margin: 0, opacity: 0.9 }}>Loading weekly statistics...</p>
+          ) : (
+            <div style={{ marginTop: '16px' }}>
+              <p style={{ 
                 margin: '0 0 12px 0', 
                 fontSize: '14px', 
-                fontWeight: '600',
-                color: '#374151'
+                opacity: 0.9 
               }}>
-                📊 This Week's Summary
-              </h4>
+                Week of {weeklyStats.weekRange}
+              </p>
               
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: canViewOrgData() ? 'repeat(auto-fit, minmax(120px, 1fr))' : 'repeat(auto-fit, minmax(100px, 1fr))',
-                gap: '12px',
-                fontSize: '13px'
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                gap: '16px',
+                marginTop: '16px'
               }}>
-                {/* Personal Stats */}
-                {personalStats && (
-                  <>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontWeight: 'bold', color: '#3b82f6', fontSize: '16px' }}>
-                        {formatHours(personalStats.totalHours)}
-                      </div>
-                      <div style={{ color: '#6b7280' }}>Your Hours</div>
-                    </div>
-                    
-                    {personalStats.totalOvertime > 0 && (
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontWeight: 'bold', color: '#f59e0b', fontSize: '16px' }}>
-                          {formatHours(personalStats.totalOvertime)}
-                        </div>
-                        <div style={{ color: '#6b7280' }}>Your Overtime</div>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Organization Stats for Admin Users */}
-                {canViewOrgData() && orgStats && (
-                  <>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontWeight: 'bold', color: '#10b981', fontSize: '16px' }}>
-                        {formatHours(orgStats.totalHours)}
-                      </div>
-                      <div style={{ color: '#6b7280' }}>Org Total</div>
-                    </div>
-                    
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontWeight: 'bold', color: '#8b5cf6', fontSize: '16px' }}>
-                        {orgStats.activeUsers}
-                      </div>
-                      <div style={{ color: '#6b7280' }}>Active Users</div>
-                    </div>
-                    
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontWeight: 'bold', color: '#06b6d4', fontSize: '16px' }}>
-                        {formatHours(orgStats.avgHoursPerUser)}
-                      </div>
-                      <div style={{ color: '#6b7280' }}>Avg per User</div>
-                    </div>
-
-                    {orgStats.totalOvertime > 0 && (
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontWeight: 'bold', color: '#f59e0b', fontSize: '16px' }}>
-                          {formatHours(orgStats.totalOvertime)}
-                        </div>
-                        <div style={{ color: '#6b7280' }}>Org Overtime</div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {statsLoading && (
-                <div style={{ 
-                  textAlign: 'center', 
-                  color: '#6b7280', 
-                  fontSize: '12px',
-                  marginTop: '8px'
-                }}>
-                  Loading organization stats...
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                    fontSize: '28px', 
+                    fontWeight: 'bold', 
+                    lineHeight: 1 
+                  }}>
+                    {formatHours(weeklyStats.userHours)}
+                  </div>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    opacity: 0.8, 
+                    marginTop: '4px' 
+                  }}>
+                    {user?.role === 'admin' ? 'Org Total' : 'Your Hours'}
+                  </div>
                 </div>
-              )}
+
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                    fontSize: '28px', 
+                    fontWeight: 'bold', 
+                    lineHeight: 1 
+                  }}>
+                    {formatHours(weeklyStats.orgTotal)}
+                  </div>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    opacity: 0.8, 
+                    marginTop: '4px' 
+                  }}>
+                    Approved
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                    fontSize: '28px', 
+                    fontWeight: 'bold', 
+                    lineHeight: 1 
+                  }}>
+                    {weeklyStats.activeUsers}
+                  </div>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    opacity: 0.8, 
+                    marginTop: '4px' 
+                  }}>
+                    Active Users
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                    fontSize: '28px', 
+                    fontWeight: 'bold', 
+                    lineHeight: 1 
+                  }}>
+                    {formatHours(weeklyStats.avgPerUser)}
+                  </div>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    opacity: 0.8, 
+                    marginTop: '4px' 
+                  }}>
+                    Avg per User
+                  </div>
+                </div>
+              </div>
             </div>
           )}
+        </div>
 
-          {/* Preserved original action buttons */}
-          <div className="action-buttons">
-            <button className="action-button primary" onClick={handleViewTimesheet}>
-              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-              </svg>
-              📊 View Timesheet
-            </button>
-            <button className="action-button secondary" onClick={handleQuickClockIn}>
-              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-              🕐 Quick Clock In
-            </button>
-          </div>
+        {/* Action Buttons */}
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          flexWrap: 'wrap'
+        }}>
+          <button
+            style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              padding: '10px 16px',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              backdropFilter: 'blur(10px)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+            }}
+            onClick={() => {
+              // Navigate to timesheet view
+              console.log('Navigate to timesheet');
+            }}
+          >
+            📊 View Timesheet
+          </button>
 
-          {/* Preserved original auth status */}
-          <div className="auth-status">
-            <svg viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            <span>Auth Status: authenticated | Client: {canViewOrgData() ? 'Admin' : 'Standard'}</span>
-          </div>
+          <button
+            style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              padding: '10px 16px',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              backdropFilter: 'blur(10px)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+            }}
+            onClick={() => {
+              // Quick clock in functionality
+              console.log('Quick clock in');
+            }}
+          >
+            ⏰ Quick Clock In
+          </button>
+        </div>
+
+        {/* Auth Status */}
+        <div style={{
+          marginTop: '16px',
+          fontSize: '12px',
+          opacity: 0.7,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: '#4ade80',
+            display: 'inline-block'
+          }}></span>
+          Auth Status: authenticated | Client: {user.role || 'User'}
         </div>
       </div>
-
-      {/* Preserved original random image functionality */}
-      {!isLoading && currentImage && (
-        <div className="rotating-images-container">
-          <div className="rotating-image active">
-            <img
-              src={currentImage.image_url}
-              alt={currentImage.alt_text || 'Employee Award'}
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                borderRadius: '10px'
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

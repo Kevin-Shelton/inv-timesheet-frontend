@@ -1,493 +1,584 @@
 import React, { useState, useEffect } from 'react';
-import { supabaseApi } from '../../supabaseClient';
+import { supabaseApi } from '../../supabaseClient.js';
 import { useAuth } from '../../hooks/useAuth';
 
 const WeeklyChart = () => {
-  const { user, canViewAllTimesheets, isPrivilegedUser } = useAuth();
+  const { user } = useAuth();
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [weekRange, setWeekRange] = useState('');
+  const [totals, setTotals] = useState({
+    totalWorked: 0,
+    totalBreaks: 0,
+    totalOvertime: 0,
+    activeUsers: 0,
+    avgPerUser: 0
+  });
   const [viewMode, setViewMode] = useState('personal'); // 'personal' or 'organization'
 
   useEffect(() => {
-    fetchWeeklyData();
+    if (user) {
+      fetchWeeklyData();
+    }
   }, [user, viewMode]);
-
-  // Determine if user can see organization-wide data
-  const canViewOrgData = canViewAllTimesheets() || isPrivilegedUser() || user?.role === 'admin';
 
   const fetchWeeklyData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log('📊 WEEKLY CHART: Fetching weekly data...');
-      console.log('📊 WEEKLY CHART: View mode:', viewMode);
-      console.log('📊 WEEKLY CHART: Can view org data:', canViewOrgData);
+      console.log('📊 WEEKLY CHART: Fetching data for', viewMode, 'view');
 
-      // Get current week dates
-      const currentWeekDates = getCurrentWeekDates();
-      
-      // Determine which data to fetch based on view mode and permissions
-      let timesheetData;
-      if (viewMode === 'organization' && canViewOrgData) {
-        // Fetch organization-wide data
-        timesheetData = await supabaseApi.getTimesheets({
-          start_date: currentWeekDates[0].toISOString().split('T')[0],
-          end_date: currentWeekDates[6].toISOString().split('T')[0]
-        });
-        console.log('📊 WEEKLY CHART: Fetched org-wide data:', timesheetData?.length || 0, 'entries');
-      } else {
-        // Fetch personal data (original functionality)
-        timesheetData = await supabaseApi.getTimesheets({
-          start_date: currentWeekDates[0].toISOString().split('T')[0],
-          end_date: currentWeekDates[6].toISOString().split('T')[0],
-          user_id: user?.id
-        });
-        console.log('📊 WEEKLY CHART: Fetched personal data:', timesheetData?.length || 0, 'entries');
+      // FIXED: Get data from the most recent week with timesheet entries
+      const { data: recentData, error: fetchError } = await supabaseApi.supabase
+        .from('timesheet_entries')
+        .select(`
+          date,
+          hours_worked,
+          total_hours,
+          regular_hours,
+          break_hours,
+          overtime_hours,
+          status,
+          user_id,
+          users!timesheet_entries_user_id_fkey (
+            id,
+            full_name,
+            role,
+            manager_id
+          )
+        `)
+        .order('date', { ascending: false })
+        .limit(300); // Get enough data to find recent weeks
+
+      if (fetchError) {
+        throw new Error(`Failed to fetch timesheet data: ${fetchError.message}`);
       }
 
-      // Process data for chart (preserving original logic)
-      const processedData = processWeeklyData(timesheetData, currentWeekDates);
-      setChartData(processedData);
+      if (!recentData || recentData.length === 0) {
+        setChartData([]);
+        setWeekRange('No data available');
+        setTotals({
+          totalWorked: 0,
+          totalBreaks: 0,
+          totalOvertime: 0,
+          activeUsers: 0,
+          avgPerUser: 0
+        });
+        return;
+      }
+
+      // Find the most recent week with data
+      const latestDate = new Date(recentData[0].date);
+      const weekStart = new Date(latestDate);
+      weekStart.setDate(latestDate.getDate() - latestDate.getDay()); // Start of week (Sunday)
+      
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
+
+      // Filter data for the most recent week
+      let weekData = recentData.filter(entry => {
+        const entryDate = new Date(entry.date);
+        return entryDate >= weekStart && entryDate <= weekEnd;
+      });
+
+      // FIXED: Filter based on view mode and user permissions
+      if (viewMode === 'personal' && user?.role !== 'admin') {
+        weekData = weekData.filter(entry => entry.user_id === user.id);
+      } else if (viewMode === 'organization' && user?.role === 'admin') {
+        // Admin sees all data
+      } else if (user?.role === 'campaign_lead' || user?.role === 'manager') {
+        // Managers see their direct reports
+        weekData = weekData.filter(entry => 
+          entry.user_id === user.id || 
+          entry.users?.manager_id === user.id
+        );
+      }
+
+      // FIXED: Use COALESCE logic to get actual hours from any field
+      const calculateHours = (entry) => {
+        return entry.hours_worked || entry.total_hours || entry.regular_hours || 0;
+      };
+
+      // Create daily data structure
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dailyData = [];
+
+      for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(weekStart);
+        currentDate.setDate(weekStart.getDate() + i);
+        
+        const dayEntries = weekData.filter(entry => {
+          const entryDate = new Date(entry.date);
+          return entryDate.toDateString() === currentDate.toDateString();
+        });
+
+        const dayData = {
+          day: days[i],
+          date: currentDate.toISOString().split('T')[0],
+          shortDay: days[i].substring(0, 3),
+          workedHours: 0,
+          breakHours: 0,
+          overtimeHours: 0,
+          userCount: 0,
+          entries: dayEntries
+        };
+
+        // Calculate totals for the day
+        const uniqueUsers = new Set();
+        dayEntries.forEach(entry => {
+          const hours = calculateHours(entry);
+          if (hours > 0) {
+            dayData.workedHours += hours;
+            dayData.breakHours += entry.break_hours || 0;
+            dayData.overtimeHours += entry.overtime_hours || 0;
+            uniqueUsers.add(entry.user_id);
+          }
+        });
+
+        dayData.userCount = uniqueUsers.size;
+        dailyData.push(dayData);
+      }
+
+      // Calculate week totals
+      const uniqueUsersWeek = new Set();
+      let totalWorked = 0;
+      let totalBreaks = 0;
+      let totalOvertime = 0;
+
+      weekData.forEach(entry => {
+        const hours = calculateHours(entry);
+        if (hours > 0) {
+          totalWorked += hours;
+          totalBreaks += entry.break_hours || 0;
+          totalOvertime += entry.overtime_hours || 0;
+          uniqueUsersWeek.add(entry.user_id);
+        }
+      });
+
+      const activeUsers = uniqueUsersWeek.size;
+      const avgPerUser = activeUsers > 0 ? totalWorked / activeUsers : 0;
+
+      // Format week range
+      const formatDate = (date) => {
+        return date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric'
+        });
+      };
+
+      setChartData(dailyData);
+      setWeekRange(`${formatDate(weekStart)} - ${formatDate(weekEnd)}`);
+      setTotals({
+        totalWorked: Math.round(totalWorked * 10) / 10,
+        totalBreaks: Math.round(totalBreaks * 10) / 10,
+        totalOvertime: Math.round(totalOvertime * 10) / 10,
+        activeUsers,
+        avgPerUser: Math.round(avgPerUser * 10) / 10
+      });
+
+      console.log('📊 WEEKLY CHART: Data processed', {
+        weekRange: `${formatDate(weekStart)} - ${formatDate(weekEnd)}`,
+        totalEntries: weekData.length,
+        totalWorked,
+        activeUsers,
+        viewMode
+      });
 
     } catch (error) {
-      console.error('📊 WEEKLY CHART ERROR:', error);
-      setError('Failed to load chart data');
-      // Set fallback data to show the chart structure (preserving original fallback)
-      setChartData(getFallbackData());
+      console.error('📊 WEEKLY CHART: Error fetching data:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const getCurrentWeekDates = () => {
-    const today = new Date();
-    const currentDay = today.getDay();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - currentDay);
-    
-    const weekDates = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      weekDates.push(date);
-    }
-    return weekDates;
-  };
-
-  const processWeeklyData = (timesheetData, weekDates) => {
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
-    return weekDates.map((date, index) => {
-      const dateStr = date.toISOString().split('T')[0];
-      
-      // Find entries for this date
-      const dayEntries = timesheetData.filter(entry => {
-        if (!entry.date) return false;
-        
-        try {
-          // Handle different date formats
-          let entryDate;
-          if (entry.date instanceof Date) {
-            entryDate = entry.date.toISOString().split('T')[0];
-          } else {
-            entryDate = new Date(entry.date).toISOString().split('T')[0];
-          }
-          return entryDate === dateStr;
-        } catch (error) {
-          console.warn('📊 WEEKLY CHART: Invalid date format:', entry.date);
-          return false;
-        }
-      });
-
-      // Calculate totals for the day
-      const workedHours = dayEntries.reduce((sum, entry) => {
-        return sum + (parseFloat(entry.hours_worked) || parseFloat(entry.regular_hours) || 0);
-      }, 0);
-
-      const breakTime = dayEntries.reduce((sum, entry) => {
-        const breakDuration = parseFloat(entry.break_duration) || 0;
-        const lunchDuration = parseFloat(entry.lunch_duration) || 0;
-        return sum + (breakDuration + lunchDuration) / 60; // Convert minutes to hours
-      }, 0);
-
-      const overtimeHours = dayEntries.reduce((sum, entry) => {
-        return sum + (parseFloat(entry.daily_overtime_hours) || parseFloat(entry.overtime_hours) || 0);
-      }, 0);
-
-      // NEW: Calculate unique users for organization view
-      const uniqueUsers = viewMode === 'organization' ? 
-        new Set(dayEntries.map(entry => entry.user_id)).size : 
-        (dayEntries.length > 0 ? 1 : 0);
-
-      return {
-        day: dayNames[index],
-        date: date,
-        workedHours: Math.round(workedHours * 10) / 10,
-        breakTime: Math.round(breakTime * 10) / 10,
-        overtimeHours: Math.round(overtimeHours * 10) / 10,
-        entries: dayEntries.length,
-        uniqueUsers: uniqueUsers // NEW: Track unique users
-      };
-    });
-  };
-
-  const getFallbackData = () => {
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const currentWeekDates = getCurrentWeekDates();
-    
-    return dayNames.map((day, index) => ({
-      day,
-      date: currentWeekDates[index],
-      workedHours: index === 2 ? 3.5 : 0, // Show 3.5h on Tuesday
-      breakTime: 0,
-      overtimeHours: index === 2 ? 3.5 : 0, // Show 3.5h overtime on Tuesday
-      entries: index === 2 ? 1 : 0,
-      uniqueUsers: index === 2 ? 1 : 0 // NEW: Fallback unique users
-    }));
-  };
-
-  const getTotalHours = () => {
-    return {
-      worked: chartData.reduce((sum, day) => sum + day.workedHours, 0),
-      breaks: chartData.reduce((sum, day) => sum + day.breakTime, 0),
-      overtime: chartData.reduce((sum, day) => sum + day.overtimeHours, 0)
-    };
+  const formatHours = (hours) => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}` : `${m}m`;
   };
 
   const getMaxHours = () => {
-    return Math.max(
-      ...chartData.map(day => day.workedHours + day.overtimeHours),
-      8 // Minimum scale of 8 hours
-    );
+    return Math.max(...chartData.map(day => day.workedHours), 8);
   };
 
-  // NEW: Get organization stats
-  const getOrgStats = () => {
-    if (viewMode !== 'organization') return null;
-    
-    const totalUsers = Math.max(...chartData.map(day => day.uniqueUsers));
-    const totalEntries = chartData.reduce((sum, day) => sum + day.entries, 0);
-    const avgHoursPerUser = totalUsers > 0 ? 
-      getTotalHours().worked / totalUsers : 0;
-
-    return {
-      totalUsers,
-      totalEntries,
-      avgHoursPerUser: Math.round(avgHoursPerUser * 10) / 10
-    };
-  };
-
-  const handleViewModeChange = (mode) => {
-    if (mode === 'organization' && !canViewOrgData) {
-      console.warn('📊 WEEKLY CHART: User does not have permission for organization view');
-      return;
-    }
-    setViewMode(mode);
+  const canToggleView = () => {
+    return user?.role === 'admin';
   };
 
   if (loading) {
     return (
-      <div style={{ 
-        padding: '20px', 
-        backgroundColor: 'white', 
-        borderRadius: '8px', 
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        textAlign: 'center'
-      }}>
-        <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '10px' }}>
-          Tracked Hours This Week
+      <div className="weekly-chart-container">
+        <div className="chart-header">
+          <h3>Tracked Hours This Week</h3>
         </div>
-        <div>Loading chart data...</div>
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading weekly data...</p>
+        </div>
       </div>
     );
   }
 
-  const totals = getTotalHours();
+  if (error) {
+    return (
+      <div className="weekly-chart-container">
+        <div className="chart-header">
+          <h3>Tracked Hours This Week</h3>
+        </div>
+        <div className="error-state">
+          <p>Error: {error}</p>
+          <button onClick={fetchWeeklyData} className="retry-button">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const maxHours = getMaxHours();
-  const orgStats = getOrgStats();
 
   return (
-    <div style={{ 
-      padding: '20px', 
-      backgroundColor: 'white', 
-      borderRadius: '8px', 
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      {/* Header with View Mode Toggle */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '20px' 
-      }}>
+    <div className="weekly-chart-container">
+      <div className="chart-header">
         <div>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>
-            Tracked Hours This Week
-          </h3>
-          {/* NEW: View mode indicator */}
-          {viewMode === 'organization' && (
-            <p style={{ 
-              margin: '4px 0 0 0', 
-              fontSize: '14px', 
-              color: '#6b7280',
-              fontStyle: 'italic' 
-            }}>
-              Organization-wide view • {orgStats?.totalUsers || 0} users
-            </p>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          {/* NEW: View Mode Toggle for Admin Users */}
-          {canViewOrgData && (
-            <div style={{ 
-              display: 'flex', 
-              gap: '8px',
-              marginRight: '20px'
-            }}>
-              <button
-                onClick={() => handleViewModeChange('personal')}
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '4px',
-                  backgroundColor: viewMode === 'personal' ? '#3b82f6' : 'white',
-                  color: viewMode === 'personal' ? 'white' : '#374151',
-                  cursor: 'pointer',
-                  fontWeight: viewMode === 'personal' ? 'bold' : 'normal'
-                }}
+          <h3>Tracked Hours This Week</h3>
+          <p className="week-range">{weekRange}</p>
+          {canToggleView() && (
+            <div className="view-toggle">
+              <button 
+                className={viewMode === 'personal' ? 'active' : ''}
+                onClick={() => setViewMode('personal')}
               >
                 Personal
               </button>
-              <button
-                onClick={() => handleViewModeChange('organization')}
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '4px',
-                  backgroundColor: viewMode === 'organization' ? '#3b82f6' : 'white',
-                  color: viewMode === 'organization' ? 'white' : '#374151',
-                  cursor: 'pointer',
-                  fontWeight: viewMode === 'organization' ? 'bold' : 'normal'
-                }}
+              <button 
+                className={viewMode === 'organization' ? 'active' : ''}
+                onClick={() => setViewMode('organization')}
               >
                 Organization
               </button>
             </div>
           )}
+        </div>
+      </div>
 
-          {/* Legend (preserved original) */}
-          <div style={{ display: 'flex', gap: '20px', fontSize: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <div style={{ 
-                width: '12px', 
-                height: '12px', 
-                backgroundColor: '#3b82f6', 
-                borderRadius: '50%' 
-              }}></div>
-              <span>Worked Hours</span>
+      <div className="chart-content">
+        <div className="chart-bars">
+          {chartData.map((day, index) => (
+            <div key={index} className="day-column">
+              <div className="day-label">{day.shortDay}</div>
+              
+              <div className="bar-container" style={{ height: '200px' }}>
+                {/* Worked Hours Bar */}
+                {day.workedHours > 0 && (
+                  <div 
+                    className="bar worked-bar"
+                    style={{ 
+                      height: `${(day.workedHours / maxHours) * 180}px`,
+                      background: 'linear-gradient(to top, #3b82f6, #60a5fa)'
+                    }}
+                    title={`${formatHours(day.workedHours)} worked`}
+                  >
+                    <span className="bar-value">{day.workedHours.toFixed(1)}</span>
+                  </div>
+                )}
+
+                {/* Break Hours Bar (stacked) */}
+                {day.breakHours > 0 && (
+                  <div 
+                    className="bar break-bar"
+                    style={{ 
+                      height: `${(day.breakHours / maxHours) * 180}px`,
+                      background: 'linear-gradient(to top, #10b981, #34d399)',
+                      marginTop: day.workedHours > 0 ? '2px' : '0'
+                    }}
+                    title={`${formatHours(day.breakHours)} breaks`}
+                  >
+                    <span className="bar-value">{day.breakHours.toFixed(1)}</span>
+                  </div>
+                )}
+
+                {/* Overtime Hours Bar (stacked) */}
+                {day.overtimeHours > 0 && (
+                  <div 
+                    className="bar overtime-bar"
+                    style={{ 
+                      height: `${(day.overtimeHours / maxHours) * 180}px`,
+                      background: 'linear-gradient(to top, #f59e0b, #fbbf24)',
+                      marginTop: (day.workedHours > 0 || day.breakHours > 0) ? '2px' : '0'
+                    }}
+                    title={`${formatHours(day.overtimeHours)} overtime`}
+                  >
+                    <span className="bar-value">{day.overtimeHours.toFixed(1)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="day-info">
+                <div className="day-hours">{formatHours(day.workedHours)}</div>
+                <div className="day-users">{day.userCount} user{day.userCount !== 1 ? 's' : ''}</div>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <div style={{ 
-                width: '12px', 
-                height: '12px', 
-                backgroundColor: '#10b981', 
-                borderRadius: '50%' 
-              }}></div>
-              <span>Break Time</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <div style={{ 
-                width: '12px', 
-                height: '12px', 
-                backgroundColor: '#f59e0b', 
-                borderRadius: '50%' 
-              }}></div>
-              <span>Overtime</span>
-            </div>
+          ))}
+        </div>
+
+        <div className="chart-legend">
+          <div className="legend-item">
+            <span className="legend-color" style={{ background: '#3b82f6' }}></span>
+            <span>Worked Hours</span>
+          </div>
+          <div className="legend-item">
+            <span className="legend-color" style={{ background: '#10b981' }}></span>
+            <span>Break Time</span>
+          </div>
+          <div className="legend-item">
+            <span className="legend-color" style={{ background: '#f59e0b' }}></span>
+            <span>Overtime</span>
+          </div>
+        </div>
+
+        <div className="chart-summary">
+          <div className="summary-item">
+            <span className="summary-label">Total Worked:</span>
+            <span className="summary-value">{formatHours(totals.totalWorked)}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Total Breaks:</span>
+            <span className="summary-value">{formatHours(totals.totalBreaks)}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Total Overtime:</span>
+            <span className="summary-value">{formatHours(totals.totalOvertime)}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Active Users:</span>
+            <span className="summary-value">{totals.activeUsers}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Avg per User:</span>
+            <span className="summary-value">{formatHours(totals.avgPerUser)}</span>
           </div>
         </div>
       </div>
 
-      {/* Chart (preserved original with enhancements) */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'flex-end', 
-        gap: '15px', 
-        height: '200px',
-        marginBottom: '20px',
-        padding: '0 10px'
-      }}>
-        {chartData.map((dayData, index) => {
-          const totalDayHours = dayData.workedHours + dayData.overtimeHours;
-          const workedHeight = maxHours > 0 ? (dayData.workedHours / maxHours) * 160 : 0;
-          const overtimeHeight = maxHours > 0 ? (dayData.overtimeHours / maxHours) * 160 : 0;
-          const breakHeight = maxHours > 0 ? (dayData.breakTime / maxHours) * 160 : 0;
+      <style jsx>{`
+        .weekly-chart-container {
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
 
-          return (
-            <div key={index} style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center',
-              flex: 1,
-              minWidth: '60px'
-            }}>
-              {/* Day label */}
-              <div style={{ 
-                fontSize: '14px', 
-                fontWeight: 'bold', 
-                marginBottom: '8px',
-                color: '#374151'
-              }}>
-                {dayData.day}
-              </div>
+        .chart-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 24px;
+        }
 
-              {/* Bar container */}
-              <div style={{ 
-                position: 'relative',
-                width: '40px',
-                height: '160px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-end',
-                marginBottom: '8px'
-              }}>
-                {/* Worked hours bar */}
-                {dayData.workedHours > 0 && (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: `${Math.max(workedHeight, 4)}px`,
-                      backgroundColor: '#3b82f6',
-                      borderRadius: '4px 4px 0 0',
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '10px',
-                      fontWeight: 'bold'
-                    }}
-                    title={`Worked: ${dayData.workedHours}h${viewMode === 'organization' ? ` (${dayData.uniqueUsers} users)` : ''}`}
-                  >
-                    {dayData.workedHours > 0 && dayData.workedHours}
-                  </div>
-                )}
+        .chart-header h3 {
+          margin: 0 0 4px 0;
+          font-size: 18px;
+          font-weight: 600;
+          color: #1f2937;
+        }
 
-                {/* Overtime bar */}
-                {dayData.overtimeHours > 0 && (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: `${Math.max(overtimeHeight, 4)}px`,
-                      backgroundColor: '#f59e0b',
-                      borderRadius: dayData.workedHours > 0 ? '0' : '4px 4px 0 0',
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      marginTop: dayData.workedHours > 0 ? '1px' : '0'
-                    }}
-                    title={`Overtime: ${dayData.overtimeHours}h${viewMode === 'organization' ? ` (${dayData.uniqueUsers} users)` : ''}`}
-                  >
-                    {dayData.overtimeHours > 0 && `OT: ${dayData.overtimeHours}`}
-                  </div>
-                )}
+        .week-range {
+          margin: 0;
+          font-size: 14px;
+          color: #6b7280;
+        }
 
-                {/* Break time indicator (small bar at bottom) */}
-                {dayData.breakTime > 0 && (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '3px',
-                      backgroundColor: '#10b981',
-                      borderRadius: '0 0 4px 4px',
-                      marginTop: '1px'
-                    }}
-                    title={`Break: ${dayData.breakTime}h${viewMode === 'organization' ? ` (${dayData.uniqueUsers} users)` : ''}`}
-                  />
-                )}
-              </div>
+        .view-toggle {
+          display: flex;
+          background: #f3f4f6;
+          border-radius: 8px;
+          padding: 2px;
+        }
 
-              {/* Hours text with user count for org view */}
-              <div style={{ 
-                fontSize: '12px', 
-                color: '#6b7280',
-                textAlign: 'center',
-                lineHeight: '1.2'
-              }}>
-                {totalDayHours > 0 ? `${totalDayHours}h` : '0.0h'}
-                {dayData.overtimeHours > 0 && (
-                  <div style={{ fontSize: '10px', color: '#f59e0b' }}>
-                    OT: {dayData.overtimeHours}h
-                  </div>
-                )}
-                {/* NEW: Show user count in organization view */}
-                {viewMode === 'organization' && dayData.uniqueUsers > 0 && (
-                  <div style={{ fontSize: '10px', color: '#6b7280' }}>
-                    {dayData.uniqueUsers} user{dayData.uniqueUsers !== 1 ? 's' : ''}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+        .view-toggle button {
+          padding: 6px 12px;
+          border: none;
+          background: transparent;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          color: #6b7280;
+        }
 
-      {/* Summary (enhanced with organization stats) */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between',
-        fontSize: '14px',
-        color: '#374151',
-        borderTop: '1px solid #e5e7eb',
-        paddingTop: '15px',
-        flexWrap: 'wrap',
-        gap: '10px'
-      }}>
-        <div>
-          <strong>Total Worked: {totals.worked.toFixed(1)}h</strong>
-        </div>
-        <div>
-          Total Breaks: {totals.breaks.toFixed(1)}h
-        </div>
-        <div style={{ color: '#f59e0b' }}>
-          <strong>Total Overtime: {totals.overtime.toFixed(1)}h</strong>
-        </div>
-        
-        {/* NEW: Organization stats */}
-        {orgStats && (
-          <>
-            <div style={{ color: '#6b7280' }}>
-              Active Users: {orgStats.totalUsers}
-            </div>
-            <div style={{ color: '#6b7280' }}>
-              Avg per User: {orgStats.avgHoursPerUser}h
-            </div>
-          </>
-        )}
-      </div>
+        .view-toggle button.active {
+          background: white;
+          color: #1f2937;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
 
-      {error && (
-        <div style={{ 
-          marginTop: '10px', 
-          padding: '10px', 
-          backgroundColor: '#fef2f2', 
-          color: '#dc2626', 
-          borderRadius: '4px',
-          fontSize: '14px'
-        }}>
-          {error}
-        </div>
-      )}
+        .chart-content {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .chart-bars {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 8px;
+          padding: 0 8px;
+        }
+
+        .day-column {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .day-label {
+          font-size: 12px;
+          font-weight: 500;
+          color: #6b7280;
+          text-align: center;
+        }
+
+        .bar-container {
+          display: flex;
+          flex-direction: column-reverse;
+          align-items: center;
+          justify-content: flex-end;
+          width: 100%;
+          position: relative;
+        }
+
+        .bar {
+          width: 100%;
+          max-width: 40px;
+          border-radius: 4px 4px 0 0;
+          position: relative;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          padding-top: 4px;
+          transition: all 0.3s ease;
+          cursor: pointer;
+        }
+
+        .bar:hover {
+          transform: scaleX(1.1);
+          z-index: 10;
+        }
+
+        .bar-value {
+          font-size: 10px;
+          font-weight: 600;
+          color: white;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .day-info {
+          text-align: center;
+        }
+
+        .day-hours {
+          font-size: 14px;
+          font-weight: 600;
+          color: #1f2937;
+        }
+
+        .day-users {
+          font-size: 11px;
+          color: #6b7280;
+        }
+
+        .chart-legend {
+          display: flex;
+          justify-content: center;
+          gap: 24px;
+          padding: 16px 0;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .legend-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          color: #6b7280;
+        }
+
+        .legend-color {
+          width: 12px;
+          height: 12px;
+          border-radius: 2px;
+        }
+
+        .chart-summary {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 16px;
+          padding: 16px 0;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .summary-item {
+          text-align: center;
+        }
+
+        .summary-label {
+          display: block;
+          font-size: 11px;
+          color: #6b7280;
+          margin-bottom: 4px;
+        }
+
+        .summary-value {
+          display: block;
+          font-size: 16px;
+          font-weight: 600;
+          color: #1f2937;
+        }
+
+        .loading-state, .error-state {
+          text-align: center;
+          padding: 40px 20px;
+          color: #6b7280;
+        }
+
+        .loading-spinner {
+          width: 24px;
+          height: 24px;
+          border: 2px solid #f3f4f6;
+          border-top: 2px solid #3b82f6;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .retry-button {
+          background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 12px;
+          margin-top: 8px;
+        }
+
+        .retry-button:hover {
+          background: #2563eb;
+        }
+      `}</style>
     </div>
   );
 };
