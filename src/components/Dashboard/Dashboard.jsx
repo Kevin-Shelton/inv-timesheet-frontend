@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/utils/supabase'
+import { supabase } from '@/supabaseClient'
 
 // Dashboard component with REAL DATA from database
 export function Dashboard() {
