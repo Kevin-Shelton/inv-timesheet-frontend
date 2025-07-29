@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../../utils/supabase'
+import { supabase } from '../../supabaseClient'
 
 export function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -872,4 +872,7 @@ export function Dashboard() {
     </div>
   )
 }
+
+
+export default Dashboard
 
