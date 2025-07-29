@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabaseClient } from '../../utils/supabase'
+import { supabase } from '../../utils/supabase'
 
 export function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -41,7 +41,7 @@ export function Dashboard() {
       endOfWeek.setHours(23, 59, 59, 999)
 
       // Fetch timesheet entries for this week
-      const { data: timesheetEntries, error: timesheetError } = await supabaseClient
+         const { data: timesheetData, error: timesheetError } = await supabase
         .from('timesheet_entries')
         .select(`
           *,
@@ -56,7 +56,7 @@ export function Dashboard() {
       }
 
       // Fetch all active users for user count
-      const { data: activeUsers, error: usersError } = await supabaseClient
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id, full_name, role')
         .eq('is_active', true)
