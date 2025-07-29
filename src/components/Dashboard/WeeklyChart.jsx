@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabaseApi } from '../../supabaseClient.js';
+import { supabase } from '../../supabaseClient.js'; // FIXED: Direct import
 import { useAuth } from '../../hooks/useAuth';
 
 const WeeklyChart = () => {
@@ -30,8 +30,8 @@ const WeeklyChart = () => {
 
       console.log('📊 WEEKLY CHART: Fetching data for', viewMode, 'view');
 
-      // FIXED: Get data from the most recent week with timesheet entries
-      const { data: recentData, error: fetchError } = await supabaseApi.supabase
+      // FIXED: Use direct supabase import instead of supabaseApi.supabase
+      const { data: recentData, error: fetchError } = await supabase
         .from('timesheet_entries')
         .select(`
           date,

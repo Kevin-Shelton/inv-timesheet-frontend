@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabaseApi } from '../../supabaseClient.js';
+import { supabase } from '../../supabaseClient.js'; // FIXED: Direct import
 import { useAuth } from '../../hooks/useAuth';
 
 const WelcomeCard = () => {
@@ -43,9 +43,8 @@ const WelcomeCard = () => {
     try {
       setLoading(true);
 
-      // FIXED: Get data from the most recent week with timesheet entries
-      // instead of forcing current week
-      const { data: recentData, error: recentError } = await supabaseApi.supabase
+      // FIXED: Use direct supabase import instead of supabaseApi.supabase
+      const { data: recentData, error: recentError } = await supabase
         .from('timesheet_entries')
         .select(`
           date,
