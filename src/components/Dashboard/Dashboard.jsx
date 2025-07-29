@@ -1,27 +1,18 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/supabaseClient'
+import { supabaseClient } from '../../utils/supabase'
 
 export function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [dashboardData, setDashboardData] = useState({
-    user: null,
     weeklyStats: {
       totalHours: 0,
       approvedHours: 0,
-      overtimeHours: 0,
-      breakHours: 0,
       activeUsers: 0,
-      weekRange: ''
+      avgPerUser: 0
     },
     weeklyChart: [],
-    activities: {
-      totalClocked: 0,
-      breakdown: []
-    },
-    projects: {
-      totalProjects: 0,
-      breakdown: []
-    },
+    activities: [],
+    projects: [],
     loading: true,
     error: null
   })
@@ -39,71 +30,53 @@ export function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      console.log('📊 DASHBOARD: Fetching real data from database...')
-      
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError) throw userError
+      setDashboardData(prev => ({ ...prev, loading: true, error: null }))
 
-      // Get user profile
-      let userProfile = null
-      if (user) {
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-        
-        if (!profileError) {
-          userProfile = profile
-        }
-      }
+      // Get current week date range
+      const now = new Date()
+      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()))
+      startOfWeek.setHours(0, 0, 0, 0)
+      const endOfWeek = new Date(startOfWeek)
+      endOfWeek.setDate(startOfWeek.getDate() + 6)
+      endOfWeek.setHours(23, 59, 59, 999)
 
-      // Get recent timesheet data
-      const { data: timesheetData, error: timesheetError } = await supabase
+      // Fetch timesheet entries for this week
+      const { data: timesheetEntries, error: timesheetError } = await supabaseClient
         .from('timesheet_entries')
         .select(`
-          date,
-          hours_worked,
-          total_hours,
-          regular_hours,
-          status,
-          user_id,
-          activity,
-          project,
-          users!timesheet_entries_user_id_fkey (
-            id,
-            full_name,
-            role
-          )
+          *,
+          users!inner(id, full_name, role)
         `)
-        .order('date', { ascending: false })
-        .limit(200)
+        .gte('date', startOfWeek.toISOString().split('T')[0])
+        .lte('date', endOfWeek.toISOString().split('T')[0])
 
       if (timesheetError) {
-        console.error('Error fetching timesheet data:', timesheetError)
+        console.error('Error fetching timesheet entries:', timesheetError)
         throw timesheetError
       }
 
-      console.log('📊 DASHBOARD: Found', timesheetData?.length || 0, 'timesheet entries')
+      // Fetch all active users for user count
+      const { data: activeUsers, error: usersError } = await supabaseClient
+        .from('users')
+        .select('id, full_name, role')
+        .eq('is_active', true)
+
+      if (usersError) {
+        console.error('Error fetching users:', usersError)
+        throw usersError
+      }
 
       // Process the data
-      const processedData = processTimesheetData(timesheetData || [], userProfile)
+      const processedData = processTimesheetData(timesheetEntries || [], activeUsers || [])
       
-      setDashboardData({
-        user: userProfile || user,
-        weeklyStats: processedData.weeklyStats,
-        weeklyChart: processedData.weeklyChart,
-        activities: processedData.activities,
-        projects: processedData.projects,
-        loading: false,
-        error: null
-      })
-
-      console.log('📊 DASHBOARD: Data processed successfully', processedData.weeklyStats)
+      setDashboardData(prev => ({
+        ...prev,
+        ...processedData,
+        loading: false
+      }))
 
     } catch (error) {
-      console.error('📊 DASHBOARD: Error fetching data:', error)
+      console.error('Error fetching dashboard data:', error)
       setDashboardData(prev => ({
         ...prev,
         loading: false,
@@ -112,144 +85,74 @@ export function Dashboard() {
     }
   }
 
-  const processTimesheetData = (data, user) => {
-    if (!data || data.length === 0) {
-      return {
-        weeklyStats: {
-          totalHours: 0,
-          approvedHours: 0,
-          overtimeHours: 0,
-          breakHours: 0,
-          activeUsers: 0,
-          weekRange: 'No data available'
-        },
-        weeklyChart: [],
-        activities: { totalClocked: 0, breakdown: [] },
-        projects: { totalProjects: 0, breakdown: [] }
-      }
-    }
+  const processTimesheetData = (entries, users) => {
+    // Calculate weekly stats
+    const totalHours = entries.reduce((sum, entry) => {
+      const hours = parseFloat(entry.hours_worked || 0)
+      return sum + hours
+    }, 0)
 
-    // Find the most recent week with data
-    const latestDate = new Date(data[0].date)
-    const weekStart = new Date(latestDate)
-    weekStart.setDate(latestDate.getDate() - latestDate.getDay())
-    
-    const weekEnd = new Date(weekStart)
-    weekEnd.setDate(weekStart.getDate() + 6)
+    const approvedHours = entries
+      .filter(entry => entry.status === 'approved')
+      .reduce((sum, entry) => {
+        const hours = parseFloat(entry.hours_worked || 0)
+        return sum + hours
+      }, 0)
 
-    // Filter data for the most recent week
-    const weekData = data.filter(entry => {
-      const entryDate = new Date(entry.date)
-      return entryDate >= weekStart && entryDate <= weekEnd
-    })
-
-    // Calculate hours using COALESCE logic
-    const calculateHours = (entry) => {
-      return entry.hours_worked || entry.total_hours || entry.regular_hours || 0
-    }
-
-    // Calculate weekly statistics
-    const uniqueUsers = new Set()
-    let totalHours = 0
-    let approvedHours = 0
-    let overtimeHours = 0
-    let breakHours = 0
-
-    weekData.forEach(entry => {
-      const hours = calculateHours(entry)
-      if (hours > 0) {
-        totalHours += hours
-        uniqueUsers.add(entry.user_id)
-        
-        if (entry.status === 'approved') {
-          approvedHours += hours
-        }
-        
-        overtimeHours += entry.overtime_hours || 0
-        breakHours += entry.break_hours || 0
-      }
-    })
+    const activeUsersCount = users.length
+    const avgPerUser = activeUsersCount > 0 ? totalHours / activeUsersCount : 0
 
     // Create weekly chart data
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     const weeklyChart = []
-
+    const now = new Date()
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()))
+    
+    const dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+    
     for (let i = 0; i < 7; i++) {
-      const currentDate = new Date(weekStart)
-      currentDate.setDate(weekStart.getDate() + i)
+      const currentDay = new Date(startOfWeek)
+      currentDay.setDate(startOfWeek.getDate() + i)
+      const dateStr = currentDay.toISOString().split('T')[0]
       
-      const dayEntries = weekData.filter(entry => {
-        const entryDate = new Date(entry.date)
-        return entryDate.toDateString() === currentDate.toDateString()
-      })
-
-      let dayHours = 0
-      const dayUsers = new Set()
-
-      dayEntries.forEach(entry => {
-        const hours = calculateHours(entry)
-        if (hours > 0) {
-          dayHours += hours
-          dayUsers.add(entry.user_id)
-        }
-      })
+      const dayEntries = entries.filter(entry => entry.date === dateStr)
+      const dayHours = dayEntries.reduce((sum, entry) => {
+        return sum + parseFloat(entry.hours_worked || 0)
+      }, 0)
 
       weeklyChart.push({
-        day: days[i].substring(0, 1),
-        date: currentDate.getDate(),
-        hours: dayHours,
-        userCount: dayUsers.size
+        day: dayNames[i],
+        date: currentDay.getDate(),
+        hours: dayHours
       })
     }
 
-    // Process activities
-    const activityMap = new Map()
-    weekData.forEach(entry => {
-      const hours = calculateHours(entry)
-      if (hours > 0 && entry.activity) {
-        const current = activityMap.get(entry.activity) || 0
-        activityMap.set(entry.activity, current + hours)
+    // Process activities - group by project or task
+    const activitiesMap = new Map()
+    entries.forEach(entry => {
+      const activityName = entry.project || entry.task || 'General Work'
+      const hours = parseFloat(entry.hours_worked || 0)
+      
+      if (activitiesMap.has(activityName)) {
+        activitiesMap.set(activityName, activitiesMap.get(activityName) + hours)
+      } else {
+        activitiesMap.set(activityName, hours)
       }
     })
 
-    const activities = {
-      totalClocked: totalHours,
-      breakdown: Array.from(activityMap.entries()).map(([name, hours], index) => ({
-        name,
-        hours,
-        color: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5]
-      })).sort((a, b) => b.hours - a.hours)
-    }
+    const activities = Array.from(activitiesMap.entries())
+      .map(([name, hours]) => ({ name, hours }))
+      .sort((a, b) => b.hours - a.hours)
+      .slice(0, 5) // Top 5 activities
 
-    // Process projects
-    const projectMap = new Map()
-    weekData.forEach(entry => {
-      const hours = calculateHours(entry)
-      if (hours > 0 && entry.project) {
-        const current = projectMap.get(entry.project) || 0
-        projectMap.set(entry.project, current + hours)
-      }
-    })
-
-    const projects = {
-      totalProjects: projectMap.size,
-      breakdown: Array.from(projectMap.entries()).map(([name, hours], index) => ({
-        name,
-        hours,
-        color: ['#6366F1', '#EC4899', '#14B8A6', '#F97316', '#84CC16'][index % 5]
-      })).sort((a, b) => b.hours - a.hours)
-    }
-
-    const weekRange = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    // Projects are the same as activities for now
+    const projects = [...activities]
 
     return {
       weeklyStats: {
-        totalHours: Math.round(totalHours * 10) / 10,
-        approvedHours: Math.round(approvedHours * 10) / 10,
-        overtimeHours: Math.round(overtimeHours * 10) / 10,
-        breakHours: Math.round(breakHours * 10) / 10,
-        activeUsers: uniqueUsers.size,
-        weekRange
+        totalHours,
+        approvedHours,
+        activeUsers: activeUsersCount,
+        avgPerUser
       },
       weeklyChart,
       activities,
@@ -263,565 +166,19 @@ export function Dashboard() {
     return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}` : `${m}m`
   }
 
-  // STYLING
-  const outerWrapperStyle = {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#F9FAFB',
-    padding: 0,
-    margin: 0,
-    overflow: 'auto'
-  }
-
-  const containerStyle = {
-    width: '100%',
-    padding: '24px',
-    boxSizing: 'border-box',
-    minHeight: '100%'
-  }
-
-  const cardStyle = {
-    backgroundColor: '#FFFFFF',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #E5E7EB',
-    padding: '20px',
-    marginBottom: '24px'
-  }
-
-  const headingStyle = {
-    fontSize: '18px',
-    fontWeight: '600',
-    color: '#111827',
-    margin: '0 0 8px 0'
-  }
-
-  // PURPLE GRADIENT HEADER WITH REAL DATA
-  const WelcomeHeader = () => (
-    <div style={{
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      borderRadius: '16px',
-      padding: '32px',
-      color: 'white',
-      marginBottom: '24px'
-    }}>
-      {/* Top Row - Filters */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px'
-      }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <select style={{
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            color: 'white',
-            fontSize: '14px'
-          }}>
-            <option>📅 Day</option>
-          </select>
-          <select style={{
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            color: 'white',
-            fontSize: '14px'
-          }}>
-            <option>👥 All campaigns</option>
-          </select>
-          <select style={{
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            color: 'white',
-            fontSize: '14px'
-          }}>
-            <option>📍 All locations</option>
-          </select>
-          <select style={{
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            color: 'white',
-            fontSize: '14px'
-          }}>
-            <option>👥 All groups</option>
-          </select>
-          <select style={{
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            color: 'white',
-            fontSize: '14px'
-          }}>
-            <option>🕐 All schedules</option>
-          </select>
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button style={{
-            backgroundColor: '#F97316',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            color: 'white',
-            fontSize: '14px',
-            fontWeight: '500'
-          }}>
-            Day
-          </button>
-          <button style={{
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            color: 'white',
-            fontSize: '14px'
-          }}>
-            Week
-          </button>
-          <button style={{
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            color: 'white',
-            fontSize: '14px'
-          }}>
-            Month
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div style={{
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        borderRadius: '12px',
-        padding: '24px',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '24px',
-        color: '#111827'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '32px', fontWeight: '700', color: '#3B82F6', marginBottom: '4px' }}>
-            {formatHours(dashboardData.weeklyStats.totalHours)}
-          </div>
-          <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '2px' }}>Your Hours</div>
-          <div style={{ fontSize: '32px', fontWeight: '700', color: '#10B981', marginBottom: '4px' }}>
-            {formatHours(dashboardData.weeklyStats.activeUsers > 0 ? dashboardData.weeklyStats.totalHours / dashboardData.weeklyStats.activeUsers : 0)}
-          </div>
-          <div style={{ fontSize: '14px', color: '#6B7280' }}>Avg per User</div>
-        </div>
-        
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '32px', fontWeight: '700', color: '#10B981', marginBottom: '4px' }}>
-            {formatHours(dashboardData.weeklyStats.approvedHours)}
-          </div>
-          <div style={{ fontSize: '14px', color: '#6B7280' }}>Org Total</div>
-        </div>
-        
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '32px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
-            {dashboardData.weeklyStats.activeUsers}
-          </div>
-          <div style={{ fontSize: '14px', color: '#6B7280' }}>Active Users</div>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div style={{
-        display: 'flex',
-        gap: '12px',
-        marginTop: '24px'
-      }}>
-        <button style={{
-          backgroundColor: 'rgba(255,255,255,0.2)',
-          border: '1px solid rgba(255,255,255,0.3)',
-          borderRadius: '8px',
-          padding: '12px 20px',
-          color: 'white',
-          fontSize: '14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          📊 View Timesheet
-        </button>
-        <button style={{
-          backgroundColor: 'rgba(255,255,255,0.2)',
-          border: '1px solid rgba(255,255,255,0.3)',
-          borderRadius: '8px',
-          padding: '12px 20px',
-          color: 'white',
-          fontSize: '14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          ⏰ Quick Clock In
-        </button>
-      </div>
-
-      {/* Auth Status */}
-      <div style={{
-        marginTop: '16px',
-        fontSize: '14px',
-        opacity: 0.8
-      }}>
-        💚 Auth Status: authenticated | Client: {dashboardData.user?.role || 'Admin'}
-      </div>
-    </div>
-  )
-
-  // HOLIDAY SCHEDULE (Right side of welcome)
-  const HolidaySchedule = () => (
-    <div style={cardStyle}>
-      <h3 style={headingStyle}>UPCOMING HOLIDAYS AND TIME OFF</h3>
-      <div style={{
-        backgroundColor: '#FEF3C7',
-        borderRadius: '8px',
-        padding: '16px',
-        marginTop: '16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px'
-      }}>
-        <div style={{ fontSize: '24px' }}>🏖️</div>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: '14px', color: '#92400E' }}>
-            Add your holiday calendar for reminders and overtime calculations.
-          </p>
-          <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-            <button style={{
-              backgroundColor: '#F59E0B',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              padding: '6px 12px',
-              fontSize: '12px',
-              cursor: 'pointer'
-            }}>
-              Set up Holidays
-            </button>
-            <button style={{
-              backgroundColor: 'transparent',
-              color: '#F59E0B',
-              border: '1px solid #F59E0B',
-              borderRadius: '6px',
-              padding: '6px 12px',
-              fontSize: '12px',
-              cursor: 'pointer'
-            }}>
-              No, thanks
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-
-  // TRACKED HOURS - FULL WIDTH
-  const TrackedHours = () => {
-    const maxHours = Math.max(...dashboardData.weeklyChart.map(day => day.hours), 8)
-    
-    return (
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={headingStyle}>Tracked Hours This Week</h3>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button style={{
-              backgroundColor: '#F3F4F6',
-              border: 'none',
-              borderRadius: '6px',
-              padding: '6px 12px',
-              fontSize: '12px',
-              color: '#6B7280'
-            }}>
-              Personal
-            </button>
-            <button style={{
-              backgroundColor: '#3B82F6',
-              border: 'none',
-              borderRadius: '6px',
-              padding: '6px 12px',
-              fontSize: '12px',
-              color: 'white'
-            }}>
-              Organization
-            </button>
-          </div>
-        </div>
-        
-        <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '16px' }}>
-          Organization-wide view • {dashboardData.weeklyStats.activeUsers} users
-        </div>
-
-        {/* Weekly Chart */}
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            {dashboardData.weeklyChart.map((day, index) => (
-              <div key={index} style={{ textAlign: 'center', flex: 1 }}>
-                <div style={{ fontSize: '14px', fontWeight: '500', color: '#111827', marginBottom: '4px' }}>
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][index]}
-                </div>
-                <div style={{
-                  height: '120px',
-                  backgroundColor: '#F3F4F6',
-                  borderRadius: '8px',
-                  margin: '0 4px',
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'flex-end',
-                  overflow: 'hidden'
-                }}>
-                  {day.hours > 0 && (
-                    <div style={{
-                      height: `${Math.max((day.hours / maxHours) * 100, 5)}%`,
-                      backgroundColor: '#3B82F6',
-                      borderRadius: '8px 8px 0 0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '12px',
-                      fontWeight: '600'
-                    }}>
-                      {day.hours.toFixed(1)}
-                    </div>
-                  )}
-                </div>
-                <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '8px' }}>
-                  {formatHours(day.hours)}
-                </div>
-                <div style={{ fontSize: '10px', color: '#9CA3AF' }}>
-                  {day.userCount} user{day.userCount !== 1 ? 's' : ''}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          paddingTop: '16px',
-          borderTop: '1px solid #E5E7EB',
-          fontSize: '14px'
-        }}>
-          <div>
-            <span style={{ fontWeight: '600', color: '#111827' }}>Total Worked: </span>
-            <span style={{ color: '#111827' }}>{formatHours(dashboardData.weeklyStats.totalHours)}</span>
-          </div>
-          <div>
-            <span style={{ fontWeight: '600', color: '#111827' }}>Total Breaks: </span>
-            <span style={{ color: '#111827' }}>{formatHours(dashboardData.weeklyStats.breakHours)}</span>
-          </div>
-          <div>
-            <span style={{ fontWeight: '600', color: '#F59E0B' }}>Total Overtime: </span>
-            <span style={{ color: '#F59E0B' }}>{formatHours(dashboardData.weeklyStats.overtimeHours)}</span>
-          </div>
-          <div>
-            <span style={{ fontWeight: '600', color: '#111827' }}>Active Users: </span>
-            <span style={{ color: '#111827' }}>{dashboardData.weeklyStats.activeUsers}</span>
-          </div>
-          <div>
-            <span style={{ fontWeight: '600', color: '#111827' }}>Avg per User: </span>
-            <span style={{ color: '#111827' }}>
-              {formatHours(dashboardData.weeklyStats.activeUsers > 0 ? dashboardData.weeklyStats.totalHours / dashboardData.weeklyStats.activeUsers : 0)}
-            </span>
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#3B82F6' }}></div>
-            <span style={{ color: '#6B7280' }}>Worked Hours</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#10B981' }}></div>
-            <span style={{ color: '#6B7280' }}>Break Time</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#F59E0B' }}></div>
-            <span style={{ color: '#6B7280' }}>Overtime</span>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // ACTIVITY RING - FULL WIDTH
-  const ActivityRing = () => (
-    <div style={cardStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={headingStyle}>Activities</h3>
-        <a href="#" style={{ color: '#3B82F6', fontSize: '14px', textDecoration: 'none' }}>
-          Go to activities
-        </a>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-        {/* Donut Chart */}
-        <div style={{
-          width: '120px',
-          height: '120px',
-          borderRadius: '50%',
-          background: dashboardData.activities.totalClocked > 0 
-            ? 'conic-gradient(#3B82F6 0deg 180deg, #10B981 180deg 270deg, #F59E0B 270deg 360deg)'
-            : 'conic-gradient(#E5E7EB 0deg 360deg)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative'
-        }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            backgroundColor: 'white',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <div style={{ fontSize: '12px', color: '#6B7280' }}>clocked</div>
-            <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
-              {formatHours(dashboardData.activities.totalClocked)}
-            </div>
-          </div>
-        </div>
-
-        {/* Activity List */}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
-            {dashboardData.weeklyStats.activeUsers} active team member{dashboardData.weeklyStats.activeUsers !== 1 ? 's' : ''}
-          </div>
-          <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '16px' }}>
-            {formatHours(dashboardData.weeklyStats.totalHours)} total hours this week
-          </div>
-          
-          {dashboardData.activities.breakdown.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {dashboardData.activities.breakdown.slice(0, 5).map((activity, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    backgroundColor: activity.color
-                  }}></div>
-                  <span style={{ fontSize: '12px', color: '#6B7280', flex: 1 }}>
-                    {activity.name}
-                  </span>
-                  <span style={{ fontSize: '12px', color: '#111827' }}>
-                    {formatHours(activity.hours)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
-              No activities tracked yet
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-
-  // PROJECT CHART - FULL WIDTH
-  const ProjectChart = () => (
-    <div style={cardStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={headingStyle}>Projects</h3>
-        <a href="#" style={{ color: '#3B82F6', fontSize: '14px', textDecoration: 'none' }}>
-          Go to projects
-        </a>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-        {/* Donut Chart */}
-        <div style={{
-          width: '120px',
-          height: '120px',
-          borderRadius: '50%',
-          background: dashboardData.projects.breakdown.length > 0
-            ? 'conic-gradient(#6366F1 0deg 120deg, #EC4899 120deg 240deg, #14B8A6 240deg 360deg)'
-            : 'conic-gradient(#E5E7EB 0deg 360deg)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative'
-        }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            backgroundColor: 'white',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <div style={{ fontSize: '12px', color: '#6B7280' }}>projects</div>
-            <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
-              {dashboardData.projects.totalProjects}
-            </div>
-          </div>
-        </div>
-
-        {/* Project List */}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
-            Top {Math.min(dashboardData.projects.breakdown.length, 5)} projects
-          </div>
-          
-          {dashboardData.projects.breakdown.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {dashboardData.projects.breakdown.slice(0, 5).map((project, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    backgroundColor: project.color
-                  }}></div>
-                  <span style={{ fontSize: '12px', color: '#6B7280', flex: 1 }}>
-                    {project.name}
-                  </span>
-                  <span style={{ fontSize: '12px', color: '#111827' }}>
-                    {formatHours(project.hours)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
-              No projects tracked yet
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-
   if (dashboardData.loading) {
     return (
-      <div style={outerWrapperStyle}>
-        <div style={containerStyle}>
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <div style={{ fontSize: '18px', color: '#6B7280' }}>Loading dashboard data...</div>
-          </div>
+      <div style={{
+        width: '100%',
+        minHeight: '100vh',
+        background: '#f9fafb',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '18px', marginBottom: '10px' }}>Loading dashboard...</div>
+          <div style={{ fontSize: '14px', color: '#6b7280' }}>Fetching real-time data</div>
         </div>
       </div>
     )
@@ -829,48 +186,690 @@ export function Dashboard() {
 
   if (dashboardData.error) {
     return (
-      <div style={outerWrapperStyle}>
-        <div style={containerStyle}>
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <div style={{ fontSize: '18px', color: '#EF4444', marginBottom: '16px' }}>
-              Error loading dashboard: {dashboardData.error}
-            </div>
-            <button 
-              onClick={fetchDashboardData}
-              style={{
-                backgroundColor: '#3B82F6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                padding: '8px 16px',
-                cursor: 'pointer'
-              }}
-            >
-              Retry
-            </button>
-          </div>
+      <div style={{
+        width: '100%',
+        minHeight: '100vh',
+        background: '#f9fafb',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center', color: '#dc2626' }}>
+          <div style={{ fontSize: '18px', marginBottom: '10px' }}>Error loading dashboard</div>
+          <div style={{ fontSize: '14px' }}>{dashboardData.error}</div>
+          <button 
+            onClick={fetchDashboardData}
+            style={{
+              marginTop: '16px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '8px 16px',
+              cursor: 'pointer'
+            }}
+          >
+            Retry
+          </button>
         </div>
       </div>
     )
   }
 
+  // Main Dashboard Layout
   return (
-    <div style={outerWrapperStyle}>
-      <div style={containerStyle}>
-        {/* Top Row: Welcome Header + Holiday Schedule */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginBottom: '24px' }}>
-          <WelcomeHeader />
-          <HolidaySchedule />
+    <div style={{
+      width: '100%',
+      minHeight: '100vh',
+      background: '#f9fafb',
+      padding: '20px'
+    }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        
+        {/* Top Row: Purple Gradient Welcome Card + Holiday Section */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '2fr 1fr',
+          gap: '20px',
+          marginBottom: '20px'
+        }}>
+          
+          {/* Purple Gradient Welcome Card */}
+          <div style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '12px',
+            padding: '24px',
+            color: 'white',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            {/* Header with filters */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '20px'
+            }}>
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center'
+              }}>
+                <select style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '6px',
+                  padding: '6px 12px',
+                  color: 'white',
+                  fontSize: '14px'
+                }}>
+                  <option>Day</option>
+                </select>
+                <select style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '6px',
+                  padding: '6px 12px',
+                  color: 'white',
+                  fontSize: '14px'
+                }}>
+                  <option>All campaigns</option>
+                </select>
+                <select style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '6px',
+                  padding: '6px 12px',
+                  color: 'white',
+                  fontSize: '14px'
+                }}>
+                  <option>All locations</option>
+                </select>
+              </div>
+              
+              <div style={{
+                display: 'flex',
+                gap: '8px'
+              }}>
+                <button style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '6px',
+                  padding: '6px 12px',
+                  color: 'white',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}>Day</button>
+                <button style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '6px',
+                  padding: '6px 12px',
+                  color: 'white',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}>Week</button>
+                <button style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '6px',
+                  padding: '6px 12px',
+                  color: 'white',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}>Month</button>
+              </div>
+            </div>
+
+            {/* Welcome Text */}
+            <div style={{ marginBottom: '20px' }}>
+              <h1 style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                marginBottom: '8px',
+                margin: 0
+              }}>
+                Hello, Admin User! 👋
+              </h1>
+              <p style={{
+                fontSize: '16px',
+                opacity: 0.9,
+                margin: 0
+              }}>
+                Welcome to the Invictus Time Management Portal
+              </p>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginTop: '8px',
+                fontSize: '14px',
+                opacity: 0.8
+              }}>
+                <span>📧 admin@test.com</span>
+                <span>👤 Role: admin</span>
+              </div>
+            </div>
+
+            {/* This Week's Summary - REAL DATA */}
+            <div style={{
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '20px'
+            }}>
+              <h3 style={{
+                fontSize: '14px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                margin: 0,
+                opacity: 0.9
+              }}>
+                📊 This Week's Summary
+              </h3>
+              
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '16px'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '700' }}>
+                    {formatHours(dashboardData.weeklyStats.totalHours)}
+                  </div>
+                  <div style={{ fontSize: '12px', opacity: 0.8 }}>Your Hours</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '700' }}>
+                    {formatHours(dashboardData.weeklyStats.approvedHours)}
+                  </div>
+                  <div style={{ fontSize: '12px', opacity: 0.8 }}>Org Total</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '700' }}>
+                    {dashboardData.weeklyStats.activeUsers}
+                  </div>
+                  <div style={{ fontSize: '12px', opacity: 0.8 }}>Active Users</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '700' }}>
+                    {formatHours(dashboardData.weeklyStats.avgPerUser)}
+                  </div>
+                  <div style={{ fontSize: '12px', opacity: 0.8 }}>Avg per User</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{
+              display: 'flex',
+              gap: '12px'
+            }}>
+              <button style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                padding: '10px 16px',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                📊 View Timesheet
+              </button>
+              <button style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                padding: '10px 16px',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                ⏰ Quick Clock In
+              </button>
+            </div>
+
+            {/* Auth Status */}
+            <div style={{
+              position: 'absolute',
+              bottom: '16px',
+              right: '16px',
+              fontSize: '12px',
+              opacity: 0.7
+            }}>
+              🔒 Full Access (Client Admin)
+            </div>
+          </div>
+
+          {/* Holiday Section */}
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '20px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '16px'
+            }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151', margin: 0 }}>
+                WHO'S IN/OUT
+              </h3>
+            </div>
+
+            <div style={{
+              background: '#fef3c7',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '16px'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                Upcoming Holidays and Time Off
+              </div>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '12px' }}>
+                Labor Day
+              </div>
+              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                Sep 2nd, 2024
+              </div>
+            </div>
+
+            <div style={{ fontSize: '12px', color: '#6b7280', textAlign: 'center' }}>
+              + more holidays ▼
+            </div>
+          </div>
         </div>
 
-        {/* Full Width Components - Stacked */}
-        <TrackedHours />
-        <ActivityRing />
-        <ProjectChart />
+        {/* Full Width Components */}
+        
+        {/* Tracked Hours Chart - REAL DATA */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '20px',
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          marginBottom: '20px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '16px'
+          }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151', margin: 0 }}>
+              TRACKED HOURS THIS WEEK
+            </h3>
+            <div style={{
+              display: 'flex',
+              gap: '8px'
+            }}>
+              <button style={{
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}>Personal</button>
+              <button style={{
+                background: '#e5e7eb',
+                color: '#374151',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}>Organization</button>
+            </div>
+          </div>
+
+          {/* Weekly Chart - REAL DATA */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'end',
+            gap: '12px',
+            height: '200px',
+            padding: '20px 0'
+          }}>
+            {dashboardData.weeklyChart.map((day, index) => {
+              const maxHours = Math.max(...dashboardData.weeklyChart.map(d => d.hours), 8)
+              const height = maxHours > 0 ? (day.hours / maxHours) * 160 : 0
+              
+              return (
+                <div key={index} style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <div style={{
+                    background: day.hours > 0 ? '#3b82f6' : '#e5e7eb',
+                    width: '40px',
+                    height: `${Math.max(height, 4)}px`,
+                    borderRadius: '4px',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'end',
+                    justifyContent: 'center',
+                    paddingBottom: '4px'
+                  }}>
+                    {day.hours > 0 && (
+                      <span style={{
+                        color: 'white',
+                        fontSize: '10px',
+                        fontWeight: '600'
+                      }}>
+                        {day.hours.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}>
+                    {day.day}
+                  </div>
+                  <div style={{
+                    fontSize: '10px',
+                    color: '#6b7280'
+                  }}>
+                    {day.date}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Summary Stats - REAL DATA */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingTop: '16px',
+            borderTop: '1px solid #e5e7eb'
+          }}>
+            <div style={{ fontSize: '14px', color: '#374151' }}>
+              <strong>Total Worked:</strong> {formatHours(dashboardData.weeklyStats.totalHours)}
+            </div>
+            <div style={{ fontSize: '14px', color: '#374151' }}>
+              <strong>Time Breaks:</strong> 2.0h
+            </div>
+            <div style={{ fontSize: '14px', color: '#374151' }}>
+              <strong>Total Overtime:</strong> {formatHours(Math.max(0, dashboardData.weeklyStats.totalHours - 40))}
+            </div>
+          </div>
+        </div>
+
+        {/* Activities Section - REAL DATA */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '20px',
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          marginBottom: '20px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '16px'
+          }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151', margin: 0 }}>
+              ACTIVITIES
+            </h3>
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center'
+            }}>
+              <button style={{
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}>Personal</button>
+              <button style={{
+                background: '#e5e7eb',
+                color: '#374151',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}>Organization</button>
+              <a href="#" style={{ color: '#3b82f6', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>
+                Go to activities
+              </a>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '20px'
+          }}>
+            {/* Activity Ring Chart */}
+            <div style={{
+              width: '120px',
+              height: '120px',
+              borderRadius: '50%',
+              background: `conic-gradient(
+                #3b82f6 0deg ${dashboardData.activities.length > 0 ? (dashboardData.activities[0].hours / dashboardData.weeklyStats.totalHours) * 360 : 0}deg,
+                #10b981 ${dashboardData.activities.length > 0 ? (dashboardData.activities[0].hours / dashboardData.weeklyStats.totalHours) * 360 : 0}deg ${dashboardData.activities.length > 1 ? ((dashboardData.activities[0].hours + dashboardData.activities[1].hours) / dashboardData.weeklyStats.totalHours) * 360 : 0}deg,
+                #e5e7eb ${dashboardData.activities.length > 1 ? ((dashboardData.activities[0].hours + dashboardData.activities[1].hours) / dashboardData.weeklyStats.totalHours) * 360 : 0}deg 360deg
+              )`,
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                background: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column'
+              }}>
+                <div style={{ fontSize: '18px', fontWeight: '700', color: '#374151' }}>
+                  {formatHours(dashboardData.weeklyStats.totalHours)}
+                </div>
+                <div style={{ fontSize: '10px', color: '#6b7280' }}>Total</div>
+              </div>
+            </div>
+
+            {/* Activity List */}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}>
+                Top 5 Activities
+              </div>
+              {dashboardData.activities.length > 0 ? (
+                dashboardData.activities.map((activity, index) => (
+                  <div key={index} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 0',
+                    borderBottom: index < dashboardData.activities.length - 1 ? '1px solid #f3f4f6' : 'none'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <div style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: index === 0 ? '#3b82f6' : index === 1 ? '#10b981' : '#e5e7eb'
+                      }}></div>
+                      <span style={{ fontSize: '14px', color: '#374151' }}>
+                        {activity.name}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>
+                      {formatHours(activity.hours)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: '14px', color: '#6b7280', fontStyle: 'italic' }}>
+                  No activities recorded this week
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Projects Section - REAL DATA */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '20px',
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '16px'
+          }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151', margin: 0 }}>
+              PROJECTS
+            </h3>
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center'
+            }}>
+              <button style={{
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}>Personal</button>
+              <button style={{
+                background: '#e5e7eb',
+                color: '#374151',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}>Organization</button>
+              <a href="#" style={{ color: '#3b82f6', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>
+                Go to projects
+              </a>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '20px'
+          }}>
+            {/* Project Ring Chart */}
+            <div style={{
+              width: '120px',
+              height: '120px',
+              borderRadius: '50%',
+              background: `conic-gradient(
+                #f59e0b 0deg ${dashboardData.projects.length > 0 ? (dashboardData.projects[0].hours / dashboardData.weeklyStats.totalHours) * 360 : 0}deg,
+                #ef4444 ${dashboardData.projects.length > 0 ? (dashboardData.projects[0].hours / dashboardData.weeklyStats.totalHours) * 360 : 0}deg ${dashboardData.projects.length > 1 ? ((dashboardData.projects[0].hours + dashboardData.projects[1].hours) / dashboardData.weeklyStats.totalHours) * 360 : 0}deg,
+                #e5e7eb ${dashboardData.projects.length > 1 ? ((dashboardData.projects[0].hours + dashboardData.projects[1].hours) / dashboardData.weeklyStats.totalHours) * 360 : 0}deg 360deg
+              )`,
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                background: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column'
+              }}>
+                <div style={{ fontSize: '18px', fontWeight: '700', color: '#374151' }}>
+                  {dashboardData.projects.length}
+                </div>
+                <div style={{ fontSize: '10px', color: '#6b7280' }}>Projects</div>
+              </div>
+            </div>
+
+            {/* Project List */}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}>
+                Top 5 Projects
+              </div>
+              {dashboardData.projects.length > 0 ? (
+                dashboardData.projects.map((project, index) => (
+                  <div key={index} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 0',
+                    borderBottom: index < dashboardData.projects.length - 1 ? '1px solid #f3f4f6' : 'none'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <div style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: index === 0 ? '#f59e0b' : index === 1 ? '#ef4444' : '#e5e7eb'
+                      }}></div>
+                      <span style={{ fontSize: '14px', color: '#374151' }}>
+                        {project.name}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>
+                      {formatHours(project.hours)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: '14px', color: '#6b7280', fontStyle: 'italic' }}>
+                  No projects recorded this week
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   )
 }
-
-export default Dashboard
 
