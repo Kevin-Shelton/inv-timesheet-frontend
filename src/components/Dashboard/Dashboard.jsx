@@ -18,6 +18,10 @@ export function Dashboard() {
       totalClocked: 0,
       breakdown: []
     },
+    projects: {
+      totalProjects: 0,
+      breakdown: []
+    },
     loading: true,
     error: null
   })
@@ -55,7 +59,7 @@ export function Dashboard() {
         }
       }
 
-      // Get recent timesheet data - ONLY select columns that exist
+      // Get recent timesheet data
       const { data: timesheetData, error: timesheetError } = await supabase
         .from('timesheet_entries')
         .select(`
@@ -65,6 +69,8 @@ export function Dashboard() {
           regular_hours,
           status,
           user_id,
+          activity,
+          project,
           users!timesheet_entries_user_id_fkey (
             id,
             full_name,
@@ -89,6 +95,7 @@ export function Dashboard() {
         weeklyStats: processedData.weeklyStats,
         weeklyChart: processedData.weeklyChart,
         activities: processedData.activities,
+        projects: processedData.projects,
         loading: false,
         error: null
       })
@@ -117,17 +124,18 @@ export function Dashboard() {
           weekRange: 'No data available'
         },
         weeklyChart: [],
-        activities: { totalClocked: 0, breakdown: [] }
+        activities: { totalClocked: 0, breakdown: [] },
+        projects: { totalProjects: 0, breakdown: [] }
       }
     }
 
     // Find the most recent week with data
     const latestDate = new Date(data[0].date)
     const weekStart = new Date(latestDate)
-    weekStart.setDate(latestDate.getDate() - latestDate.getDay()) // Start of week (Sunday)
+    weekStart.setDate(latestDate.getDate() - latestDate.getDay())
     
     const weekEnd = new Date(weekStart)
-    weekEnd.setDate(weekStart.getDate() + 6) // End of week (Saturday)
+    weekEnd.setDate(weekStart.getDate() + 6)
 
     // Filter data for the most recent week
     const weekData = data.filter(entry => {
@@ -157,7 +165,6 @@ export function Dashboard() {
           approvedHours += hours
         }
         
-        // These columns might not exist, so use 0 as fallback
         overtimeHours += entry.overtime_hours || 0
         breakHours += entry.break_hours || 0
       }
@@ -177,39 +184,63 @@ export function Dashboard() {
       })
 
       let dayHours = 0
-      let dayOvertime = 0
-      let dayBreaks = 0
       const dayUsers = new Set()
 
       dayEntries.forEach(entry => {
         const hours = calculateHours(entry)
         if (hours > 0) {
           dayHours += hours
-          dayOvertime += entry.overtime_hours || 0
-          dayBreaks += entry.break_hours || 0
           dayUsers.add(entry.user_id)
         }
       })
 
       weeklyChart.push({
-        day: days[i].substring(0, 1), // S, M, T, W, T, F, S
+        day: days[i].substring(0, 1),
         date: currentDate.getDate(),
         hours: dayHours,
-        overtime: dayOvertime,
-        breaks: dayBreaks,
         userCount: dayUsers.size
       })
     }
 
-    // Format week range
-    const formatDate = (date) => {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric'
-      })
+    // Process activities
+    const activityMap = new Map()
+    weekData.forEach(entry => {
+      const hours = calculateHours(entry)
+      if (hours > 0 && entry.activity) {
+        const current = activityMap.get(entry.activity) || 0
+        activityMap.set(entry.activity, current + hours)
+      }
+    })
+
+    const activities = {
+      totalClocked: totalHours,
+      breakdown: Array.from(activityMap.entries()).map(([name, hours], index) => ({
+        name,
+        hours,
+        color: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5]
+      })).sort((a, b) => b.hours - a.hours)
     }
 
-    const weekRange = `${formatDate(weekStart)} - ${formatDate(weekEnd)}`
+    // Process projects
+    const projectMap = new Map()
+    weekData.forEach(entry => {
+      const hours = calculateHours(entry)
+      if (hours > 0 && entry.project) {
+        const current = projectMap.get(entry.project) || 0
+        projectMap.set(entry.project, current + hours)
+      }
+    })
+
+    const projects = {
+      totalProjects: projectMap.size,
+      breakdown: Array.from(projectMap.entries()).map(([name, hours], index) => ({
+        name,
+        hours,
+        color: ['#6366F1', '#EC4899', '#14B8A6', '#F97316', '#84CC16'][index % 5]
+      })).sort((a, b) => b.hours - a.hours)
+    }
+
+    const weekRange = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
 
     return {
       weeklyStats: {
@@ -221,13 +252,8 @@ export function Dashboard() {
         weekRange
       },
       weeklyChart,
-      activities: {
-        totalClocked: Math.round(totalHours * 10) / 10,
-        breakdown: [
-          { name: 'Work', hours: totalHours - overtimeHours, color: '#10B981' },
-          { name: 'Overtime', hours: overtimeHours, color: '#FBBF24' }
-        ]
-      }
+      activities,
+      projects
     }
   }
 
@@ -237,7 +263,7 @@ export function Dashboard() {
     return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}` : `${m}m`
   }
 
-  // ORIGINAL STYLING - PRESERVED FROM YOUR DESIGN
+  // STYLING
   const outerWrapperStyle = {
     width: '100%',
     height: '100%',
@@ -252,13 +278,6 @@ export function Dashboard() {
     padding: '24px',
     boxSizing: 'border-box',
     minHeight: '100%'
-  }
-
-  const gridStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-    gap: '24px',
-    width: '100%'
   }
 
   const cardStyle = {
@@ -277,21 +296,9 @@ export function Dashboard() {
     margin: '0 0 8px 0'
   }
 
-  const subheadingStyle = {
-    fontSize: '14px',
-    color: '#6B7280',
-    margin: '0 0 16px 0'
-  }
-
-  const captionStyle = {
-    fontSize: '12px',
-    color: '#9CA3AF'
-  }
-
-  // ORIGINAL PURPLE GRADIENT HEADER WITH REAL DATA
+  // PURPLE GRADIENT HEADER WITH REAL DATA
   const WelcomeHeader = () => (
     <div style={{
-      gridColumn: '1 / -1',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       borderRadius: '16px',
       padding: '32px',
@@ -408,7 +415,7 @@ export function Dashboard() {
           </div>
           <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '2px' }}>Your Hours</div>
           <div style={{ fontSize: '32px', fontWeight: '700', color: '#10B981', marginBottom: '4px' }}>
-            {formatHours(dashboardData.weeklyStats.approvedHours)}
+            {formatHours(dashboardData.weeklyStats.activeUsers > 0 ? dashboardData.weeklyStats.totalHours / dashboardData.weeklyStats.activeUsers : 0)}
           </div>
           <div style={{ fontSize: '14px', color: '#6B7280' }}>Avg per User</div>
         </div>
@@ -473,7 +480,54 @@ export function Dashboard() {
     </div>
   )
 
-  // TRACKED HOURS WITH REAL DATA
+  // HOLIDAY SCHEDULE (Right side of welcome)
+  const HolidaySchedule = () => (
+    <div style={cardStyle}>
+      <h3 style={headingStyle}>UPCOMING HOLIDAYS AND TIME OFF</h3>
+      <div style={{
+        backgroundColor: '#FEF3C7',
+        borderRadius: '8px',
+        padding: '16px',
+        marginTop: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px'
+      }}>
+        <div style={{ fontSize: '24px' }}>🏖️</div>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontSize: '14px', color: '#92400E' }}>
+            Add your holiday calendar for reminders and overtime calculations.
+          </p>
+          <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+            <button style={{
+              backgroundColor: '#F59E0B',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '6px 12px',
+              fontSize: '12px',
+              cursor: 'pointer'
+            }}>
+              Set up Holidays
+            </button>
+            <button style={{
+              backgroundColor: 'transparent',
+              color: '#F59E0B',
+              border: '1px solid #F59E0B',
+              borderRadius: '6px',
+              padding: '6px 12px',
+              fontSize: '12px',
+              cursor: 'pointer'
+            }}>
+              No, thanks
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  // TRACKED HOURS - FULL WIDTH
   const TrackedHours = () => {
     const maxHours = Math.max(...dashboardData.weeklyChart.map(day => day.hours), 8)
     
@@ -606,6 +660,161 @@ export function Dashboard() {
     )
   }
 
+  // ACTIVITY RING - FULL WIDTH
+  const ActivityRing = () => (
+    <div style={cardStyle}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h3 style={headingStyle}>Activities</h3>
+        <a href="#" style={{ color: '#3B82F6', fontSize: '14px', textDecoration: 'none' }}>
+          Go to activities
+        </a>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+        {/* Donut Chart */}
+        <div style={{
+          width: '120px',
+          height: '120px',
+          borderRadius: '50%',
+          background: dashboardData.activities.totalClocked > 0 
+            ? 'conic-gradient(#3B82F6 0deg 180deg, #10B981 180deg 270deg, #F59E0B 270deg 360deg)'
+            : 'conic-gradient(#E5E7EB 0deg 360deg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative'
+        }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            backgroundColor: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{ fontSize: '12px', color: '#6B7280' }}>clocked</div>
+            <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
+              {formatHours(dashboardData.activities.totalClocked)}
+            </div>
+          </div>
+        </div>
+
+        {/* Activity List */}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+            {dashboardData.weeklyStats.activeUsers} active team member{dashboardData.weeklyStats.activeUsers !== 1 ? 's' : ''}
+          </div>
+          <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '16px' }}>
+            {formatHours(dashboardData.weeklyStats.totalHours)} total hours this week
+          </div>
+          
+          {dashboardData.activities.breakdown.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {dashboardData.activities.breakdown.slice(0, 5).map((activity, index) => (
+                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: activity.color
+                  }}></div>
+                  <span style={{ fontSize: '12px', color: '#6B7280', flex: 1 }}>
+                    {activity.name}
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#111827' }}>
+                    {formatHours(activity.hours)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
+              No activities tracked yet
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+
+  // PROJECT CHART - FULL WIDTH
+  const ProjectChart = () => (
+    <div style={cardStyle}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h3 style={headingStyle}>Projects</h3>
+        <a href="#" style={{ color: '#3B82F6', fontSize: '14px', textDecoration: 'none' }}>
+          Go to projects
+        </a>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+        {/* Donut Chart */}
+        <div style={{
+          width: '120px',
+          height: '120px',
+          borderRadius: '50%',
+          background: dashboardData.projects.breakdown.length > 0
+            ? 'conic-gradient(#6366F1 0deg 120deg, #EC4899 120deg 240deg, #14B8A6 240deg 360deg)'
+            : 'conic-gradient(#E5E7EB 0deg 360deg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative'
+        }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            backgroundColor: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{ fontSize: '12px', color: '#6B7280' }}>projects</div>
+            <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
+              {dashboardData.projects.totalProjects}
+            </div>
+          </div>
+        </div>
+
+        {/* Project List */}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+            Top {Math.min(dashboardData.projects.breakdown.length, 5)} projects
+          </div>
+          
+          {dashboardData.projects.breakdown.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {dashboardData.projects.breakdown.slice(0, 5).map((project, index) => (
+                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: project.color
+                  }}></div>
+                  <span style={{ fontSize: '12px', color: '#6B7280', flex: 1 }}>
+                    {project.name}
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#111827' }}>
+                    {formatHours(project.hours)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
+              No projects tracked yet
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+
   if (dashboardData.loading) {
     return (
       <div style={outerWrapperStyle}>
@@ -648,10 +857,16 @@ export function Dashboard() {
   return (
     <div style={outerWrapperStyle}>
       <div style={containerStyle}>
-        <div style={gridStyle}>
+        {/* Top Row: Welcome Header + Holiday Schedule */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginBottom: '24px' }}>
           <WelcomeHeader />
-          <TrackedHours />
+          <HolidaySchedule />
         </div>
+
+        {/* Full Width Components - Stacked */}
+        <TrackedHours />
+        <ActivityRing />
+        <ProjectChart />
       </div>
     </div>
   )
