@@ -1,4 +1,4 @@
-// Fixed Dashboard Component - Exact working version with admin data added
+// Dashboard Component with Proper CSS Class Alignment
 // Replace src/components/Dashboard/Dashboard.jsx with this file
 
 import React, { useState, useEffect } from 'react';
@@ -28,7 +28,7 @@ const Dashboard = ({ user: propUser }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // NEW: Admin dashboard data
+  // Admin dashboard data
   const [adminData, setAdminData] = useState({
     weeklyStats: {
       yourHours: 0,
@@ -57,7 +57,7 @@ const Dashboard = ({ user: propUser }) => {
     loadAuthenticatedUserData();
   }, [propUser]);
 
-  // NEW: Load admin dashboard data
+  // Load admin dashboard data
   useEffect(() => {
     if (authenticatedUser) {
       fetchAdminDashboardData();
@@ -93,7 +93,7 @@ const Dashboard = ({ user: propUser }) => {
     }
   };
 
-  // NEW: Fetch admin dashboard data
+  // Fetch admin dashboard data
   const fetchAdminDashboardData = async () => {
     try {
       console.log('🔍 DEBUG: Starting admin dashboard data fetch...');
@@ -171,7 +171,7 @@ const Dashboard = ({ user: propUser }) => {
     }
   };
 
-  // NEW: Process timesheet data for admin view
+  // Process timesheet data for admin view
   const processTimesheetData = (timesheetData, userData) => {
     const totalRegularHours = timesheetData.reduce((sum, entry) => sum + (entry.regular_hours || 0), 0);
     const totalOvertimeHours = timesheetData.reduce((sum, entry) => sum + (entry.overtime_hours || 0), 0);
@@ -242,7 +242,7 @@ const Dashboard = ({ user: propUser }) => {
     };
   };
 
-  // NEW: Format hours helper
+  // Format hours helper
   const formatTime = (hours) => {
     const wholeHours = Math.floor(hours);
     const minutes = Math.round((hours - wholeHours) * 60);
@@ -255,7 +255,7 @@ const Dashboard = ({ user: propUser }) => {
     ...userProfile,
     // Preserve any existing user properties
     ...(propUser || {}),
-    // NEW: Add admin data for components that need it
+    // Add admin data for components that need it
     adminData: adminData
   };
 
@@ -288,6 +288,7 @@ const Dashboard = ({ user: propUser }) => {
       
       <div className="dashboard-content">
         <div className="dashboard-main">
+          {/* FIXED: Top row with proper side-by-side layout */}
           <div className="dashboard-top-row">
             <div className="dashboard-col welcome">
               <WelcomeCard user={enhancedUser} />
@@ -297,12 +298,14 @@ const Dashboard = ({ user: propUser }) => {
             </div>
           </div>
           
+          {/* FIXED: Middle row for weekly chart - single column layout */}
           <div className="dashboard-middle-row">
             <div className="dashboard-col wide">
               <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
             </div>
           </div>
           
+          {/* FIXED: Bottom row for activities and projects - single column layout */}
           <div className="dashboard-bottom-row">
             <div className="dashboard-col activity">
               <ActivityRing 
@@ -320,6 +323,7 @@ const Dashboard = ({ user: propUser }) => {
           </div>
         </div>
         
+        {/* FIXED: Sidebar with proper class structure */}
         <div className="dashboard-sidebar">
           <WhoIsInOutPanel user={enhancedUser} />
           <CurrentTime currentTime={currentTime} user={enhancedUser} />
