@@ -205,11 +205,12 @@ export function Dashboard() {
 
   if (dashboardData.loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading dashboard...</p>
+      <div className="dashboard-wrapper">
+        <div className="dashboard-layout">
+          <div className="dashboard-left">
+            <div className="chart-section">
+              <p>Loading dashboard...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -218,18 +219,13 @@ export function Dashboard() {
 
   if (dashboardData.error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center py-12">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-red-800 mb-2">Dashboard Error</h3>
-              <p className="text-red-600">{dashboardData.error}</p>
-              <button 
-                onClick={fetchDashboardData}
-                className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Retry
-              </button>
+      <div className="dashboard-wrapper">
+        <div className="dashboard-layout">
+          <div className="dashboard-left">
+            <div className="chart-section">
+              <h3>Dashboard Error</h3>
+              <p>{dashboardData.error}</p>
+              <button onClick={fetchDashboardData}>Retry</button>
             </div>
           </div>
         </div>
@@ -238,200 +234,172 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">{currentTime.toLocaleString()}</p>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Top Row: Welcome Card + Holiday Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Welcome Card - 2/3 width */}
-          <div className="lg:col-span-2">
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">Hello, Admin User! 👋</h2>
-                  <p className="text-purple-100">Welcome to the Invictus Time Management Portal</p>
-                  <div className="flex items-center space-x-4 mt-2 text-sm">
-                    <span>📧 admin@test.com</span>
-                    <span>👤 Role: admin</span>
-                  </div>
-                </div>
+    <div className="dashboard-wrapper">
+      <div className="dashboard-layout">
+        <div className="dashboard-left">
+          
+          {/* Top Row: Welcome Card + Holiday Section */}
+          <div className="top-row">
+            {/* Welcome Card */}
+            <div className="welcome-section">
+              <h2>Hello, Admin User! 👋</h2>
+              <p>Welcome to the Invictus Time Management Portal</p>
+              <div>
+                <span>📧 admin@test.com</span>
+                <span>👤 Role: admin</span>
               </div>
 
               {/* This Week's Summary */}
-              <div className="bg-white/10 rounded-lg p-4 mb-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  📊 This Week's Summary
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{formatTime(dashboardData.weeklyStats.yourHours)}</div>
-                    <div className="text-sm text-purple-100">Your Hours</div>
+              <div>
+                <h3>📊 This Week's Summary</h3>
+                <div>
+                  <div>
+                    <div>{formatTime(dashboardData.weeklyStats.yourHours)}</div>
+                    <div>Your Hours</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{formatTime(dashboardData.weeklyStats.orgTotal)}</div>
-                    <div className="text-sm text-purple-100">Org Total</div>
+                  <div>
+                    <div>{formatTime(dashboardData.weeklyStats.orgTotal)}</div>
+                    <div>Org Total</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{dashboardData.weeklyStats.activeUsers}</div>
-                    <div className="text-sm text-purple-100">Active Users</div>
+                  <div>
+                    <div>{dashboardData.weeklyStats.activeUsers}</div>
+                    <div>Active Users</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{formatTime(dashboardData.weeklyStats.avgPerUser)}</div>
-                    <div className="text-sm text-purple-100">Avg per User</div>
+                  <div>
+                    <div>{formatTime(dashboardData.weeklyStats.avgPerUser)}</div>
+                    <div>Avg per User</div>
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3">
-                <button className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-white font-medium transition-colors">
-                  📊 View Timesheet
-                </button>
-                <button className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-white font-medium transition-colors">
-                  ⏰ Quick Clock In
-                </button>
+              <div>
+                <button>📊 View Timesheet</button>
+                <button>⏰ Quick Clock In</button>
               </div>
 
-              <div className="mt-4 text-sm text-purple-100">
-                🔒 Full Access (Client Admin)
-              </div>
+              <div>🔒 Full Access (Client Admin)</div>
             </div>
-          </div>
 
-          {/* Holiday Section - 1/3 width */}
-          <div className="lg:col-span-1">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 h-full">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Upcoming Holidays and Time Off
-              </h3>
-              <div className="space-y-3">
-                <div className="bg-white p-3 rounded border">
-                  <div className="font-medium text-gray-900">Labor Day</div>
-                  <div className="text-sm text-gray-600">Sep 2nd, 2024</div>
+            {/* Holiday Section */}
+            <div className="holiday-section">
+              <h3>Upcoming Holidays and Time Off</h3>
+              <div>
+                <div>
+                  <div>Labor Day</div>
+                  <div>Sep 2nd, 2024</div>
                 </div>
               </div>
-              <div className="mt-4 text-center">
-                <button className="text-blue-600 hover:text-blue-800 text-sm">
-                  + more holidays ▼
-                </button>
+              <div>
+                <button>+ more holidays ▼</button>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Tracked Hours Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">TRACKED HOURS THIS WEEK</h3>
-            <div className="flex space-x-2">
-              <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm">Personal</button>
-              <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Organization</button>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-7 gap-4 mb-4">
-            {dashboardData.weeklyChart.map((day, index) => (
-              <div key={index} className="text-center">
-                <div className="bg-blue-500 rounded-t" style={{ height: `${Math.max(day.hours * 20, 20)}px` }}></div>
-                <div className="bg-blue-100 p-2 rounded-b">
-                  <div className="text-sm font-medium text-blue-800">{day.hours.toFixed(1)}</div>
-                </div>
-                <div className="text-xs text-gray-600 mt-1">{day.day}</div>
-                <div className="text-xs text-gray-400">{index + 7}</div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>Total Worked: {formatTime(dashboardData.weeklyStats.yourHours)}</span>
-            <span>Time Breaks: 2.5h</span>
-            <span>Total Overtime: 4.5h</span>
-          </div>
-        </div>
-
-        {/* Activities and Projects */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Activities */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">ACTIVITIES</h3>
-              <div className="flex space-x-2">
-                <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm">Personal</button>
-                <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Organization</button>
+          {/* Tracked Hours Chart */}
+          <div className="chart-section">
+            <div>
+              <h3>TRACKED HOURS THIS WEEK</h3>
+              <div>
+                <button>Personal</button>
+                <button>Organization</button>
               </div>
             </div>
             
-            <div className="flex items-center space-x-6">
-              <div className="w-32 h-32 relative">
-                <div className="w-full h-full rounded-full border-8 border-purple-200 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {dashboardData.activities.length}
-                    </div>
-                    <div className="text-sm text-gray-600">Activities</div>
+            <div>
+              {dashboardData.weeklyChart.map((day, index) => (
+                <div key={index}>
+                  <div style={{ height: `${Math.max(day.hours * 20, 20)}px` }}></div>
+                  <div>
+                    <div>{day.hours.toFixed(1)}</div>
+                  </div>
+                  <div>{day.day}</div>
+                  <div>{index + 7}</div>
+                </div>
+              ))}
+            </div>
+            
+            <div>
+              <span>Total Worked: {formatTime(dashboardData.weeklyStats.yourHours)}</span>
+              <span>Time Breaks: 2.5h</span>
+              <span>Total Overtime: 4.5h</span>
+            </div>
+          </div>
+
+          {/* Activities */}
+          <div className="chart-section">
+            <div>
+              <h3>ACTIVITIES</h3>
+              <div>
+                <button>Personal</button>
+                <button>Organization</button>
+              </div>
+            </div>
+            
+            <div>
+              <div>
+                <div>
+                  <div>
+                    <div>{dashboardData.activities.length}</div>
+                    <div>Activities</div>
                   </div>
                 </div>
               </div>
               
-              <div className="flex-1">
-                <div className="space-y-2">
+              <div>
+                <div>
                   {dashboardData.activities.slice(0, 3).map((activity, index) => (
-                    <div key={index} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-700">{activity.name}</span>
-                      <span className="text-sm font-medium">{formatTime(activity.hours)}</span>
+                    <div key={index}>
+                      <span>{activity.name}</span>
+                      <span>{formatTime(activity.hours)}</span>
                     </div>
                   ))}
                 </div>
-                <button className="text-blue-600 hover:text-blue-800 text-sm mt-3">
-                  Go to activities →
-                </button>
+                <button>Go to activities →</button>
               </div>
             </div>
           </div>
 
           {/* Projects */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">PROJECTS</h3>
-              <div className="flex space-x-2">
-                <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm">Personal</button>
-                <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Organization</button>
+          <div className="chart-section">
+            <div>
+              <h3>PROJECTS</h3>
+              <div>
+                <button>Personal</button>
+                <button>Organization</button>
               </div>
             </div>
             
-            <div className="flex items-center space-x-6">
-              <div className="w-32 h-32 relative">
-                <div className="w-full h-full rounded-full border-8 border-red-200 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">
-                      {dashboardData.projects.length}
-                    </div>
-                    <div className="text-sm text-gray-600">Projects</div>
+            <div>
+              <div>
+                <div>
+                  <div>
+                    <div>{dashboardData.projects.length}</div>
+                    <div>Projects</div>
                   </div>
                 </div>
               </div>
               
-              <div className="flex-1">
-                <div className="space-y-2">
+              <div>
+                <div>
                   {dashboardData.projects.slice(0, 3).map((project, index) => (
-                    <div key={index} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-700">{project.name}</span>
-                      <span className="text-sm font-medium">{formatTime(project.hours)}</span>
+                    <div key={index}>
+                      <span>{project.name}</span>
+                      <span>{formatTime(project.hours)}</span>
                     </div>
                   ))}
                 </div>
-                <button className="text-blue-600 hover:text-blue-800 text-sm mt-3">
-                  Go to projects →
-                </button>
+                <button>Go to projects →</button>
               </div>
             </div>
+          </div>
+
+        </div>
+
+        <div className="dashboard-right">
+          <div>
+            <h3>Right Sidebar Content</h3>
+            <p>Additional dashboard widgets would go here</p>
           </div>
         </div>
       </div>
