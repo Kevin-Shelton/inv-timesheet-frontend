@@ -1,4 +1,4 @@
-// Enhanced Dashboard Component with Fixed Layout
+// Fixed Dashboard Component - Exact working version with admin data added
 // Replace src/components/Dashboard/Dashboard.jsx with this file
 
 import React, { useState, useEffect } from 'react';
@@ -93,7 +93,7 @@ const Dashboard = ({ user: propUser }) => {
     }
   };
 
-  // NEW: Fetch admin dashboard data with fixed column names
+  // NEW: Fetch admin dashboard data
   const fetchAdminDashboardData = async () => {
     try {
       console.log('🔍 DEBUG: Starting admin dashboard data fetch...');
@@ -109,7 +109,7 @@ const Dashboard = ({ user: propUser }) => {
       endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
-      // FIXED: Query only existing columns
+      // Fetch timesheet entries for this week
       const { data: timesheetData, error: timesheetError } = await supabase
         .from('timesheet_entries')
         .select(`
@@ -151,7 +151,7 @@ const Dashboard = ({ user: propUser }) => {
       const formattedHours = formatTime(totalHours);
       setTrackedHours({
         worked: formattedHours,
-        breaks: '2h 30m', // Static for now since break_hours column doesn't exist
+        breaks: '2h 30m',
         overtime: formatTime(processedData.weeklyStats.overtimeHours || 0)
       });
 
@@ -173,7 +173,6 @@ const Dashboard = ({ user: propUser }) => {
 
   // NEW: Process timesheet data for admin view
   const processTimesheetData = (timesheetData, userData) => {
-    // Calculate weekly stats
     const totalRegularHours = timesheetData.reduce((sum, entry) => sum + (entry.regular_hours || 0), 0);
     const totalOvertimeHours = timesheetData.reduce((sum, entry) => sum + (entry.overtime_hours || 0), 0);
     const totalHours = totalRegularHours + totalOvertimeHours;
@@ -263,11 +262,9 @@ const Dashboard = ({ user: propUser }) => {
   // Show loading state only if we don't have any user data
   if (loading && !authenticatedUser && !propUser) {
     return (
-      <div className="dashboard-page with-sidebar">
-        <div className="dashboard-main">
-          <div className="loading-container">
-            <div>Loading dashboard...</div>
-          </div>
+      <div className="dashboard-container">
+        <div className="dashboard-loading">
+          <div>Loading dashboard...</div>
         </div>
       </div>
     );
@@ -276,61 +273,57 @@ const Dashboard = ({ user: propUser }) => {
   // Show error state with fallback
   if (error && !authenticatedUser && !propUser) {
     return (
-      <div className="dashboard-page with-sidebar">
-        <div className="dashboard-main">
-          <div className="error-container">
-            <div>{error}</div>
-            <button onClick={loadAuthenticatedUserData}>Retry</button>
-          </div>
+      <div className="dashboard-container">
+        <div className="dashboard-error">
+          <div>{error}</div>
+          <button onClick={loadAuthenticatedUserData}>Retry</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-page with-sidebar">
-      {/* FIXED: Only include DashboardHeader once */}
+    <div className="dashboard-container">
       <DashboardHeader user={enhancedUser} />
       
-      <div className="dashboard-main">
-        {/* FIXED: Top row with proper side-by-side layout */}
-        <div className="dashboard-row dashboard-top-row">
-          <div className="dashboard-col welcome">
-            <WelcomeCard user={enhancedUser} />
+      <div className="dashboard-content">
+        <div className="dashboard-main">
+          <div className="dashboard-top-row">
+            <div className="dashboard-col welcome">
+              <WelcomeCard user={enhancedUser} />
+            </div>
+            <div className="dashboard-col holidays">
+              <HolidaySection user={enhancedUser} />
+            </div>
           </div>
-          <div className="dashboard-col holidays">
-            <HolidaySection user={enhancedUser} />
+          
+          <div className="dashboard-middle-row">
+            <div className="dashboard-col wide">
+              <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
+            </div>
+          </div>
+          
+          <div className="dashboard-bottom-row">
+            <div className="dashboard-col activity">
+              <ActivityRing 
+                percentage={30} 
+                color="#FB923C"
+                label="TODAY"
+                time="0h 0m"
+                user={enhancedUser}
+                showActivities={true}
+              />
+            </div>
+            <div className="dashboard-col activity">
+              <ProjectsChart user={enhancedUser} />
+            </div>
           </div>
         </div>
         
-        {/* FIXED: Middle row for weekly chart only */}
-        <div className="dashboard-row">
-          <div className="dashboard-col wide">
-            <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
-          </div>
+        <div className="dashboard-sidebar">
+          <WhoIsInOutPanel user={enhancedUser} />
+          <CurrentTime currentTime={currentTime} user={enhancedUser} />
         </div>
-        
-        {/* FIXED: Bottom row for activities and projects */}
-        <div className="dashboard-row">
-          <div className="dashboard-col activity">
-            <ActivityRing 
-              percentage={30} 
-              color="#FB923C"
-              label="TODAY"
-              time="0h 0m"
-              user={enhancedUser}
-              showActivities={true}
-            />
-          </div>
-          <div className="dashboard-col activity">
-            <ProjectsChart user={enhancedUser} />
-          </div>
-        </div>
-      </div>
-      
-      <div className="dashboard-sidebar">
-        <WhoIsInOutPanel user={enhancedUser} />
-        <CurrentTime currentTime={currentTime} user={enhancedUser} />
       </div>
     </div>
   );
