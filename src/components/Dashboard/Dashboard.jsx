@@ -1,4 +1,4 @@
-// Enhanced Dashboard Component with Admin Functionality
+// Enhanced Dashboard Component with Fixed Layout
 // Replace src/components/Dashboard/Dashboard.jsx with this file
 
 import React, { useState, useEffect } from 'react';
@@ -93,7 +93,7 @@ const Dashboard = ({ user: propUser }) => {
     }
   };
 
-  // NEW: Fetch admin dashboard data
+  // NEW: Fetch admin dashboard data with fixed column names
   const fetchAdminDashboardData = async () => {
     try {
       console.log('🔍 DEBUG: Starting admin dashboard data fetch...');
@@ -109,11 +109,19 @@ const Dashboard = ({ user: propUser }) => {
       endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
-      // Fetch timesheet entries for this week
+      // FIXED: Query only existing columns
       const { data: timesheetData, error: timesheetError } = await supabase
         .from('timesheet_entries')
         .select(`
-          *,
+          id,
+          date,
+          regular_hours,
+          overtime_hours,
+          description,
+          task,
+          project,
+          campaign_id,
+          user_id,
           users!timesheet_entries_user_id_fkey(full_name, role)
         `)
         .gte('date', startOfWeek.toISOString().split('T')[0])
@@ -143,8 +151,8 @@ const Dashboard = ({ user: propUser }) => {
       const formattedHours = formatTime(totalHours);
       setTrackedHours({
         worked: formattedHours,
-        breaks: '2h 30m', // Static for now
-        overtime: '4h 15m' // Static for now
+        breaks: '2h 30m', // Static for now since break_hours column doesn't exist
+        overtime: formatTime(processedData.weeklyStats.overtimeHours || 0)
       });
 
       setAdminData({
@@ -166,10 +174,9 @@ const Dashboard = ({ user: propUser }) => {
   // NEW: Process timesheet data for admin view
   const processTimesheetData = (timesheetData, userData) => {
     // Calculate weekly stats
-    const totalHours = timesheetData.reduce((sum, entry) => {
-      const hours = (entry.regular_hours || 0) + (entry.overtime_hours || 0);
-      return sum + hours;
-    }, 0);
+    const totalRegularHours = timesheetData.reduce((sum, entry) => sum + (entry.regular_hours || 0), 0);
+    const totalOvertimeHours = timesheetData.reduce((sum, entry) => sum + (entry.overtime_hours || 0), 0);
+    const totalHours = totalRegularHours + totalOvertimeHours;
 
     const activeUsers = userData.length;
     const avgPerUser = activeUsers > 0 ? totalHours / activeUsers : 0;
@@ -227,7 +234,8 @@ const Dashboard = ({ user: propUser }) => {
         yourHours: totalHours,
         orgTotal: totalHours,
         activeUsers,
-        avgPerUser
+        avgPerUser,
+        overtimeHours: totalOvertimeHours
       },
       weeklyChart,
       activities,
@@ -281,9 +289,11 @@ const Dashboard = ({ user: propUser }) => {
 
   return (
     <div className="dashboard-page with-sidebar">
+      {/* FIXED: Only include DashboardHeader once */}
       <DashboardHeader user={enhancedUser} />
       
       <div className="dashboard-main">
+        {/* FIXED: Top row with proper side-by-side layout */}
         <div className="dashboard-row dashboard-top-row">
           <div className="dashboard-col welcome">
             <WelcomeCard user={enhancedUser} />
@@ -293,12 +303,14 @@ const Dashboard = ({ user: propUser }) => {
           </div>
         </div>
         
+        {/* FIXED: Middle row for weekly chart only */}
         <div className="dashboard-row">
           <div className="dashboard-col wide">
             <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
           </div>
         </div>
         
+        {/* FIXED: Bottom row for activities and projects */}
         <div className="dashboard-row">
           <div className="dashboard-col activity">
             <ActivityRing 
