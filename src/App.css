@@ -181,3 +181,274 @@
 .pagination-button:hover {
   background-color: #d1d5db;
 }
+
+/* =================== DASHBOARD HEADER =================== */
+
+.dashboard-header-filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 1rem 0;
+}
+
+.filter-dropdown {
+  position: relative;
+}
+
+.filter-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.filter-button.active {
+  background: #e5e7eb;
+}
+
+.filter-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  z-index: 10;
+  min-width: 200px;
+}
+
+.filter-menu-item {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  background: white;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.filter-menu-item:hover {
+  background: #f9fafb;
+}
+
+/* =================== HOLIDAY SECTION =================== */
+
+.holiday-section {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.holiday-loading,
+.holiday-error,
+.holiday-empty {
+  text-align: center;
+  color: #6b7280;
+}
+
+.holiday-header {
+  margin-bottom: 1rem;
+}
+
+.holiday-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.holiday-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.holiday-compact-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.holiday-compact-date {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.holiday-compact-countdown {
+  text-align: center;
+}
+
+.countdown-value {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #3b82f6;
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.holiday-toggle {
+  text-align: center;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  color: #3b82f6;
+  font-size: 0.875rem;
+}
+
+.holiday-list {
+  margin-top: 1rem;
+}
+
+.holiday-item {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.holiday-badges {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.holiday-badge {
+  background: #e5e7eb;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #374151;
+}
+
+.time-indicator.today { background: #10b981; color: white; }
+.time-indicator.tomorrow { background: #f59e0b; color: white; }
+.time-indicator.this-week { background: #60a5fa; color: white; }
+.time-indicator.upcoming { background: #6b7280; color: white; }
+
+/* =================== WHO'S IN/OUT PANEL =================== */
+
+.who-is-in-out-panel {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.panel-header .header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.status-tabs {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-around;
+}
+
+.status-tab {
+  text-align: center;
+  cursor: pointer;
+}
+
+.status-tab.active {
+  font-weight: bold;
+}
+
+.campaign-selector {
+  margin-top: 0.5rem;
+}
+
+.campaign-dropdown {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f3f4f6;
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+
+.search-icon {
+  width: 1rem;
+  height: 1rem;
+  color: #6b7280;
+}
+
+.search-input {
+  border: none;
+  background: transparent;
+  flex: 1;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 0.5rem;
+}
+
+.member-status .status-indicator {
+  font-size: 1.25rem;
+}
+
+.member-info {
+  flex: 1;
+  margin-left: 0.5rem;
+}
+
+.member-name {
+  font-weight: 600;
+}
+
+.member-details {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.member-status-badge .status-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: white;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.panel-footer {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+}
