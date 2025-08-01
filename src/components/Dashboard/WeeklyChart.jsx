@@ -59,10 +59,32 @@ const WeeklyChart = () => {
         setChartData([]);
         setWeekRange('No data available');
         if (typeof setAdminData === 'function') {
+  // Aggregate activities
+  const activityMap = {};
+  weekData.forEach(entry => {
+    const key = entry.activity_id || 'Unassigned';
+    activityMap[key] = (activityMap[key] || 0) + calculateHours(entry);
+  });
+  const activities = Object.entries(activityMap)
+    .map(([name, hours]) => ({ name, hours }))
+    .sort((a, b) => b.hours - a.hours)
+    .slice(0, 10);
+
+  // Aggregate projects (assumes campaign_id is project proxy)
+  const projectMap = {};
+  weekData.forEach(entry => {
+    const key = entry.campaign_id || 'Unassigned';
+    projectMap[key] = (projectMap[key] || 0) + calculateHours(entry);
+  });
+  const projects = Object.entries(projectMap)
+    .map(([name, hours]) => ({ name, hours }))
+    .sort((a, b) => b.hours - a.hours)
+    .slice(0, 10);
+
   setAdminData({
     weeklyChart: dailyData,
-    activities: [],  // you can populate from weekData if needed
-    projects: [],
+    activities,
+    projects,
     loading: false,
     error: null
   });
@@ -188,10 +210,32 @@ setTotals({
       setChartData(dailyData);
       setWeekRange(`${formatDate(weekStart)} - ${formatDate(weekEnd)}`);
       if (typeof setAdminData === 'function') {
+  // Aggregate activities
+  const activityMap = {};
+  weekData.forEach(entry => {
+    const key = entry.activity_id || 'Unassigned';
+    activityMap[key] = (activityMap[key] || 0) + calculateHours(entry);
+  });
+  const activities = Object.entries(activityMap)
+    .map(([name, hours]) => ({ name, hours }))
+    .sort((a, b) => b.hours - a.hours)
+    .slice(0, 10);
+
+  // Aggregate projects (assumes campaign_id is project proxy)
+  const projectMap = {};
+  weekData.forEach(entry => {
+    const key = entry.campaign_id || 'Unassigned';
+    projectMap[key] = (projectMap[key] || 0) + calculateHours(entry);
+  });
+  const projects = Object.entries(projectMap)
+    .map(([name, hours]) => ({ name, hours }))
+    .sort((a, b) => b.hours - a.hours)
+    .slice(0, 10);
+
   setAdminData({
     weeklyChart: dailyData,
-    activities: [],  // you can populate from weekData if needed
-    projects: [],
+    activities,
+    projects,
     loading: false,
     error: null
   });
