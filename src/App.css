@@ -452,3 +452,38 @@
   color: #6b7280;
   text-align: center;
 }
+/* =================== DROPDOWN MENU =================== */
+
+.filter-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  min-width: 200px;
+  overflow: hidden;
+}
+
+.filter-menu-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-menu-item {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #111827;
+  text-align: left;
+  background-color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.filter-menu-item:hover {
+  background-color: #f3f4f6;
+}
