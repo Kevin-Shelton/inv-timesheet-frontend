@@ -612,5 +612,3 @@ setTotals({
 
 export default WeeklyChart;
 
-
-
