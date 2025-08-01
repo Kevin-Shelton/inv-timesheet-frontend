@@ -1,4 +1,4 @@
-// Dashboard Component with Proper CSS Class Alignment
+// Dashboard Component with Actual Fixes Applied
 // Replace src/components/Dashboard/Dashboard.jsx with this file
 
 import React, { useState, useEffect } from 'react';
@@ -288,7 +288,6 @@ const Dashboard = ({ user: propUser }) => {
       
       <div className="dashboard-content">
         <div className="dashboard-main">
-          {/* FIXED: Top row with proper side-by-side layout */}
           <div className="dashboard-top-row">
             <div className="dashboard-col welcome">
               <WelcomeCard user={enhancedUser} />
@@ -298,15 +297,13 @@ const Dashboard = ({ user: propUser }) => {
             </div>
           </div>
           
-          {/* FIXED: Middle row for weekly chart - single column layout */}
-          <div className="dashboard-middle-row">
+          <div className="dashboard-row">
             <div className="dashboard-col wide">
               <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
             </div>
           </div>
           
-          {/* FIXED: Bottom row for activities and projects - single column layout */}
-          <div className="dashboard-bottom-row">
+          <div className="dashboard-row">
             <div className="dashboard-col activity">
               <ActivityRing 
                 percentage={30} 
@@ -323,7 +320,6 @@ const Dashboard = ({ user: propUser }) => {
           </div>
         </div>
         
-        {/* FIXED: Sidebar with proper class structure */}
         <div className="dashboard-sidebar">
           <WhoIsInOutPanel user={enhancedUser} />
           <CurrentTime currentTime={currentTime} user={enhancedUser} />
