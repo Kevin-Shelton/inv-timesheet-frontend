@@ -58,7 +58,17 @@ const WeeklyChart = () => {
       if (!recentData || recentData.length === 0) {
         setChartData([]);
         setWeekRange('No data available');
-        setTotals({
+        if (typeof setAdminData === 'function') {
+  setAdminData({
+    weeklyChart: dailyData,
+    activities: [],  // you can populate from weekData if needed
+    projects: [],
+    loading: false,
+    error: null
+  });
+}
+
+setTotals({
           totalWorked: 0,
           totalBreaks: 0,
           totalOvertime: 0,
@@ -177,7 +187,17 @@ const WeeklyChart = () => {
 
       setChartData(dailyData);
       setWeekRange(`${formatDate(weekStart)} - ${formatDate(weekEnd)}`);
-      setTotals({
+      if (typeof setAdminData === 'function') {
+  setAdminData({
+    weeklyChart: dailyData,
+    activities: [],  // you can populate from weekData if needed
+    projects: [],
+    loading: false,
+    error: null
+  });
+}
+
+setTotals({
         totalWorked: Math.round(totalWorked * 10) / 10,
         totalBreaks: Math.round(totalBreaks * 10) / 10,
         totalOvertime: Math.round(totalOvertime * 10) / 10,
@@ -591,4 +611,6 @@ const WeeklyChart = () => {
 };
 
 export default WeeklyChart;
+
+
 
