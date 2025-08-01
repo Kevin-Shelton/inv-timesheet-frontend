@@ -33,7 +33,7 @@ const WeeklyChart = () => {
       // FIXED: Use direct supabase import instead of supabaseApi.supabase
       const { data: recentData, error: fetchError } = await supabase
         .from('timesheet_entries')
-        .select(`
+        .select(`date, hours_worked, total_hours, regular_hours, break_duration, overtime_hours, status, user_id, activity_id, campaign_id, users!timesheet_entries_user_id_fkey (id, full_name, role, manager_id), activities!timesheet_entries_activity_id_fkey (id, name), campaigns!timesheet_entries_campaign_id_fkey (id, name)`
           date,
           hours_worked,
           total_hours,
@@ -59,22 +59,22 @@ const WeeklyChart = () => {
         setChartData([]);
         setWeekRange('No data available');
         if (typeof setAdminData === 'function') {
-  // Aggregate activities
+  // Aggregate activities by name
   const activityMap = {};
   weekData.forEach(entry => {
-    const key = entry.activity_id || 'Unassigned';
-    activityMap[key] = (activityMap[key] || 0) + calculateHours(entry);
+    const name = entry.activities?.name || 'Unassigned';
+    activityMap[name] = (activityMap[name] || 0) + calculateHours(entry);
   });
   const activities = Object.entries(activityMap)
     .map(([name, hours]) => ({ name, hours }))
     .sort((a, b) => b.hours - a.hours)
     .slice(0, 10);
 
-  // Aggregate projects (assumes campaign_id is project proxy)
+  // Aggregate projects (campaigns) by name
   const projectMap = {};
   weekData.forEach(entry => {
-    const key = entry.campaign_id || 'Unassigned';
-    projectMap[key] = (projectMap[key] || 0) + calculateHours(entry);
+    const name = entry.campaigns?.name || 'Unassigned';
+    projectMap[name] = (projectMap[name] || 0) + calculateHours(entry);
   });
   const projects = Object.entries(projectMap)
     .map(([name, hours]) => ({ name, hours }))
@@ -210,22 +210,22 @@ setTotals({
       setChartData(dailyData);
       setWeekRange(`${formatDate(weekStart)} - ${formatDate(weekEnd)}`);
       if (typeof setAdminData === 'function') {
-  // Aggregate activities
+  // Aggregate activities by name
   const activityMap = {};
   weekData.forEach(entry => {
-    const key = entry.activity_id || 'Unassigned';
-    activityMap[key] = (activityMap[key] || 0) + calculateHours(entry);
+    const name = entry.activities?.name || 'Unassigned';
+    activityMap[name] = (activityMap[name] || 0) + calculateHours(entry);
   });
   const activities = Object.entries(activityMap)
     .map(([name, hours]) => ({ name, hours }))
     .sort((a, b) => b.hours - a.hours)
     .slice(0, 10);
 
-  // Aggregate projects (assumes campaign_id is project proxy)
+  // Aggregate projects (campaigns) by name
   const projectMap = {};
   weekData.forEach(entry => {
-    const key = entry.campaign_id || 'Unassigned';
-    projectMap[key] = (projectMap[key] || 0) + calculateHours(entry);
+    const name = entry.campaigns?.name || 'Unassigned';
+    projectMap[name] = (projectMap[name] || 0) + calculateHours(entry);
   });
   const projects = Object.entries(projectMap)
     .map(([name, hours]) => ({ name, hours }))
