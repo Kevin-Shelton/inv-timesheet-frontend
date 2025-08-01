@@ -34,31 +34,31 @@ const WeeklyChart = () => {
       const { data: recentData, error: fetchError } = await supabase
         .from('timesheet_entries')
         .select(`
-  date,
-  hours_worked,
-  total_hours,
-  regular_hours,
-  break_duration,
-  overtime_hours,
-  status,
-  user_id,
-  activity_id,
-  campaign_id,
-  users!timesheet_entries_user_id_fkey (
-    id,
-    full_name,
-    role,
-    manager_id
-  ),
-  activities!timesheet_entries_activity_id_fkey (
-    id,
-    name
-  ),
-  campaigns!timesheet_entries_campaign_id_fkey (
-    id,
-    name
-  )
-`)
+      date,
+      hours_worked,
+      total_hours,
+      regular_hours,
+      break_duration,
+      overtime_hours,
+      status,
+      user_id,
+      activity_id,
+      campaign_id,
+      users!timesheet_entries_user_id_fkey (
+        id,
+        full_name,
+        role,
+        manager_id
+      ),
+      activities!timesheet_entries_activity_id_fkey (
+        id,
+        name
+      ),
+      campaigns!timesheet_entries_campaign_id_fkey (
+        id,
+        name
+      )
+    `)
         `)
         .order('date', { ascending: false })
         .limit(300); // Get enough data to find recent weeks
