@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import DashboardHeader from './DashboardHeader';
 import WelcomeCard from './WelcomeCard';
 import HolidaySection from './HolidaySection';
-import WeeklyChart from './WeeklyChart'; // FIXED: Import WeeklyChart
-import ActivityRing from './ActivityRing';
+import WeeklyChart from './WeeklyChart';
+import ActivitiesChart from './ActivityRing'; // FIXED: Import the actual component name
 import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
@@ -202,7 +202,7 @@ const Dashboard = ({ user: propUser }) => {
             {/* FIXED: ActivityRing and ProjectsChart side by side */}
             <div className="dashboard-row">
               <div className="dashboard-col activity">
-                <ActivityRing user={enhancedUser} />
+                <ActivitiesChart user={enhancedUser} />
               </div>
               <div className="dashboard-col activity">
                 <ProjectsChart user={enhancedUser} />
