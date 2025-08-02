@@ -59,20 +59,18 @@ const WeeklyChart = () => {
         name
       )
     `)
-        `)
         .order('date', { ascending: false })
         .limit(300); // Get enough data to find recent weeks
 
       if (fetchError) {
-        throw new Error(`Failed to fetch timesheet data: ${fetchError?.message}`);
+        // FIXED: Use string concatenation instead of template literal
+        throw new Error('Failed to fetch timesheet data: ' + (fetchError?.message || 'Unknown error'));
       }
 
       if (!recentData || recentData.length === 0) {
         setChartData([]);
         setWeekRange('No data available');
-        
-
-setTotals({
+        setTotals({
           totalWorked: 0,
           totalBreaks: 0,
           totalOvertime: 0,
@@ -145,10 +143,10 @@ setTotals({
           if (hours > 0) {
             dayData.workedHours += hours;
             dayData.breakHours += (() => {
-      if (!entry.break_duration) return 0;
-      const [h, m, s] = entry.break_duration.split(':').map(Number);
-      return (h || 0) + ((m || 0) / 60) + ((s || 0) / 3600);
-    })();
+              if (!entry.break_duration) return 0;
+              const [h, m, s] = entry.break_duration.split(':').map(Number);
+              return (h || 0) + ((m || 0) / 60) + ((s || 0) / 3600);
+            })();
             dayData.overtimeHours += entry.overtime_hours || 0;
             uniqueUsers.add(entry.user_id);
           }
@@ -169,10 +167,10 @@ setTotals({
         if (hours > 0) {
           totalWorked += hours;
           totalBreaks += (() => {
-      if (!entry.break_duration) return 0;
-      const [h, m, s] = entry.break_duration.split(':').map(Number);
-      return (h || 0) + ((m || 0) / 60) + ((s || 0) / 3600);
-    })();
+            if (!entry.break_duration) return 0;
+            const [h, m, s] = entry.break_duration.split(':').map(Number);
+            return (h || 0) + ((m || 0) / 60) + ((s || 0) / 3600);
+          })();
           totalOvertime += entry.overtime_hours || 0;
           uniqueUsersWeek.add(entry.user_id);
         }
@@ -190,10 +188,8 @@ setTotals({
       };
 
       setChartData(dailyData);
-        setWeekRange(formatDate(weekStart) + " - " + formatDate(weekEnd));
-      
-
-setTotals({
+      setWeekRange(formatDate(weekStart) + " - " + formatDate(weekEnd));
+      setTotals({
         totalWorked: Math.round(totalWorked * 10) / 10,
         totalBreaks: Math.round(totalBreaks * 10) / 10,
         totalOvertime: Math.round(totalOvertime * 10) / 10,
@@ -202,7 +198,7 @@ setTotals({
       });
 
       console.log('📊 WEEKLY CHART: Data processed', {
-        weekRange: `${formatDate(weekStart)} - ${formatDate(weekEnd)}`,
+        weekRange: formatDate(weekStart) + " - " + formatDate(weekEnd),
         totalEntries: weekData.length,
         totalWorked,
         activeUsers,
@@ -220,7 +216,7 @@ setTotals({
   const formatHours = (hours) => {
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
-    return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}` : `${m}m`;
+    return h > 0 ? h + 'h ' + (m > 0 ? m + 'm' : '') : m + 'm';
   };
 
   const getMaxHours = () => {
@@ -300,10 +296,10 @@ setTotals({
                   <div 
                     className="bar worked-bar"
                     style={{ 
-                      height: `${(day.workedHours / maxHours) * 180}px`,
+                      height: (day.workedHours / maxHours) * 180 + 'px',
                       background: 'linear-gradient(to top, #3b82f6, #60a5fa)'
                     }}
-                    title={`${formatHours(day.workedHours)} worked`}
+                    title={formatHours(day.workedHours) + ' worked'}
                   >
                     <span className="bar-value">{day.workedHours.toFixed(1)}</span>
                   </div>
@@ -314,11 +310,11 @@ setTotals({
                   <div 
                     className="bar break-bar"
                     style={{ 
-                      height: `${(day.breakHours / maxHours) * 180}px`,
+                      height: (day.breakHours / maxHours) * 180 + 'px',
                       background: 'linear-gradient(to top, #10b981, #34d399)',
                       marginTop: day.workedHours > 0 ? '2px' : '0'
                     }}
-                    title={`${formatHours(day.breakHours)} breaks`}
+                    title={formatHours(day.breakHours) + ' breaks'}
                   >
                     <span className="bar-value">{day.breakHours.toFixed(1)}</span>
                   </div>
@@ -329,11 +325,11 @@ setTotals({
                   <div 
                     className="bar overtime-bar"
                     style={{ 
-                      height: `${(day.overtimeHours / maxHours) * 180}px`,
+                      height: (day.overtimeHours / maxHours) * 180 + 'px',
                       background: 'linear-gradient(to top, #f59e0b, #fbbf24)',
                       marginTop: (day.workedHours > 0 || day.breakHours > 0) ? '2px' : '0'
                     }}
-                    title={`${formatHours(day.overtimeHours)} overtime`}
+                    title={formatHours(day.overtimeHours) + ' overtime'}
                   >
                     <span className="bar-value">{day.overtimeHours.toFixed(1)}</span>
                   </div>
@@ -607,4 +603,3 @@ setTotals({
 };
 
 export default WeeklyChart;
-
