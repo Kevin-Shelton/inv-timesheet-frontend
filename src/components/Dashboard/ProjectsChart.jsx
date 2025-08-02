@@ -1,80 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 const ProjectsChart = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Simplified data that should always render
+  // Fixed data - no state changes that could cause re-render issues
   const sampleProjects = [
     { id: 'web', name: 'Website Redesign', hours: 25.5, color: '#4F46E5' },
     { id: 'mobile', name: 'Mobile App', hours: 18.2, color: '#10B981' },
-    { id: 'db', name: 'Database Migration', hours: 12.8, color: '#F59E0B' }
+    { id: 'db', name: 'Database Migration', hours: 12.8, color: '#F59E0B' },
+    { id: 'api', name: 'API Integration', hours: 8.3, color: '#EF4444' },
+    { id: 'testing', name: 'User Testing', hours: 6.7, color: '#8B5CF6' }
   ];
 
-  const totalHours = 56.5;
-
-  useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-  }, []);
+  const totalHours = 71.5;
 
   const formatHours = (hours) => {
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
-    return h + 'h ' + m + 'm';
+    return h + 'h ' + (m > 0 ? m + 'm' : '');
   };
 
   const getPercentage = (hours) => {
     return totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
   };
 
-  if (loading) {
-    return (
-      <div style={{ 
-        background: 'white', 
-        padding: '20px', 
-        borderRadius: '8px', 
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)' 
-      }}>
-        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>PROJECTS</h3>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          height: '120px' 
-        }}>
-          Loading projects data...
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ 
-        background: 'white', 
-        padding: '20px', 
-        borderRadius: '8px', 
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)' 
-      }}>
-        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>PROJECTS</h3>
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-          Error: {error}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={{ 
       background: 'white', 
       padding: '20px', 
       borderRadius: '8px', 
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)' 
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      minHeight: '200px'
     }}>
-      {/* Header */}
+      {/* Simple Header - NO INTERACTIVE ELEMENTS */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -82,45 +38,125 @@ const ProjectsChart = () => {
         marginBottom: '20px' 
       }}>
         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>PROJECTS</h3>
-        <a href="/projects" style={{ 
+        <span style={{ 
           fontSize: '14px', 
-          color: '#6B7280', 
-          textDecoration: 'none' 
+          color: '#6B7280'
         }}>
           Go to projects ↗
-        </a>
+        </span>
       </div>
 
       {/* Content */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-        {/* Simple chart circle */}
+        {/* Enhanced donut chart using SVG */}
         <div style={{ 
           position: 'relative', 
           width: '120px', 
           height: '120px',
           flexShrink: 0
         }}>
+          <svg 
+            width="120" 
+            height="120" 
+            viewBox="0 0 120 120"
+            style={{ transform: 'rotate(-90deg)' }}
+          >
+            {/* Background circle */}
+            <circle
+              cx="60"
+              cy="60"
+              r="45"
+              fill="none"
+              stroke="#E5E7EB"
+              strokeWidth="12"
+            />
+            
+            {/* Project segments */}
+            <circle
+              cx="60"
+              cy="60"
+              r="45"
+              fill="none"
+              stroke="#4F46E5"
+              strokeWidth="12"
+              strokeDasharray="128 283"
+              strokeDashoffset="0"
+              strokeLinecap="round"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r="45"
+              fill="none"
+              stroke="#10B981"
+              strokeWidth="12"
+              strokeDasharray="92 283"
+              strokeDashoffset="-128"
+              strokeLinecap="round"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r="45"
+              fill="none"
+              stroke="#F59E0B"
+              strokeWidth="12"
+              strokeDasharray="64 283"
+              strokeDashoffset="-220"
+              strokeLinecap="round"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r="45"
+              fill="none"
+              stroke="#EF4444"
+              strokeWidth="12"
+              strokeDasharray="42 283"
+              strokeDashoffset="-284"
+              strokeLinecap="round"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r="45"
+              fill="none"
+              stroke="#8B5CF6"
+              strokeWidth="12"
+              strokeDasharray="34 283"
+              strokeDashoffset="-326"
+              strokeLinecap="round"
+            />
+          </svg>
+          
+          {/* Center content */}
           <div style={{
-            width: '120px',
-            height: '120px',
-            borderRadius: '50%',
-            background: 'conic-gradient(#4F46E5 0deg 162deg, #10B981 162deg 278deg, #F59E0B 278deg 360deg)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            textAlign: 'center'
           }}>
-            <div style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '50%',
-              background: 'white',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center'
+            <div style={{ 
+              fontSize: '12px', 
+              color: '#6B7280', 
+              marginBottom: '2px' 
             }}>
-              <div style={{ fontSize: '12px', color: '#6B7280' }}>clocked</div>
-              <div style={{ fontSize: '16px', fontWeight: '600' }}>{formatHours(totalHours)}</div>
+              clocked
+            </div>
+            <div style={{ 
+              fontSize: '16px', 
+              fontWeight: '600', 
+              color: '#111827' 
+            }}>
+              {formatHours(totalHours)}
+            </div>
+            <div style={{ 
+              fontSize: '10px', 
+              color: '#9CA3AF',
+              marginTop: '2px'
+            }}>
+              {sampleProjects.length} projects
             </div>
           </div>
         </div>
@@ -133,7 +169,7 @@ const ProjectsChart = () => {
             fontWeight: '500', 
             color: '#6B7280' 
           }}>
-            Top projects
+            Top 5 projects
           </h4>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -153,7 +189,10 @@ const ProjectsChart = () => {
                 <div style={{ 
                   flex: 1, 
                   fontSize: '14px', 
-                  color: '#374151'
+                  color: '#374151',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
                 }}>
                   {project.name}
                 </div>
