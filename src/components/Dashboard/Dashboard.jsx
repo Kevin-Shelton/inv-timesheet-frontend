@@ -6,144 +6,8 @@ import WeeklyChart from './WeeklyChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
 import { supabase } from '../../supabaseClient';
-
-// PROPER IMPORTS for the chart components
 import ActivitiesChart from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
-
-// Error Boundary Component
-class ChartErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('Chart Error Boundary caught an error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{
-          background: '#fee2e2',
-          border: '2px solid #dc2626',
-          padding: '20px',
-          borderRadius: '8px',
-          color: '#991b1b'
-        }}>
-          <h3>❌ {this.props.chartName} Error</h3>
-          <p>Component crashed: {this.state.error?.message}</p>
-          <details style={{ marginTop: '10px' }}>
-            <summary>Error Details</summary>
-            <pre style={{ fontSize: '12px', overflow: 'auto' }}>
-              {this.state.error?.stack}
-            </pre>
-          </details>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-// Simplified chart components that should definitely work
-const ForceActivitiesChart = () => {
-  console.log('🎯 ForceActivitiesChart rendering...');
-  return (
-    <div style={{
-      background: 'white',
-      padding: '20px',
-      borderRadius: '8px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      minHeight: '200px',
-      border: '3px solid #f59e0b'
-    }}>
-      <h3>🎯 ACTIVITIES CHART</h3>
-      <div style={{
-        width: '100px',
-        height: '100px',
-        borderRadius: '50%',
-        background: 'conic-gradient(#4F46E5 0deg 144deg, #10B981 144deg 216deg, #F59E0B 216deg 360deg)',
-        margin: '20px auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white',
-        fontWeight: 'bold'
-      }}>
-        40h
-      </div>
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
-          <div style={{ width: '12px', height: '12px', background: '#4F46E5', borderRadius: '50%' }}></div>
-          <span>Development - 25h</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
-          <div style={{ width: '12px', height: '12px', background: '#10B981', borderRadius: '50%' }}></div>
-          <span>Meetings - 8h</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '12px', height: '12px', background: '#F59E0B', borderRadius: '50%' }}></div>
-          <span>Testing - 7h</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ForceProjectsChart = () => {
-  console.log('📊 ForceProjectsChart rendering...');
-  return (
-    <div style={{
-      background: 'white',
-      padding: '20px',
-      borderRadius: '8px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      minHeight: '200px',
-      border: '3px solid #8b5cf6'
-    }}>
-      <h3>📊 PROJECTS CHART</h3>
-      <div style={{
-        width: '100px',
-        height: '100px',
-        borderRadius: '50%',
-        background: 'conic-gradient(#4F46E5 0deg 160deg, #10B981 160deg 280deg, #F59E0B 280deg 360deg)',
-        margin: '20px auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white',
-        fontWeight: 'bold'
-      }}>
-        65h
-      </div>
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
-          <div style={{ width: '12px', height: '12px', background: '#4F46E5', borderRadius: '50%' }}></div>
-          <span>Website Redesign - 30h</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
-          <div style={{ width: '12px', height: '12px', background: '#10B981', borderRadius: '50%' }}></div>
-          <span>Mobile App - 20h</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '12px', height: '12px', background: '#F59E0B', borderRadius: '50%' }}></div>
-          <span>Database - 15h</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Try to import the original components, but fallback if they fail
-const OriginalActivitiesChart = ActivitiesChart;
-const OriginalProjectsChart = ProjectsChart;
 
 const Dashboard = ({ user: propUser }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -156,7 +20,7 @@ const Dashboard = ({ user: propUser }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [chartMode, setChartMode] = useState('force'); // 'force', 'original', 'both'
+  const [debugCss, setDebugCss] = useState(true);
   const [adminData, setAdminData] = useState({
     weeklyStats: {
       yourHours: 0,
@@ -314,223 +178,304 @@ const Dashboard = ({ user: propUser }) => {
   }
 
   return (
-    <div className="dashboard-wrapper">
-      <div className="dashboard-container">
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '24px',
+      width: '100%',
+      ...(debugCss && {
+        border: '3px solid red',
+        background: 'rgba(255,0,0,0.1)'
+      })
+    }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '1rem',
+        backgroundColor: '#f9fafb',
+        minHeight: '100vh',
+        ...(debugCss && {
+          border: '3px solid blue',
+          background: 'rgba(0,0,255,0.1)'
+        })
+      }}>
         <DashboardHeader user={enhancedUser} />
         
-        {/* Chart Debug Controls */}
+        {/* CSS Debug Controls */}
         <div style={{
-          background: '#fef3c7',
-          border: '2px solid #f59e0b',
+          background: '#dc2626',
+          color: 'white',
           padding: '15px',
           margin: '10px 0',
-          borderRadius: '8px'
+          borderRadius: '8px',
+          fontSize: '14px'
         }}>
-          <h3 style={{ margin: '0 0 10px 0', color: '#92400e' }}>🔧 CHART DEBUG CONTROLS</h3>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-            <button 
-              onClick={() => setChartMode('force')}
-              style={{ 
-                padding: '5px 10px', 
-                background: chartMode === 'force' ? '#f59e0b' : '#fff',
-                color: chartMode === 'force' ? 'white' : '#92400e',
-                border: '1px solid #f59e0b',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Force Charts (Should Work)
-            </button>
-            <button 
-              onClick={() => setChartMode('original')}
-              style={{ 
-                padding: '5px 10px', 
-                background: chartMode === 'original' ? '#f59e0b' : '#fff',
-                color: chartMode === 'original' ? 'white' : '#92400e',
-                border: '1px solid #f59e0b',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Original Charts (May Crash)
-            </button>
-            <button 
-              onClick={() => setChartMode('both')}
-              style={{ 
-                padding: '5px 10px', 
-                background: chartMode === 'both' ? '#f59e0b' : '#fff',
-                color: chartMode === 'both' ? 'white' : '#92400e',
-                border: '1px solid #f59e0b',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Both (Compare)
-            </button>
-          </div>
-          <div style={{ fontSize: '14px' }}>
-            Mode: <strong>{chartMode}</strong> | 
-            ActivitiesChart Available: ✅ | 
-            ProjectsChart Available: ✅
-          </div>
+          <h3 style={{ margin: '0 0 10px 0' }}>🎨 CSS LAYOUT DEBUG</h3>
+          <button 
+            onClick={() => setDebugCss(!debugCss)}
+            style={{ 
+              padding: '5px 10px', 
+              background: 'white',
+              color: '#dc2626',
+              border: 'none',
+              borderRadius: '4px',
+              marginRight: '10px',
+              cursor: 'pointer'
+            }}
+          >
+            Toggle Debug Borders: {debugCss ? 'ON' : 'OFF'}
+          </button>
+          <span>Red borders show containers, Blue shows main layout</span>
         </div>
         
-        <div className="dashboard-content">
-          <div className="dashboard-main">
-            {/* Top row */}
-            <div className="dashboard-top-row">
-              <div className="dashboard-col welcome">
+        <div style={{
+          display: 'flex',
+          gap: '1.5rem',
+          marginTop: '1rem',
+          flexGrow: 1,
+          ...(debugCss && {
+            border: '3px solid green',
+            background: 'rgba(0,255,0,0.1)'
+          })
+        }}>
+          <div style={{
+            flex: 3,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem',
+            ...(debugCss && {
+              border: '3px solid purple',
+              background: 'rgba(128,0,128,0.1)'
+            })
+          }}>
+            {/* Row 1: Welcome + Holiday */}
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              flexWrap: 'wrap',
+              ...(debugCss && {
+                border: '2px solid orange',
+                background: 'rgba(255,165,0,0.1)',
+                padding: '10px'
+              })
+            }}>
+              <div style={{
+                flex: 1,
+                minWidth: '280px',
+                ...(debugCss && {
+                  border: '2px solid yellow',
+                  background: 'rgba(255,255,0,0.1)'
+                })
+              }}>
+                {debugCss && <div style={{ background: 'yellow', padding: '5px', marginBottom: '5px' }}>WELCOME SLOT</div>}
                 <WelcomeCard user={enhancedUser} />
               </div>
-              <div className="dashboard-col holidays">
+              <div style={{
+                flex: 1,
+                minWidth: '280px',
+                ...(debugCss && {
+                  border: '2px solid cyan',
+                  background: 'rgba(0,255,255,0.1)'
+                })
+              }}>
+                {debugCss && <div style={{ background: 'cyan', padding: '5px', marginBottom: '5px' }}>HOLIDAY SLOT</div>}
                 <HolidaySection user={enhancedUser} />
               </div>
             </div>
             
-            {/* Weekly chart */}
-            <div className="dashboard-row">
-              <div className="dashboard-col full-width">
+            {/* Row 2: Weekly Chart */}
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              flexWrap: 'wrap',
+              ...(debugCss && {
+                border: '2px solid orange',
+                background: 'rgba(255,165,0,0.1)',
+                padding: '10px'
+              })
+            }}>
+              <div style={{
+                width: '100%',
+                flex: 'none',
+                ...(debugCss && {
+                  border: '2px solid lime',
+                  background: 'rgba(0,255,0,0.2)'
+                })
+              }}>
+                {debugCss && <div style={{ background: 'lime', padding: '5px', marginBottom: '5px' }}>WEEKLY CHART SLOT</div>}
                 <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
               </div>
             </div>
             
-            {/* Charts based on mode */}
-            {chartMode === 'force' && (
-              <div className="dashboard-row">
-                <div className="dashboard-col activity">
-                  <ForceActivitiesChart />
-                </div>
-                <div className="dashboard-col activity">
-                  <ForceProjectsChart />
+            {/* Row 3: Activities and Projects Charts - CRITICAL SECTION */}
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              flexWrap: 'wrap',
+              // FORCE VISIBILITY
+              position: 'relative',
+              zIndex: 1000,
+              minHeight: '300px',
+              ...(debugCss && {
+                border: '5px solid red',
+                background: 'rgba(255,0,0,0.2)',
+                padding: '10px'
+              })
+            }}>
+              <div style={{
+                flex: 1,
+                minWidth: '280px',
+                // FORCE VISIBILITY
+                position: 'relative',
+                zIndex: 1001,
+                minHeight: '250px',
+                ...(debugCss && {
+                  border: '3px solid magenta',
+                  background: 'rgba(255,0,255,0.2)'
+                })
+              }}>
+                {debugCss && (
+                  <div style={{ 
+                    background: 'magenta', 
+                    color: 'white',
+                    padding: '5px', 
+                    marginBottom: '5px',
+                    zIndex: 1002,
+                    position: 'relative'
+                  }}>
+                    ACTIVITIES CHART SLOT - Z-INDEX: 1001
+                  </div>
+                )}
+                <div style={{
+                  // MAXIMUM VISIBILITY FORCE
+                  position: 'relative',
+                  zIndex: 1002,
+                  minHeight: '200px',
+                  ...(debugCss && {
+                    border: '2px dashed black',
+                    background: 'white'
+                  })
+                }}>
+                  <ActivitiesChart user={enhancedUser} />
                 </div>
               </div>
-            )}
-            
-            {chartMode === 'original' && (
-              <div className="dashboard-row">
-                <div className="dashboard-col activity">
-                  <ChartErrorBoundary chartName="Activities Chart">
-                    <ActivitiesChart user={enhancedUser} />
-                  </ChartErrorBoundary>
-                </div>
-                <div className="dashboard-col activity">
-                  <ChartErrorBoundary chartName="Projects Chart">
-                    <ProjectsChart user={enhancedUser} />
-                  </ChartErrorBoundary>
+              
+              <div style={{
+                flex: 1,
+                minWidth: '280px',
+                // FORCE VISIBILITY
+                position: 'relative',
+                zIndex: 1001,
+                minHeight: '250px',
+                ...(debugCss && {
+                  border: '3px solid teal',
+                  background: 'rgba(0,128,128,0.2)'
+                })
+              }}>
+                {debugCss && (
+                  <div style={{ 
+                    background: 'teal', 
+                    color: 'white',
+                    padding: '5px', 
+                    marginBottom: '5px',
+                    zIndex: 1002,
+                    position: 'relative'
+                  }}>
+                    PROJECTS CHART SLOT - Z-INDEX: 1001
+                  </div>
+                )}
+                <div style={{
+                  // MAXIMUM VISIBILITY FORCE
+                  position: 'relative',
+                  zIndex: 1002,
+                  minHeight: '200px',
+                  ...(debugCss && {
+                    border: '2px dashed black',
+                    background: 'white'
+                  })
+                }}>
+                  <ProjectsChart user={enhancedUser} />
                 </div>
               </div>
-            )}
-            
-            {chartMode === 'both' && (
-              <>
-                <div className="dashboard-row">
-                  <div className="dashboard-col activity">
-                    <div style={{ marginBottom: '10px', background: '#f0f9ff', padding: '10px', borderRadius: '4px' }}>
-                      <strong>🔧 FORCE ACTIVITIES</strong>
-                    </div>
-                    <ForceActivitiesChart />
-                  </div>
-                  <div className="dashboard-col activity">
-                    <div style={{ marginBottom: '10px', background: '#f0f9ff', padding: '10px', borderRadius: '4px' }}>
-                      <strong>🔧 FORCE PROJECTS</strong>
-                    </div>
-                    <ForceProjectsChart />
-                  </div>
+            </div>
+
+            {/* Row 4: Always Visible Test */}
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              flexWrap: 'wrap',
+              position: 'relative',
+              zIndex: 2000,
+              ...(debugCss && {
+                border: '2px solid orange',
+                background: 'rgba(255,165,0,0.1)',
+                padding: '10px'
+              })
+            }}>
+              <div style={{
+                flex: 1,
+                minWidth: '280px',
+                position: 'relative',
+                zIndex: 2001
+              }}>
+                <div style={{
+                  background: '#ef4444',
+                  color: 'white',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                  minHeight: '100px',
+                  position: 'relative',
+                  zIndex: 2002
+                }}>
+                  <h3>🔴 ALWAYS VISIBLE TEST 1</h3>
+                  <p>Z-INDEX: 2002</p>
+                  <p>If you can see this, layout works</p>
                 </div>
-                <div className="dashboard-row">
-                  <div className="dashboard-col activity">
-                    <div style={{ marginBottom: '10px', background: '#fef3c7', padding: '10px', borderRadius: '4px' }}>
-                      <strong>📊 ORIGINAL ACTIVITIES</strong>
-                    </div>
-                    <ChartErrorBoundary chartName="Original Activities Chart">
-                      <ActivitiesChart user={enhancedUser} />
-                    </ChartErrorBoundary>
-                  </div>
-                  <div className="dashboard-col activity">
-                    <div style={{ marginBottom: '10px', background: '#fef3c7', padding: '10px', borderRadius: '4px' }}>
-                      <strong>📊 ORIGINAL PROJECTS</strong>
-                    </div>
-                    <ChartErrorBoundary chartName="Original Projects Chart">
-                      <ProjectsChart user={enhancedUser} />
-                    </ChartErrorBoundary>
-                  </div>
+              </div>
+              <div style={{
+                flex: 1,
+                minWidth: '280px',
+                position: 'relative',
+                zIndex: 2001
+              }}>
+                <div style={{
+                  background: '#3b82f6',
+                  color: 'white',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                  minHeight: '100px',
+                  position: 'relative',
+                  zIndex: 2002
+                }}>
+                  <h3>🔵 ALWAYS VISIBLE TEST 2</h3>
+                  <p>Z-INDEX: 2002</p>
+                  <p>Time: {currentTime.toLocaleTimeString()}</p>
                 </div>
-              </>
-            )}
+              </div>
+            </div>
           </div>
           
-          <div className="dashboard-sidebar">
+          {/* Sidebar */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            maxWidth: '350px',
+            minWidth: '300px',
+            ...(debugCss && {
+              border: '3px solid brown',
+              background: 'rgba(165,42,42,0.1)'
+            })
+          }}>
+            {debugCss && <div style={{ background: 'brown', color: 'white', padding: '5px' }}>SIDEBAR</div>}
             <WhoIsInOutPanel user={enhancedUser} />
             <CurrentTime currentTime={currentTime} user={enhancedUser} />
           </div>
         </div>
       </div>
-      
-      <style jsx>{`
-        .dashboard-wrapper {
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-          width: 100%;
-        }
-        
-        .dashboard-container {
-          display: flex;
-          flex-direction: column;
-          padding: 1rem;
-          background-color: #f9fafb;
-          min-height: 100vh;
-        }
-
-        .dashboard-content {
-          display: flex;
-          gap: 1.5rem;
-          margin-top: 1rem;
-          flex-grow: 1;
-        }
-
-        .dashboard-main {
-          flex: 3;
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-        }
-
-        .dashboard-sidebar {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          max-width: 350px;
-          min-width: 300px;
-        }
-
-        .dashboard-top-row,
-        .dashboard-row {
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-
-        .dashboard-col {
-          flex: 1;
-          min-width: 280px;
-        }
-
-        .dashboard-col.full-width {
-          width: 100%;
-          flex: none;
-        }
-
-        .dashboard-col.welcome,
-        .dashboard-col.holidays {
-          flex: 1;
-        }
-
-        .dashboard-col.activity {
-          flex: 1;
-        }
-      `}</style>
     </div>
   );
 };
