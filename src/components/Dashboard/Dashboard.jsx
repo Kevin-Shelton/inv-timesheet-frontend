@@ -50,6 +50,7 @@ const Dashboard = ({ user: propUser }) => {
     }, 60000);
 
     return () => clearInterval(timer);
+    <div className="dashboard-wrapper">
   }, []);
 
   // Load authenticated user data
@@ -264,6 +265,12 @@ const Dashboard = ({ user: propUser }) => {
     return (
       <div className="dashboard-container">
         <div className="dashboard-loading">
+      <div className="chart-wrapper">
+        <ActivityRing />
+      </div>
+      <div className="chart-wrapper">
+        <ProjectsChart />
+      </div>
           <div>Loading dashboard...</div>
         </div>
       </div>
@@ -273,8 +280,15 @@ const Dashboard = ({ user: propUser }) => {
   // Show error state with fallback
   if (error && !authenticatedUser && !propUser) {
     return (
+    <div className="dashboard-wrapper">
       <div className="dashboard-container">
         <div className="dashboard-error">
+      <div className="chart-wrapper">
+        <ActivityRing />
+      </div>
+      <div className="chart-wrapper">
+        <ProjectsChart />
+      </div>
           <div>{error}</div>
           <button onClick={loadAuthenticatedUserData}>Retry</button>
         </div>
@@ -283,6 +297,7 @@ const Dashboard = ({ user: propUser }) => {
   }
 
   return (
+    <div className="dashboard-wrapper">
     <div className="dashboard-container">
       <DashboardHeader user={enhancedUser} />
       
@@ -291,6 +306,12 @@ const Dashboard = ({ user: propUser }) => {
           <div className="dashboard-top-row">
             <div className="dashboard-col welcome">
               <WelcomeCard user={enhancedUser} />
+      <div className="chart-wrapper">
+        <ActivityRing />
+      </div>
+      <div className="chart-wrapper">
+        <ProjectsChart />
+      </div>
             </div>
             <div className="dashboard-col holidays">
               <HolidaySection user={enhancedUser} />
@@ -331,3 +352,21 @@ const Dashboard = ({ user: propUser }) => {
 
 export default Dashboard;
 
+
+
+<style jsx>{`
+  .dashboard-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+  }
+
+  .chart-wrapper {
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+`}</style>
