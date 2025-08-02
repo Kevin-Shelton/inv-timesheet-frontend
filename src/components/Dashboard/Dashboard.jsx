@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DashboardHeader from './DashboardHeader';
 import WelcomeCard from './WelcomeCard';
 import HolidaySection from './HolidaySection';
 import WeeklyChart from './WeeklyChart';
@@ -21,6 +22,7 @@ const Dashboard = ({ user: propUser }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [debugMode, setDebugMode] = useState(true); // DEBUG: Show step by step
   const [adminData, setAdminData] = useState({
     weeklyStats: {
       yourHours: 0,
@@ -180,52 +182,144 @@ const Dashboard = ({ user: propUser }) => {
   return (
     <div className="dashboard-wrapper">
       <div className="dashboard-container">
-        {/* REMOVED: DashboardHeader - This was causing the re-renders */}
-        {/* <DashboardHeader user={enhancedUser} /> */}
+        <DashboardHeader user={enhancedUser} />
         
-        {/* SIMPLIFIED HEADER */}
-        <div style={{
-          background: 'white',
-          padding: '1rem',
-          borderRadius: '8px',
-          marginBottom: '1rem',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-        }}>
-          <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '600' }}>Dashboard</h1>
-          <p style={{ margin: '4px 0 0 0', color: '#6b7280' }}>Welcome to your timesheet dashboard</p>
-        </div>
+        {debugMode && (
+          <div style={{
+            background: '#f0f9ff',
+            border: '2px solid #0ea5e9',
+            padding: '15px',
+            margin: '10px 0',
+            borderRadius: '8px'
+          }}>
+            <h3 style={{ margin: '0 0 10px 0', color: '#0c4a6e' }}>🔍 DEBUG MODE</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px' }}>
+              <div>✅ Dashboard component mounted</div>
+              <div>✅ DashboardHeader rendered</div>
+              <div>User: {enhancedUser?.email || 'No user'}</div>
+              <div>Loading: {loading ? 'Yes' : 'No'}</div>
+            </div>
+            <button 
+              onClick={() => setDebugMode(false)}
+              style={{ 
+                marginTop: '10px', 
+                padding: '5px 10px', 
+                background: '#0ea5e9', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px' 
+              }}
+            >
+              Hide Debug Info
+            </button>
+          </div>
+        )}
         
         <div className="dashboard-content">
           <div className="dashboard-main">
-            {/* Top row with WelcomeCard and HolidaySection */}
+            {/* Row 1: Welcome + Holiday */}
             <div className="dashboard-top-row">
               <div className="dashboard-col welcome">
+                <div style={{ background: '#dcfce7', padding: '10px', borderRadius: '4px', marginBottom: '10px' }}>
+                  ✅ WelcomeCard slot
+                </div>
                 <WelcomeCard user={enhancedUser} />
               </div>
               <div className="dashboard-col holidays">
+                <div style={{ background: '#dcfce7', padding: '10px', borderRadius: '4px', marginBottom: '10px' }}>
+                  ✅ HolidaySection slot
+                </div>
                 <HolidaySection user={enhancedUser} />
               </div>
             </div>
             
-            {/* Full-width WeeklyChart */}
+            {/* Row 2: Weekly Chart */}
             <div className="dashboard-row">
               <div className="dashboard-col full-width">
+                <div style={{ background: '#dcfce7', padding: '10px', borderRadius: '4px', marginBottom: '10px' }}>
+                  ✅ WeeklyChart slot
+                </div>
                 <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
               </div>
             </div>
             
-            {/* Activities and Projects Charts */}
+            {/* Row 3: Charts with detailed debugging */}
             <div className="dashboard-row">
               <div className="dashboard-col activity">
-                <ActivitiesChart user={enhancedUser} />
+                <div style={{ background: '#fef3c7', padding: '15px', borderRadius: '4px', marginBottom: '10px' }}>
+                  <h4 style={{ margin: '0 0 5px 0' }}>🎯 ACTIVITIES CHART SLOT</h4>
+                  <div style={{ fontSize: '12px' }}>
+                    <div>• Component: ActivitiesChart</div>
+                    <div>• File: ActivityRing.jsx</div>
+                    <div>• Status: About to render...</div>
+                  </div>
+                </div>
+                <div style={{ 
+                  border: '3px dashed #f59e0b', 
+                  padding: '10px', 
+                  borderRadius: '4px',
+                  minHeight: '200px'
+                }}>
+                  <ActivitiesChart user={enhancedUser} />
+                </div>
               </div>
               <div className="dashboard-col activity">
-                <ProjectsChart user={enhancedUser} />
+                <div style={{ background: '#fef3c7', padding: '15px', borderRadius: '4px', marginBottom: '10px' }}>
+                  <h4 style={{ margin: '0 0 5px 0' }}>📊 PROJECTS CHART SLOT</h4>
+                  <div style={{ fontSize: '12px' }}>
+                    <div>• Component: ProjectsChart</div>
+                    <div>• File: ProjectsChart.jsx</div>
+                    <div>• Status: About to render...</div>
+                  </div>
+                </div>
+                <div style={{ 
+                  border: '3px dashed #f59e0b', 
+                  padding: '10px', 
+                  borderRadius: '4px',
+                  minHeight: '200px'
+                }}>
+                  <ProjectsChart user={enhancedUser} />
+                </div>
+              </div>
+            </div>
+
+            {/* Row 4: Test components that should always work */}
+            <div className="dashboard-row">
+              <div className="dashboard-col activity">
+                <div style={{
+                  background: '#ef4444',
+                  color: 'white',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                  minHeight: '100px'
+                }}>
+                  <h3>🔴 TEST COMPONENT 1</h3>
+                  <p>This should NEVER disappear</p>
+                  <p>Time: {currentTime.toLocaleTimeString()}</p>
+                </div>
+              </div>
+              <div className="dashboard-col activity">
+                <div style={{
+                  background: '#3b82f6',
+                  color: 'white',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                  minHeight: '100px'
+                }}>
+                  <h3>🔵 TEST COMPONENT 2</h3>
+                  <p>This should NEVER disappear</p>
+                  <p>Loading: {loading ? 'Yes' : 'No'}</p>
+                </div>
               </div>
             </div>
           </div>
           
           <div className="dashboard-sidebar">
+            <div style={{ background: '#dcfce7', padding: '10px', borderRadius: '4px', marginBottom: '10px' }}>
+              ✅ Sidebar components
+            </div>
             <WhoIsInOutPanel user={enhancedUser} />
             <CurrentTime currentTime={currentTime} user={enhancedUser} />
           </div>
