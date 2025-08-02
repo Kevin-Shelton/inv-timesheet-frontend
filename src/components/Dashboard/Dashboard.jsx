@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import DashboardHeader from './DashboardHeader';
 import WelcomeCard from './WelcomeCard';
 import HolidaySection from './HolidaySection';
-import WeeklyChart from './WeeklyChart';
+import WeeklyChart from './WeeklyChart'; // FIXED: Import WeeklyChart
 import ActivityRing from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
@@ -86,7 +85,7 @@ const Dashboard = ({ user: propUser }) => {
 
       const { data: timesheetData, error: timesheetError } = await supabase
         .from('timesheet_entries')
-        .select(`id, date, regular_hours, overtime_hours, description, task, project, campaign_id, user_id, users!timesheet_entries_user_id_fkey(full_name, role)`)
+        .select('id, date, regular_hours, overtime_hours, description, task, project, campaign_id, user_id, users!timesheet_entries_user_id_fkey(full_name, role)')
         .gte('date', startOfWeek.toISOString().split('T')[0])
         .lte('date', endOfWeek.toISOString().split('T')[0]);
 
@@ -159,7 +158,7 @@ const Dashboard = ({ user: propUser }) => {
   const formatTime = (hours) => {
     const wholeHours = Math.floor(hours);
     const minutes = Math.round((hours - wholeHours) * 60);
-    return `${wholeHours}h ${minutes}m`;
+    return wholeHours + 'h ' + minutes + 'm';
   };
 
   const enhancedUser = {
@@ -183,48 +182,124 @@ const Dashboard = ({ user: propUser }) => {
         <DashboardHeader user={enhancedUser} />
         <div className="dashboard-content">
           <div className="dashboard-main">
+            {/* FIXED: Top row with WelcomeCard and HolidaySection side by side */}
             <div className="dashboard-top-row">
               <div className="dashboard-col welcome">
                 <WelcomeCard user={enhancedUser} />
-                <div className="chart-wrapper"><ActivityRing user={enhancedUser} /></div>
-                <div className="chart-wrapper"><ProjectsChart user={enhancedUser} /></div>
               </div>
-              <div className="dashboard-col holidays"><HolidaySection user={enhancedUser} /></div>
+              <div className="dashboard-col holidays">
+                <HolidaySection user={enhancedUser} />
+              </div>
             </div>
+            
+            {/* FIXED: Full-width WeeklyChart */}
             <div className="dashboard-row">
-              <div className="dashboard-col wide">
+              <div className="dashboard-col full-width">
                 <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
               </div>
             </div>
+            
+            {/* FIXED: ActivityRing and ProjectsChart side by side */}
+            <div className="dashboard-row">
+              <div className="dashboard-col activity">
+                <ActivityRing user={enhancedUser} />
+              </div>
+              <div className="dashboard-col activity">
+                <ProjectsChart user={enhancedUser} />
+              </div>
+            </div>
           </div>
+          
+          {/* FIXED: Sidebar remains the same */}
           <div className="dashboard-sidebar">
             <WhoIsInOutPanel user={enhancedUser} />
             <CurrentTime currentTime={currentTime} user={enhancedUser} />
           </div>
         </div>
       </div>
+      
+      <style jsx>{`
+        .dashboard-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          width: 100%;
+        }
+        
+        .dashboard-container {
+          display: flex;
+          flex-direction: column;
+          padding: 1rem;
+          background-color: #f9fafb;
+          min-height: 100vh;
+        }
+
+        .dashboard-content {
+          display: flex;
+          gap: 1.5rem;
+          margin-top: 1rem;
+          flex-grow: 1;
+        }
+
+        .dashboard-main {
+          flex: 3;
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .dashboard-sidebar {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .dashboard-top-row,
+        .dashboard-row {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .dashboard-col {
+          flex: 1;
+          min-width: 280px;
+        }
+
+        .dashboard-col.full-width {
+          width: 100%;
+          flex: none;
+        }
+
+        .dashboard-col.welcome,
+        .dashboard-col.holidays {
+          flex: 1;
+        }
+
+        .dashboard-col.activity {
+          flex: 1;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+          .dashboard-content {
+            flex-direction: column;
+          }
+          
+          .dashboard-top-row,
+          .dashboard-row {
+            flex-direction: column;
+          }
+          
+          .dashboard-col {
+            min-width: unset;
+            width: 100%;
+          }
+        }
+      `}</style>
     </div>
   );
 };
 
 export default Dashboard;
-
-<style jsx>{`
-  .dashboard-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    width: 100%;
-  }
-  .chart-wrapper {
-    width: 100%;
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-  .dashboard-col.full-width {
-    width: 100%;
-    margin-top: 20px;
-  }
-`}</style>
