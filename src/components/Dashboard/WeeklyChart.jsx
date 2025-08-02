@@ -190,7 +190,7 @@ setTotals({
       };
 
       setChartData(dailyData);
-      setWeekRange(formatDate(weekStart) + ' - ' + formatDate(weekEnd));
+      setWeekRange(`${formatDate(weekStart)} - ${formatDate(weekEnd)}`);
       
 
 setTotals({
@@ -607,4 +607,3 @@ setTotals({
 };
 
 export default WeeklyChart;
-
