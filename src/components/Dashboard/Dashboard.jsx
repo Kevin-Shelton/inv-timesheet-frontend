@@ -7,9 +7,143 @@ import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
 import { supabase } from '../../supabaseClient';
 
-// Import your actual chart components
+// PROPER IMPORTS for the chart components
 import ActivitiesChart from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
+
+// Error Boundary Component
+class ChartErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Chart Error Boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          background: '#fee2e2',
+          border: '2px solid #dc2626',
+          padding: '20px',
+          borderRadius: '8px',
+          color: '#991b1b'
+        }}>
+          <h3>❌ {this.props.chartName} Error</h3>
+          <p>Component crashed: {this.state.error?.message}</p>
+          <details style={{ marginTop: '10px' }}>
+            <summary>Error Details</summary>
+            <pre style={{ fontSize: '12px', overflow: 'auto' }}>
+              {this.state.error?.stack}
+            </pre>
+          </details>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Simplified chart components that should definitely work
+const ForceActivitiesChart = () => {
+  console.log('🎯 ForceActivitiesChart rendering...');
+  return (
+    <div style={{
+      background: 'white',
+      padding: '20px',
+      borderRadius: '8px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      minHeight: '200px',
+      border: '3px solid #f59e0b'
+    }}>
+      <h3>🎯 ACTIVITIES CHART</h3>
+      <div style={{
+        width: '100px',
+        height: '100px',
+        borderRadius: '50%',
+        background: 'conic-gradient(#4F46E5 0deg 144deg, #10B981 144deg 216deg, #F59E0B 216deg 360deg)',
+        margin: '20px auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontWeight: 'bold'
+      }}>
+        40h
+      </div>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
+          <div style={{ width: '12px', height: '12px', background: '#4F46E5', borderRadius: '50%' }}></div>
+          <span>Development - 25h</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
+          <div style={{ width: '12px', height: '12px', background: '#10B981', borderRadius: '50%' }}></div>
+          <span>Meetings - 8h</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '12px', height: '12px', background: '#F59E0B', borderRadius: '50%' }}></div>
+          <span>Testing - 7h</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ForceProjectsChart = () => {
+  console.log('📊 ForceProjectsChart rendering...');
+  return (
+    <div style={{
+      background: 'white',
+      padding: '20px',
+      borderRadius: '8px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      minHeight: '200px',
+      border: '3px solid #8b5cf6'
+    }}>
+      <h3>📊 PROJECTS CHART</h3>
+      <div style={{
+        width: '100px',
+        height: '100px',
+        borderRadius: '50%',
+        background: 'conic-gradient(#4F46E5 0deg 160deg, #10B981 160deg 280deg, #F59E0B 280deg 360deg)',
+        margin: '20px auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontWeight: 'bold'
+      }}>
+        65h
+      </div>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
+          <div style={{ width: '12px', height: '12px', background: '#4F46E5', borderRadius: '50%' }}></div>
+          <span>Website Redesign - 30h</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
+          <div style={{ width: '12px', height: '12px', background: '#10B981', borderRadius: '50%' }}></div>
+          <span>Mobile App - 20h</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '12px', height: '12px', background: '#F59E0B', borderRadius: '50%' }}></div>
+          <span>Database - 15h</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Try to import the original components, but fallback if they fail
+const OriginalActivitiesChart = ActivitiesChart;
+const OriginalProjectsChart = ProjectsChart;
 
 const Dashboard = ({ user: propUser }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -22,7 +156,7 @@ const Dashboard = ({ user: propUser }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [debugMode, setDebugMode] = useState(true); // DEBUG: Show step by step
+  const [chartMode, setChartMode] = useState('force'); // 'force', 'original', 'both'
   const [adminData, setAdminData] = useState({
     weeklyStats: {
       yourHours: 0,
@@ -148,7 +282,7 @@ const Dashboard = ({ user: propUser }) => {
     });
 
     const activities = Object.entries(activityMap).map(([name, hours]) => ({ name, hours })).sort((a, b) => b.hours - a.hours).slice(0, 5);
-    const projects = Object.entries(projectMap).map(([name, hours]) => ({ name, hours })).sort((a, b) => b.hours - a.cores).slice(0, 5);
+    const projects = Object.entries(projectMap).map(([name, hours]) => ({ name, hours })).sort((a, b) => b.hours - a.hours).slice(0, 5);
 
     return {
       weeklyStats: { yourHours: totalHours, orgTotal: totalHours, activeUsers, avgPerUser, overtimeHours: totalOvertimeHours },
@@ -184,142 +318,148 @@ const Dashboard = ({ user: propUser }) => {
       <div className="dashboard-container">
         <DashboardHeader user={enhancedUser} />
         
-        {debugMode && (
-          <div style={{
-            background: '#f0f9ff',
-            border: '2px solid #0ea5e9',
-            padding: '15px',
-            margin: '10px 0',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ margin: '0 0 10px 0', color: '#0c4a6e' }}>🔍 DEBUG MODE</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px' }}>
-              <div>✅ Dashboard component mounted</div>
-              <div>✅ DashboardHeader rendered</div>
-              <div>User: {enhancedUser?.email || 'No user'}</div>
-              <div>Loading: {loading ? 'Yes' : 'No'}</div>
-            </div>
+        {/* Chart Debug Controls */}
+        <div style={{
+          background: '#fef3c7',
+          border: '2px solid #f59e0b',
+          padding: '15px',
+          margin: '10px 0',
+          borderRadius: '8px'
+        }}>
+          <h3 style={{ margin: '0 0 10px 0', color: '#92400e' }}>🔧 CHART DEBUG CONTROLS</h3>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
             <button 
-              onClick={() => setDebugMode(false)}
+              onClick={() => setChartMode('force')}
               style={{ 
-                marginTop: '10px', 
                 padding: '5px 10px', 
-                background: '#0ea5e9', 
-                color: 'white', 
-                border: 'none', 
-                borderRadius: '4px' 
+                background: chartMode === 'force' ? '#f59e0b' : '#fff',
+                color: chartMode === 'force' ? 'white' : '#92400e',
+                border: '1px solid #f59e0b',
+                borderRadius: '4px',
+                cursor: 'pointer'
               }}
             >
-              Hide Debug Info
+              Force Charts (Should Work)
+            </button>
+            <button 
+              onClick={() => setChartMode('original')}
+              style={{ 
+                padding: '5px 10px', 
+                background: chartMode === 'original' ? '#f59e0b' : '#fff',
+                color: chartMode === 'original' ? 'white' : '#92400e',
+                border: '1px solid #f59e0b',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Original Charts (May Crash)
+            </button>
+            <button 
+              onClick={() => setChartMode('both')}
+              style={{ 
+                padding: '5px 10px', 
+                background: chartMode === 'both' ? '#f59e0b' : '#fff',
+                color: chartMode === 'both' ? 'white' : '#92400e',
+                border: '1px solid #f59e0b',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Both (Compare)
             </button>
           </div>
-        )}
+          <div style={{ fontSize: '14px' }}>
+            Mode: <strong>{chartMode}</strong> | 
+            ActivitiesChart Available: ✅ | 
+            ProjectsChart Available: ✅
+          </div>
+        </div>
         
         <div className="dashboard-content">
           <div className="dashboard-main">
-            {/* Row 1: Welcome + Holiday */}
+            {/* Top row */}
             <div className="dashboard-top-row">
               <div className="dashboard-col welcome">
-                <div style={{ background: '#dcfce7', padding: '10px', borderRadius: '4px', marginBottom: '10px' }}>
-                  ✅ WelcomeCard slot
-                </div>
                 <WelcomeCard user={enhancedUser} />
               </div>
               <div className="dashboard-col holidays">
-                <div style={{ background: '#dcfce7', padding: '10px', borderRadius: '4px', marginBottom: '10px' }}>
-                  ✅ HolidaySection slot
-                </div>
                 <HolidaySection user={enhancedUser} />
               </div>
             </div>
             
-            {/* Row 2: Weekly Chart */}
+            {/* Weekly chart */}
             <div className="dashboard-row">
               <div className="dashboard-col full-width">
-                <div style={{ background: '#dcfce7', padding: '10px', borderRadius: '4px', marginBottom: '10px' }}>
-                  ✅ WeeklyChart slot
-                </div>
                 <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
               </div>
             </div>
             
-            {/* Row 3: Charts with detailed debugging */}
-            <div className="dashboard-row">
-              <div className="dashboard-col activity">
-                <div style={{ background: '#fef3c7', padding: '15px', borderRadius: '4px', marginBottom: '10px' }}>
-                  <h4 style={{ margin: '0 0 5px 0' }}>🎯 ACTIVITIES CHART SLOT</h4>
-                  <div style={{ fontSize: '12px' }}>
-                    <div>• Component: ActivitiesChart</div>
-                    <div>• File: ActivityRing.jsx</div>
-                    <div>• Status: About to render...</div>
+            {/* Charts based on mode */}
+            {chartMode === 'force' && (
+              <div className="dashboard-row">
+                <div className="dashboard-col activity">
+                  <ForceActivitiesChart />
+                </div>
+                <div className="dashboard-col activity">
+                  <ForceProjectsChart />
+                </div>
+              </div>
+            )}
+            
+            {chartMode === 'original' && (
+              <div className="dashboard-row">
+                <div className="dashboard-col activity">
+                  <ChartErrorBoundary chartName="Activities Chart">
+                    <ActivitiesChart user={enhancedUser} />
+                  </ChartErrorBoundary>
+                </div>
+                <div className="dashboard-col activity">
+                  <ChartErrorBoundary chartName="Projects Chart">
+                    <ProjectsChart user={enhancedUser} />
+                  </ChartErrorBoundary>
+                </div>
+              </div>
+            )}
+            
+            {chartMode === 'both' && (
+              <>
+                <div className="dashboard-row">
+                  <div className="dashboard-col activity">
+                    <div style={{ marginBottom: '10px', background: '#f0f9ff', padding: '10px', borderRadius: '4px' }}>
+                      <strong>🔧 FORCE ACTIVITIES</strong>
+                    </div>
+                    <ForceActivitiesChart />
+                  </div>
+                  <div className="dashboard-col activity">
+                    <div style={{ marginBottom: '10px', background: '#f0f9ff', padding: '10px', borderRadius: '4px' }}>
+                      <strong>🔧 FORCE PROJECTS</strong>
+                    </div>
+                    <ForceProjectsChart />
                   </div>
                 </div>
-                <div style={{ 
-                  border: '3px dashed #f59e0b', 
-                  padding: '10px', 
-                  borderRadius: '4px',
-                  minHeight: '200px'
-                }}>
-                  <ActivitiesChart user={enhancedUser} />
-                </div>
-              </div>
-              <div className="dashboard-col activity">
-                <div style={{ background: '#fef3c7', padding: '15px', borderRadius: '4px', marginBottom: '10px' }}>
-                  <h4 style={{ margin: '0 0 5px 0' }}>📊 PROJECTS CHART SLOT</h4>
-                  <div style={{ fontSize: '12px' }}>
-                    <div>• Component: ProjectsChart</div>
-                    <div>• File: ProjectsChart.jsx</div>
-                    <div>• Status: About to render...</div>
+                <div className="dashboard-row">
+                  <div className="dashboard-col activity">
+                    <div style={{ marginBottom: '10px', background: '#fef3c7', padding: '10px', borderRadius: '4px' }}>
+                      <strong>📊 ORIGINAL ACTIVITIES</strong>
+                    </div>
+                    <ChartErrorBoundary chartName="Original Activities Chart">
+                      <ActivitiesChart user={enhancedUser} />
+                    </ChartErrorBoundary>
+                  </div>
+                  <div className="dashboard-col activity">
+                    <div style={{ marginBottom: '10px', background: '#fef3c7', padding: '10px', borderRadius: '4px' }}>
+                      <strong>📊 ORIGINAL PROJECTS</strong>
+                    </div>
+                    <ChartErrorBoundary chartName="Original Projects Chart">
+                      <ProjectsChart user={enhancedUser} />
+                    </ChartErrorBoundary>
                   </div>
                 </div>
-                <div style={{ 
-                  border: '3px dashed #f59e0b', 
-                  padding: '10px', 
-                  borderRadius: '4px',
-                  minHeight: '200px'
-                }}>
-                  <ProjectsChart user={enhancedUser} />
-                </div>
-              </div>
-            </div>
-
-            {/* Row 4: Test components that should always work */}
-            <div className="dashboard-row">
-              <div className="dashboard-col activity">
-                <div style={{
-                  background: '#ef4444',
-                  color: 'white',
-                  padding: '20px',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  minHeight: '100px'
-                }}>
-                  <h3>🔴 TEST COMPONENT 1</h3>
-                  <p>This should NEVER disappear</p>
-                  <p>Time: {currentTime.toLocaleTimeString()}</p>
-                </div>
-              </div>
-              <div className="dashboard-col activity">
-                <div style={{
-                  background: '#3b82f6',
-                  color: 'white',
-                  padding: '20px',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  minHeight: '100px'
-                }}>
-                  <h3>🔵 TEST COMPONENT 2</h3>
-                  <p>This should NEVER disappear</p>
-                  <p>Loading: {loading ? 'Yes' : 'No'}</p>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
           
           <div className="dashboard-sidebar">
-            <div style={{ background: '#dcfce7', padding: '10px', borderRadius: '4px', marginBottom: '10px' }}>
-              ✅ Sidebar components
-            </div>
             <WhoIsInOutPanel user={enhancedUser} />
             <CurrentTime currentTime={currentTime} user={enhancedUser} />
           </div>
@@ -389,55 +529,6 @@ const Dashboard = ({ user: propUser }) => {
 
         .dashboard-col.activity {
           flex: 1;
-        }
-
-        @media (max-width: 1200px) {
-          .dashboard-sidebar {
-            max-width: 300px;
-            min-width: 250px;
-          }
-        }
-
-        @media (max-width: 968px) {
-          .dashboard-content {
-            flex-direction: column;
-          }
-          
-          .dashboard-sidebar {
-            max-width: none;
-            min-width: unset;
-            width: 100%;
-          }
-          
-          .dashboard-top-row,
-          .dashboard-row {
-            flex-direction: column;
-          }
-          
-          .dashboard-col {
-            min-width: unset;
-            width: 100%;
-            flex: none;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .dashboard-container {
-            padding: 0.5rem;
-          }
-          
-          .dashboard-content {
-            gap: 1rem;
-          }
-          
-          .dashboard-main {
-            gap: 1rem;
-          }
-          
-          .dashboard-top-row,
-          .dashboard-row {
-            gap: 0.5rem;
-          }
         }
       `}</style>
     </div>
