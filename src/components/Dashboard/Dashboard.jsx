@@ -3,11 +3,36 @@ import DashboardHeader from './DashboardHeader';
 import WelcomeCard from './WelcomeCard';
 import HolidaySection from './HolidaySection';
 import WeeklyChart from './WeeklyChart';
-import ActivitiesChart from './ActivityRing'; // FIXED: Import the actual component name
-import ProjectsChart from './ProjectsChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
 import { supabase } from '../../supabaseClient';
+
+// SIMPLE TEST COMPONENTS - NO EXTERNAL DEPENDENCIES
+const TestActivityChart = () => (
+  <div style={{ 
+    background: 'red', 
+    padding: '20px', 
+    borderRadius: '8px', 
+    color: 'white',
+    minHeight: '100px'
+  }}>
+    <h3>TEST ACTIVITIES CHART</h3>
+    <p>If you can see this, the component is rendering</p>
+  </div>
+);
+
+const TestProjectsChart = () => (
+  <div style={{ 
+    background: 'blue', 
+    padding: '20px', 
+    borderRadius: '8px', 
+    color: 'white',
+    minHeight: '100px'
+  }}>
+    <h3>TEST PROJECTS CHART</h3>
+    <p>If you can see this, the component is rendering</p>
+  </div>
+);
 
 const Dashboard = ({ user: propUser }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -20,6 +45,7 @@ const Dashboard = ({ user: propUser }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showCharts, setShowCharts] = useState(true); // DEBUG: Toggle charts visibility
   const [adminData, setAdminData] = useState({
     weeklyStats: {
       yourHours: 0,
@@ -180,9 +206,27 @@ const Dashboard = ({ user: propUser }) => {
     <div className="dashboard-wrapper">
       <div className="dashboard-container">
         <DashboardHeader user={enhancedUser} />
+        
+        {/* DEBUG CONTROLS */}
+        <div style={{ 
+          background: 'yellow', 
+          padding: '10px', 
+          margin: '10px 0',
+          borderRadius: '4px'
+        }}>
+          <h4>DEBUG CONTROLS</h4>
+          <button 
+            onClick={() => setShowCharts(!showCharts)}
+            style={{ padding: '5px 10px', marginRight: '10px' }}
+          >
+            Toggle Charts: {showCharts ? 'ON' : 'OFF'}
+          </button>
+          <span>Charts currently: {showCharts ? 'VISIBLE' : 'HIDDEN'}</span>
+        </div>
+        
         <div className="dashboard-content">
           <div className="dashboard-main">
-            {/* FIXED: Top row with WelcomeCard and HolidaySection side by side */}
+            {/* Top row with WelcomeCard and HolidaySection side by side */}
             <div className="dashboard-top-row">
               <div className="dashboard-col welcome">
                 <WelcomeCard user={enhancedUser} />
@@ -192,25 +236,54 @@ const Dashboard = ({ user: propUser }) => {
               </div>
             </div>
             
-            {/* FIXED: Full-width WeeklyChart */}
+            {/* Full-width WeeklyChart */}
             <div className="dashboard-row">
               <div className="dashboard-col full-width">
                 <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
               </div>
             </div>
             
-            {/* FIXED: ActivityRing and ProjectsChart side by side */}
+            {/* DEBUG: Conditionally render charts */}
+            {showCharts && (
+              <div className="dashboard-row">
+                <div className="dashboard-col activity">
+                  <TestActivityChart />
+                </div>
+                <div className="dashboard-col activity">
+                  <TestProjectsChart />
+                </div>
+              </div>
+            )}
+            
+            {/* ALWAYS VISIBLE CHARTS FOR COMPARISON */}
             <div className="dashboard-row">
               <div className="dashboard-col activity">
-                <ActivitiesChart user={enhancedUser} />
+                <div style={{ 
+                  background: 'green', 
+                  padding: '20px', 
+                  borderRadius: '8px', 
+                  color: 'white',
+                  minHeight: '100px'
+                }}>
+                  <h3>ALWAYS VISIBLE CHART 1</h3>
+                  <p>This should never disappear</p>
+                </div>
               </div>
               <div className="dashboard-col activity">
-                <ProjectsChart user={enhancedUser} />
+                <div style={{ 
+                  background: 'purple', 
+                  padding: '20px', 
+                  borderRadius: '8px', 
+                  color: 'white',
+                  minHeight: '100px'
+                }}>
+                  <h3>ALWAYS VISIBLE CHART 2</h3>
+                  <p>This should never disappear</p>
+                </div>
               </div>
             </div>
           </div>
           
-          {/* FIXED: Sidebar remains the same */}
           <div className="dashboard-sidebar">
             <WhoIsInOutPanel user={enhancedUser} />
             <CurrentTime currentTime={currentTime} user={enhancedUser} />
@@ -279,23 +352,6 @@ const Dashboard = ({ user: propUser }) => {
 
         .dashboard-col.activity {
           flex: 1;
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-          .dashboard-content {
-            flex-direction: column;
-          }
-          
-          .dashboard-top-row,
-          .dashboard-row {
-            flex-direction: column;
-          }
-          
-          .dashboard-col {
-            min-width: unset;
-            width: 100%;
-          }
         }
       `}</style>
     </div>
