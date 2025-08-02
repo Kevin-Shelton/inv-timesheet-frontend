@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient.js'; // FIXED: Use direct supabase import
+import { supabaseApi } from '../../supabaseClient.js'; // FIXED: Use supabaseApi to match your setup
 import { useAuth } from '../../hooks/useAuth';
 
 const ActivitiesChart = () => {
@@ -41,42 +41,24 @@ const ActivitiesChart = () => {
       const startDate = monday.toISOString().split('T')[0];
       const endDate = sunday.toISOString().split('T')[0];
 
-      // FIXED: Use direct supabase query instead of supabaseApi
-      let query = supabase
-        .from('timesheet_entries')
-        .select(`
-          date,
-          hours_worked,
-          total_hours,
-          regular_hours,
-          activity_type,
-          project_name,
-          campaign_name,
-          task_description,
-          user_id,
-          users!timesheet_entries_user_id_fkey (
-            id,
-            full_name,
-            department,
-            manager_id
-          )
-        `)
-        .gte('date', startDate)
-        .lte('date', endDate);
-
-      // Apply user-based filtering
-      if (viewMode === 'personal' || !canViewOrgData()) {
-        query = query.eq('user_id', user.id);
+      // FIXED: Use supabaseApi.getTimesheets method that returns array directly
+      let entries;
+      if (viewMode === 'organization' && canViewOrgData()) {
+        // Get all timesheet entries for the week
+        entries = await supabaseApi.getTimesheets({
+          startDate: startDate,
+          endDate: endDate
+        });
+        console.log('📊 ACTIVITIES: Fetched org-wide data:', entries?.length || 0, 'entries');
+      } else {
+        // Get only user's own timesheet entries
+        entries = await supabaseApi.getTimesheets({
+          user_id: user.id,
+          startDate: startDate,
+          endDate: endDate
+        });
+        console.log('📊 ACTIVITIES: Fetched personal data:', entries?.length || 0, 'entries');
       }
-
-      const { data: entries, error: fetchError } = await query;
-
-      if (fetchError) {
-        console.error('Error fetching timesheet data:', fetchError);
-        throw new Error('Failed to fetch timesheet data: ' + (fetchError?.message || 'Unknown error'));
-      }
-
-      console.log('📊 ACTIVITIES: Fetched data:', entries?.length || 0, 'entries');
 
       // Enhanced activity mapping with better categorization
       const activityMap = new Map();
@@ -91,16 +73,17 @@ const ActivitiesChart = () => {
           
           if (viewMode === 'organization') {
             // For organization view, group by user/department
-            if (entry.users?.full_name) {
-              activityName = entry.users.full_name;
-              activityId = entry.user_id;
-              activityDescription = 'Work by ' + entry.users.full_name;
-              if (entry.users.department) {
-                activityDescription += ' (' + entry.users.department + ')';
+            if (entry.users?.full_name || entry.user?.full_name) {
+              const userName = entry.users?.full_name || entry.user?.full_name || 'Unknown User';
+              activityName = userName;
+              activityId = entry.user_id || 'unknown';
+              activityDescription = 'Work by ' + userName;
+              if (entry.users?.department || entry.user?.department) {
+                activityDescription += ' (' + (entry.users?.department || entry.user?.department) + ')';
               }
             } else {
-              activityName = 'User ' + entry.user_id;
-              activityId = entry.user_id;
+              activityName = 'User ' + (entry.user_id || 'Unknown');
+              activityId = entry.user_id || 'unknown';
               activityDescription = 'Work activities';
             }
           } else {
@@ -113,22 +96,26 @@ const ActivitiesChart = () => {
               activityName = entry.project_name;
               activityId = entry.project_name.toLowerCase().replace(/\s+/g, '_');
               activityDescription = 'Project: ' + entry.project_name;
-            } else if (entry.task_description) {
-              // Extract activity type from task description
-              const taskLower = entry.task_description.toLowerCase();
-              if (taskLower.includes('meeting')) {
+            } else if (entry.client_name) {
+              activityName = entry.client_name + ' Work';
+              activityId = entry.client_name.toLowerCase().replace(/\s+/g, '_');
+              activityDescription = 'Work for ' + entry.client_name;
+            } else if (entry.notes && entry.notes.trim()) {
+              // Extract activity type from notes
+              const notesLower = entry.notes.toLowerCase();
+              if (notesLower.includes('meeting')) {
                 activityName = 'Meetings';
                 activityId = 'meetings';
                 activityDescription = 'Meeting activities';
-              } else if (taskLower.includes('development') || taskLower.includes('coding')) {
+              } else if (notesLower.includes('development') || notesLower.includes('coding')) {
                 activityName = 'Development';
                 activityId = 'development';
                 activityDescription = 'Software development tasks';
-              } else if (taskLower.includes('testing') || taskLower.includes('qa')) {
+              } else if (notesLower.includes('testing') || notesLower.includes('qa')) {
                 activityName = 'Testing';
                 activityId = 'testing';
                 activityDescription = 'Quality assurance and testing';
-              } else if (taskLower.includes('documentation') || taskLower.includes('docs')) {
+              } else if (notesLower.includes('documentation') || notesLower.includes('docs')) {
                 activityName = 'Documentation';
                 activityId = 'documentation';
                 activityDescription = 'Writing and updating documentation';
@@ -193,7 +180,7 @@ const ActivitiesChart = () => {
 
     } catch (error) {
       console.error('📊 ACTIVITIES ERROR:', error);
-      setError(error.message);
+      setError(error.message || 'Failed to load activities');
       
       // Set fallback sample data
       const sampleActivities = [

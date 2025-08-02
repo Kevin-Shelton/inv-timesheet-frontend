@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient.js'; // FIXED: Use direct supabase import
+import { supabaseApi } from '../../supabaseClient.js'; // FIXED: Use supabaseApi to match your setup
 import { useAuth } from '../../hooks/useAuth';
 
 const ProjectsChart = () => {
@@ -39,52 +39,26 @@ const ProjectsChart = () => {
       const startDate = monday.toISOString().split('T')[0];
       const endDate = sunday.toISOString().split('T')[0];
 
-      // FIXED: Use direct supabase query instead of supabaseApi
-      let query = supabase
-        .from('timesheet_entries')
-        .select(`
-          date,
-          hours_worked,
-          total_hours,
-          regular_hours,
-          project_name,
-          campaign_name,
-          task_description,
-          user_id,
-          users!timesheet_entries_user_id_fkey (
-            id,
-            full_name,
-            department,
-            manager_id
-          )
-        `);
-
-      // Determine which data to fetch based on view mode and permissions
+      // FIXED: Use supabaseApi.getTimesheets method that returns array directly
+      let entries;
       if (viewMode === 'organization' && canViewOrgData()) {
         // Get all timesheet entries for the week
-        query = query
-          .gte('date', startDate)
-          .lte('date', endDate);
-        console.log('📊 PROJECTS: Fetching org-wide data');
+        entries = await supabaseApi.getTimesheets({
+          startDate: startDate,
+          endDate: endDate
+        });
+        console.log('📊 PROJECTS: Fetched org-wide data:', entries?.length || 0, 'entries');
       } else {
-        // Get only user's own timesheet entries (preserved original functionality)
-        query = query
-          .gte('date', startDate)
-          .lte('date', endDate)
-          .eq('user_id', user?.id);
-        console.log('📊 PROJECTS: Fetching personal data');
+        // Get only user's own timesheet entries
+        entries = await supabaseApi.getTimesheets({
+          startDate: startDate,
+          endDate: endDate,
+          user_id: user?.id
+        });
+        console.log('📊 PROJECTS: Fetched personal data:', entries?.length || 0, 'entries');
       }
 
-      const { data: entries, error: fetchError } = await query;
-
-      if (fetchError) {
-        console.error('Error fetching timesheet data:', fetchError);
-        throw new Error('Failed to fetch timesheet data: ' + (fetchError?.message || 'Unknown error'));
-      }
-
-      console.log('📊 PROJECTS: Fetched data:', entries?.length || 0, 'entries');
-
-      // Enhanced project mapping with better categorization (preserved original logic)
+      // Enhanced project mapping with better categorization
       const projectMap = new Map();
       let total = 0;
 
@@ -105,27 +79,33 @@ const ProjectsChart = () => {
             projectName = entry.campaign_name;
             projectId = entry.campaign_name.toLowerCase().replace(/\s+/g, '_');
             projectDescription = 'Campaign: ' + entry.campaign_name;
-          } else if (entry.users?.department) {
-            // Create project based on department (preserved original logic)
-            projectName = entry.users.department + ' Project';
-            projectId = entry.users.department.toLowerCase().replace(/\s+/g, '_');
-            projectDescription = 'Work on ' + entry.users.department + ' Project';
-          } else if (entry.task_description) {
-            // Extract project from task description
-            const taskLower = entry.task_description.toLowerCase();
-            if (taskLower.includes('website')) {
+          } else if (entry.client_name) {
+            // Use client name as project
+            projectName = entry.client_name + ' Project';
+            projectId = entry.client_name.toLowerCase().replace(/\s+/g, '_');
+            projectDescription = 'Work for ' + entry.client_name;
+          } else if (entry.users?.department || entry.user?.department) {
+            // Create project based on department
+            const department = entry.users?.department || entry.user?.department;
+            projectName = department + ' Project';
+            projectId = department.toLowerCase().replace(/\s+/g, '_');
+            projectDescription = 'Work on ' + department + ' Project';
+          } else if (entry.notes && entry.notes.trim()) {
+            // Extract project from notes
+            const notesLower = entry.notes.toLowerCase();
+            if (notesLower.includes('website')) {
               projectName = 'Website Project';
               projectId = 'website';
               projectDescription = 'Website development and maintenance';
-            } else if (taskLower.includes('mobile') || taskLower.includes('app')) {
+            } else if (notesLower.includes('mobile') || notesLower.includes('app')) {
               projectName = 'Mobile App';
               projectId = 'mobile';
               projectDescription = 'Mobile application development';
-            } else if (taskLower.includes('database') || taskLower.includes('db')) {
+            } else if (notesLower.includes('database') || notesLower.includes('db')) {
               projectName = 'Database Project';
               projectId = 'database';
               projectDescription = 'Database development and optimization';
-            } else if (taskLower.includes('api')) {
+            } else if (notesLower.includes('api')) {
               projectName = 'API Integration';
               projectId = 'api';
               projectDescription = 'API development and integration';
@@ -135,7 +115,7 @@ const ProjectsChart = () => {
               projectDescription = 'General project work';
             }
           } else {
-            // Fallback to generic project (preserved original logic)
+            // Fallback to generic project
             projectName = 'Project ' + (Math.floor(Math.random() * 5) + 1);
             projectId = 'project_' + (Math.floor(Math.random() * 5) + 1);
             projectDescription = 'Work on ' + projectName;
@@ -144,7 +124,7 @@ const ProjectsChart = () => {
           if (projectMap.has(projectId)) {
             projectMap.get(projectId).hours += hours;
             projectMap.get(projectId).entries += 1;
-            // NEW: Track unique users for organization view
+            // Track unique users for organization view
             if (viewMode === 'organization' && entry.user_id) {
               projectMap.get(projectId).users.add(entry.user_id);
             }
@@ -161,14 +141,14 @@ const ProjectsChart = () => {
               color: getProjectColor(projectId),
               hours: hours,
               entries: 1,
-              users: userSet // NEW: Track unique users
+              users: userSet // Track unique users
             });
           }
           total += hours;
         }
       });
 
-      // If no real data, create enhanced sample projects (preserved original fallback)
+      // If no real data, create enhanced sample projects
       if (projectMap.size === 0) {
         const sampleProjects = viewMode === 'organization' ? [
           { id: 'website', name: 'Website Redesign', description: 'Frontend redesign project', color: '#4F46E5', hours: 45.5, entries: 8, users: new Set(['user1', 'user2']) },
@@ -190,7 +170,7 @@ const ProjectsChart = () => {
         });
       }
 
-      // Convert to array and sort by hours (preserved original logic)
+      // Convert to array and sort by hours
       const projectsArray = Array.from(projectMap.values())
         .map(project => ({
           ...project,
@@ -204,9 +184,9 @@ const ProjectsChart = () => {
 
     } catch (error) {
       console.error('📊 PROJECTS ERROR:', error);
-      setError(error.message);
+      setError(error.message || 'Failed to load projects');
       
-      // Set fallback sample data (preserved original fallback)
+      // Set fallback sample data
       const sampleProjects = [
         { id: 'website', name: 'Website Redesign', description: 'Frontend redesign project', color: '#4F46E5', hours: 25.5, entries: 5, userCount: 0 },
         { id: 'mobile', name: 'Mobile App', description: 'Mobile application development', color: '#10B981', hours: 18.2, entries: 4, userCount: 0 },
@@ -219,7 +199,7 @@ const ProjectsChart = () => {
     }
   };
 
-  // Generate consistent colors based on project ID (preserved original function)
+  // Generate consistent colors based on project ID
   const getProjectColor = (id) => {
     const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'];
     const hash = id.toString().split('').reduce((a, b) => {
@@ -239,7 +219,7 @@ const ProjectsChart = () => {
     return totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
   };
 
-  // Generate chart segments for donut chart (preserved original logic)
+  // Generate chart segments for donut chart
   const generateChartSegments = () => {
     if (projects.length === 0) return [];
 
@@ -266,7 +246,7 @@ const ProjectsChart = () => {
 
   const chartSegments = generateChartSegments();
 
-  // NEW: Handle view mode change
+  // Handle view mode change
   const handleViewModeChange = (mode) => {
     if (mode === 'organization' && !canViewOrgData()) {
       console.warn('📊 PROJECTS: User does not have permission for organization view');
@@ -375,7 +355,6 @@ const ProjectsChart = () => {
       }}>
         <div>
           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>PROJECTS</h3>
-          {/* NEW: View mode indicator */}
           {viewMode === 'organization' && (
             <p style={{ 
               margin: '4px 0 0 0', 
@@ -389,7 +368,6 @@ const ProjectsChart = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          {/* NEW: View Mode Toggle for Admin Users */}
           {canViewOrgData() && (
             <div style={{ 
               display: 'flex', 
@@ -428,7 +406,6 @@ const ProjectsChart = () => {
             </div>
           )}
 
-          {/* Preserved original navigation link */}
           <a href="/projects" style={{ 
             fontSize: '14px', 
             color: '#6B7280', 
@@ -439,9 +416,9 @@ const ProjectsChart = () => {
         </div>
       </div>
 
-      {/* Content (preserved original layout with enhancements) */}
+      {/* Content */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-        {/* FIXED: Properly sized donut chart (preserved original) */}
+        {/* Properly sized donut chart */}
         <div style={{ 
           position: 'relative', 
           width: '120px', 
@@ -464,7 +441,7 @@ const ProjectsChart = () => {
               strokeWidth="12"
             />
             
-            {/* Project segments (preserved original logic) */}
+            {/* Project segments */}
             {chartSegments.map((project, index) => {
               const circumference = 2 * Math.PI * 45;
               const strokeDasharray = ((project.percentage / 100) * circumference) + ' ' + circumference;
@@ -509,7 +486,6 @@ const ProjectsChart = () => {
             }}>
               {formatHours(totalHours)}
             </div>
-            {/* NEW: Show project count */}
             <div style={{ 
               fontSize: '10px', 
               color: '#9CA3AF',
@@ -537,7 +513,6 @@ const ProjectsChart = () => {
               Top {showAllProjects ? projects.length : Math.min(projects.length, 5)} projects
             </h4>
             
-            {/* NEW: Show all toggle */}
             {projects.length > 5 && (
               <button
                 onClick={() => setShowAllProjects(!showAllProjects)}
@@ -578,7 +553,6 @@ const ProjectsChart = () => {
                   whiteSpace: 'nowrap'
                 }}>
                   {project.name}
-                  {/* NEW: Show additional info */}
                   {(project.entries > 1 || (viewMode === 'organization' && project.userCount > 0)) && (
                     <span style={{ 
                       fontSize: '12px', 
@@ -599,7 +573,6 @@ const ProjectsChart = () => {
                 }}>
                   {formatHours(project.hours)}
                 </div>
-                {/* NEW: Show percentage */}
                 <div style={{ 
                   fontSize: '11px', 
                   color: '#9CA3AF',
