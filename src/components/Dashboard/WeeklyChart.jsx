@@ -64,7 +64,7 @@ const WeeklyChart = () => {
         .limit(300); // Get enough data to find recent weeks
 
       if (fetchError) {
-          throw new Error("Failed to fetch timesheet data: " + (fetchError?.message || "unknown error"));
+        throw new Error(`Failed to fetch timesheet data: ${fetchError?.message}`);
       }
 
       if (!recentData || recentData.length === 0) {
@@ -190,7 +190,7 @@ setTotals({
       };
 
       setChartData(dailyData);
-      setWeekRange(`${formatDate(weekStart)} - ${formatDate(weekEnd)}`);
+      setWeekRange(formatDate(weekStart) + ' - ' + formatDate(weekEnd));
       
 
 setTotals({
@@ -607,3 +607,4 @@ setTotals({
 };
 
 export default WeeklyChart;
+
