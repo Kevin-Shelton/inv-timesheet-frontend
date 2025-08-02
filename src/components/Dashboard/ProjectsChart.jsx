@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabaseApi } from '../../supabaseClient.js';
+import { supabase } from '../../supabaseClient.js'; // FIXED: Use direct supabase import
 import { useAuth } from '../../hooks/useAuth';
 
 const ProjectsChart = () => {
@@ -8,8 +8,8 @@ const ProjectsChart = () => {
   const [totalHours, setTotalHours] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [viewMode, setViewMode] = useState('personal'); // NEW: 'personal' or 'organization'
-  const [showAllProjects, setShowAllProjects] = useState(false); // NEW: Toggle for showing all projects
+  const [viewMode, setViewMode] = useState('personal'); // 'personal' or 'organization'
+  const [showAllProjects, setShowAllProjects] = useState(false);
 
   useEffect(() => {
     fetchProjectsData();
@@ -39,24 +39,50 @@ const ProjectsChart = () => {
       const startDate = monday.toISOString().split('T')[0];
       const endDate = sunday.toISOString().split('T')[0];
 
+      // FIXED: Use direct supabase query instead of supabaseApi
+      let query = supabase
+        .from('timesheet_entries')
+        .select(`
+          date,
+          hours_worked,
+          total_hours,
+          regular_hours,
+          project_name,
+          campaign_name,
+          task_description,
+          user_id,
+          users!timesheet_entries_user_id_fkey (
+            id,
+            full_name,
+            department,
+            manager_id
+          )
+        `);
+
       // Determine which data to fetch based on view mode and permissions
-      let entries;
       if (viewMode === 'organization' && canViewOrgData()) {
-        // FIXED: Use supabaseApi instead of direct supabase query (preserved original approach)
-        entries = await supabaseApi.getTimesheets({
-          startDate: startDate,
-          endDate: endDate
-        });
-        console.log('📊 PROJECTS: Fetched org-wide data:', entries?.length || 0, 'entries');
+        // Get all timesheet entries for the week
+        query = query
+          .gte('date', startDate)
+          .lte('date', endDate);
+        console.log('📊 PROJECTS: Fetching org-wide data');
       } else {
         // Get only user's own timesheet entries (preserved original functionality)
-        entries = await supabaseApi.getTimesheets({
-          startDate: startDate,
-          endDate: endDate,
-          user_id: user?.id
-        });
-        console.log('📊 PROJECTS: Fetched personal data:', entries?.length || 0, 'entries');
+        query = query
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .eq('user_id', user?.id);
+        console.log('📊 PROJECTS: Fetching personal data');
       }
+
+      const { data: entries, error: fetchError } = await query;
+
+      if (fetchError) {
+        console.error('Error fetching timesheet data:', fetchError);
+        throw new Error('Failed to fetch timesheet data: ' + (fetchError?.message || 'Unknown error'));
+      }
+
+      console.log('📊 PROJECTS: Fetched data:', entries?.length || 0, 'entries');
 
       // Enhanced project mapping with better categorization (preserved original logic)
       const projectMap = new Map();
@@ -73,17 +99,17 @@ const ProjectsChart = () => {
             // Use actual project name if available
             projectName = entry.project_name;
             projectId = entry.project_name.toLowerCase().replace(/\s+/g, '_');
-            projectDescription = `Project: ${entry.project_name}`;
+            projectDescription = 'Project: ' + entry.project_name;
           } else if (entry.campaign_name) {
             // Use campaign as project
             projectName = entry.campaign_name;
             projectId = entry.campaign_name.toLowerCase().replace(/\s+/g, '_');
-            projectDescription = `Campaign: ${entry.campaign_name}`;
+            projectDescription = 'Campaign: ' + entry.campaign_name;
           } else if (entry.users?.department) {
             // Create project based on department (preserved original logic)
-            projectName = `${entry.users.department} Project`;
+            projectName = entry.users.department + ' Project';
             projectId = entry.users.department.toLowerCase().replace(/\s+/g, '_');
-            projectDescription = `Work on ${entry.users.department} Project`;
+            projectDescription = 'Work on ' + entry.users.department + ' Project';
           } else if (entry.task_description) {
             // Extract project from task description
             const taskLower = entry.task_description.toLowerCase();
@@ -110,9 +136,9 @@ const ProjectsChart = () => {
             }
           } else {
             // Fallback to generic project (preserved original logic)
-            projectName = `Project ${Math.floor(Math.random() * 5) + 1}`;
-            projectId = `project_${Math.floor(Math.random() * 5) + 1}`;
-            projectDescription = `Work on ${projectName}`;
+            projectName = 'Project ' + (Math.floor(Math.random() * 5) + 1);
+            projectId = 'project_' + (Math.floor(Math.random() * 5) + 1);
+            projectDescription = 'Work on ' + projectName;
           }
           
           if (projectMap.has(projectId)) {
@@ -206,7 +232,7 @@ const ProjectsChart = () => {
   const formatHours = (hours) => {
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
-    return `${h}h ${m}m`;
+    return h + 'h ' + m + 'm';
   };
 
   const getPercentage = (hours) => {
@@ -232,7 +258,7 @@ const ProjectsChart = () => {
         percentage,
         startAngle,
         endAngle,
-        strokeDasharray: `${percentage} ${100 - percentage}`,
+        strokeDasharray: percentage + ' ' + (100 - percentage),
         strokeDashoffset: -cumulativePercentage + percentage
       };
     });
@@ -413,7 +439,7 @@ const ProjectsChart = () => {
         </div>
       </div>
 
-      {/* Content (preserved original layout) */}
+      {/* Content (preserved original layout with enhancements) */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
         {/* FIXED: Properly sized donut chart (preserved original) */}
         <div style={{ 
@@ -441,7 +467,7 @@ const ProjectsChart = () => {
             {/* Project segments (preserved original logic) */}
             {chartSegments.map((project, index) => {
               const circumference = 2 * Math.PI * 45;
-              const strokeDasharray = `${(project.percentage / 100) * circumference} ${circumference}`;
+              const strokeDasharray = ((project.percentage / 100) * circumference) + ' ' + circumference;
               const strokeDashoffset = -((chartSegments.slice(0, index).reduce((sum, seg) => sum + seg.percentage, 0) / 100) * circumference);
               
               return (
@@ -524,7 +550,7 @@ const ProjectsChart = () => {
                   textDecoration: 'underline'
                 }}
               >
-                {showAllProjects ? 'Show less' : `Show all ${projects.length}`}
+                {showAllProjects ? 'Show less' : 'Show all ' + projects.length}
               </button>
             )}
           </div>
@@ -561,7 +587,7 @@ const ProjectsChart = () => {
                     }}>
                       ({project.entries} entries
                       {viewMode === 'organization' && project.userCount > 0 && 
-                        `, ${project.userCount} users`
+                        ', ' + project.userCount + ' users'
                       })
                     </span>
                   )}
@@ -602,4 +628,3 @@ const ProjectsChart = () => {
 };
 
 export default ProjectsChart;
-
