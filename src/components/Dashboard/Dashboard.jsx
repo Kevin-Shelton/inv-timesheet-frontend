@@ -254,43 +254,40 @@ const Dashboard = ({ user: propUser }) => {
   const enhancedUser = {
     ...authenticatedUser,
     ...userProfile,
-    // Preserve any existing user properties
     ...(propUser || {}),
-    // Add admin data for components that need it
     adminData: adminData
   };
 
-  // Show loading state only if we don't have any user data
   if (loading && !authenticatedUser && !propUser) {
     return (
       <div className="dashboard-container">
         <div className="dashboard-loading">
-      <div className="chart-wrapper">
-        <ActivityRing />
-      </div>
-      <div className="chart-wrapper">
-        <ProjectsChart />
-      </div>
+          <div className="chart-wrapper">
+            <ActivityRing />
+          </div>
+          <div className="chart-wrapper">
+            <ProjectsChart />
+          </div>
           <div>Loading dashboard...</div>
         </div>
       </div>
     );
   }
 
-  // Show error state with fallback
   if (error && !authenticatedUser && !propUser) {
     return (
-    <div className="dashboard-wrapper">
-      <div className="dashboard-container">
-        <div className="dashboard-error">
-      <div className="chart-wrapper">
-        <ActivityRing />
-      </div>
-      <div className="chart-wrapper">
-        <ProjectsChart />
-      </div>
-          <div>{error}</div>
-          <button onClick={loadAuthenticatedUserData}>Retry</button>
+      <div className="dashboard-wrapper">
+        <div className="dashboard-container">
+          <div className="dashboard-error">
+            <div className="chart-wrapper">
+              <ActivityRing />
+            </div>
+            <div className="chart-wrapper">
+              <ProjectsChart />
+            </div>
+            <div>{error}</div>
+            <button onClick={loadAuthenticatedUserData}>Retry</button>
+          </div>
         </div>
       </div>
     );
@@ -298,52 +295,34 @@ const Dashboard = ({ user: propUser }) => {
 
   return (
     <div className="dashboard-wrapper">
-    <div className="dashboard-container">
-      <DashboardHeader user={enhancedUser} />
-      
-      <div className="dashboard-content">
-        <div className="dashboard-main">
-          <div className="dashboard-top-row">
-            <div className="dashboard-col welcome">
-              <WelcomeCard user={enhancedUser} />
-      <div className="chart-wrapper">
-        <ActivityRing />
-      </div>
-      <div className="chart-wrapper">
-        <ProjectsChart />
-      </div>
+      <div className="dashboard-container">
+        <DashboardHeader user={enhancedUser} />
+        <div className="dashboard-content">
+          <div className="dashboard-main">
+            <div className="dashboard-top-row">
+              <div className="dashboard-col welcome">
+                <WelcomeCard user={enhancedUser} />
+                <div className="chart-wrapper">
+                  <ActivityRing />
+                </div>
+                <div className="chart-wrapper">
+                  <ProjectsChart />
+                </div>
+              </div>
+              <div className="dashboard-col holidays">
+                <HolidaySection user={enhancedUser} />
+              </div>
             </div>
-            <div className="dashboard-col holidays">
-              <HolidaySection user={enhancedUser} />
-            </div>
-          </div>
-          
-          <div className="dashboard-row">
-            <div className="dashboard-col wide">
-              <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
-            </div>
-          </div>
-          
-          <div className="dashboard-row">
-            <div className="dashboard-col activity">
-              <ActivityRing 
-                percentage={30} 
-                color="#FB923C"
-                label="TODAY"
-                time="0h 0m"
-                user={enhancedUser}
-                showActivities={true}
-              />
-            </div>
-            <div className="dashboard-col activity">
-              <ProjectsChart user={enhancedUser} />
+            <div className="dashboard-row">
+              <div className="dashboard-col wide">
+                <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="dashboard-sidebar">
-          <WhoIsInOutPanel user={enhancedUser} />
-          <CurrentTime currentTime={currentTime} user={enhancedUser} />
+          <div className="dashboard-sidebar">
+            <WhoIsInOutPanel user={enhancedUser} />
+            <CurrentTime currentTime={currentTime} user={enhancedUser} />
+          </div>
         </div>
       </div>
     </div>
@@ -351,22 +330,3 @@ const Dashboard = ({ user: propUser }) => {
 };
 
 export default Dashboard;
-
-
-
-<style jsx>{`
-  .dashboard-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    width: 100%;
-  }
-
-  .chart-wrapper {
-    width: 100%;
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-`}</style>
