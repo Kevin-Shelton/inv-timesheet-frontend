@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import DashboardHeader from './DashboardHeader';
 import WelcomeCard from './WelcomeCard';
 import HolidaySection from './HolidaySection';
 import WeeklyChart from './WeeklyChart';
@@ -7,32 +6,9 @@ import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
 import { supabase } from '../../supabaseClient';
 
-// SIMPLE TEST COMPONENTS - NO EXTERNAL DEPENDENCIES
-const TestActivityChart = () => (
-  <div style={{ 
-    background: 'red', 
-    padding: '20px', 
-    borderRadius: '8px', 
-    color: 'white',
-    minHeight: '100px'
-  }}>
-    <h3>TEST ACTIVITIES CHART</h3>
-    <p>If you can see this, the component is rendering</p>
-  </div>
-);
-
-const TestProjectsChart = () => (
-  <div style={{ 
-    background: 'blue', 
-    padding: '20px', 
-    borderRadius: '8px', 
-    color: 'white',
-    minHeight: '100px'
-  }}>
-    <h3>TEST PROJECTS CHART</h3>
-    <p>If you can see this, the component is rendering</p>
-  </div>
-);
+// Import your actual chart components
+import ActivitiesChart from './ActivityRing';
+import ProjectsChart from './ProjectsChart';
 
 const Dashboard = ({ user: propUser }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -45,7 +21,6 @@ const Dashboard = ({ user: propUser }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showCharts, setShowCharts] = useState(true); // DEBUG: Toggle charts visibility
   const [adminData, setAdminData] = useState({
     weeklyStats: {
       yourHours: 0,
@@ -171,7 +146,7 @@ const Dashboard = ({ user: propUser }) => {
     });
 
     const activities = Object.entries(activityMap).map(([name, hours]) => ({ name, hours })).sort((a, b) => b.hours - a.hours).slice(0, 5);
-    const projects = Object.entries(projectMap).map(([name, hours]) => ({ name, hours })).sort((a, b) => b.hours - a.hours).slice(0, 5);
+    const projects = Object.entries(projectMap).map(([name, hours]) => ({ name, hours })).sort((a, b) => b.hours - a.cores).slice(0, 5);
 
     return {
       weeklyStats: { yourHours: totalHours, orgTotal: totalHours, activeUsers, avgPerUser, overtimeHours: totalOvertimeHours },
@@ -205,28 +180,24 @@ const Dashboard = ({ user: propUser }) => {
   return (
     <div className="dashboard-wrapper">
       <div className="dashboard-container">
-        <DashboardHeader user={enhancedUser} />
+        {/* REMOVED: DashboardHeader - This was causing the re-renders */}
+        {/* <DashboardHeader user={enhancedUser} /> */}
         
-        {/* DEBUG CONTROLS */}
-        <div style={{ 
-          background: 'yellow', 
-          padding: '10px', 
-          margin: '10px 0',
-          borderRadius: '4px'
+        {/* SIMPLIFIED HEADER */}
+        <div style={{
+          background: 'white',
+          padding: '1rem',
+          borderRadius: '8px',
+          marginBottom: '1rem',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
         }}>
-          <h4>DEBUG CONTROLS</h4>
-          <button 
-            onClick={() => setShowCharts(!showCharts)}
-            style={{ padding: '5px 10px', marginRight: '10px' }}
-          >
-            Toggle Charts: {showCharts ? 'ON' : 'OFF'}
-          </button>
-          <span>Charts currently: {showCharts ? 'VISIBLE' : 'HIDDEN'}</span>
+          <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '600' }}>Dashboard</h1>
+          <p style={{ margin: '4px 0 0 0', color: '#6b7280' }}>Welcome to your timesheet dashboard</p>
         </div>
         
         <div className="dashboard-content">
           <div className="dashboard-main">
-            {/* Top row with WelcomeCard and HolidaySection side by side */}
+            {/* Top row with WelcomeCard and HolidaySection */}
             <div className="dashboard-top-row">
               <div className="dashboard-col welcome">
                 <WelcomeCard user={enhancedUser} />
@@ -243,43 +214,13 @@ const Dashboard = ({ user: propUser }) => {
               </div>
             </div>
             
-            {/* DEBUG: Conditionally render charts */}
-            {showCharts && (
-              <div className="dashboard-row">
-                <div className="dashboard-col activity">
-                  <TestActivityChart />
-                </div>
-                <div className="dashboard-col activity">
-                  <TestProjectsChart />
-                </div>
-              </div>
-            )}
-            
-            {/* ALWAYS VISIBLE CHARTS FOR COMPARISON */}
+            {/* Activities and Projects Charts */}
             <div className="dashboard-row">
               <div className="dashboard-col activity">
-                <div style={{ 
-                  background: 'green', 
-                  padding: '20px', 
-                  borderRadius: '8px', 
-                  color: 'white',
-                  minHeight: '100px'
-                }}>
-                  <h3>ALWAYS VISIBLE CHART 1</h3>
-                  <p>This should never disappear</p>
-                </div>
+                <ActivitiesChart user={enhancedUser} />
               </div>
               <div className="dashboard-col activity">
-                <div style={{ 
-                  background: 'purple', 
-                  padding: '20px', 
-                  borderRadius: '8px', 
-                  color: 'white',
-                  minHeight: '100px'
-                }}>
-                  <h3>ALWAYS VISIBLE CHART 2</h3>
-                  <p>This should never disappear</p>
-                </div>
+                <ProjectsChart user={enhancedUser} />
               </div>
             </div>
           </div>
@@ -326,6 +267,8 @@ const Dashboard = ({ user: propUser }) => {
           display: flex;
           flex-direction: column;
           gap: 1rem;
+          max-width: 350px;
+          min-width: 300px;
         }
 
         .dashboard-top-row,
@@ -352,6 +295,55 @@ const Dashboard = ({ user: propUser }) => {
 
         .dashboard-col.activity {
           flex: 1;
+        }
+
+        @media (max-width: 1200px) {
+          .dashboard-sidebar {
+            max-width: 300px;
+            min-width: 250px;
+          }
+        }
+
+        @media (max-width: 968px) {
+          .dashboard-content {
+            flex-direction: column;
+          }
+          
+          .dashboard-sidebar {
+            max-width: none;
+            min-width: unset;
+            width: 100%;
+          }
+          
+          .dashboard-top-row,
+          .dashboard-row {
+            flex-direction: column;
+          }
+          
+          .dashboard-col {
+            min-width: unset;
+            width: 100%;
+            flex: none;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-container {
+            padding: 0.5rem;
+          }
+          
+          .dashboard-content {
+            gap: 1rem;
+          }
+          
+          .dashboard-main {
+            gap: 1rem;
+          }
+          
+          .dashboard-top-row,
+          .dashboard-row {
+            gap: 0.5rem;
+          }
         }
       `}</style>
     </div>
