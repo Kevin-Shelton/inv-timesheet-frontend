@@ -210,10 +210,10 @@ const Dashboard = ({ user: propUser }) => {
           {/* Row 3: Activities and Projects Charts */}
           <div className="dashboard-row">
             <div className="dashboard-col activity">
-              <SimpleActivitiesChart user={enhancedUser} />
+              <ActivitiesChart user={enhancedUser} />
             </div>
             <div className="dashboard-col activity">
-              <SimpleProjectsChart user={enhancedUser} />
+              <ProjectsChart user={enhancedUser} />
             </div>
           </div>
         </div>
