@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient.js';
 import { useAuth } from '../../hooks/useAuth';
 
-const SimpleProjectsChart = () => {
+const ProjectsChart = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
@@ -19,6 +19,8 @@ const SimpleProjectsChart = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('📊 PROJECTS: Starting fetch...');
       
       // Get current week dates - same pattern as other working components
       const today = new Date();
@@ -50,7 +52,7 @@ const SimpleProjectsChart = () => {
         .order('date', { ascending: false });
 
       if (fetchError) {
-        console.warn('Using sample project data:', fetchError.message);
+        console.warn('📊 PROJECTS: Database error, using sample data:', fetchError.message);
       }
 
       // Process projects or use sample data
@@ -58,6 +60,7 @@ const SimpleProjectsChart = () => {
       let total = 0;
 
       if (timesheetData && timesheetData.length > 0) {
+        console.log('📊 PROJECTS: Processing', timesheetData.length, 'entries');
         const projectMap = new Map();
         
         timesheetData.forEach(entry => {
@@ -102,6 +105,7 @@ const SimpleProjectsChart = () => {
 
       // Use sample data if no real data
       if (processedProjects.length === 0) {
+        console.log('📊 PROJECTS: Using sample data');
         processedProjects = [
           { id: 'web', name: 'Website Redesign', hours: 25.5, color: '#4F46E5' },
           { id: 'mobile', name: 'Mobile App', hours: 18.2, color: '#10B981' },
@@ -112,9 +116,10 @@ const SimpleProjectsChart = () => {
 
       setProjects(processedProjects);
       setTotalHours(total);
+      console.log('📊 PROJECTS: Success! Total hours:', total);
 
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error('📊 PROJECTS: Error:', error);
       setError(error.message);
       
       // Fallback to sample data
@@ -148,15 +153,27 @@ const SimpleProjectsChart = () => {
     return totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
   };
 
+  // FORCE VISIBILITY - No CSS classes that could hide this
+  const containerStyle = {
+    display: 'block',
+    visibility: 'visible',
+    opacity: 1,
+    position: 'relative',
+    zIndex: 1000,
+    background: 'white',
+    padding: '20px',
+    borderRadius: '8px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    minHeight: '200px',
+    minWidth: '280px',
+    width: '100%',
+    border: '2px solid #10B981', // Debug border - remove later
+    margin: '10px 0'
+  };
+
   if (loading) {
     return (
-      <div style={{ 
-        background: 'white', 
-        padding: '20px', 
-        borderRadius: '8px', 
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        minHeight: '200px'
-      }}>
+      <div style={containerStyle}>
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -177,7 +194,8 @@ const SimpleProjectsChart = () => {
           alignItems: 'center', 
           justifyContent: 'center', 
           height: '120px',
-          color: '#6B7280'
+          color: '#6B7280',
+          fontSize: '16px'
         }}>
           Loading projects...
         </div>
@@ -187,13 +205,7 @@ const SimpleProjectsChart = () => {
 
   if (error) {
     return (
-      <div style={{ 
-        background: 'white', 
-        padding: '20px', 
-        borderRadius: '8px', 
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        minHeight: '200px'
-      }}>
+      <div style={containerStyle}>
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -237,13 +249,7 @@ const SimpleProjectsChart = () => {
   }
 
   return (
-    <div style={{ 
-      background: 'white', 
-      padding: '20px', 
-      borderRadius: '8px', 
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      minHeight: '200px'
-    }}>
+    <div style={containerStyle}>
       {/* Header */}
       <div style={{ 
         display: 'flex', 
@@ -368,4 +374,4 @@ const SimpleProjectsChart = () => {
   );
 };
 
-export default SimpleProjectsChart;
+export default ProjectsChart;

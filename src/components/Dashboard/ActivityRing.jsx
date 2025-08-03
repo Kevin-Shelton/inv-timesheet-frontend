@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient.js';
 import { useAuth } from '../../hooks/useAuth';
 
-const SimpleActivitiesChart = () => {
+const ActivitiesChart = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState([]);
@@ -19,6 +19,8 @@ const SimpleActivitiesChart = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('🎯 ACTIVITIES: Starting fetch...');
       
       // Get current week dates - same pattern as WeeklyChart
       const today = new Date();
@@ -46,7 +48,7 @@ const SimpleActivitiesChart = () => {
         .order('date', { ascending: false });
 
       if (fetchError) {
-        console.warn('Using sample data:', fetchError.message);
+        console.warn('🎯 ACTIVITIES: Database error, using sample data:', fetchError.message);
       }
 
       // Process activities or use sample data
@@ -54,6 +56,7 @@ const SimpleActivitiesChart = () => {
       let total = 0;
 
       if (timesheetData && timesheetData.length > 0) {
+        console.log('🎯 ACTIVITIES: Processing', timesheetData.length, 'entries');
         const activityMap = new Map();
         
         timesheetData.forEach(entry => {
@@ -74,14 +77,16 @@ const SimpleActivitiesChart = () => {
               else if (notesLower.includes('documentation')) activityName = 'Documentation';
             }
             
-            if (activityMap.has(activityName)) {
-              activityMap.get(activityName).hours += hours;
+            const activityId = activityName.toLowerCase().replace(/\s+/g, '_');
+            
+            if (activityMap.has(activityId)) {
+              activityMap.get(activityId).hours += hours;
             } else {
-              activityMap.set(activityName, {
-                id: activityName.toLowerCase().replace(/\s+/g, '_'),
+              activityMap.set(activityId, {
+                id: activityId,
                 name: activityName,
                 hours: hours,
-                color: getActivityColor(activityName)
+                color: getActivityColor(activityId)
               });
             }
             total += hours;
@@ -95,6 +100,7 @@ const SimpleActivitiesChart = () => {
 
       // Use sample data if no real data
       if (processedActivities.length === 0) {
+        console.log('🎯 ACTIVITIES: Using sample data');
         processedActivities = [
           { id: 'development', name: 'Development', hours: 25.5, color: '#4F46E5' },
           { id: 'meetings', name: 'Meetings', hours: 8.0, color: '#10B981' },
@@ -106,9 +112,10 @@ const SimpleActivitiesChart = () => {
 
       setActivities(processedActivities);
       setTotalHours(total);
+      console.log('🎯 ACTIVITIES: Success! Total hours:', total);
 
     } catch (error) {
-      console.error('Error fetching activities:', error);
+      console.error('🎯 ACTIVITIES: Error:', error);
       setError(error.message);
       
       // Fallback to sample data
@@ -123,9 +130,9 @@ const SimpleActivitiesChart = () => {
     }
   };
 
-  const getActivityColor = (activityName) => {
+  const getActivityColor = (activityId) => {
     const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
-    const hash = activityName.split('').reduce((a, b) => {
+    const hash = activityId.split('').reduce((a, b) => {
       a = ((a << 5) - a) + b.charCodeAt(0);
       return a & a;
     }, 0);
@@ -142,15 +149,27 @@ const SimpleActivitiesChart = () => {
     return totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
   };
 
+  // FORCE VISIBILITY - No CSS classes that could hide this
+  const containerStyle = {
+    display: 'block',
+    visibility: 'visible',
+    opacity: 1,
+    position: 'relative',
+    zIndex: 1000,
+    background: 'white',
+    padding: '20px',
+    borderRadius: '8px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    minHeight: '200px',
+    minWidth: '280px',
+    width: '100%',
+    border: '2px solid #4F46E5', // Debug border - remove later
+    margin: '10px 0'
+  };
+
   if (loading) {
     return (
-      <div style={{ 
-        background: 'white', 
-        padding: '20px', 
-        borderRadius: '8px', 
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        minHeight: '200px'
-      }}>
+      <div style={containerStyle}>
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -171,7 +190,8 @@ const SimpleActivitiesChart = () => {
           alignItems: 'center', 
           justifyContent: 'center', 
           height: '120px',
-          color: '#6B7280'
+          color: '#6B7280',
+          fontSize: '16px'
         }}>
           Loading activities...
         </div>
@@ -181,13 +201,7 @@ const SimpleActivitiesChart = () => {
 
   if (error) {
     return (
-      <div style={{ 
-        background: 'white', 
-        padding: '20px', 
-        borderRadius: '8px', 
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        minHeight: '200px'
-      }}>
+      <div style={containerStyle}>
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -231,13 +245,7 @@ const SimpleActivitiesChart = () => {
   }
 
   return (
-    <div style={{ 
-      background: 'white', 
-      padding: '20px', 
-      borderRadius: '8px', 
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      minHeight: '200px'
-    }}>
+    <div style={containerStyle}>
       {/* Header */}
       <div style={{ 
         display: 'flex', 
@@ -362,4 +370,4 @@ const SimpleActivitiesChart = () => {
   );
 };
 
-export default SimpleActivitiesChart;
+export default ActivitiesChart;
