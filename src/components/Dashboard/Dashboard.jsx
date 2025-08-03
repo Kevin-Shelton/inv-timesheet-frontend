@@ -5,9 +5,9 @@ import HolidaySection from './HolidaySection';
 import WeeklyChart from './WeeklyChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
-import { supabase } from '../../supabaseClient';
 import ActivitiesChart from './ActivityRing';
 import ProjectsChart from './ProjectsChart';
+import { supabase } from '../../supabaseClient';
 
 const Dashboard = ({ user: propUser }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -20,7 +20,6 @@ const Dashboard = ({ user: propUser }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [debugCss, setDebugCss] = useState(true);
   const [adminData, setAdminData] = useState({
     weeklyStats: {
       yourHours: 0,
@@ -170,310 +169,59 @@ const Dashboard = ({ user: propUser }) => {
   };
 
   if (loading && !authenticatedUser && !propUser) {
-    return <div>Loading dashboard...</div>;
+    return (
+      <div className="dashboard-loading">
+        Loading dashboard...
+      </div>
+    );
   }
 
   if (error && !authenticatedUser && !propUser) {
-    return <div>{error}</div>;
+    return (
+      <div className="dashboard-error">
+        {error}
+      </div>
+    );
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '24px',
-      width: '100%',
-      ...(debugCss && {
-        border: '3px solid red',
-        background: 'rgba(255,0,0,0.1)'
-      })
-    }}>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '1rem',
-        backgroundColor: '#f9fafb',
-        minHeight: '100vh',
-        ...(debugCss && {
-          border: '3px solid blue',
-          background: 'rgba(0,0,255,0.1)'
-        })
-      }}>
-        <DashboardHeader user={enhancedUser} />
-        
-        {/* CSS Debug Controls */}
-        <div style={{
-          background: '#dc2626',
-          color: 'white',
-          padding: '15px',
-          margin: '10px 0',
-          borderRadius: '8px',
-          fontSize: '14px'
-        }}>
-          <h3 style={{ margin: '0 0 10px 0' }}>🎨 CSS LAYOUT DEBUG</h3>
-          <button 
-            onClick={() => setDebugCss(!debugCss)}
-            style={{ 
-              padding: '5px 10px', 
-              background: 'white',
-              color: '#dc2626',
-              border: 'none',
-              borderRadius: '4px',
-              marginRight: '10px',
-              cursor: 'pointer'
-            }}
-          >
-            Toggle Debug Borders: {debugCss ? 'ON' : 'OFF'}
-          </button>
-          <span>Red borders show containers, Blue shows main layout</span>
-        </div>
-        
-        <div style={{
-          display: 'flex',
-          gap: '1.5rem',
-          marginTop: '1rem',
-          flexGrow: 1,
-          ...(debugCss && {
-            border: '3px solid green',
-            background: 'rgba(0,255,0,0.1)'
-          })
-        }}>
-          <div style={{
-            flex: 3,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem',
-            ...(debugCss && {
-              border: '3px solid purple',
-              background: 'rgba(128,0,128,0.1)'
-            })
-          }}>
-            {/* Row 1: Welcome + Holiday */}
-            <div style={{
-              display: 'flex',
-              gap: '1rem',
-              flexWrap: 'wrap',
-              ...(debugCss && {
-                border: '2px solid orange',
-                background: 'rgba(255,165,0,0.1)',
-                padding: '10px'
-              })
-            }}>
-              <div style={{
-                flex: 1,
-                minWidth: '280px',
-                ...(debugCss && {
-                  border: '2px solid yellow',
-                  background: 'rgba(255,255,0,0.1)'
-                })
-              }}>
-                {debugCss && <div style={{ background: 'yellow', padding: '5px', marginBottom: '5px' }}>WELCOME SLOT</div>}
-                <WelcomeCard user={enhancedUser} />
-              </div>
-              <div style={{
-                flex: 1,
-                minWidth: '280px',
-                ...(debugCss && {
-                  border: '2px solid cyan',
-                  background: 'rgba(0,255,255,0.1)'
-                })
-              }}>
-                {debugCss && <div style={{ background: 'cyan', padding: '5px', marginBottom: '5px' }}>HOLIDAY SLOT</div>}
-                <HolidaySection user={enhancedUser} />
-              </div>
+    <div className="dashboard-container">
+      <DashboardHeader user={enhancedUser} />
+      
+      <div className="dashboard-content">
+        <div className="dashboard-main">
+          {/* Row 1: Welcome + Holiday */}
+          <div className="dashboard-top-row">
+            <div className="dashboard-col welcome">
+              <WelcomeCard user={enhancedUser} />
             </div>
-            
-            {/* Row 2: Weekly Chart */}
-            <div style={{
-              display: 'flex',
-              gap: '1rem',
-              flexWrap: 'wrap',
-              ...(debugCss && {
-                border: '2px solid orange',
-                background: 'rgba(255,165,0,0.1)',
-                padding: '10px'
-              })
-            }}>
-              <div style={{
-                width: '100%',
-                flex: 'none',
-                ...(debugCss && {
-                  border: '2px solid lime',
-                  background: 'rgba(0,255,0,0.2)'
-                })
-              }}>
-                {debugCss && <div style={{ background: 'lime', padding: '5px', marginBottom: '5px' }}>WEEKLY CHART SLOT</div>}
-                <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
-              </div>
-            </div>
-            
-            {/* Row 3: Activities and Projects Charts - CRITICAL SECTION */}
-            <div style={{
-              display: 'flex',
-              gap: '1rem',
-              flexWrap: 'wrap',
-              // FORCE VISIBILITY
-              position: 'relative',
-              zIndex: 1000,
-              minHeight: '300px',
-              ...(debugCss && {
-                border: '5px solid red',
-                background: 'rgba(255,0,0,0.2)',
-                padding: '10px'
-              })
-            }}>
-              <div style={{
-                flex: 1,
-                minWidth: '280px',
-                // FORCE VISIBILITY
-                position: 'relative',
-                zIndex: 1001,
-                minHeight: '250px',
-                ...(debugCss && {
-                  border: '3px solid magenta',
-                  background: 'rgba(255,0,255,0.2)'
-                })
-              }}>
-                {debugCss && (
-                  <div style={{ 
-                    background: 'magenta', 
-                    color: 'white',
-                    padding: '5px', 
-                    marginBottom: '5px',
-                    zIndex: 1002,
-                    position: 'relative'
-                  }}>
-                    ACTIVITIES CHART SLOT - Z-INDEX: 1001
-                  </div>
-                )}
-                <div style={{
-                  // MAXIMUM VISIBILITY FORCE
-                  position: 'relative',
-                  zIndex: 1002,
-                  minHeight: '200px',
-                  ...(debugCss && {
-                    border: '2px dashed black',
-                    background: 'white'
-                  })
-                }}>
-                  <ActivitiesChart user={enhancedUser} />
-                </div>
-              </div>
-              
-              <div style={{
-                flex: 1,
-                minWidth: '280px',
-                // FORCE VISIBILITY
-                position: 'relative',
-                zIndex: 1001,
-                minHeight: '250px',
-                ...(debugCss && {
-                  border: '3px solid teal',
-                  background: 'rgba(0,128,128,0.2)'
-                })
-              }}>
-                {debugCss && (
-                  <div style={{ 
-                    background: 'teal', 
-                    color: 'white',
-                    padding: '5px', 
-                    marginBottom: '5px',
-                    zIndex: 1002,
-                    position: 'relative'
-                  }}>
-                    PROJECTS CHART SLOT - Z-INDEX: 1001
-                  </div>
-                )}
-                <div style={{
-                  // MAXIMUM VISIBILITY FORCE
-                  position: 'relative',
-                  zIndex: 1002,
-                  minHeight: '200px',
-                  ...(debugCss && {
-                    border: '2px dashed black',
-                    background: 'white'
-                  })
-                }}>
-                  <ProjectsChart user={enhancedUser} />
-                </div>
-              </div>
-            </div>
-
-            {/* Row 4: Always Visible Test */}
-            <div style={{
-              display: 'flex',
-              gap: '1rem',
-              flexWrap: 'wrap',
-              position: 'relative',
-              zIndex: 2000,
-              ...(debugCss && {
-                border: '2px solid orange',
-                background: 'rgba(255,165,0,0.1)',
-                padding: '10px'
-              })
-            }}>
-              <div style={{
-                flex: 1,
-                minWidth: '280px',
-                position: 'relative',
-                zIndex: 2001
-              }}>
-                <div style={{
-                  background: '#ef4444',
-                  color: 'white',
-                  padding: '20px',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  minHeight: '100px',
-                  position: 'relative',
-                  zIndex: 2002
-                }}>
-                  <h3>🔴 ALWAYS VISIBLE TEST 1</h3>
-                  <p>Z-INDEX: 2002</p>
-                  <p>If you can see this, layout works</p>
-                </div>
-              </div>
-              <div style={{
-                flex: 1,
-                minWidth: '280px',
-                position: 'relative',
-                zIndex: 2001
-              }}>
-                <div style={{
-                  background: '#3b82f6',
-                  color: 'white',
-                  padding: '20px',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  minHeight: '100px',
-                  position: 'relative',
-                  zIndex: 2002
-                }}>
-                  <h3>🔵 ALWAYS VISIBLE TEST 2</h3>
-                  <p>Z-INDEX: 2002</p>
-                  <p>Time: {currentTime.toLocaleTimeString()}</p>
-                </div>
-              </div>
+            <div className="dashboard-col holidays">
+              <HolidaySection user={enhancedUser} />
             </div>
           </div>
           
-          {/* Sidebar */}
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1rem',
-            maxWidth: '350px',
-            minWidth: '300px',
-            ...(debugCss && {
-              border: '3px solid brown',
-              background: 'rgba(165,42,42,0.1)'
-            })
-          }}>
-            {debugCss && <div style={{ background: 'brown', color: 'white', padding: '5px' }}>SIDEBAR</div>}
-            <WhoIsInOutPanel user={enhancedUser} />
-            <CurrentTime currentTime={currentTime} user={enhancedUser} />
+          {/* Row 2: Weekly Chart */}
+          <div className="dashboard-row">
+            <div className="dashboard-col full-width">
+              <WeeklyChart user={enhancedUser} trackedHours={trackedHours} />
+            </div>
           </div>
+          
+          {/* Row 3: Activities and Projects Charts */}
+          <div className="dashboard-row">
+            <div className="dashboard-col activity">
+              <SimpleActivitiesChart user={enhancedUser} />
+            </div>
+            <div className="dashboard-col activity">
+              <SimpleProjectsChart user={enhancedUser} />
+            </div>
+          </div>
+        </div>
+        
+        {/* Sidebar */}
+        <div className="dashboard-sidebar">
+          <WhoIsInOutPanel user={enhancedUser} />
+          <CurrentTime currentTime={currentTime} user={enhancedUser} />
         </div>
       </div>
     </div>
