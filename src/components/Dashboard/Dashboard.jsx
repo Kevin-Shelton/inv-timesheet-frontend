@@ -5,8 +5,7 @@ import HolidaySection from './HolidaySection';
 import WeeklyChart from './WeeklyChart';
 import WhoIsInOutPanel from './WhoIsInOutPanel';
 import CurrentTime from './CurrentTime';
-import ActivitiesChart from './ActivityRing';
-import ProjectsChart from './ProjectsChart';
+import TestChart from './TestChart';
 import { supabase } from '../../supabaseClient';
 
 const Dashboard = ({ user: propUser }) => {
@@ -210,10 +209,10 @@ const Dashboard = ({ user: propUser }) => {
           {/* Row 3: Activities and Projects Charts */}
           <div className="dashboard-row">
             <div className="dashboard-col activity">
-              <ActivitiesChart user={enhancedUser} />
+              <SimpleActivitiesChart user={enhancedUser} />
             </div>
             <div className="dashboard-col activity">
-              <ProjectsChart user={enhancedUser} />
+              <SimpleProjectsChart user={enhancedUser} />
             </div>
           </div>
         </div>
