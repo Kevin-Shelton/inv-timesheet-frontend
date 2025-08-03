@@ -1,0 +1,550 @@
+/* =================== CSS VARIABLES =================== */
+:root {
+  /* Colors */
+  --bg-primary: #f9fafb;
+  --bg-secondary: #ffffff;
+  --bg-gradient-welcome: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --color-white: #ffffff;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-primary: #3b82f6;
+  --color-primary-light: #dbeafe;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  
+  /* Chart Colors */
+  --color-chart-primary: #3b82f6;
+  --color-chart-secondary: #10b981;
+  --color-chart-tertiary: #f59e0b;
+  
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-base: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  
+  /* Shadows */
+  --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  /* Typography */
+  --font-family-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Transitions */
+  --transition-base: all 0.2s ease;
+  --duration-base: 200ms;
+  --duration-chart: 300ms;
+  
+  /* Layout */
+  --sidebar-width: 350px;
+}
+
+/* =================== DASHBOARD LAYOUT =================== */
+
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4);
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+  font-family: var(--font-family-primary);
+}
+
+.dashboard-loading,
+.dashboard-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  font-size: var(--font-size-lg);
+  color: var(--color-gray-500);
+}
+
+.dashboard-content {
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-4);
+  flex-grow: 1;
+  align-items: stretch;
+}
+
+.dashboard-main {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0; /* Important for flex shrinking */
+}
+
+.dashboard-sidebar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--sidebar-width);
+  min-width: 300px;
+}
+
+.dashboard-top-row,
+.dashboard-row {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* CRITICAL: Ensure charts are visible */
+.dashboard-col {
+  flex: 1;
+  min-width: 280px;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-base);
+  overflow: visible;
+}
+
+.dashboard-col.wide {
+  flex: 2;
+}
+
+/* FIXED: Activity columns should be equal width and visible */
+.dashboard-col.activity {
+  flex: 1;
+  min-height: 300px;
+  /* Force visibility */
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-col.welcome,
+.dashboard-col.holidays {
+  flex: 1;
+  min-height: 200px;
+}
+
+/* Full width column for WeeklyChart */
+.dashboard-col.full-width {
+  width: 100%;
+  flex: none;
+  margin: 0;
+}
+
+/* =================== WEEKLY CHART =================== */
+
+.weekly-chart-container {
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-base);
+  width: 100%;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.bar {
+  height: 40px;
+  background-color: var(--color-chart-primary);
+  border-radius: var(--radius-sm);
+}
+
+.bar-value {
+  font-size: var(--font-size-xs);
+  margin-top: var(--space-1);
+  text-align: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legend-color {
+  width: 1rem;
+  height: 1rem;
+  border-radius: var(--radius-sm);
+}
+
+/* =================== HOLIDAY SECTION =================== */
+
+.holiday-section {
+  background-color: var(--bg-secondary);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-base);
+  height: fit-content;
+}
+
+.holiday-header {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  margin-bottom: var(--space-2);
+}
+
+.holiday-title {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+}
+
+.holiday-loading,
+.holiday-error,
+.holiday-empty {
+  text-align: center;
+  color: var(--color-gray-500);
+}
+
+.holiday-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.holiday-compact-name {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+}
+
+.holiday-compact-date {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+}
+
+.holiday-compact-countdown {
+  text-align: center;
+}
+
+.countdown-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+}
+
+.countdown-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+/* =================== DASHBOARD HEADER =================== */
+
+.dashboard-header-filters {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-4) 0;
+}
+
+.filter-dropdown {
+  position: relative;
+}
+
+.filter-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.filter-button.active {
+  background: var(--color-gray-200);
+}
+
+.filter-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: var(--space-1);
+  background: var(--bg-secondary);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  z-index: 10;
+  min-width: 200px;
+  box-shadow: var(--shadow-lg);
+}
+
+.filter-menu-item {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  background: var(--bg-secondary);
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition: var(--transition-base);
+}
+
+.filter-menu-item:hover {
+  background: var(--color-gray-100);
+}
+
+/* =================== WHO'S IN/OUT PANEL =================== */
+
+.who-is-in-out-panel {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  height: fit-content;
+}
+
+.panel-header .header-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.status-tabs {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-around;
+}
+
+.status-tab {
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.status-tab:hover {
+  opacity: 0.8;
+}
+
+.status-tab.active {
+  font-weight: var(--font-weight-bold);
+}
+
+.status-count {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-success);
+}
+
+.status-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+}
+
+.campaign-dropdown {
+  width: 100%;
+  padding: var(--space-2);
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-gray-100);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+}
+
+.search-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-gray-500);
+}
+
+.search-input {
+  border: none;
+  background: transparent;
+  flex: 1;
+  font-size: var(--font-size-sm);
+  outline: none;
+}
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-gray-200);
+  padding-bottom: var(--space-2);
+}
+
+.member-info {
+  flex: 1;
+  margin-left: var(--space-2);
+}
+
+.member-name {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.member-details {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.pagination-button {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-gray-200);
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: var(--transition-base);
+}
+
+.pagination-button:hover {
+  background-color: var(--color-gray-300);
+}
+
+.pagination-button.active {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+/* =================== RESPONSIVE DESIGN =================== */
+
+@media (max-width: 1200px) {
+  .dashboard-sidebar {
+    max-width: 300px;
+    min-width: 250px;
+  }
+}
+
+@media (max-width: 968px) {
+  .dashboard-content {
+    flex-direction: column;
+  }
+  
+  .dashboard-sidebar {
+    max-width: none;
+    min-width: unset;
+    width: 100%;
+  }
+  
+  .dashboard-top-row,
+  .dashboard-row {
+    flex-direction: column;
+  }
+  
+  .dashboard-col {
+    min-width: unset;
+    width: 100%;
+    flex: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: var(--space-2);
+  }
+  
+  .dashboard-content {
+    gap: var(--space-4);
+  }
+  
+  .dashboard-main {
+    gap: var(--space-4);
+  }
+  
+  .dashboard-top-row,
+  .dashboard-row {
+    gap: var(--space-2);
+  }
+}
+
+/* =================== FORCE CHART VISIBILITY =================== */
+
+/* CRITICAL: Ensure activity and projects charts are always visible */
+.dashboard-col.activity > *,
+.dashboard-col.activity > * > * {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Override any hiding CSS */
+[class*="activity"],
+[class*="project"],
+[class*="chart"] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure chart containers have proper dimensions */
+.dashboard-col.activity {
+  min-height: 300px !important;
+  min-width: 280px !important;
+  flex: 1 !important;
+}
+
+/* =================== LOADING STATES =================== */
+
+.loading-state {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--color-gray-400);
+  font-style: italic;
+}

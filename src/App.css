@@ -1,10 +1,37 @@
+/* =================== CSS VARIABLES =================== */
+:root {
+  /* Colors */
+  --bg-primary: #f9fafb;
+  --bg-secondary: #ffffff;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-primary: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  
+  /* Transitions */
+  --transition-base: all 0.2s ease;
+}
+
 /* =================== DASHBOARD LAYOUT =================== */
 
 .dashboard-container {
   display: flex;
   flex-direction: column;
   padding: 1rem;
-  background-color: #f9fafb;
+  background-color: var(--bg-primary);
   min-height: 100vh;
 }
 
@@ -15,7 +42,7 @@
   align-items: center;
   height: 80vh;
   font-size: 1.2rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .dashboard-content {
@@ -51,14 +78,34 @@
 .dashboard-col {
   flex: 1;
   min-width: 280px;
+  /* FORCE VISIBILITY FOR CHARTS */
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .dashboard-col.wide {
   flex: 2;
 }
 
+/* CRITICAL FIX: Force activity charts to be visible */
 .dashboard-col.activity {
   flex: 1;
+  min-height: 300px !important;
+  /* FORCE VISIBILITY */
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure activity chart children are visible */
+.dashboard-col.activity > *,
+.dashboard-col.activity > * > * {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .dashboard-col.welcome,
@@ -66,21 +113,21 @@
   flex: 1;
 }
 
-/* FIXED: Full width column for WeeklyChart */
+/* Full width column for WeeklyChart */
 .dashboard-col.full-width {
   width: 100%;
   flex: none;
   margin: 0;
 }
 
-/* Chart wrapper for consistent styling - REMOVED: Components handle their own styling */
-/* .chart-wrapper {
-  width: 100%;
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-} */
+/* Override any hiding CSS for charts */
+[class*="activity"],
+[class*="project"],
+[class*="chart"] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
 
 /* Responsive design */
 @media (max-width: 1200px) {
@@ -135,7 +182,7 @@
 /* =================== WEEKLY CHART =================== */
 
 .weekly-chart-container {
-  background-color: #fff;
+  background-color: var(--bg-secondary);
   border-radius: 0.5rem;
   padding: 1rem;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
@@ -150,7 +197,7 @@
 
 .bar {
   height: 40px;
-  background-color: #3b82f6;
+  background-color: var(--color-primary);
   border-radius: 4px;
 }
 
@@ -175,7 +222,7 @@
 /* =================== HOLIDAY SECTION =================== */
 
 .holiday-section {
-  background-color: #fff;
+  background-color: var(--bg-secondary);
   padding: 1rem;
   border-radius: 0.5rem;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
@@ -190,14 +237,14 @@
 
 .holiday-title {
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .holiday-loading,
 .holiday-error,
 .holiday-empty {
   text-align: center;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .holiday-header {
@@ -213,7 +260,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f9fafb;
+  background: var(--color-gray-100);
   border-radius: 8px;
   padding: 1rem;
 }
@@ -225,7 +272,7 @@
 
 .holiday-compact-date {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .holiday-compact-countdown {
@@ -235,19 +282,19 @@
 .countdown-value {
   font-size: 1.75rem;
   font-weight: bold;
-  color: #3b82f6;
+  color: var(--color-primary);
 }
 
 .countdown-label {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .holiday-toggle {
   text-align: center;
   margin-top: 0.5rem;
   cursor: pointer;
-  color: #3b82f6;
+  color: var(--color-primary);
   font-size: 0.875rem;
 }
 
@@ -256,7 +303,7 @@
 }
 
 .holiday-item {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-200);
   padding-top: 0.75rem;
   margin-top: 0.75rem;
 }
@@ -268,22 +315,22 @@
 }
 
 .holiday-badge {
-  background: #e5e7eb;
+  background: var(--color-gray-200);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.75rem;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
-.time-indicator.today { background: #10b981; color: white; }
-.time-indicator.tomorrow { background: #f59e0b; color: white; }
+.time-indicator.today { background: var(--color-success); color: white; }
+.time-indicator.tomorrow { background: var(--color-warning); color: white; }
 .time-indicator.this-week { background: #60a5fa; color: white; }
-.time-indicator.upcoming { background: #6b7280; color: white; }
+.time-indicator.upcoming { background: var(--color-gray-500); color: white; }
 
 /* =================== SUMMARY CARDS =================== */
 
 .summary-item {
-  background-color: #ffffff;
+  background-color: var(--bg-secondary);
   padding: 1rem;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -294,13 +341,13 @@
 
 .summary-label {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .summary-value {
   font-weight: bold;
   font-size: 1rem;
-  color: #111827;
+  color: var(--color-gray-800);
 }
 
 /* =================== STATUS PANEL =================== */
@@ -308,12 +355,12 @@
 .status-count {
   font-size: 2rem;
   font-weight: bold;
-  color: #10b981;
+  color: var(--color-success);
 }
 
 .status-label {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 /* =================== MISC =================== */
@@ -328,14 +375,20 @@
 .pagination-button {
   padding: 0.5rem 1rem;
   border-radius: 4px;
-  background-color: #e5e7eb;
+  background-color: var(--color-gray-200);
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
+  transition: var(--transition-base);
 }
 
 .pagination-button:hover {
-  background-color: #d1d5db;
+  background-color: var(--color-gray-300);
+}
+
+.pagination-button.active {
+  background-color: var(--color-primary);
+  color: white;
 }
 
 /* =================== DASHBOARD HEADER =================== */
@@ -356,15 +409,16 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-300);
   border-radius: 6px;
   font-size: 0.875rem;
   cursor: pointer;
+  transition: var(--transition-base);
 }
 
 .filter-button.active {
-  background: #e5e7eb;
+  background: var(--color-gray-200);
 }
 
 .filter-menu {
@@ -372,29 +426,34 @@
   top: 100%;
   left: 0;
   margin-top: 0.25rem;
-  background: white;
-  border: 1px solid #d1d5db;
+  background: var(--bg-secondary);
+  border: 1px solid var(--color-gray-300);
   border-radius: 6px;
   z-index: 10;
   min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .filter-menu-item {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   cursor: pointer;
-  background: white;
-  border-bottom: 1px solid #f3f4f6;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--color-gray-100);
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition: var(--transition-base);
 }
 
 .filter-menu-item:hover {
-  background: #f9fafb;
+  background: var(--color-gray-100);
 }
 
 /* =================== WHO'S IN/OUT PANEL =================== */
 
 .who-is-in-out-panel {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 0.5rem;
   padding: 1rem;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
@@ -421,7 +480,7 @@
 .status-tab {
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
 }
 
 .status-tab:hover {
@@ -444,15 +503,16 @@
   width: 100%;
   padding: 0.5rem;
   font-size: 0.875rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-300);
   border-radius: 6px;
+  background: var(--bg-secondary);
 }
 
 .search-container {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   padding: 0.5rem;
   border-radius: 6px;
 }
@@ -460,7 +520,7 @@
 .search-icon {
   width: 1rem;
   height: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .search-input {
@@ -483,7 +543,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--color-gray-100);
   padding-bottom: 0.5rem;
 }
 
@@ -503,7 +563,7 @@
 
 .member-details {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .member-status-badge .status-badge {
@@ -523,43 +583,7 @@
 
 .panel-footer {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
   text-align: center;
   margin-top: 0.5rem;
-}
-
-/* =================== DROPDOWN MENU =================== */
-
-.filter-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 20;
-  background-color: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  margin-top: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  min-width: 200px;
-  overflow: hidden;
-}
-
-.filter-menu-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.filter-menu-item {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  color: #111827;
-  text-align: left;
-  background-color: #fff;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.filter-menu-item:hover {
-  background-color: #f3f4f6;
 }
