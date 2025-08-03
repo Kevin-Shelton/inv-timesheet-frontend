@@ -1,37 +1,10 @@
-/* =================== CSS VARIABLES =================== */
-:root {
-  /* Colors */
-  --bg-primary: #f9fafb;
-  --bg-secondary: #ffffff;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-300: #d1d5db;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-primary: #3b82f6;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  
-  /* Spacing */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-6: 1.5rem;
-  
-  /* Transitions */
-  --transition-base: all 0.2s ease;
-}
-
-/* =================== DASHBOARD LAYOUT =================== */
+/* =================== MINIMAL DASHBOARD LAYOUT ONLY =================== */
 
 .dashboard-container {
   display: flex;
   flex-direction: column;
   padding: 1rem;
-  background-color: var(--bg-primary);
+  background-color: #f9fafb;
   min-height: 100vh;
 }
 
@@ -42,7 +15,7 @@
   align-items: center;
   height: 80vh;
   font-size: 1.2rem;
-  color: var(--color-gray-500);
+  color: #6b7280;
 }
 
 .dashboard-content {
@@ -78,31 +51,29 @@
 .dashboard-col {
   flex: 1;
   min-width: 280px;
-  /* FORCE VISIBILITY FOR CHARTS */
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
 }
 
 .dashboard-col.wide {
   flex: 2;
 }
 
-/* CRITICAL FIX: Force activity charts to be visible */
+/* CRITICAL: Force activity charts to be visible with maximum specificity */
 .dashboard-col.activity {
-  flex: 1;
+  flex: 1 !important;
   min-height: 300px !important;
-  /* FORCE VISIBILITY */
+  min-width: 280px !important;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  position: relative;
-  z-index: 1;
+  position: relative !important;
+  z-index: 10 !important;
+  background: transparent !important;
 }
 
-/* Ensure activity chart children are visible */
-.dashboard-col.activity > *,
-.dashboard-col.activity > * > * {
+/* Force all children of activity columns to be visible */
+.dashboard-col.activity *,
+.dashboard-col.activity * *,
+.dashboard-col.activity * * * {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -113,20 +84,10 @@
   flex: 1;
 }
 
-/* Full width column for WeeklyChart */
 .dashboard-col.full-width {
   width: 100%;
   flex: none;
   margin: 0;
-}
-
-/* Override any hiding CSS for charts */
-[class*="activity"],
-[class*="project"],
-[class*="chart"] {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
 }
 
 /* Responsive design */
@@ -177,413 +138,4 @@
   .dashboard-row {
     gap: 0.5rem;
   }
-}
-
-/* =================== WEEKLY CHART =================== */
-
-.weekly-chart-container {
-  background-color: var(--bg-secondary);
-  border-radius: 0.5rem;
-  padding: 1rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  width: 100%;
-}
-
-.chart-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.bar {
-  height: 40px;
-  background-color: var(--color-primary);
-  border-radius: 4px;
-}
-
-.bar-value {
-  font-size: 0.75rem;
-  margin-top: 0.25rem;
-  text-align: center;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.legend-color {
-  width: 1rem;
-  height: 1rem;
-  border-radius: 2px;
-}
-
-/* =================== HOLIDAY SECTION =================== */
-
-.holiday-section {
-  background-color: var(--bg-secondary);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  height: fit-content;
-}
-
-.holiday-header {
-  font-weight: 600;
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.holiday-title {
-  font-size: 0.875rem;
-  color: var(--color-gray-700);
-}
-
-.holiday-loading,
-.holiday-error,
-.holiday-empty {
-  text-align: center;
-  color: var(--color-gray-500);
-}
-
-.holiday-header {
-  margin-bottom: 1rem;
-}
-
-.holiday-title {
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.holiday-compact {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--color-gray-100);
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.holiday-compact-name {
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-.holiday-compact-date {
-  font-size: 0.875rem;
-  color: var(--color-gray-500);
-}
-
-.holiday-compact-countdown {
-  text-align: center;
-}
-
-.countdown-value {
-  font-size: 1.75rem;
-  font-weight: bold;
-  color: var(--color-primary);
-}
-
-.countdown-label {
-  font-size: 0.75rem;
-  color: var(--color-gray-500);
-}
-
-.holiday-toggle {
-  text-align: center;
-  margin-top: 0.5rem;
-  cursor: pointer;
-  color: var(--color-primary);
-  font-size: 0.875rem;
-}
-
-.holiday-list {
-  margin-top: 1rem;
-}
-
-.holiday-item {
-  border-top: 1px solid var(--color-gray-200);
-  padding-top: 0.75rem;
-  margin-top: 0.75rem;
-}
-
-.holiday-badges {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.holiday-badge {
-  background: var(--color-gray-200);
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  color: var(--color-gray-700);
-}
-
-.time-indicator.today { background: var(--color-success); color: white; }
-.time-indicator.tomorrow { background: var(--color-warning); color: white; }
-.time-indicator.this-week { background: #60a5fa; color: white; }
-.time-indicator.upcoming { background: var(--color-gray-500); color: white; }
-
-/* =================== SUMMARY CARDS =================== */
-
-.summary-item {
-  background-color: var(--bg-secondary);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.summary-label {
-  font-size: 0.875rem;
-  color: var(--color-gray-500);
-}
-
-.summary-value {
-  font-weight: bold;
-  font-size: 1rem;
-  color: var(--color-gray-800);
-}
-
-/* =================== STATUS PANEL =================== */
-
-.status-count {
-  font-size: 2rem;
-  font-weight: bold;
-  color: var(--color-success);
-}
-
-.status-label {
-  font-size: 0.875rem;
-  color: var(--color-gray-500);
-}
-
-/* =================== MISC =================== */
-
-.loading-state {
-  padding: 2rem;
-  text-align: center;
-  color: #9ca3af;
-  font-style: italic;
-}
-
-.pagination-button {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  background-color: var(--color-gray-200);
-  border: none;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: var(--transition-base);
-}
-
-.pagination-button:hover {
-  background-color: var(--color-gray-300);
-}
-
-.pagination-button.active {
-  background-color: var(--color-primary);
-  color: white;
-}
-
-/* =================== DASHBOARD HEADER =================== */
-
-.dashboard-header-filters {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  padding: 1rem 0;
-}
-
-.filter-dropdown {
-  position: relative;
-}
-
-.filter-button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--color-gray-100);
-  border: 1px solid var(--color-gray-300);
-  border-radius: 6px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: var(--transition-base);
-}
-
-.filter-button.active {
-  background: var(--color-gray-200);
-}
-
-.filter-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 0.25rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--color-gray-300);
-  border-radius: 6px;
-  z-index: 10;
-  min-width: 200px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.filter-menu-item {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--color-gray-100);
-  border: none;
-  width: 100%;
-  text-align: left;
-  transition: var(--transition-base);
-}
-
-.filter-menu-item:hover {
-  background: var(--color-gray-100);
-}
-
-/* =================== WHO'S IN/OUT PANEL =================== */
-
-.who-is-in-out-panel {
-  background: var(--bg-secondary);
-  border-radius: 0.5rem;
-  padding: 1rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  height: fit-content;
-}
-
-.panel-header .header-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.status-tabs {
-  display: flex;
-  gap: 1rem;
-  justify-content: space-around;
-}
-
-.status-tab {
-  text-align: center;
-  cursor: pointer;
-  transition: var(--transition-base);
-}
-
-.status-tab:hover {
-  opacity: 0.8;
-}
-
-.status-tab.active {
-  font-weight: bold;
-}
-
-.status-tab.active .status-count {
-  transform: scale(1.1);
-}
-
-.campaign-selector {
-  margin-top: 0.5rem;
-}
-
-.campaign-dropdown {
-  width: 100%;
-  padding: 0.5rem;
-  font-size: 0.875rem;
-  border: 1px solid var(--color-gray-300);
-  border-radius: 6px;
-  background: var(--bg-secondary);
-}
-
-.search-container {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--color-gray-100);
-  padding: 0.5rem;
-  border-radius: 6px;
-}
-
-.search-icon {
-  width: 1rem;
-  height: 1rem;
-  color: var(--color-gray-500);
-}
-
-.search-input {
-  border: none;
-  background: transparent;
-  flex: 1;
-  font-size: 0.875rem;
-  outline: none;
-}
-
-.members-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.member-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--color-gray-100);
-  padding-bottom: 0.5rem;
-}
-
-.member-status .status-indicator {
-  font-size: 1.25rem;
-}
-
-.member-info {
-  flex: 1;
-  margin-left: 0.5rem;
-}
-
-.member-name {
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-.member-details {
-  font-size: 0.75rem;
-  color: var(--color-gray-500);
-}
-
-.member-status-badge .status-badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  color: white;
-  font-weight: 500;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.panel-footer {
-  font-size: 0.75rem;
-  color: var(--color-gray-500);
-  text-align: center;
-  margin-top: 0.5rem;
 }
